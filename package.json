@@ -4,7 +4,6 @@
   "description": "Hệ thống tự động crawl & dịch tiểu thuyết Trung Quốc sang tiếng Việt bằng AI đa provider",
   "private": true,
   "scripts": {
-    "prepare": "husky",
     "test": "python -m pytest test_novel_manager.py -v --tb=short",
     "deploy": "wrangler deploy",
     "preview": "wrangler dev"
@@ -28,21 +27,6 @@
   },
   "homepage": "https://github.com/baosang1988bg/Hac-Dao-Truyen#readme",
   "devDependencies": {
-    "@commitlint/cli": "^20.5.3",
-    "@commitlint/config-conventional": "^20.5.3",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.4.0",
     "wrangler": "^4.89.0"
-  },
-  "lint-staged": {
-    "*.py": [
-      "python -m py_compile"
-    ],
-    "frontend/src/**/*.{js,jsx}": [
-      "cd frontend && npx eslint --fix"
-    ],
-    "*.{json,md}": [
-      "echo 'Checking JSON/MD...'"
-    ]
   }
 }

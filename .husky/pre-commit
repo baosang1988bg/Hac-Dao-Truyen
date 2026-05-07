@@ -1,3 +1,0 @@
-#!/bin/sh
-# pre-commit: chạy lint-staged để format/lint code trước khi commit
-npx lint-staged
