@@ -316,3 +316,8 @@ a:hover {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ── Chapters Tab — recently updated strip (hide scrollbar) ── */
+.chapters-recent-strip::-webkit-scrollbar {
+  display: none;
+}

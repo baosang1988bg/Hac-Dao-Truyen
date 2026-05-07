@@ -29,6 +29,82 @@ function fmtTokens(n) {
   return String(n)
 }
 
+// ── Group sessions by server run (same novel, started after server start) ──────
+function groupByServerRun(sessions, serverStart) {
+  if (!serverStart) return null
+  const serverStartMs = new Date(serverStart).getTime()
+
+  // Sessions trước khi server start → không gộp (là lịch sử cũ)
+  const currentRun = sessions.filter(s => new Date(s.started_at).getTime() >= serverStartMs)
+  const oldRuns    = sessions.filter(s => new Date(s.started_at).getTime() <  serverStartMs)
+
+  if (currentRun.length <= 1) return null  // Không cần gộp nếu chỉ có 0–1 session
+
+  // Gộp currentRun theo novel+type thành 1 nhóm mỗi novel
+  const groups = {}
+  // Sort oldest first để aggregate đúng thứ tự
+  const sorted = [...currentRun].sort((a, b) => new Date(a.started_at) - new Date(b.started_at))
+
+  sorted.forEach(session => {
+    const key = `${session.novel_slug}__${session.session_type}`
+    if (!groups[key]) {
+      groups[key] = {
+        ...session,
+        _isGroup: true,
+        _groupKey: key,
+        children: [],
+        model_breakdown: {},
+        models_used: [],
+        chapters_done: 0,
+        chapters_requested: 0,
+        total_tokens: 0,
+        input_tokens: 0,
+        output_tokens: 0,
+        cost_usd: 0,
+        duration_sec: 0,
+        failed_count: 0,
+      }
+    }
+    const g = groups[key]
+    g.children.push(session)
+    g.chapters_done      += session.chapters_done      || 0
+    g.chapters_requested += session.chapters_requested || 0
+    g.total_tokens       += session.total_tokens       || 0
+    g.input_tokens       += session.input_tokens       || 0
+    g.output_tokens      += session.output_tokens      || 0
+    g.cost_usd           += session.cost_usd           || 0
+    g.duration_sec       += session.duration_sec       || 0
+    g.failed_count       += session.failed_count       || 0
+    // ended_at = thời điểm kết thúc lần dịch mới nhất
+    if (!g.ended_at || session.ended_at > g.ended_at) g.ended_at = session.ended_at
+    // Merge model_breakdown
+    if (session.model_breakdown) {
+      Object.entries(session.model_breakdown).forEach(([model, data]) => {
+        if (!g.model_breakdown[model]) g.model_breakdown[model] = { input_tokens:0, output_tokens:0, total_tokens:0, cost_usd:0, calls:0 }
+        g.model_breakdown[model].input_tokens  += data.input_tokens  || 0
+        g.model_breakdown[model].output_tokens += data.output_tokens || 0
+        g.model_breakdown[model].total_tokens  += data.total_tokens  || 0
+        g.model_breakdown[model].cost_usd      += data.cost_usd      || 0
+        g.model_breakdown[model].calls         += data.calls         || 0
+      })
+    }
+    // Merge models_used
+    ;(session.models_used || []).forEach(m => { if (!g.models_used.includes(m)) g.models_used.push(m) })
+    // Status: error > partial > done
+    if (session.status === 'error') g.status = 'error'
+    else if (session.status === 'partial' && g.status !== 'error') g.status = 'partial'
+    // Recalc
+    g.success_rate = g.chapters_done > 0
+      ? Math.round(((g.chapters_done - g.failed_count) / g.chapters_done) * 100)
+      : 100
+    g.sec_per_chap = g.chapters_done > 0 ? Math.round(g.duration_sec / g.chapters_done) : null
+  })
+
+  // Các session cũ giữ nguyên, nhóm hiện tại đặt lên đầu (newest first)
+  const groupList = Object.values(groups).reverse()
+  return [...groupList, ...oldRuns]
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Logs() {
   const [sessions, setSessions]   = useState([])
@@ -36,8 +112,13 @@ export default function Logs() {
   const [filter, setFilter]       = useState('all')   // all | translate | fix
   const [novelFilter, setNovelFilter] = useState('all')
   const [expanded, setExpanded]   = useState(null)
+  const [serverStart, setServerStart] = useState(null)  // server start time from API
 
-  useEffect(() => { fetchLogs() }, [])
+  useEffect(() => {
+    fetchLogs()
+    // Lấy thời điểm server start để gộp session hiện tại
+    api.get('/server-info').then(res => setServerStart(res.data.server_start)).catch(() => {})
+  }, [])
 
   const fetchLogs = async () => {
     setLoading(true)
@@ -54,14 +135,17 @@ export default function Logs() {
   // Unique novels for filter
   const novels = ['all', ...new Set(sessions.map(s => s.novel_slug).filter(Boolean))]
 
-  const filtered = sessions.filter(s => {
+  const rawFiltered = sessions.filter(s => {
     if (filter !== 'all' && s.session_type !== filter) return false
     if (novelFilter !== 'all' && s.novel_slug !== novelFilter) return false
     return true
   })
 
+  // Gộp các session trong cùng 1 lần chạy server thành 1 nhóm per novel
+  const filtered = (groupByServerRun(rawFiltered, serverStart) || rawFiltered)
+
   // ── Aggregate stats ──
-  const totalRuns      = filtered.length
+  const totalRuns      = rawFiltered.length
   const totalChapters  = filtered.reduce((a, s) => a + (s.chapters_done || 0), 0)
   const totalTokens    = filtered.reduce((a, s) => a + (s.total_tokens || 0), 0)
   const totalCost      = filtered.reduce((a, s) => a + (s.cost_usd || 0), 0)
@@ -162,7 +246,10 @@ export default function Logs() {
 
         {filtered.length > 0 && (
           <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            {filtered.length} phiên
+            {filtered.length !== rawFiltered.length
+              ? <>{filtered.length} nhóm <span style={{ opacity: 0.5 }}>({rawFiltered.length} lần)</span></>
+              : <>{rawFiltered.length} phiên</>
+            }
           </span>
         )}
       </div>
@@ -197,6 +284,7 @@ export default function Logs() {
 
 // ── Session Row ───────────────────────────────────────────────────────────────
 function SessionRow({ session: s, index, isExpanded, onToggle }) {
+  const isGroup = s._isGroup && s.children && s.children.length > 1
   const isError    = s.status === 'error'
   const isDone     = s.status === 'done'
   const isPartial  = s.status === 'partial'
@@ -249,6 +337,15 @@ function SessionRow({ session: s, index, isExpanded, onToggle }) {
             </span>
             <TypeBadge type={s.session_type} />
             <StatusPill status={s.status} />
+            {isGroup && (
+              <span style={{
+                fontSize: '0.68rem', fontWeight: 700, padding: '1px 7px', borderRadius: '99px',
+                background: 'rgba(139,92,246,0.12)', color: '#c4b5fd',
+                border: '1px solid rgba(139,92,246,0.3)', flexShrink: 0,
+              }}>
+                {s.children.length} lần
+              </span>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
             <span><Clock size={11} style={{ verticalAlign: 'middle', marginRight: '3px' }} />{fmtDate(s.started_at)}</span>
@@ -362,6 +459,83 @@ function SessionRow({ session: s, index, isExpanded, onToggle }) {
                 fontFamily: 'monospace', fontSize: '0.7rem', color: '#fca5a5',
               }}>
                 {s.errors.map((e, i) => <div key={i} style={{ marginBottom: '2px' }}>{e}</div>)}
+              </div>
+            </div>
+          )}
+
+          {/* ── Children timeline (grouped sessions) ── */}
+          {isGroup && s.children.length > 1 && (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div style={{
+                fontSize: '0.78rem', fontWeight: 600, color: '#c4b5fd',
+                marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px',
+              }}>
+                <Zap size={13} /> Timeline — {s.children.length} lần dịch trong nhóm này
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {s.children.map((child, ci) => {
+                  const isDoneC = child.status === 'done'
+                  const isErrC  = child.status === 'error'
+                  return (
+                    <div key={child.filename} style={{
+                      display: 'grid',
+                      gridTemplateColumns: '20px 110px 1fr auto auto auto auto',
+                      alignItems: 'center', gap: '10px',
+                      padding: '7px 12px', borderRadius: '8px',
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid var(--border-panel)',
+                      fontSize: '0.78rem',
+                    }}>
+                      {/* Step dot */}
+                      <div style={{
+                        width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+                        background: isErrC ? '#ef4444' : isDoneC ? '#10b981' : '#f59e0b',
+                        boxShadow: `0 0 6px ${isErrC ? 'rgba(239,68,68,0.5)' : isDoneC ? 'rgba(16,185,129,0.5)' : 'rgba(245,158,11,0.5)'}`,
+                      }} />
+                      {/* Time */}
+                      <span style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '0.72rem', flexShrink: 0 }}>
+                        {fmtDate(child.started_at).slice(11)}
+                      </span>
+                      {/* Chapter range label */}
+                      <span style={{ color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {child.chapters_done > 0
+                          ? `${child.chapters_done} chương`
+                          : 'Không có chương'}
+                        {child.chapters_saved?.length > 0 && (
+                          <span style={{ color: 'var(--text-muted)', marginLeft: '6px', fontSize: '0.7rem' }}>
+                            ({child.chapters_saved[0]?.replace(/第|章.*/g,'').trim()}…)
+                          </span>
+                        )}
+                      </span>
+                      {/* Duration */}
+                      <span style={{ color: '#a78bfa', flexShrink: 0, fontSize: '0.72rem' }}>
+                        {fmtDuration(child.duration_sec)}
+                      </span>
+                      {/* Tokens */}
+                      {child.total_tokens > 0 && (
+                        <span style={{ color: '#fbbf24', flexShrink: 0, fontSize: '0.72rem' }}>
+                          {fmtTokens(child.total_tokens)}
+                        </span>
+                      )}
+                      {/* Cost */}
+                      <span style={{
+                        flexShrink: 0, fontSize: '0.72rem', fontWeight: 600,
+                        color: (child.cost_usd||0) > 0 ? '#fb923c' : '#6ee7b7',
+                      }}>
+                        {(child.cost_usd||0) > 0 ? `$${child.cost_usd.toFixed(4)}` : 'free'}
+                      </span>
+                      {/* Status */}
+                      <span style={{
+                        fontSize: '0.65rem', fontWeight: 600, padding: '1px 6px', borderRadius: '99px', flexShrink: 0,
+                        background: isErrC ? 'rgba(239,68,68,0.1)' : isDoneC ? 'rgba(16,185,129,0.1)' : 'rgba(251,146,60,0.1)',
+                        color: isErrC ? '#fca5a5' : isDoneC ? '#6ee7b7' : '#fb923c',
+                        border: `1px solid ${isErrC ? 'rgba(239,68,68,0.3)' : isDoneC ? 'rgba(16,185,129,0.3)' : 'rgba(251,146,60,0.3)'}`,
+                      }}>
+                        {isDoneC ? '✓' : isErrC ? '✕' : '~'}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}

@@ -31,6 +31,10 @@ translation_tasks = {}
 # Cancel flags — set True để yêu cầu dừng gracefully
 cancel_flags: dict[str, bool] = {}
 
+# Thời điểm server khởi động — dùng để gộp session trong UI
+SERVER_START_TIME = datetime.now().isoformat()
+
+
 # ── Models ────────────────────────────────────────────────────────────────────
 class TranslateRequest(BaseModel):
     chapters: int = 3
@@ -102,16 +106,22 @@ def start_translation(slug: str, req: TranslateRequest, background_tasks: Backgr
             "status": "running",
             "current": 0,
             "total": req.chapters,
-            "logs": []
+            "logs": [],
+            "active_batches": 0,   # số batch đang dịch song song hiện tại
+            "scraped_count": 0,    # số chương đã cào xong (chờ dịch hoặc đang dịch)
         }
         cancel_flags[slug] = False
 
-        def progress_callback(current, total, status, log_msg):
+        def progress_callback(current, total, status, log_msg="", active_batches=None, scraped_count=None):
             task = translation_tasks.get(slug)
             if task:
                 task["current"] = current
                 task["total"] = total
                 task["status"] = status
+                if active_batches is not None:
+                    task["active_batches"] = active_batches
+                if scraped_count is not None:
+                    task["scraped_count"] = scraped_count
                 if log_msg:
                     task["logs"].append(log_msg)
                     if len(task["logs"]) > 100:
@@ -305,6 +315,11 @@ def health_check(slug: str):
         "issues": issues,
     }
 
+
+@app.get("/api/server-info")
+def get_server_info():
+    """Trả về thời điểm server khởi động để UI biết gộp session theo server run."""
+    return {"server_start": SERVER_START_TIME}
 
 @app.get("/api/logs")
 def list_sessions(limit: int = 100):

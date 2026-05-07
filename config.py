@@ -66,6 +66,11 @@ REQUEST_DELAY_SECONDS = float(os.getenv("REQUEST_DELAY_SECONDS", "4"))
 #   - Thấp hơn = an toàn hơn với chương dài, nhưng tốn nhiều API call hơn
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "3"))
 
+# MAX_CONCURRENT_BATCHES: số lượng batch tối đa dịch song song
+#   - Dịch đa luồng giúp vượt qua nút thắt cổ chai của việc chờ API
+#   - Khuyên dùng: 3-5 đối với API free tier
+MAX_CONCURRENT_BATCHES = int(os.getenv("MAX_CONCURRENT_BATCHES", "3"))
+
 # BATCH_MAX_CHARS: tổng ký tự tối đa của tất cả content trong 1 batch
 #   Nếu thêm chương mới vào batch mà vượt ngưỡng này → tự động flush batch trước,
 #   rồi giảm batch size cho lần tiếp theo.

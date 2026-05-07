@@ -21,6 +21,9 @@ class NovelScraper:
     def __init__(self):
         self.user_agent = USER_AGENT
         self.headless = HEADLESS
+        self._playwright = None
+        self._browser = None
+        self._context = None
 
     # ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -58,56 +61,74 @@ class NovelScraper:
 
     # ── Fetch ─────────────────────────────────────────────────────────────────
 
+    async def start(self):
+        """Khởi tạo Playwright browser và context một lần để dùng chung."""
+        if self._playwright is None:
+            self._playwright = await async_playwright().start()
+            self._browser = await self._playwright.chromium.launch(headless=self.headless)
+            # Windows Chrome UA — mạo danh tốt hơn Mac UA
+            self._context = await self._browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                extra_http_headers={
+                    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.5",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                    "Upgrade-Insecure-Requests": "1",
+                },
+            )
+
+    async def close(self):
+        """Đóng Playwright khi hoàn thành."""
+        if self._context:
+            await self._context.close()
+            self._context = None
+        if self._browser:
+            await self._browser.close()
+            self._browser = None
+        if self._playwright:
+            await self._playwright.stop()
+            self._playwright = None
+
     async def fetch_html(self, url: str) -> str | None:
         """
-        Fetch HTML dùng Playwright.
+        Fetch HTML dùng Playwright (tái sử dụng browser context).
         - Dùng Windows Chrome UA (Mac UA bị một số site filter là bot)
         - Luôn include Referer và Accept-Language để trông giống user thật
         - Fallback: nếu content không tìm được, chờ thêm 3s và thử lại
         """
         is_gbk = self._is_gbk_site(url)
         parsed = urlparse(url)
+        if not self._context:
+            await self.start()
+
         origin = f"{parsed.scheme}://{parsed.netloc}"
+        page = await self._context.new_page()
+        # Set referer dynamically per page
+        await page.set_extra_http_headers({"Referer": origin + "/"})
 
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=self.headless)
-            context = await browser.new_context(
-                # Windows Chrome UA — mạo danh tốt hơn Mac UA
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                extra_http_headers={
-                    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.5",
-                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-                    "Referer": origin + "/",
-                    "Upgrade-Insecure-Requests": "1",
-                },
+        print(f"[*] Navigating to {url}...")
+        try:
+            await page.goto(url, wait_until="load", timeout=60000)
+            await asyncio.sleep(2)
+            html = await page.content()
+
+            # Sanity check: nếu trang chưa có content (security page / captcha)
+            from bs4 import BeautifulSoup
+            soup_check = BeautifulSoup(html, "html.parser")
+            content_check = soup_check.select_one(
+                ".txtnav, #contentbox, .contentbox, #content, .readcontent"
             )
-            page = await context.new_page()
-
-            print(f"[*] Navigating to {url}...")
-            try:
-                await page.goto(url, wait_until="load", timeout=60000)
-                await asyncio.sleep(2)
+            if not content_check:
+                print(f"[*] Content not found yet, waiting 4s and retrying...")
+                await asyncio.sleep(4)
                 html = await page.content()
 
-                # Sanity check: nếu trang chưa có content (security page / captcha)
-                # thì chờ thêm và thử lại 1 lần
-                from bs4 import BeautifulSoup
-                soup_check = BeautifulSoup(html, "html.parser")
-                content_check = soup_check.select_one(
-                    ".txtnav, #contentbox, .contentbox, #content, .readcontent"
-                )
-                if not content_check:
-                    print(f"[*] Content not found yet, waiting 4s and retrying...")
-                    await asyncio.sleep(4)
-                    html = await page.content()
+            await page.close()
+            return html
 
-                await browser.close()
-                return html
-
-            except Exception as e:
-                print(f"[!] Error fetching page: {e}")
-                await browser.close()
-                return None
+        except Exception as e:
+            print(f"[!] Error fetching page: {e}")
+            await page.close()
+            return None
 
     # ── Parse ─────────────────────────────────────────────────────────────────
 

@@ -4,6 +4,7 @@ import {
   Play, Square, Book, BookOpen, Plus, Trash2, FileText,
   ArrowLeft, AlertTriangle, CheckCircle, RefreshCw, ShieldCheck,
   Zap, Clock, TrendingUp, ChevronDown, ChevronUp, OctagonX,
+  Search, ArrowUpDown, Sparkles
 } from 'lucide-react'
 import api from '../api'
 
@@ -219,15 +220,18 @@ export default function NovelDetail() {
 // ── Translation Panel ─────────────────────────────────────────────────────────
 
 function TranslationPanel({ isRunning, translating, translateCount, setTranslateCount, taskStatus, elapsedSec, onStart, onStop }) {
-  const [logsExpanded, setLogsExpanded] = useState(true)
+  const [logsExpanded, setLogsExpanded] = useState(false)
   const logRef = useRef(null)
 
   const pct          = taskStatus ? Math.min(100, (taskStatus.current / Math.max(taskStatus.total, 1)) * 100) : 0
+  const scrapedPct   = taskStatus ? Math.min(100, ((taskStatus.scraped_count || 0) / Math.max(taskStatus.total, 1)) * 100) : 0
   const isDone       = taskStatus?.status === 'finished'
   const isError      = taskStatus?.status === 'error'
   const isCancelling = taskStatus?.status === 'cancelling'
   const isCancelled  = taskStatus?.status === 'cancelled'
   const isIdle       = !taskStatus || taskStatus.status === 'idle'
+  const activeBatches = taskStatus?.active_batches || 0
+  const scrapedCount  = taskStatus?.scraped_count  || 0
 
   // Auto-scroll log to bottom
   useEffect(() => {
@@ -255,13 +259,12 @@ function TranslationPanel({ isRunning, translating, translateCount, setTranslate
           </h2>
           {isRunning && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              <Clock size={13} />
-              {fmtTime(elapsedSec)}
+              <Clock size={13} /> {fmtTime(elapsedSec)}
             </div>
           )}
         </div>
 
-        {/* Input row */}
+        {/* Input + buttons */}
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
           <div style={{ position: 'relative', flex: 1 }}>
             <input
@@ -277,29 +280,20 @@ function TranslationPanel({ isRunning, translating, translateCount, setTranslate
             }}>chương</span>
           </div>
 
-          {/* Start button — ẩn khi đang chạy */}
           {!isRunning && !isCancelling && (
-            <button
-              className="btn btn-primary"
-              onClick={onStart}
-              disabled={translating}
-              style={{ minWidth: '90px' }}
-            >
+            <button className="btn btn-primary" onClick={onStart} disabled={translating} style={{ minWidth: '90px' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Play size={15} fill="currentColor" /> Bắt đầu
               </span>
             </button>
           )}
-
-          {/* Stop button — hiện khi đang chạy */}
           {(isRunning || isCancelling) && (
             <button
-              onClick={isCancelling ? undefined : onStop}
-              disabled={isCancelling}
+              onClick={isCancelling ? undefined : onStop} disabled={isCancelling}
               style={{
                 minWidth: '90px', padding: '10px 16px', borderRadius: '10px',
-                display: 'flex', alignItems: 'center', gap: '6px',
-                border: 'none', cursor: isCancelling ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', gap: '6px', border: 'none',
+                cursor: isCancelling ? 'not-allowed' : 'pointer',
                 background: isCancelling ? 'rgba(251,146,60,0.15)' : 'rgba(239,68,68,0.15)',
                 color: isCancelling ? '#fdba74' : '#fca5a5',
                 fontWeight: 500, fontSize: '0.9rem', transition: 'all 0.2s',
@@ -307,16 +301,12 @@ function TranslationPanel({ isRunning, translating, translateCount, setTranslate
               onMouseEnter={e => { if (!isCancelling) e.currentTarget.style.background = 'rgba(239,68,68,0.25)' }}
               onMouseLeave={e => { if (!isCancelling) e.currentTarget.style.background = 'rgba(239,68,68,0.15)' }}
             >
-              {isCancelling ? (
-                <><SpinnerIcon /> Đang dừng</>
-              ) : (
-                <><OctagonX size={15} /> Dừng</>
-              )}
+              {isCancelling ? <><SpinnerIcon /> Đang dừng</> : <><OctagonX size={15} /> Dừng</>}
             </button>
           )}
         </div>
 
-        {/* Stats row khi đang chạy */}
+        {/* Speed stats */}
         {isRunning && chapPerMin && (
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <MiniStat icon={<TrendingUp size={12} />} label="Tốc độ" value={`${chapPerMin} ch/phút`} />
@@ -329,8 +319,8 @@ function TranslationPanel({ isRunning, translating, translateCount, setTranslate
       {taskStatus && taskStatus.status !== 'idle' && (
         <div style={{ padding: '0 1.25rem 1.25rem' }}>
 
-          {/* Status badge + counter */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+          {/* Status + counter */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
             <StatusBadge status={taskStatus.status} />
             <span style={{ fontSize: '0.82rem', fontWeight: 600, color: isDone ? '#6ee7b7' : isError ? '#fca5a5' : 'var(--text-main)' }}>
               {taskStatus.current}
@@ -338,66 +328,142 @@ function TranslationPanel({ isRunning, translating, translateCount, setTranslate
             </span>
           </div>
 
-          {/* Progress bar */}
-          <div style={{
-            background: 'rgba(255,255,255,0.08)', borderRadius: '99px',
-            height: '8px', overflow: 'hidden', marginBottom: '0.5rem',
-            boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
-          }}>
+          {/* ── Parallel pipeline visualization ── */}
+          {isRunning && (
+            <div style={{ marginBottom: '1rem' }}>
+              {/* Pipeline stages */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 8px 1fr 8px 1fr', alignItems: 'center', gap: '4px', marginBottom: '0.65rem' }}>
+                {/* Stage: Crawl */}
+                <PipelineStage
+                  label="Cào nội dung"
+                  value={scrapedCount}
+                  total={taskStatus.total}
+                  active={isRunning && scrapedCount < taskStatus.total}
+                  color="#10b981"
+                  icon="🌐"
+                />
+                {/* Arrow */}
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '10px' }}>›</div>
+                {/* Stage: Translating (parallel batches) */}
+                <PipelineStage
+                  label={activeBatches > 1 ? `Dịch song song ×${activeBatches}` : 'Dịch'}
+                  value={taskStatus.current}
+                  total={scrapedCount || taskStatus.total}
+                  active={activeBatches > 0}
+                  color={activeBatches > 1 ? '#8b5cf6' : '#3b82f6'}
+                  icon={activeBatches > 1 ? '⚡' : '🔤'}
+                  highlight={activeBatches > 1}
+                />
+                {/* Arrow */}
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '10px' }}>›</div>
+                {/* Stage: Saved */}
+                <PipelineStage
+                  label="Đã lưu"
+                  value={taskStatus.current}
+                  total={taskStatus.total}
+                  active={false}
+                  color="#6ee7b7"
+                  icon="✓"
+                />
+              </div>
+
+              {/* Parallel batch indicators */}
+              {activeBatches > 0 && (
+                <div style={{ marginBottom: '0.6rem' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                    Luồng đang chạy:
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                    {Array.from({ length: activeBatches }).map((_, i) => (
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'center', gap: '4px',
+                        padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem',
+                        background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)',
+                        color: '#c4b5fd',
+                      }}>
+                        <span style={{
+                          width: '6px', height: '6px', borderRadius: '50%',
+                          background: '#8b5cf6', display: 'inline-block', flexShrink: 0,
+                          animation: 'pulse-dot 1.2s infinite',
+                          animationDelay: `${i * 0.3}s`,
+                        }} />
+                        Batch {i + 1}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Main progress bar (translated) */}
+          <div style={{ marginBottom: '0.4rem' }}>
+            {/* Dual-layer bar: scraped (bg) + translated (fg) */}
             <div style={{
-              height: '100%', borderRadius: '99px',
-              background: isError      ? 'linear-gradient(90deg,#ef4444,#dc2626)'
-                : isDone               ? 'linear-gradient(90deg,#10b981,#059669)'
-                : isCancelled          ? 'linear-gradient(90deg,#f59e0b,#d97706)'
-                : isCancelling         ? 'linear-gradient(90deg,#fb923c,#f59e0b)'
-                                       : 'linear-gradient(90deg,#3b82f6,#8b5cf6)',
-              width: `${pct}%`,
-              transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
-              boxShadow: (isError || isCancelled || isCancelling) ? 'none'
-                : isDone ? '0 0 8px rgba(16,185,129,0.5)'
-                         : '0 0 8px rgba(59,130,246,0.5)',
-            }} />
+              position: 'relative', background: 'rgba(255,255,255,0.06)',
+              borderRadius: '99px', height: '8px', overflow: 'hidden',
+              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
+            }}>
+              {/* Scraped layer (lighter, behind) */}
+              {isRunning && scrapedPct > pct && (
+                <div style={{
+                  position: 'absolute', left: 0, top: 0, height: '100%',
+                  borderRadius: '99px', background: 'rgba(16,185,129,0.2)',
+                  width: `${scrapedPct}%`, transition: 'width 0.4s ease',
+                }} />
+              )}
+              {/* Translated layer (solid, front) */}
+              <div style={{
+                position: 'absolute', left: 0, top: 0, height: '100%',
+                borderRadius: '99px',
+                background: isError     ? 'linear-gradient(90deg,#ef4444,#dc2626)'
+                  : isDone              ? 'linear-gradient(90deg,#10b981,#059669)'
+                  : isCancelled         ? 'linear-gradient(90deg,#f59e0b,#d97706)'
+                  : isCancelling        ? 'linear-gradient(90deg,#fb923c,#f59e0b)'
+                  : activeBatches > 1   ? 'linear-gradient(90deg,#8b5cf6,#3b82f6)'
+                                        : 'linear-gradient(90deg,#3b82f6,#8b5cf6)',
+                width: `${pct}%`,
+                transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
+                boxShadow: isDone ? '0 0 8px rgba(16,185,129,0.5)'
+                  : activeBatches > 1 ? '0 0 10px rgba(139,92,246,0.6)'
+                  : '0 0 8px rgba(59,130,246,0.5)',
+              }} />
+            </div>
           </div>
 
-          {/* Percent */}
-          <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-            {pct.toFixed(0)}%
+          {/* Percent + scraped label */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+            <span style={{ color: isRunning && scrapedCount > taskStatus.current ? '#10b981' : 'transparent', fontSize: '0.68rem' }}>
+              {isRunning && scrapedCount > taskStatus.current ? `Đã cào: ${scrapedCount}` : ''}
+            </span>
+            <span>{pct.toFixed(0)}%</span>
           </div>
 
-          {/* Success banner */}
+          {/* Banners */}
           {isDone && (
             <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '0.7rem 0.9rem', borderRadius: '8px',
-              background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '0.7rem 0.9rem',
+              borderRadius: '8px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
               color: '#6ee7b7', fontSize: '0.875rem', marginBottom: '0.75rem',
             }}>
               <CheckCircle size={16} />
               Dịch xong {taskStatus.current} chương thành công!
             </div>
           )}
-
-          {/* Cancelled banner */}
           {(isCancelled || isCancelling) && (
             <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '0.7rem 0.9rem', borderRadius: '8px',
-              background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '0.7rem 0.9rem',
+              borderRadius: '8px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
               color: '#fcd34d', fontSize: '0.875rem', marginBottom: '0.75rem',
             }}>
               <OctagonX size={16} />
-              {isCancelling
-                ? 'Đang dừng — chờ batch hiện tại hoàn thành...'
-                : `Đã dừng — ${taskStatus.current} chương đã được lưu`}
+              {isCancelling ? 'Đang dừng — chờ batch hiện tại hoàn thành...' : `Đã dừng — ${taskStatus.current} chương đã được lưu`}
             </div>
           )}
-
-          {/* Error banner */}
           {isError && (
             <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '0.7rem 0.9rem', borderRadius: '8px',
-              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '0.7rem 0.9rem',
+              borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
               color: '#fca5a5', fontSize: '0.875rem', marginBottom: '0.75rem',
             }}>
               <AlertTriangle size={16} />
@@ -419,19 +485,13 @@ function TranslationPanel({ isRunning, translating, translateCount, setTranslate
                 {logsExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                 Log ({taskStatus.logs.length})
               </button>
-
               {logsExpanded && (
-                <div
-                  ref={logRef}
-                  style={{
-                    background: 'rgba(0,0,0,0.4)', borderRadius: '8px',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    padding: '0.6rem 0.75rem',
-                    maxHeight: '160px', overflowY: 'auto',
-                    fontFamily: 'monospace', fontSize: '0.72rem',
-                    lineHeight: '1.6',
-                  }}
-                >
+                <div ref={logRef} style={{
+                  background: 'rgba(0,0,0,0.4)', borderRadius: '8px',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  padding: '0.6rem 0.75rem', maxHeight: '160px', overflowY: 'auto',
+                  fontFamily: 'monospace', fontSize: '0.72rem', lineHeight: '1.6',
+                }}>
                   {(taskStatus.logs || []).map((log, i) => {
                     const isErr = log.includes('Lỗi') || log.includes('error') || log.includes('Error')
                     const isOk  = log.includes('Đã lưu') || log.includes('thành công') || log.includes('✓')
@@ -461,6 +521,38 @@ function TranslationPanel({ isRunning, translating, translateCount, setTranslate
           Nhập số chương và nhấn Bắt đầu để dịch tiếp.
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Pipeline Stage component ───────────────────────────────────────────────────
+function PipelineStage({ label, value, total, active, color, icon, highlight }) {
+  const pct = total > 0 ? Math.min(100, (value / total) * 100) : 0
+  return (
+    <div style={{
+      padding: '7px 10px', borderRadius: '8px',
+      background: highlight
+        ? 'rgba(139,92,246,0.1)' : active
+        ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)',
+      border: `1px solid ${highlight ? 'rgba(139,92,246,0.3)' : 'var(--border-panel)'}`,
+      transition: 'all 0.2s',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
+        <span style={{ fontSize: '0.68rem', color: active ? color : 'var(--text-muted)', fontWeight: active ? 600 : 400 }}>
+          {icon} {label}
+        </span>
+        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+          {value}/{total}
+        </span>
+      </div>
+      <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '99px', height: '3px', overflow: 'hidden' }}>
+        <div style={{
+          height: '100%', borderRadius: '99px',
+          background: color, width: `${pct}%`,
+          transition: 'width 0.5s ease',
+          boxShadow: active ? `0 0 6px ${color}80` : 'none',
+        }} />
+      </div>
     </div>
   )
 }
@@ -523,31 +615,205 @@ function SpinnerIcon() {
 // ── Chapters Tab ──────────────────────────────────────────────────────────────
 
 function ChaptersTab({ chapters, slug }) {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sortDesc, setSortDesc] = useState(true)
+
   if (chapters.length === 0) {
-    return <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 0' }}>Chưa có chương nào được dịch.</div>
+    return (
+      <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 0' }}>
+        Chưa có chương nào được dịch.
+      </div>
+    )
   }
+
+  // Top 7 newest chapters (horizontal scroll strip)
+  const newestChapters = [...chapters].reverse().slice(0, 7)
+
+  // Filter & Sort
+  let displayChapters = chapters.filter(chap =>
+    chap.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    chap.filename.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+  if (sortDesc) displayChapters = [...displayChapters].reverse()
+
+  // Extract chapter number from title for display
+  const getChapNum = (title) => {
+    const m = title.match(/第(\d+)章|[Cc]hapter\s*(\d+)|Chương\s*(\d+)|(\d+)\./)
+    return m ? (m[1] || m[2] || m[3] || m[4]) : null
+  }
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.6rem' }}>
-      {chapters.map(chap => (
-        <Link
-          key={chap.filename}
-          to={`/novel/${slug}/read/${encodeURIComponent(chap.filename)}`}
+    <div>
+      {/* ── Recently Updated Strip ── */}
+      {!searchTerm && newestChapters.length > 0 && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            marginBottom: '0.75rem',
+            fontSize: '0.78rem', fontWeight: 600,
+            color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em',
+          }}>
+            <Sparkles size={13} style={{ color: 'var(--accent)' }} />
+            Mới cập nhật
+          </div>
+          {/* Horizontal scroll strip */}
+          <div style={{
+            display: 'flex', gap: '0.5rem',
+            overflowX: 'auto', paddingBottom: '6px',
+            scrollbarWidth: 'none', msOverflowStyle: 'none',
+          }}>
+            {newestChapters.map((chap) => {
+              const num = getChapNum(chap.title)
+              return (
+                <Link
+                  key={`new-${chap.filename}`}
+                  to={`/novel/${slug}/read/${encodeURIComponent(chap.filename)}`}
+                  style={{
+                    flexShrink: 0,
+                    display: 'flex', flexDirection: 'column', gap: '4px',
+                    padding: '0.6rem 0.85rem',
+                    borderRadius: '10px', minWidth: '120px', maxWidth: '160px',
+                    background: 'rgba(59,130,246,0.08)',
+                    border: '1px solid rgba(59,130,246,0.2)',
+                    color: 'var(--text-main)',
+                    textDecoration: 'none',
+                    transition: 'background 0.15s, border-color 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.16)'; e.currentTarget.style.borderColor = 'rgba(59,130,246,0.4)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.08)'; e.currentTarget.style.borderColor = 'rgba(59,130,246,0.2)' }}
+                >
+                  {num && (
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.04em' }}>
+                      CH. {num}
+                    </span>
+                  )}
+                  <span style={{
+                    fontSize: '0.8rem', lineHeight: '1.3',
+                    display: '-webkit-box', WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                  }}>
+                    {chap.title.replace(/第\d+章\s*/, '').replace(/Chapter\s*\d+[\s:.]*/i, '').trim() || chap.title}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Toolbar: Search + Stats + Sort ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '0.75rem',
+        marginBottom: '1rem', flexWrap: 'wrap',
+      }}>
+        {/* Search */}
+        <div style={{ position: 'relative', flex: '1 1 180px', minWidth: '0' }}>
+          <Search size={14} style={{
+            position: 'absolute', left: '10px', top: '50%',
+            transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none',
+          }} />
+          <input
+            type="text"
+            className="input-field"
+            placeholder="Tìm chương..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            style={{ paddingLeft: '32px', fontSize: '0.875rem', height: '36px' }}
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')} style={{
+              position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--text-muted)', padding: '2px', lineHeight: 1,
+            }}>✕</button>
+          )}
+        </div>
+
+        {/* Chapter count */}
+        <span style={{
+          fontSize: '0.78rem', color: 'var(--text-muted)',
+          whiteSpace: 'nowrap', flexShrink: 0,
+        }}>
+          {searchTerm
+            ? <>{displayChapters.length} <span style={{ opacity: 0.6 }}>/ {chapters.length}</span></>
+            : <><strong style={{ color: 'var(--text-main)' }}>{chapters.length}</strong> chương</>
+          }
+        </span>
+
+        {/* Sort toggle */}
+        <button
+          onClick={() => setSortDesc(!sortDesc)}
           style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '0.65rem 0.85rem', borderRadius: '8px',
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid var(--border-panel)',
-            color: 'var(--text-main)', fontSize: '0.875rem',
-            transition: 'background 0.15s, border-color 0.15s',
-            overflow: 'hidden', textDecoration: 'none',
+            flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px',
+            padding: '0 10px', height: '36px', borderRadius: '8px',
+            background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-panel)',
+            color: 'var(--text-muted)', cursor: 'pointer',
+            fontSize: '0.78rem', fontWeight: 500, transition: 'all 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.08)'; e.currentTarget.style.borderColor = 'rgba(59,130,246,0.3)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'var(--border-panel)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'var(--text-main)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--text-muted)' }}
         >
-          <BookOpen size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{chap.title}</span>
-        </Link>
-      ))}
+          <ArrowUpDown size={13} />
+          {sortDesc ? 'Mới → Cũ' : 'Cũ → Mới'}
+        </button>
+      </div>
+
+      {/* ── Chapter List ── */}
+      {displayChapters.length === 0 ? (
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2.5rem 0' }}>
+          Không tìm thấy chương phù hợp.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {displayChapters.map((chap, idx) => {
+            const num = getChapNum(chap.title)
+            const cleanTitle = chap.title
+              .replace(/第\d+章\s*/, '')
+              .replace(/Chapter\s*\d+[\s:.]*/i, '')
+              .trim() || chap.title
+
+            return (
+              <Link
+                key={chap.filename}
+                to={`/novel/${slug}/read/${encodeURIComponent(chap.filename)}`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '0.55rem 0.75rem', borderRadius: '8px',
+                  color: 'var(--text-main)',
+                  textDecoration: 'none', transition: 'background 0.12s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                {/* Chapter number badge */}
+                <span style={{
+                  flexShrink: 0, minWidth: '42px', textAlign: 'right',
+                  fontSize: '0.72rem', fontWeight: 600,
+                  color: num ? 'var(--accent)' : 'var(--text-muted)',
+                  opacity: num ? 0.85 : 0.5,
+                  fontVariantNumeric: 'tabular-nums',
+                }}>
+                  {num ? `#${num}` : `—`}
+                </span>
+
+                {/* Divider */}
+                <span style={{ width: '1px', height: '14px', background: 'var(--border-panel)', flexShrink: 0 }} />
+
+                {/* Title */}
+                <span style={{
+                  flex: 1, fontSize: '0.875rem',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {cleanTitle}
+                </span>
+
+                {/* Arrow */}
+                <span style={{ color: 'var(--text-muted)', opacity: 0.4, flexShrink: 0, fontSize: '0.75rem' }}>›</span>
+              </Link>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
