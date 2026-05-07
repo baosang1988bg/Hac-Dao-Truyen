@@ -1,0 +1,3 @@
+#!/bin/sh
+# commit-msg: kiểm tra Conventional Commits format
+npx --no -- commitlint --edit "$1"

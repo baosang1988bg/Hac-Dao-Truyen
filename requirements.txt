@@ -1,0 +1,6 @@
+google-genai
+groq
+openai
+beautifulsoup4
+playwright
+python-dotenv

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Truyện Dịch</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 360px;
+      min-height: 200px;
+      background: #0f0f13;
+      color: #e8e8f0;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #e94560, #f5a623);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .header-text h1 {
+      font-size: 15px; font-weight: 700;
+      background: linear-gradient(90deg, #e94560, #f5a623);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header-text p { font-size: 11px; color: #888; margin-top: 1px; }
+
+    /* ── Status ── */
+    .status-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #888; flex-shrink: 0;
+    }
+    .status-dot.ok { background: #4ade80; box-shadow: 0 0 6px #4ade8066; }
+    .status-dot.err { background: #f87171; box-shadow: 0 0 6px #f8717166; }
+    .status-text { font-size: 12px; color: #aaa; }
+
+    /* ── Body ── */
+    .body { padding: 16px 20px; }
+
+    .section-title {
+      font-size: 11px; font-weight: 600; color: #666;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+
+    /* ── Input ── */
+    .input-group { margin-bottom: 14px; }
+    .input-group label { display: block; font-size: 12px; color: #999; margin-bottom: 6px; }
+    .input-row { display: flex; gap: 8px; }
+
+    input[type="text"], input[type="password"], select {
+      width: 100%; padding: 9px 12px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; color: #e8e8f0;
+      font-size: 13px; font-family: inherit;
+      transition: border-color 0.2s, background 0.2s;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: #e94560;
+      background: rgba(233,69,96,0.06);
+    }
+    input::placeholder { color: #555; }
+
+    .btn-icon {
+      padding: 9px 12px; border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #aaa; cursor: pointer; font-size: 14px;
+      transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-icon:hover { background: rgba(255,255,255,0.12); color: #e8e8f0; }
+
+    /* ── Buttons ── */
+    .btn {
+      width: 100%; padding: 10px;
+      border-radius: 8px; border: none;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #e94560, #c0392b);
+      color: white;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      color: #aaa; border: 1px solid rgba(255,255,255,0.1);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); color: #e8e8f0; }
+
+    .btn-group { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-group .btn { flex: 1; }
+
+    /* ── Model select ── */
+    select option { background: #1a1a2e; }
+
+    /* ── Divider ── */
+    .divider {
+      border: none; border-top: 1px solid rgba(255,255,255,0.06);
+      margin: 14px 0;
+    }
+
+    /* ── Quick translate ── */
+    .quick-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 12px;
+      margin-bottom: 14px;
+    }
+    .quick-box textarea {
+      width: 100%; min-height: 70px;
+      background: transparent; border: none;
+      color: #e8e8f0; font-size: 13px; font-family: inherit;
+      resize: vertical; outline: none; line-height: 1.5;
+    }
+    .quick-box textarea::placeholder { color: #555; }
+    .quick-result {
+      margin-top: 10px; padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 13px; color: #c8c8d8; line-height: 1.6;
+      display: none;
+    }
+    .quick-result.show { display: block; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 16px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #4ade80; color: #000;
+      padding: 8px 16px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+      opacity: 0; transition: all 0.3s; pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1; transform: translateX(-50%) translateY(0);
+    }
+    .toast.err { background: #f87171; color: #fff; }
+
+    /* ── Spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer ── */
+    .footer {
+      padding: 10px 20px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-hint { font-size: 11px; color: #555; }
+    .shortcut {
+      font-size: 11px; color: #666;
+      background: rgba(255,255,255,0.06);
+      padding: 2px 8px; border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">📖</div>
+    <div class="header-text">
+      <h1>Truyện Dịch</h1>
+      <p>Chinese → Vietnamese · Powered by Gemini</p>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">Đang kiểm tra...</span>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <!-- API Key -->
+    <div class="input-group">
+      <label>🔑 Gemini API Key</label>
+      <div class="input-row">
+        <input type="password" id="apiKey" placeholder="AIzaSy..." />
+        <button class="btn-icon" id="toggleKey" title="Hiện/Ẩn key">👁</button>
+      </div>
+    </div>
+
+    <!-- Model -->
+    <div class="input-group">
+      <label>🤖 Model AI</label>
+      <select id="modelSelect">
+        <option value="gemini-3-flash-preview">Gemini 3 Flash (Mới nhất ⭐)</option>
+        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Nhanh)</option>
+        <option value="gemini-2.5-pro">Gemini 2.5 Pro (Chất lượng cao)</option>
+        <option value="gemini-2.0-flash">Gemini 2.0 Flash (Ổn định)</option>
+      </select>
+    </div>
+
+    <button class="btn btn-primary" id="saveBtn">💾 Lưu cài đặt</button>
+
+    <hr class="divider">
+
+    <!-- Quick Translate -->
+    <div class="section-title">⚡ Dịch nhanh</div>
+    <div class="quick-box">
+      <textarea id="quickInput" placeholder="Dán text tiếng Trung vào đây..."></textarea>
+      <div class="quick-result" id="quickResult"></div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" id="translateBtn">🔥 Dịch ngay</button>
+      <button class="btn btn-secondary" id="copyBtn" style="display:none">📋 Copy</button>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span class="footer-hint">Bôi đen text → nút Dịch hiện ra</span>
+    <span class="shortcut">Alt+T</span>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
