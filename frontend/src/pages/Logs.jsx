@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   ArrowLeft, RefreshCw, BookOpen, Zap, Clock, CheckCircle,
   AlertTriangle, TrendingUp, Cpu, ChevronDown, ChevronUp,
-  FileText, Filter,
+  FileText, Filter, Database,
 } from 'lucide-react'
 import api from '../api'
 
@@ -29,101 +29,21 @@ function fmtTokens(n) {
   return String(n)
 }
 
-// ── Group sessions by server run (same novel, started after server start) ──────
-function groupByServerRun(sessions, serverStart) {
-  if (!serverStart) return null
-  const serverStartMs = new Date(serverStart).getTime()
-
-  // Sessions trước khi server start → không gộp (là lịch sử cũ)
-  const currentRun = sessions.filter(s => new Date(s.started_at).getTime() >= serverStartMs)
-  const oldRuns    = sessions.filter(s => new Date(s.started_at).getTime() <  serverStartMs)
-
-  if (currentRun.length <= 1) return null  // Không cần gộp nếu chỉ có 0–1 session
-
-  // Gộp currentRun theo novel+type thành 1 nhóm mỗi novel
-  const groups = {}
-  // Sort oldest first để aggregate đúng thứ tự
-  const sorted = [...currentRun].sort((a, b) => new Date(a.started_at) - new Date(b.started_at))
-
-  sorted.forEach(session => {
-    const key = `${session.novel_slug}__${session.session_type}`
-    if (!groups[key]) {
-      groups[key] = {
-        ...session,
-        _isGroup: true,
-        _groupKey: key,
-        children: [],
-        model_breakdown: {},
-        models_used: [],
-        chapters_done: 0,
-        chapters_requested: 0,
-        total_tokens: 0,
-        input_tokens: 0,
-        output_tokens: 0,
-        cost_usd: 0,
-        duration_sec: 0,
-        failed_count: 0,
-      }
-    }
-    const g = groups[key]
-    g.children.push(session)
-    g.chapters_done      += session.chapters_done      || 0
-    g.chapters_requested += session.chapters_requested || 0
-    g.total_tokens       += session.total_tokens       || 0
-    g.input_tokens       += session.input_tokens       || 0
-    g.output_tokens      += session.output_tokens      || 0
-    g.cost_usd           += session.cost_usd           || 0
-    g.duration_sec       += session.duration_sec       || 0
-    g.failed_count       += session.failed_count       || 0
-    // ended_at = thời điểm kết thúc lần dịch mới nhất
-    if (!g.ended_at || session.ended_at > g.ended_at) g.ended_at = session.ended_at
-    // Merge model_breakdown
-    if (session.model_breakdown) {
-      Object.entries(session.model_breakdown).forEach(([model, data]) => {
-        if (!g.model_breakdown[model]) g.model_breakdown[model] = { input_tokens:0, output_tokens:0, total_tokens:0, cost_usd:0, calls:0 }
-        g.model_breakdown[model].input_tokens  += data.input_tokens  || 0
-        g.model_breakdown[model].output_tokens += data.output_tokens || 0
-        g.model_breakdown[model].total_tokens  += data.total_tokens  || 0
-        g.model_breakdown[model].cost_usd      += data.cost_usd      || 0
-        g.model_breakdown[model].calls         += data.calls         || 0
-      })
-    }
-    // Merge models_used
-    ;(session.models_used || []).forEach(m => { if (!g.models_used.includes(m)) g.models_used.push(m) })
-    // Status: error > partial > done
-    if (session.status === 'error') g.status = 'error'
-    else if (session.status === 'partial' && g.status !== 'error') g.status = 'partial'
-    // Recalc
-    g.success_rate = g.chapters_done > 0
-      ? Math.round(((g.chapters_done - g.failed_count) / g.chapters_done) * 100)
-      : 100
-    g.sec_per_chap = g.chapters_done > 0 ? Math.round(g.duration_sec / g.chapters_done) : null
-  })
-
-  // Các session cũ giữ nguyên, nhóm hiện tại đặt lên đầu (newest first)
-  const groupList = Object.values(groups).reverse()
-  return [...groupList, ...oldRuns]
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Logs() {
-  const [sessions, setSessions]   = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [filter, setFilter]       = useState('all')   // all | translate | fix
+  const [sessions, setSessions]       = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [filter, setFilter]           = useState('all')   // all | translate | fix
   const [novelFilter, setNovelFilter] = useState('all')
-  const [expanded, setExpanded]   = useState(null)
-  const [serverStart, setServerStart] = useState(null)  // server start time from API
+  const [expanded, setExpanded]       = useState(null)
+  const [showOrphan, setShowOrphan]   = useState(true)    // toggle hiện/ẩn orphan stats
 
-  useEffect(() => {
-    fetchLogs()
-    // Lấy thời điểm server start để gộp session hiện tại
-    api.get('/server-info').then(res => setServerStart(res.data.server_start)).catch(() => {})
-  }, [])
+  useEffect(() => { fetchLogs() }, [])
 
   const fetchLogs = async () => {
     setLoading(true)
     try {
-      const res = await api.get('/logs?limit=200')
+      const res = await api.get('/logs?limit=500')
       setSessions(res.data)
     } catch (err) {
       console.error(err)
@@ -135,40 +55,64 @@ export default function Logs() {
   // Unique novels for filter
   const novels = ['all', ...new Set(sessions.map(s => s.novel_slug).filter(Boolean))]
 
-  const rawFiltered = sessions.filter(s => {
+  // Filter — không gộp, giữ từng session riêng lẻ
+  const filtered = sessions.filter(s => {
     if (filter !== 'all' && s.session_type !== filter) return false
     if (novelFilter !== 'all' && s.novel_slug !== novelFilter) return false
+    if (!showOrphan && s.is_orphan_stats) return false
     return true
   })
 
-  // Gộp các session trong cùng 1 lần chạy server thành 1 nhóm per novel
-  const filtered = (groupByServerRun(rawFiltered, serverStart) || rawFiltered)
+  // ── Aggregate stats — tính trên toàn bộ filtered (không gộp) ──
+  const totalRuns     = filtered.length
+  const totalChapters = filtered.reduce((a, s) => a + (s.chapters_done || 0), 0)
+  const totalTokens   = filtered.reduce((a, s) => a + (s.total_tokens  || 0), 0)
+  const totalCost     = filtered.reduce((a, s) => a + (s.cost_usd      || 0), 0)
+  const totalDuration = filtered.reduce((a, s) => a + (s.duration_sec  || 0), 0)
 
-  // ── Aggregate stats ──
-  const totalRuns      = rawFiltered.length
-  const totalChapters  = filtered.reduce((a, s) => a + (s.chapters_done || 0), 0)
-  const totalTokens    = filtered.reduce((a, s) => a + (s.total_tokens || 0), 0)
-  const totalCost      = filtered.reduce((a, s) => a + (s.cost_usd || 0), 0)
-  const totalDuration  = filtered.reduce((a, s) => a + (s.duration_sec || 0), 0)
-  const avgSuccessRate = filtered.length
-    ? (filtered.reduce((a, s) => a + s.success_rate, 0) / filtered.length).toFixed(1)
-    : 0
+  // Success rate: chỉ tính trên sessions có chapters_done > 0
+  const sessionsWithChaps = filtered.filter(s => (s.chapters_done || 0) > 0)
+  const avgSuccessRate = sessionsWithChaps.length
+    ? (sessionsWithChaps.reduce((a, s) => a + (s.success_rate || 100), 0) / sessionsWithChaps.length).toFixed(1)
+    : 100
 
-  // Tổng hợp breakdown theo model trên tất cả sessions
+  // Global model breakdown — aggregate trên toàn bộ filtered
   const globalModelBreakdown = {}
   filtered.forEach(s => {
-    if (!s.model_breakdown) return
-    Object.entries(s.model_breakdown).forEach(([model, data]) => {
-      if (!globalModelBreakdown[model]) {
-        globalModelBreakdown[model] = { input_tokens: 0, output_tokens: 0, total_tokens: 0, cost_usd: 0, calls: 0 }
+    // Từ model_breakdown (log-based sessions)
+    if (s.model_breakdown && Object.keys(s.model_breakdown).length > 0) {
+      Object.entries(s.model_breakdown).forEach(([model, data]) => {
+        if (!globalModelBreakdown[model])
+          globalModelBreakdown[model] = { input_tokens: 0, output_tokens: 0, total_tokens: 0, cost_usd: 0, calls: 0 }
+        globalModelBreakdown[model].input_tokens  += data.input_tokens  || 0
+        globalModelBreakdown[model].output_tokens += data.output_tokens || 0
+        globalModelBreakdown[model].total_tokens  += data.total_tokens  || 0
+        globalModelBreakdown[model].cost_usd      += data.cost_usd      || 0
+        globalModelBreakdown[model].calls         += data.calls         || 0
+      })
+    } else if (s.is_orphan_stats && s.total_tokens > 0) {
+      // Orphan stats: không có breakdown — aggregate vào từng model trong models_used
+      const models = s.models_used || []
+      if (models.length > 0) {
+        // Phân bổ token đều cho từng model (ước tính)
+        const perModel = Math.round(s.total_tokens / models.length)
+        const perInput = Math.round((s.input_tokens || 0) / models.length)
+        const perOutput= Math.round((s.output_tokens|| 0) / models.length)
+        const perCost  = (s.cost_usd || 0) / models.length
+        models.forEach(model => {
+          if (!globalModelBreakdown[model])
+            globalModelBreakdown[model] = { input_tokens: 0, output_tokens: 0, total_tokens: 0, cost_usd: 0, calls: 0 }
+          globalModelBreakdown[model].input_tokens  += perInput
+          globalModelBreakdown[model].output_tokens += perOutput
+          globalModelBreakdown[model].total_tokens  += perModel
+          globalModelBreakdown[model].cost_usd      += perCost
+          // calls = 0 vì không biết chính xác
+        })
       }
-      globalModelBreakdown[model].input_tokens  += data.input_tokens  || 0
-      globalModelBreakdown[model].output_tokens += data.output_tokens || 0
-      globalModelBreakdown[model].total_tokens  += data.total_tokens  || 0
-      globalModelBreakdown[model].cost_usd      += data.cost_usd      || 0
-      globalModelBreakdown[model].calls         += data.calls         || 0
-    })
+    }
   })
+
+  const orphanCount = sessions.filter(s => s.is_orphan_stats).length
 
   return (
     <div className="container animate-fade-in">
@@ -180,12 +124,30 @@ export default function Logs() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
             <h1 className="page-title" style={{ marginBottom: '0.25rem' }}>Lịch sử dịch</h1>
-            <p className="page-subtitle">Theo dõi tất cả phiên dịch — tốc độ, chi phí, lỗi</p>
+            <p className="page-subtitle">Theo dõi tất cả phiên dịch — tốc độ, chi phí, token</p>
           </div>
-          <button className="btn btn-secondary" onClick={fetchLogs}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <RefreshCw size={15} /> Làm mới
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            {orphanCount > 0 && (
+              <button
+                onClick={() => setShowOrphan(v => !v)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  padding: '7px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                  fontSize: '0.8rem', fontWeight: 500, transition: 'all 0.15s',
+                  background: showOrphan ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.05)',
+                  color: showOrphan ? '#c4b5fd' : 'var(--text-muted)',
+                  border: `1px solid ${showOrphan ? 'rgba(139,92,246,0.35)' : 'var(--border-panel)'}`,
+                }}
+              >
+                <Database size={13} />
+                {showOrphan ? `Ẩn stats-only (${orphanCount})` : `Hiện stats-only (${orphanCount})`}
+              </button>
+            )}
+            <button className="btn btn-secondary" onClick={fetchLogs}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <RefreshCw size={15} /> Làm mới
+            </button>
+          </div>
         </div>
       </div>
 
@@ -193,21 +155,26 @@ export default function Logs() {
       {!loading && filtered.length > 0 && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
-            <AggrCard icon={<Zap size={18} />}        label="Tổng phiên"    value={totalRuns}                        color="var(--accent)" />
+            <AggrCard icon={<Zap size={18} />}        label="Tổng phiên"   value={totalRuns}                         color="var(--accent)" />
             <AggrCard icon={<BookOpen size={18} />}   label="Tổng chương"  value={totalChapters.toLocaleString()}    color="#6ee7b7" />
             <AggrCard icon={<Clock size={18} />}      label="Thời gian"    value={fmtDuration(totalDuration)}        color="#a78bfa" />
-            <AggrCard icon={<TrendingUp size={18} />} label="Thành công"   value={`${avgSuccessRate}%`}              color={avgSuccessRate >= 90 ? '#6ee7b7' : '#fb923c'} />
+            <AggrCard icon={<TrendingUp size={18} />} label="Thành công"   value={`${avgSuccessRate}%`}              color={parseFloat(avgSuccessRate) >= 90 ? '#6ee7b7' : '#fb923c'} />
             <AggrCard icon={<Cpu size={18} />}        label="Tổng tokens"  value={fmtTokens(totalTokens)}            color="#fbbf24" />
-            <AggrCard icon={<FileText size={18} />}   label="Tổng chi phí" value={totalCost > 0 ? `$${totalCost.toFixed(4)}` : 'free'} color={totalCost > 0 ? '#fb923c' : '#6ee7b7'} />
+            <AggrCard icon={<FileText size={18} />}   label="Tổng chi phí" value={totalCost > 0.0001 ? `$${totalCost.toFixed(4)}` : totalCost > 0 ? `$${totalCost.toFixed(6)}` : 'free'} color={totalCost > 0 ? '#fb923c' : '#6ee7b7'} />
           </div>
 
           {/* Global model breakdown */}
           {Object.keys(globalModelBreakdown).length > 0 && (
-            <div className="glass-panel p-6" style={{ padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
+            <div className="glass-panel" style={{ padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
               <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--accent)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Cpu size={14} /> Tổng hợp token theo model
+                {orphanCount > 0 && showOrphan && (
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 400, marginLeft: '4px' }}>
+                    (token của sessions stats-only được ước tính)
+                  </span>
+                )}
               </div>
-              <ModelBreakdownTable breakdown={globalModelBreakdown} showTitle={false} />
+              <ModelBreakdownTable breakdown={globalModelBreakdown} />
             </div>
           )}
         </>
@@ -246,10 +213,12 @@ export default function Logs() {
 
         {filtered.length > 0 && (
           <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            {filtered.length !== rawFiltered.length
-              ? <>{filtered.length} nhóm <span style={{ opacity: 0.5 }}>({rawFiltered.length} lần)</span></>
-              : <>{rawFiltered.length} phiên</>
-            }
+            {filtered.length} phiên
+            {filtered.filter(s => s.is_orphan_stats).length > 0 && (
+              <span style={{ marginLeft: '5px', color: '#a78bfa', fontSize: '0.72rem' }}>
+                ({filtered.filter(s => s.is_orphan_stats).length} stats-only)
+              </span>
+            )}
           </span>
         )}
       </div>
@@ -284,20 +253,15 @@ export default function Logs() {
 
 // ── Session Row ───────────────────────────────────────────────────────────────
 function SessionRow({ session: s, index, isExpanded, onToggle }) {
-  const isGroup = s._isGroup && s.children && s.children.length > 1
-  const isError    = s.status === 'error'
-  const isDone     = s.status === 'done'
-  const isPartial  = s.status === 'partial'
-  const isFix      = s.session_type === 'fix'
-
-  const statusColor  = isError ? '#fca5a5' : isDone ? '#6ee7b7' : '#fb923c'
-  const statusBg     = isError ? 'rgba(239,68,68,0.08)' : isDone ? 'rgba(16,185,129,0.08)' : 'rgba(251,146,60,0.08)'
-  const statusBorder = isError ? 'rgba(239,68,68,0.25)' : isDone ? 'rgba(16,185,129,0.2)' : 'rgba(251,146,60,0.25)'
+  const isError   = s.status === 'error'
+  const isDone    = s.status === 'done'
+  const isFix     = s.session_type === 'fix'
+  const isOrphan  = s.is_orphan_stats === true
 
   return (
     <div style={{
       borderRadius: '12px',
-      border: `1px solid ${isExpanded ? 'rgba(59,130,246,0.35)' : 'var(--border-panel)'}`,
+      border: `1px solid ${isExpanded ? 'rgba(59,130,246,0.35)' : isOrphan ? 'rgba(139,92,246,0.18)' : 'var(--border-panel)'}`,
       background: isExpanded ? 'rgba(59,130,246,0.04)' : 'var(--bg-panel)',
       backdropFilter: 'blur(16px)',
       overflow: 'hidden',
@@ -315,15 +279,17 @@ function SessionRow({ session: s, index, isExpanded, onToggle }) {
           cursor: 'pointer',
         }}
       >
-        {/* Index + type */}
+        {/* Index badge */}
         <div style={{ textAlign: 'center' }}>
           <div style={{
             width: '32px', height: '32px', borderRadius: '8px',
-            background: isFix ? 'rgba(251,146,60,0.12)' : 'rgba(59,130,246,0.12)',
-            border: `1px solid ${isFix ? 'rgba(251,146,60,0.25)' : 'rgba(59,130,246,0.25)'}`,
+            background: isFix     ? 'rgba(251,146,60,0.12)'
+                      : isOrphan  ? 'rgba(139,92,246,0.12)'
+                      : 'rgba(59,130,246,0.12)',
+            border: `1px solid ${isFix ? 'rgba(251,146,60,0.25)' : isOrphan ? 'rgba(139,92,246,0.3)' : 'rgba(59,130,246,0.25)'}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '0.7rem', fontWeight: 700,
-            color: isFix ? '#fb923c' : 'var(--accent)',
+            color: isFix ? '#fb923c' : isOrphan ? '#c4b5fd' : 'var(--accent)',
           }}>
             #{index}
           </div>
@@ -331,214 +297,189 @@ function SessionRow({ session: s, index, isExpanded, onToggle }) {
 
         {/* Main info */}
         <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
             <span style={{ fontWeight: 600, fontSize: '0.92rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {s.novel_title || s.novel_slug || '—'}
             </span>
             <TypeBadge type={s.session_type} />
             <StatusPill status={s.status} />
-            {isGroup && (
+            {isOrphan && (
               <span style={{
-                fontSize: '0.68rem', fontWeight: 700, padding: '1px 7px', borderRadius: '99px',
+                fontSize: '0.65rem', fontWeight: 600, padding: '1px 6px', borderRadius: '99px',
                 background: 'rgba(139,92,246,0.12)', color: '#c4b5fd',
                 border: '1px solid rgba(139,92,246,0.3)', flexShrink: 0,
+                display: 'flex', alignItems: 'center', gap: '3px',
               }}>
-                {s.children.length} lần
+                <Database size={9} /> stats only
               </span>
             )}
           </div>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
             <span><Clock size={11} style={{ verticalAlign: 'middle', marginRight: '3px' }} />{fmtDate(s.started_at)}</span>
-            {s.chapters_done > 0 && <span><BookOpen size={11} style={{ verticalAlign: 'middle', marginRight: '3px' }} />{s.chapters_done} chương</span>}
+            {s.chapters_done > 0 && (
+              <span><BookOpen size={11} style={{ verticalAlign: 'middle', marginRight: '3px' }} />{s.chapters_done} chương</span>
+            )}
             {s.duration_sec > 0 && <span>⏱ {fmtDuration(s.duration_sec)}</span>}
-            {s.models_used?.length > 0 && <span><Cpu size={11} style={{ verticalAlign: 'middle', marginRight: '3px' }} />{s.models_used.join(', ')}</span>}
+            {s.models_used?.length > 0 && (
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '280px' }}>
+                <Cpu size={11} style={{ verticalAlign: 'middle', marginRight: '3px' }} />
+                {s.models_used.join(', ')}
+              </span>
+            )}
           </div>
         </div>
 
         {/* Right: metrics + chevron */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
-          {/* Metrics pills */}
-          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {s.chapters_done > 0 && s.chapters_requested > 0 && (
-              <MetricPill
-                value={`${s.chapters_done}/${s.chapters_requested}`}
-                label="chương"
-                color="var(--accent)"
-              />
+              <MetricPill value={`${s.chapters_done}/${s.chapters_requested}`} label="chương" color="var(--accent)" />
             )}
-            {s.success_rate !== undefined && (
+            {s.success_rate !== undefined && !isOrphan && (
               <MetricPill
-                value={`${s.success_rate}%`}
-                label="thành công"
+                value={`${s.success_rate}%`} label="thành công"
                 color={s.success_rate >= 95 ? '#6ee7b7' : s.success_rate >= 80 ? '#fb923c' : '#fca5a5'}
               />
             )}
-            {s.sec_per_chap && (
+            {s.sec_per_chap > 0 && !isOrphan && (
               <MetricPill value={`${s.sec_per_chap}s`} label="/chương" color="#a78bfa" />
             )}
             {s.total_tokens > 0 && (
               <MetricPill value={fmtTokens(s.total_tokens)} label="tokens" color="#fbbf24" />
             )}
+            {s.cost_usd > 0 && (
+              <MetricPill value={`$${s.cost_usd.toFixed(4)}`} label="chi phí" color="#fb923c" />
+            )}
           </div>
-          {isExpanded ? <ChevronUp size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
+          {isExpanded
+            ? <ChevronUp  size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+            : <ChevronDown size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+          }
         </div>
       </div>
 
       {/* Expanded detail */}
       {isExpanded && (
-        <div style={{ borderTop: '1px solid var(--border-panel)', padding: '1rem 1.1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+        <div style={{ borderTop: '1px solid var(--border-panel)', padding: '1rem 1.1rem' }}>
 
-          {/* Session details */}
-          <DetailSection title="Chi tiết phiên">
-            <DetailRow label="Bắt đầu"    value={s.started_at} />
-            <DetailRow label="Kết thúc"   value={s.ended_at} />
-            <DetailRow label="Thời lượng" value={fmtDuration(s.duration_sec)} />
-            <DetailRow label="Loại"       value={s.session_type} />
-            <DetailRow label="File log"   value={s.filename} mono />
-          </DetailSection>
-
-          {/* Translation stats */}
-          <DetailSection title="Thống kê dịch">
-            <DetailRow label="Yêu cầu"    value={s.chapters_requested || '—'} />
-            <DetailRow label="Hoàn thành" value={s.chapters_done} />
-            <DetailRow label="Thất bại"   value={s.failed_count || 0} />
-            <DetailRow label="Thành công" value={`${s.success_rate}%`} />
-            <DetailRow label="Tốc độ"     value={s.speed_cpm ? `${s.speed_cpm} ch/phút` : '—'} />
-            <DetailRow label="TB/chương"  value={s.sec_per_chap ? `${s.sec_per_chap}s` : '—'} />
-            {s.auto_learned > 0 && <DetailRow label="Thuật ngữ học" value={`+${s.auto_learned}`} />}
-          </DetailSection>
-
-          {/* AI & tokens */}
-          <DetailSection title="AI & Tokens">
-            <DetailRow label="Input tokens"  value={fmtTokens(s.input_tokens)  || '—'} />
-            <DetailRow label="Output tokens" value={fmtTokens(s.output_tokens) || '—'} />
-            <DetailRow label="Tổng tokens"   value={fmtTokens(s.total_tokens)  || '—'} />
-            <DetailRow
-              label="Chi phí"
-              value={s.cost_usd > 0 ? `~$${s.cost_usd.toFixed(5)}` : 'free'}
-            />
-            {s.has_stats_json && (
-              <div style={{ fontSize: '0.68rem', color: '#6ee7b7', marginTop: '2px' }}>
-                ✓ Dữ liệu chính xác (từ stats.json)
-              </div>
-            )}
-            {s.batch_sizes?.length > 0 && (
-              <DetailRow label="Batch sizes" value={`[${[...new Set(s.batch_sizes)].join(', ')}]`} />
-            )}
-          </DetailSection>
-
-          {/* Per-model breakdown */}
-          {s.model_breakdown && Object.keys(s.model_breakdown).length > 0 && (
-            <DetailSection title="Breakdown theo model">
-              <ModelBreakdownTable breakdown={s.model_breakdown} />
-            </DetailSection>
-          )}
-
-          {/* Chapters saved */}
-          {s.chapters_saved?.length > 0 && (
-            <DetailSection title={`Chương đã lưu (${s.chapters_saved.length})`}>
-              <div style={{ maxHeight: '120px', overflowY: 'auto' }}>
-                {s.chapters_saved.map((ch, i) => (
-                  <div key={i} style={{ fontSize: '0.75rem', color: 'var(--text-muted)', padding: '1px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                    ✓ {ch}
-                  </div>
-                ))}
-              </div>
-            </DetailSection>
-          )}
-
-          {/* Errors */}
-          {s.errors?.length > 0 && (
-            <div style={{ gridColumn: '1 / -1' }}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#fca5a5', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <AlertTriangle size={13} /> Lỗi ({s.errors.length})
-              </div>
-              <div style={{
-                background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
-                borderRadius: '6px', padding: '8px 10px', maxHeight: '100px', overflowY: 'auto',
-                fontFamily: 'monospace', fontSize: '0.7rem', color: '#fca5a5',
-              }}>
-                {s.errors.map((e, i) => <div key={i} style={{ marginBottom: '2px' }}>{e}</div>)}
-              </div>
+          {/* Orphan stats notice */}
+          {isOrphan && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '0.55rem 0.85rem', borderRadius: '8px', marginBottom: '1rem',
+              background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.25)',
+              fontSize: '0.78rem', color: '#c4b5fd',
+            }}>
+              <Database size={14} />
+              Phiên này chỉ có file stats.json (không có file .log). Dữ liệu token &amp; cost chính xác, nhưng không có chi tiết log text.
             </div>
           )}
 
-          {/* ── Children timeline (grouped sessions) ── */}
-          {isGroup && s.children.length > 1 && (
-            <div style={{ gridColumn: '1 / -1' }}>
-              <div style={{
-                fontSize: '0.78rem', fontWeight: 600, color: '#c4b5fd',
-                marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px',
-              }}>
-                <Zap size={13} /> Timeline — {s.children.length} lần dịch trong nhóm này
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {s.children.map((child, ci) => {
-                  const isDoneC = child.status === 'done'
-                  const isErrC  = child.status === 'error'
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+
+            {/* Session details */}
+            <DetailSection title="Chi tiết phiên">
+              <DetailRow label="Bắt đầu"    value={s.started_at} />
+              {!isOrphan && <DetailRow label="Kết thúc"   value={s.ended_at} />}
+              {!isOrphan && <DetailRow label="Thời lượng" value={fmtDuration(s.duration_sec)} />}
+              <DetailRow label="Loại"       value={s.session_type} />
+              <DetailRow label="File"       value={s.filename} mono />
+              {s.novel_slug && <DetailRow label="Novel slug" value={s.novel_slug} mono />}
+            </DetailSection>
+
+            {/* Translation stats */}
+            <DetailSection title="Thống kê dịch">
+              <DetailRow label="Yêu cầu"    value={s.chapters_requested || s.chapters_done || '—'} />
+              <DetailRow label="Hoàn thành" value={s.chapters_done} />
+              {!isOrphan && <DetailRow label="Thất bại"   value={s.failed_count || 0} />}
+              {!isOrphan && <DetailRow label="Thành công" value={`${s.success_rate}%`} />}
+              {!isOrphan && s.speed_cpm && <DetailRow label="Tốc độ"     value={`${s.speed_cpm} ch/phút`} />}
+              {!isOrphan && s.sec_per_chap && <DetailRow label="TB/chương"  value={`${s.sec_per_chap}s`} />}
+              {s.auto_learned > 0 && <DetailRow label="Thuật ngữ học" value={`+${s.auto_learned}`} />}
+            </DetailSection>
+
+            {/* AI & Tokens */}
+            <DetailSection title="AI & Tokens">
+              {(s.input_tokens  || 0) > 0 && <DetailRow label="Input tokens"  value={fmtTokens(s.input_tokens)} />}
+              {(s.output_tokens || 0) > 0 && <DetailRow label="Output tokens" value={fmtTokens(s.output_tokens)} />}
+              <DetailRow label="Tổng tokens" value={fmtTokens(s.total_tokens) || '—'} />
+              <DetailRow
+                label="Chi phí"
+                value={s.cost_usd > 0 ? `~$${s.cost_usd.toFixed(6)}` : 'free'}
+              />
+              {s.models_used?.length > 0 && (
+                <DetailRow label="Models" value={s.models_used.join(', ')} />
+              )}
+              {s.has_stats_json && (
+                <div style={{ fontSize: '0.68rem', color: '#6ee7b7', marginTop: '4px' }}>
+                  ✓ Dữ liệu chính xác từ stats.json
+                </div>
+              )}
+              {s.batch_sizes?.length > 0 && (
+                <DetailRow label="Batch sizes" value={`[${[...new Set(s.batch_sizes)].join(', ')}]`} />
+              )}
+            </DetailSection>
+
+            {/* Per-model breakdown (chỉ có ở log-based sessions) */}
+            {s.model_breakdown && Object.keys(s.model_breakdown).length > 0 && (
+              <DetailSection title="Breakdown theo model">
+                <ModelBreakdownTable breakdown={s.model_breakdown} />
+              </DetailSection>
+            )}
+
+            {/* Orphan: hiện danh sách models_used với token ước tính */}
+            {isOrphan && s.models_used?.length > 0 && s.total_tokens > 0 && (
+              <DetailSection title="Models sử dụng (ước tính)">
+                {s.models_used.map(model => {
+                  const share = s.total_tokens / s.models_used.length
+                  const costShare = (s.cost_usd || 0) / s.models_used.length
                   return (
-                    <div key={child.filename} style={{
-                      display: 'grid',
-                      gridTemplateColumns: '20px 110px 1fr auto auto auto auto',
-                      alignItems: 'center', gap: '10px',
-                      padding: '7px 12px', borderRadius: '8px',
-                      background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid var(--border-panel)',
+                    <div key={model} style={{
+                      padding: '0.5rem 0.7rem', borderRadius: '8px', marginBottom: '4px',
+                      background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-panel)',
                       fontSize: '0.78rem',
                     }}>
-                      {/* Step dot */}
-                      <div style={{
-                        width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
-                        background: isErrC ? '#ef4444' : isDoneC ? '#10b981' : '#f59e0b',
-                        boxShadow: `0 0 6px ${isErrC ? 'rgba(239,68,68,0.5)' : isDoneC ? 'rgba(16,185,129,0.5)' : 'rgba(245,158,11,0.5)'}`,
-                      }} />
-                      {/* Time */}
-                      <span style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '0.72rem', flexShrink: 0 }}>
-                        {fmtDate(child.started_at).slice(11)}
-                      </span>
-                      {/* Chapter range label */}
-                      <span style={{ color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {child.chapters_done > 0
-                          ? `${child.chapters_done} chương`
-                          : 'Không có chương'}
-                        {child.chapters_saved?.length > 0 && (
-                          <span style={{ color: 'var(--text-muted)', marginLeft: '6px', fontSize: '0.7rem' }}>
-                            ({child.chapters_saved[0]?.replace(/第|章.*/g,'').trim()}…)
-                          </span>
-                        )}
-                      </span>
-                      {/* Duration */}
-                      <span style={{ color: '#a78bfa', flexShrink: 0, fontSize: '0.72rem' }}>
-                        {fmtDuration(child.duration_sec)}
-                      </span>
-                      {/* Tokens */}
-                      {child.total_tokens > 0 && (
-                        <span style={{ color: '#fbbf24', flexShrink: 0, fontSize: '0.72rem' }}>
-                          {fmtTokens(child.total_tokens)}
-                        </span>
-                      )}
-                      {/* Cost */}
-                      <span style={{
-                        flexShrink: 0, fontSize: '0.72rem', fontWeight: 600,
-                        color: (child.cost_usd||0) > 0 ? '#fb923c' : '#6ee7b7',
-                      }}>
-                        {(child.cost_usd||0) > 0 ? `$${child.cost_usd.toFixed(4)}` : 'free'}
-                      </span>
-                      {/* Status */}
-                      <span style={{
-                        fontSize: '0.65rem', fontWeight: 600, padding: '1px 6px', borderRadius: '99px', flexShrink: 0,
-                        background: isErrC ? 'rgba(239,68,68,0.1)' : isDoneC ? 'rgba(16,185,129,0.1)' : 'rgba(251,146,60,0.1)',
-                        color: isErrC ? '#fca5a5' : isDoneC ? '#6ee7b7' : '#fb923c',
-                        border: `1px solid ${isErrC ? 'rgba(239,68,68,0.3)' : isDoneC ? 'rgba(16,185,129,0.3)' : 'rgba(251,146,60,0.3)'}`,
-                      }}>
-                        {isDoneC ? '✓' : isErrC ? '✕' : '~'}
-                      </span>
+                      <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '2px' }}>{model}</div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        ~{fmtTokens(Math.round(share))} tokens
+                        {costShare > 0 && ` · ~$${costShare.toFixed(5)}`}
+                      </div>
                     </div>
                   )
                 })}
+              </DetailSection>
+            )}
+
+            {/* Chapters saved */}
+            {s.chapters_saved?.length > 0 && (
+              <DetailSection title={`Chương đã lưu (${s.chapters_saved.length})`}>
+                <div style={{ maxHeight: '120px', overflowY: 'auto' }}>
+                  {s.chapters_saved.map((ch, i) => (
+                    <div key={i} style={{ fontSize: '0.75rem', color: 'var(--text-muted)', padding: '1px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                      ✓ {ch}
+                    </div>
+                  ))}
+                </div>
+              </DetailSection>
+            )}
+
+            {/* Errors */}
+            {s.errors?.length > 0 && (
+              <div style={{ gridColumn: '1 / -1' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#fca5a5', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <AlertTriangle size={13} /> Lỗi ({s.errors.length})
+                </div>
+                <div style={{
+                  background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
+                  borderRadius: '6px', padding: '8px 10px', maxHeight: '100px', overflowY: 'auto',
+                  fontFamily: 'monospace', fontSize: '0.7rem', color: '#fca5a5',
+                }}>
+                  {s.errors.map((e, i) => <div key={i} style={{ marginBottom: '2px' }}>{e}</div>)}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+          </div>
         </div>
       )}
     </div>
@@ -632,14 +573,13 @@ function DetailRow({ label, value, mono }) {
 function ModelBreakdownTable({ breakdown }) {
   if (!breakdown || Object.keys(breakdown).length === 0) return null
 
-  const entries = Object.entries(breakdown).sort((a, b) => b[1].total_tokens - a[1].total_tokens)
+  const entries   = Object.entries(breakdown).sort((a, b) => b[1].total_tokens - a[1].total_tokens)
   const maxTokens = Math.max(...entries.map(([, d]) => d.total_tokens), 1)
 
-  // Model color mapping
   const modelColor = (name) => {
     const n = name.toLowerCase()
-    if (n.includes('gemini'))   return { bar: '#3b82f6', text: '#93c5fd', bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.25)' }
-    if (n.includes('deepseek')) return { bar: '#8b5cf6', text: '#c4b5fd', bg: 'rgba(139,92,246,0.1)', border: 'rgba(139,92,246,0.25)' }
+    if (n.includes('gemini'))            return { bar: '#3b82f6', text: '#93c5fd', bg: 'rgba(59,130,246,0.1)',  border: 'rgba(59,130,246,0.25)' }
+    if (n.includes('deepseek'))          return { bar: '#8b5cf6', text: '#c4b5fd', bg: 'rgba(139,92,246,0.1)', border: 'rgba(139,92,246,0.25)' }
     if (n.includes('ollama') || n.includes('hunyuan')) return { bar: '#10b981', text: '#6ee7b7', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.25)' }
     return { bar: '#f59e0b', text: '#fcd34d', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)' }
   }
@@ -647,17 +587,17 @@ function ModelBreakdownTable({ breakdown }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
       {entries.map(([model, data]) => {
-        const clr = modelColor(model)
-        const pct = Math.round((data.total_tokens / maxTokens) * 100)
-        const cost = data.cost_usd || 0
-        const costStr = cost > 0 ? `~$${cost.toFixed(5)}` : 'free'
+        const clr    = modelColor(model)
+        const pct    = Math.round((data.total_tokens / maxTokens) * 100)
+        const cost   = data.cost_usd || 0
+        const costStr= cost > 0.0001 ? `~$${cost.toFixed(4)}` : cost > 0 ? `~$${cost.toFixed(6)}` : 'free'
 
         return (
           <div key={model} style={{
             padding: '0.65rem 0.85rem', borderRadius: '10px',
             background: clr.bg, border: `1px solid ${clr.border}`,
           }}>
-            {/* Model name + cost badge */}
+            {/* Model name + cost */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: clr.bar, flexShrink: 0 }} />
@@ -675,24 +615,15 @@ function ModelBreakdownTable({ breakdown }) {
 
             {/* Progress bar */}
             <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '99px', height: '5px', overflow: 'hidden', marginBottom: '0.5rem' }}>
-              <div style={{
-                height: '100%', borderRadius: '99px',
-                background: clr.bar, width: `${pct}%`,
-                transition: 'width 0.6s ease',
-              }} />
+              <div style={{ height: '100%', borderRadius: '99px', background: clr.bar, width: `${pct}%`, transition: 'width 0.6s ease' }} />
             </div>
 
-            {/* Token stats row */}
+            {/* Token stats */}
             <div style={{ display: 'flex', gap: '1rem', fontSize: '0.72rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-              <span>
-                <span style={{ color: clr.text, fontWeight: 600 }}>{fmtTokens(data.total_tokens)}</span>
-                {' '}tổng
-              </span>
+              <span><span style={{ color: clr.text, fontWeight: 600 }}>{fmtTokens(data.total_tokens)}</span> tổng</span>
               <span>↑ {fmtTokens(data.input_tokens)} input</span>
               <span>↓ {fmtTokens(data.output_tokens)} output</span>
-              {data.calls > 0 && (
-                <span>{data.calls} lần gọi</span>
-              )}
+              {data.calls > 0 && <span>{data.calls} lần gọi</span>}
               {data.calls > 0 && data.total_tokens > 0 && (
                 <span>~{fmtTokens(Math.round(data.total_tokens / data.calls))}/lần</span>
               )}

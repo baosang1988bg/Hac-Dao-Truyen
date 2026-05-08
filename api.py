@@ -323,9 +323,10 @@ def get_server_info():
     return {"server_start": SERVER_START_TIME}
 
 @app.get("/api/logs")
-def list_sessions(limit: int = 100):
+def list_sessions(limit: int = 200):
     """
     Parse tất cả log files trong thư mục logs/ và trả về danh sách session.
+    Bao gồm cả các _stats.json không có file .log đi kèm (orphan stats).
     Mỗi session chứa: thời gian, truyện, số chương, thời lượng, tỷ lệ thành công,
     ước tính tokens, model đã dùng, loại session (translate/fix).
     """
@@ -333,23 +334,41 @@ def list_sessions(limit: int = 100):
     if not os.path.exists(log_dir):
         return []
 
-    sessions = []
-    log_files = sorted(
-        [f for f in os.listdir(log_dir) if f.endswith(".log")],
-        reverse=True   # mới nhất trước
-    )[:limit]
+    all_files = os.listdir(log_dir)
+    log_files  = set(f for f in all_files if f.endswith(".log"))
+    stat_files = set(f for f in all_files if f.endswith("_stats.json"))
 
-    for filename in log_files:
+    sessions = []
+
+    # 1. Parse các .log files bình thường (có thể kèm stats.json)
+    for filename in sorted(log_files, reverse=True):
         filepath = os.path.join(log_dir, filename)
         try:
             session = _parse_log_file(filepath, filename)
             if session:
                 sessions.append(session)
-        except Exception as e:
-            # Bỏ qua log bị lỗi
+        except Exception:
             pass
 
-    return sessions
+    # 2. Parse các _stats.json KHÔNG có file .log tương ứng (orphan stats)
+    for stat_filename in sorted(stat_files, reverse=True):
+        # Tên log tương ứng: thay _stats.json → .log
+        expected_log = stat_filename.replace("_stats.json", ".log")
+        if expected_log in log_files:
+            continue  # Đã được parse từ .log ở trên, bỏ qua
+
+        # Orphan stats — tạo session từ stats JSON
+        stat_path = os.path.join(log_dir, stat_filename)
+        try:
+            session = _parse_orphan_stats(stat_path, stat_filename)
+            if session:
+                sessions.append(session)
+        except Exception:
+            pass
+
+    # Sắp xếp theo thời gian mới nhất trước, giới hạn kết quả
+    sessions.sort(key=lambda s: s.get("started_at", ""), reverse=True)
+    return sessions[:limit]
 
 
 def _parse_log_file(filepath: str, filename: str) -> dict | None:
@@ -516,6 +535,87 @@ def _parse_log_file(filepath: str, filename: str) -> dict | None:
         "errors":             errors[:5],
         "status":             "done" if "Done! Translated" in full_text or "thành công" in full_text
                               else "error" if error_lines else "partial",
+    }
+
+
+def _parse_orphan_stats(stat_path: str, stat_filename: str) -> dict | None:
+    """
+    Tạo session entry từ _stats.json không có file .log đi kèm.
+    Thông tin sẽ ít hơn (không có log text, errors, batch_sizes...)
+    nhưng đảm bảo session vẫn hiển thị trong Lịch sử dịch.
+    """
+    try:
+        import json as _j
+        with open(stat_path, "r", encoding="utf-8") as f:
+            stats = _j.load(f)
+    except Exception:
+        return None
+
+    slug           = stats.get("slug", "")
+    chapters_done  = stats.get("chapters_done", 0)
+    total_tokens   = stats.get("total_tokens", 0)
+    input_tokens   = stats.get("input_tokens", 0)
+    output_tokens  = stats.get("output_tokens", 0)
+    cost_usd       = stats.get("cost_usd", 0.0)
+    models         = stats.get("models", [])
+
+    # Lấy timestamp từ JSON hoặc từ tên file
+    raw_ts = stats.get("timestamp", "")
+    if raw_ts:
+        # "2026-05-08T09:56:48.717413" → "2026-05-08 09:56:48"
+        started_at = raw_ts[:19].replace("T", " ")
+    else:
+        # Fallback: parse từ tên file  xich-tam-tuan-thien_20260508_095648_stats.json
+        m = re.search(r'_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_stats', stat_filename)
+        if m:
+            started_at = f"{m.group(1)}-{m.group(2)}-{m.group(3)} {m.group(4)}:{m.group(5)}:{m.group(6)}"
+        else:
+            started_at = stat_filename
+
+    # Novel title: ưu tiên đọc từ novel.json nếu có, fallback về slug
+    novel_title = slug.replace("-", " ").title() if slug else stat_filename.split("_")[0]
+    if slug:
+        novel_json_path = os.path.join(NOVELS_DIR, slug, "novel.json")
+        if os.path.exists(novel_json_path):
+            try:
+                import json as _jj
+                with open(novel_json_path, "r", encoding="utf-8") as _f:
+                    nd = _jj.load(_f)
+                    novel_title = nd.get("title") or novel_title
+            except Exception:
+                pass
+
+    # Session type: orphan stats thường là translate (fix sessions thường có .log)
+    session_type = "fix" if stat_filename.startswith("fix_") else "translate"
+
+    return {
+        "filename":           stat_filename,          # dùng stats filename làm ID
+        "session_type":       session_type,
+        "started_at":         started_at,
+        "ended_at":           started_at,             # không có log → không biết ended_at
+        "duration_sec":       0,
+        "novel_title":        novel_title,
+        "novel_slug":         slug,
+        "chapters_requested": chapters_done,          # không có log → dùng done
+        "chapters_done":      chapters_done,
+        "chapters_saved":     [],
+        "success_rate":       100.0 if chapters_done > 0 else 0.0,
+        "failed_count":       0,
+        "speed_cpm":          None,
+        "sec_per_chap":       None,
+        "models_used":        models,
+        "auto_learned":       0,
+        "batch_sizes":        [],
+        "total_tokens":       total_tokens,
+        "input_tokens":       input_tokens,
+        "output_tokens":      output_tokens,
+        "cost_usd":           cost_usd,
+        "has_stats_json":     True,
+        "model_breakdown":    {},
+        "cost_logs":          [],
+        "errors":             [],
+        "status":             "done" if chapters_done > 0 else "partial",
+        "is_orphan_stats":    True,   # flag để UI có thể style khác nếu muốn
     }
 
 
