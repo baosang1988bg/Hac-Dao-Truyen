@@ -21,7 +21,7 @@ from config import (
     GROQ_API_KEY, GROQ_MODEL,
     DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_BASE_URL,
     OLLAMA_ENABLED, OLLAMA_BASE_URL, OLLAMA_MODEL, OLLAMA_TIMEOUT,
-    TRANSLATION_PROVIDER,
+    TRANSLATION_PROVIDER, FALLBACK_ORDER,
     REQUEST_DELAY_SECONDS,
     TARGET_LANGUAGE, DEFAULT_TRANSLATION_STYLE,
 )
@@ -861,55 +861,61 @@ class NovelTranslator:
         raw = None
         _used_model = 'unknown'
 
-        # ── Bước 1: thử Gemini ──
-        if self._provider in ("gemini", "auto") and self._gemini:
-            try:
-                raw = self._call_gemini(prompt, max_retries)
-                _used_model = self._gemini._current_model
-                print(f"  [✓] Gemini success")
-            except _DailyQuotaExhausted as e:
-                print(f"  [!] Gemini unavailable: {e}")
-                if self._provider == "gemini":
-                    # Không có fallback
-                    return f"[Translation failed]\nError: {e}", ""
-                print("  [→] Falling back to Groq...")
-            except Exception as e:
-                print(f"  [!] Gemini failed: {e}")
-                if self._provider == "gemini":
-                    return f"[Translation failed]\nError: {e}", ""
-                print("  [→] Falling back to Groq...")
-
-        # ── Bước 2: thử Groq (fallback) ──
-        if raw is None and self._provider == "groq" and self._groq:  # explicit only
-            try:
-                raw = self._call_groq(prompt, max_retries)
-                print(f"  [✓] Groq success")
-            except Exception as e:
-                print(f"  [!] Groq failed: {e}")
-                if self._provider == "groq":
-                    return f"[Translation failed]\nError: {e}", ""
-                print("  [→] Falling back to DeepSeek...")
-
-        # ── Bước 3: thử DeepSeek ──
-        if raw is None and self._provider in ("deepseek", "auto") and self._deepseek:
-            try:
-                raw = self._call_deepseek(prompt, max_retries)
-                _used_model = self._deepseek._model if self._deepseek else 'deepseek-chat'
-                print(f"  [✓] DeepSeek success")
-            except Exception as e:
-                print(f"  [!] DeepSeek failed: {e}")
-                if self._provider == "deepseek":
-                    return f"[Translation failed]\nError: {e}", ""
-                print("  [→] Falling back to Ollama (local)...")
-
-        # ── Bước 4: thử Ollama local (fallback cuối cùng) ──
-        if raw is None and self._provider in ("ollama", "auto") and self._ollama:
-            try:
-                raw = self._call_ollama(prompt, max_retries)
-                _used_model = self._ollama._model if self._ollama else 'ollama'
-                print(f"  [✓] Ollama success")
-            except Exception as e:
-                return f"[Translation failed]\nError: {e}", ""
+        # ── Duyệt qua danh sách fallback ──
+        active_chain = FALLBACK_ORDER if self._provider == "auto" else [self._provider]
+        
+        for p in active_chain:
+            if p == "gemini" and self._gemini:
+                try:
+                    raw = self._call_gemini(prompt, max_retries)
+                    _used_model = self._gemini._current_model
+                    print(f"  [✓] Gemini success")
+                    break
+                except _DailyQuotaExhausted as e:
+                    print(f"  [!] Gemini unavailable: {e}")
+                    if self._provider == "gemini":
+                        return f"[Translation failed]\nError: {e}", ""
+                    print("  [→] Falling back...")
+                except Exception as e:
+                    print(f"  [!] Gemini failed: {e}")
+                    if self._provider == "gemini":
+                        return f"[Translation failed]\nError: {e}", ""
+                    print("  [→] Falling back...")
+                    
+            elif p == "deepseek" and self._deepseek:
+                try:
+                    raw = self._call_deepseek(prompt, max_retries)
+                    _used_model = self._deepseek._model if self._deepseek else 'deepseek-chat'
+                    print(f"  [✓] DeepSeek success")
+                    break
+                except Exception as e:
+                    print(f"  [!] DeepSeek failed: {e}")
+                    if self._provider == "deepseek":
+                        return f"[Translation failed]\nError: {e}", ""
+                    print("  [→] Falling back...")
+                    
+            elif p == "groq" and self._groq:
+                try:
+                    raw = self._call_groq(prompt, max_retries)
+                    print(f"  [✓] Groq success")
+                    break
+                except Exception as e:
+                    print(f"  [!] Groq failed: {e}")
+                    if self._provider == "groq":
+                        return f"[Translation failed]\nError: {e}", ""
+                    print("  [→] Falling back...")
+                    
+            elif p == "ollama" and self._ollama:
+                try:
+                    raw = self._call_ollama(prompt, max_retries)
+                    _used_model = self._ollama._model if self._ollama else 'ollama'
+                    print(f"  [✓] Ollama success")
+                    break
+                except Exception as e:
+                    print(f"  [!] Ollama failed: {e}")
+                    if self._provider == "ollama":
+                        return f"[Translation failed]\nError: {e}", ""
+                    print("  [→] Falling back...")
 
         if raw is None:
             return "[Translation failed]\nError: No backend available", ""
@@ -972,52 +978,63 @@ class NovelTranslator:
         raw = None
         _batch_model = "unknown"
 
-        if self._provider in ("gemini", "auto") and self._gemini:
-            try:
-                raw = self._call_gemini(prompt, max_retries)
-                _batch_model = self._gemini._current_model
-                print(f"  [✓] Gemini success")
-            except _DailyQuotaExhausted as e:
-                print(f"  [!] Gemini unavailable: {e}")
-                if self._provider == "gemini":
-                    return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
-                print("  [→] Falling back to Groq...")
-            except Exception as e:
-                print(f"  [!] Gemini failed: {e}")
-                if self._provider == "gemini":
-                    return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
-                print("  [→] Falling back to Groq...")
+        # ── Duyệt qua danh sách fallback ──
+        active_chain = FALLBACK_ORDER if self._provider == "auto" else [self._provider]
+        
+        for p in active_chain:
+            if p == "gemini" and self._gemini:
+                try:
+                    raw = self._call_gemini(prompt, max_retries)
+                    _batch_model = self._gemini._current_model
+                    print(f"  [✓] Gemini success")
+                    break
+                except _DailyQuotaExhausted as e:
+                    print(f"  [!] Gemini unavailable: {e}")
+                    if self._provider == "gemini":
+                        return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
+                    print("  [→] Falling back...")
+                except Exception as e:
+                    print(f"  [!] Gemini failed: {e}")
+                    if self._provider == "gemini":
+                        return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
+                    print("  [→] Falling back...")
+                    
+            elif p == "deepseek" and self._deepseek:
+                try:
+                    raw = self._call_deepseek(prompt, max_retries)
+                    _batch_model = self._deepseek._model if self._deepseek else "deepseek-chat"
+                    print(f"  [✓] DeepSeek success")
+                    break
+                except Exception as e:
+                    print(f"  [!] DeepSeek failed: {e}")
+                    if self._provider == "deepseek":
+                        return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
+                    print("  [→] Falling back...")
+                    
+            elif p == "groq" and self._groq:
+                try:
+                    raw = self._call_groq(prompt, max_retries)
+                    print(f"  [✓] Groq success")
+                    break
+                except Exception as e:
+                    print(f"  [!] Groq failed: {e}")
+                    if self._provider == "groq":
+                        return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
+                    print("  [→] Falling back...")
+                    
+            elif p == "ollama" and self._ollama:
+                try:
+                    raw = self._call_ollama(prompt, max_retries)
+                    _batch_model = self._ollama._model if self._ollama else "ollama"
+                    print(f"  [✓] Ollama success")
+                    break
+                except Exception as e:
+                    print(f"  [!] Ollama failed: {e}")
+                    if self._provider == "ollama":
+                        return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
+                    print("  [→] Falling back...")
 
-        if raw is None and self._provider == "groq" and self._groq:  # explicit only
-            try:
-                raw = self._call_groq(prompt, max_retries)
-                print(f"  [✓] Groq success")
-            except Exception as e:
-                print(f"  [!] Groq failed: {e}")
-                if self._provider == "groq":
-                    return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
-                print("  [→] Falling back to DeepSeek...")
 
-        # ── Fallback: DeepSeek ──
-        if raw is None and self._provider in ("deepseek", "auto") and self._deepseek:
-            try:
-                raw = self._call_deepseek(prompt, max_retries)
-                _batch_model = self._deepseek._model if self._deepseek else "deepseek-chat"
-                print(f"  [✓] DeepSeek success")
-            except Exception as e:
-                print(f"  [!] DeepSeek failed: {e}")
-                if self._provider == "deepseek":
-                    return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
-                print("  [→] Falling back to Ollama (local)...")
-
-        # ── Fallback: Ollama local ──
-        if raw is None and self._provider in ("ollama", "auto") and self._ollama:
-            try:
-                raw = self._call_ollama(prompt, max_retries)
-                _batch_model = self._ollama._model if self._ollama else "ollama"
-                print(f"  [✓] Ollama success")
-            except Exception as e:
-                return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
 
         if raw is None:
             return ["[Translation failed]\nError: No backend available"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}

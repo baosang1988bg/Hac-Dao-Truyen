@@ -1,0 +1,12 @@
+{
+  "slug": "xich-tam-tuan-thien",
+  "timestamp": "2026-05-07T23:01:16.445699",
+  "chapters_done": 4,
+  "total_tokens": 35385,
+  "input_tokens": 24961,
+  "output_tokens": 10424,
+  "cost_usd": 0.0,
+  "models": [
+    "gemini-2.5-flash-lite"
+  ]
+}

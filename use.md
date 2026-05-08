@@ -20,6 +20,7 @@ NOVEL/
 ├── fix_chapters.py       # Fix chương missing / failed ⭐
 ├── fix_truncated.py      # Fix chương bị cắt giữa chừng ⭐
 ├── fix_one_chapter.py    # Dịch lại đúng 1 chương cụ thể ⭐
+├── fix_titles_v2.py      # Chuẩn hóa tiêu đề tất cả chương ⭐
 ├── fix_batch_mismatch.py # Fix chương batch mismatch
 ├── fix_116.py            # Fix script mẫu (chỉnh tên chương)
 │
@@ -106,6 +107,13 @@ python fix_one_chapter.py --novel <slug> --chapter "第127章 我心如月钩折
 python fix_one_chapter.py --novel <slug> --chapter "第127章 我心如月钩折" --dry-run
 ```
 Dịch đơn lẻ, không bao giờ bị cắt.
+
+### fix_titles_v2.py — chuẩn hóa tiêu đề chương ⭐
+```bash
+python fix_titles_v2.py         # Chạy trên toàn bộ truyện
+```
+Tự động dò tìm và chuẩn hóa tiêu đề tất cả chương về dạng `# Chương N: Tên chương`.
+Phát hiện tiêu đề bất kỳ trong 15 dòng đầu của file, làm sạch prefix thừa, đảm bảo blank line sau tiêu đề.
 
 ### fix_batch_mismatch.py — fix danh sách chỉ định
 ```bash
