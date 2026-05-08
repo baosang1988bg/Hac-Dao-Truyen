@@ -132,7 +132,7 @@ export default function Logs() {
                 onClick={() => setShowOrphan(v => !v)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '5px',
-                  padding: '7px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                  padding: '7px 12px', borderRadius: '8px', cursor: 'pointer',
                   fontSize: '0.8rem', fontWeight: 500, transition: 'all 0.15s',
                   background: showOrphan ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.05)',
                   color: showOrphan ? '#c4b5fd' : 'var(--text-muted)',
