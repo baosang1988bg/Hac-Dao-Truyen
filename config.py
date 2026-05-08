@@ -55,6 +55,10 @@ OLLAMA_TIMEOUT  = int(os.getenv("OLLAMA_TIMEOUT", "120"))
 # Gợi ý: bỏ groq khỏi rotation nếu không dùng nữa (dễ gây lỗi 413)
 TRANSLATION_PROVIDER = os.getenv("TRANSLATION_PROVIDER", "auto")
 
+# Thứ tự fallback khi dùng provider="auto" (cách nhau bằng dấu phẩy)
+FALLBACK_ORDER = os.getenv("FALLBACK_ORDER", "gemini,deepseek,ollama").split(",")
+FALLBACK_ORDER = [p.strip() for p in FALLBACK_ORDER if p.strip()]
+
 # ── Rate limiting ─────────────────────────────────────────────────────────────
 # Gemini free tier: 15 requests/phút → delay tối thiểu 4s giữa các request
 # Set = 0 để tắt delay (nếu dùng paid tier)
@@ -64,7 +68,15 @@ REQUEST_DELAY_SECONDS = float(os.getenv("REQUEST_DELAY_SECONDS", "4"))
 # BATCH_SIZE: số chương tối đa gửi cùng 1 lần cho AI (1–10)
 #   - Cao hơn = nhanh hơn, tốn ít API call hơn, nhưng dễ vượt token limit
 #   - Thấp hơn = an toàn hơn với chương dài, nhưng tốn nhiều API call hơn
-BATCH_SIZE = int(os.getenv("BATCH_SIZE", "3"))
+# Đọc BATCH_SIZE từ .env (mặc định là 2)
+_env_batch_size = int(os.getenv("BATCH_SIZE", "2"))
+
+# Nếu dùng chế độ auto và DeepSeek đứng đầu -> ép batch=1 để an toàn
+if TRANSLATION_PROVIDER == "auto" and FALLBACK_ORDER and FALLBACK_ORDER[0] == "deepseek":
+    BATCH_SIZE = 1
+    print("[*] Đã tự động chuyển BATCH_SIZE = 1 vì DeepSeek đứng đầu (tránh lỗi cắt chữ).")
+else:
+    BATCH_SIZE = _env_batch_size
 
 # MAX_CONCURRENT_BATCHES: số lượng batch tối đa dịch song song
 #   - Dịch đa luồng giúp vượt qua nút thắt cổ chai của việc chờ API

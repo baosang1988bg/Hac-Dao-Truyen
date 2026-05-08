@@ -5,6 +5,7 @@ import asyncio
 import threading
 from datetime import datetime
 from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
@@ -516,6 +517,42 @@ def _parse_log_file(filepath: str, filename: str) -> dict | None:
         "status":             "done" if "Done! Translated" in full_text or "thành công" in full_text
                               else "error" if error_lines else "partial",
     }
+
+
+@app.get("/api/novels/{slug}/tools/{tool}")
+async def run_tool(slug: str, tool: str, chapter_title: str = ""):
+    allowed_tools = {
+        "fix_chapters":   ["python3", "fix_chapters.py",   "--novel", slug],
+        "fix_truncated":  ["python3", "fix_truncated.py",  "--novel", slug],
+        "fix_one":        ["python3", "fix_one_chapter.py","--novel", slug],
+        "check_keys":     ["python3", "check_keys.py",     "--show"],
+        "fix_titles_v2":  ["python3", "fix_titles_v2.py"],
+    }
+    
+    if tool not in allowed_tools:
+        raise HTTPException(status_code=400, detail="Tool not allowed")
+    
+    cmd = allowed_tools[tool]
+    if tool == "fix_one":
+        if not chapter_title:
+            raise HTTPException(status_code=400, detail="chapter_title is required for fix_one tool")
+        cmd.extend(["--chapter", chapter_title])
+        
+    async def event_generator():
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT
+        )
+        while True:
+            line = await process.stdout.readline()
+            if not line:
+                break
+            yield line.decode('utf-8')
+        await process.wait()
+        yield f"\n[Process exited with code {process.returncode}]\n"
+
+    return StreamingResponse(event_generator(), media_type="text/plain")
 
 
 if __name__ == "__main__":
