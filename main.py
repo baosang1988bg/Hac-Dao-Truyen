@@ -44,11 +44,10 @@ def _get_translator():
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 
-def setup_logging(novel_slug: str = "general") -> logging.Logger:
+def setup_logging(novel_slug: str = "general") -> tuple[logging.Logger, str]:
     os.makedirs(LOG_DIR, exist_ok=True)
-    log_file = os.path.join(
-        LOG_DIR, f"{novel_slug}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-    )
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    log_file = os.path.join(LOG_DIR, f"{novel_slug}_{ts}.log")
     logger = logging.getLogger(novel_slug)
     logger.setLevel(logging.INFO)
     if not logger.handlers:
@@ -57,7 +56,7 @@ def setup_logging(novel_slug: str = "general") -> logging.Logger:
         logger.addHandler(logging.StreamHandler())
         for h in logger.handlers:
             h.setFormatter(fmt)
-    return logger
+    return logger, ts
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -332,7 +331,7 @@ async def cmd_translate_async(args, progress_callback=None):
         print(f"[!] {e}")
         return
 
-    logger = setup_logging(profile.slug)
+    logger, session_ts = setup_logging(profile.slug)
     translator = _get_translator()
     previous_summary = ""
 
@@ -566,13 +565,13 @@ async def cmd_translate_async(args, progress_callback=None):
         f"(in={session_usage['input_tokens']:,} out={session_usage['output_tokens']:,}) "
         f"| models={_ms} | cost={_cs}"
     )
-    _save_session_stats(profile.slug, chapter_count, session_usage, logger)
+    _save_session_stats(profile.slug, chapter_count, session_usage, logger, timestamp=session_ts)
     report_progress(chapter_count, args.chapters, "finished", f"Hoàn thành dịch {chapter_count} chương.")
 
 
 # ── Session stats persistence ─────────────────────────────────────────────────
 
-def _save_session_stats(slug: str, chapters_done: int, session_usage: dict, logger=None):
+def _save_session_stats(slug: str, chapters_done: int, session_usage: dict, logger=None, timestamp=None):
     """
     Lưu token/cost stats của session vào file JSON riêng.
     File: logs/<slug>_<timestamp>_stats.json
@@ -581,8 +580,9 @@ def _save_session_stats(slug: str, chapters_done: int, session_usage: dict, logg
     from datetime import datetime as _dt
 
     os.makedirs("logs", exist_ok=True)
-    ts = _dt.now().strftime("%Y%m%d_%H%M%S")
-    stats_file = os.path.join("logs", f"{slug}_{ts}_stats.json")
+    if not timestamp:
+        timestamp = _dt.now().strftime("%Y%m%d_%H%M%S")
+    stats_file = os.path.join("logs", f"{slug}_{timestamp}_stats.json")
 
     stats = {
         "slug":          slug,
@@ -625,7 +625,7 @@ def cmd_retranslate(args):
         print(f"[!] {e}")
         return
 
-    logger = setup_logging(profile.slug)
+    logger, _ = setup_logging(profile.slug)
 
     if args.force:
         # force mode: lấy TẤT CẢ raw files

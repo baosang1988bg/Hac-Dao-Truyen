@@ -153,6 +153,38 @@ def print_report(slug: str, result: dict):
     print(f"{'─'*60}")
 
 
+def _save_session_stats(slug: str, chapters_done: int, session_usage: dict, logger=None):
+    """
+    Lưu token/cost stats của session vào file JSON riêng.
+    File: logs/<slug>_<timestamp>_stats.json
+    """
+    import json as _json
+    from datetime import datetime as _dt
+
+    os.makedirs("logs", exist_ok=True)
+    ts = _dt.now().strftime("%Y%m%d_%H%M%S")
+    stats_file = os.path.join("logs", f"{slug}_{ts}_stats.json")
+
+    stats = {
+        "slug":          slug,
+        "timestamp":     _dt.now().isoformat(),
+        "chapters_done": chapters_done,
+        "total_tokens":  session_usage.get("total_tokens", 0),
+        "input_tokens":  session_usage.get("input_tokens", 0),
+        "output_tokens": session_usage.get("output_tokens", 0),
+        "cost_usd":      session_usage.get("cost_usd", 0.0),
+        "models":        sorted(session_usage.get("models", set())),
+    }
+    try:
+        with open(stats_file, "w", encoding="utf-8") as f:
+            _json.dump(stats, f, ensure_ascii=False, indent=2)
+        if logger:
+            logger.info(f"[*] Đã lưu thống kê chi phí: {stats_file}")
+    except Exception as e:
+        if logger:
+            logger.error(f"[!] Không lưu được stats file: {e}")
+
+
 # ── Fix: dịch lại ─────────────────────────────────────────────────────────────
 
 def fix_novel(profile: NovelProfile, result: dict, force: bool, logger: logging.Logger) -> tuple[int, int]:
@@ -185,6 +217,14 @@ def fix_novel(profile: NovelProfile, result: dict, force: bool, logger: logging.
     success    = 0
     fail_count = 0
     prev_summary = ""
+    
+    session_usage = {
+        "total_tokens": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "models": set()
+    }
 
     for i, (raw_path, out_path, issue_type) in enumerate(to_fix, 1):
         raw_name = os.path.basename(raw_path)
@@ -206,7 +246,7 @@ def fix_novel(profile: NovelProfile, result: dict, force: bool, logger: logging.
 
         logger.info(f"  [*] Dịch {len(content)} chars...")
 
-        translated, summary, _ = translator.translate_chapter(
+        translated, summary, usage = translator.translate_chapter(
             title=stem,
             content=content,
             glossary=profile.glossary,
@@ -226,9 +266,20 @@ def fix_novel(profile: NovelProfile, result: dict, force: bool, logger: logging.
             prev_summary = summary
             success += 1
             logger.info(f"  [✓] Saved: {os.path.basename(out_path)}")
+            
+            # Tích lũy usage
+            session_usage["total_tokens"] += usage.get("total_tokens", 0)
+            session_usage["input_tokens"] += usage.get("input_tokens", 0)
+            session_usage["output_tokens"] += usage.get("output_tokens", 0)
+            session_usage["cost_usd"] += usage.get("cost_usd", 0.0)
+            if usage.get("model"):
+                session_usage["models"].add(usage["model"])
 
         # Throttle giữa các chương
         time.sleep(2)
+
+    if success > 0:
+        _save_session_stats(profile.slug, success, session_usage, logger)
 
     return success, fail_count
 
