@@ -8,5 +8,10 @@
   "cost_usd": 0.11595122,
   "models": [
     "deepseek-chat"
-  ]
+  ],
+  "started_at": "2026-05-08T10:16:20",
+  "ended_at": "2026-05-08T10:16:20",
+  "duration_sec": 0,
+  "chapters_saved": [],
+  "errors": []
 }

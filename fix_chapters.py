@@ -32,9 +32,10 @@ from config import LOG_DIR
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 
-def setup_logger(name: str) -> logging.Logger:
+def setup_logger(name: str) -> tuple[logging.Logger, str]:
     os.makedirs(LOG_DIR, exist_ok=True)
-    log_file = os.path.join(LOG_DIR, f"fix_{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    log_file = os.path.join(LOG_DIR, f"fix_{name}_{ts}.log")
     logger = logging.getLogger(f"fix_{name}")
     logger.setLevel(logging.INFO)
     if not logger.handlers:
@@ -45,7 +46,7 @@ def setup_logger(name: str) -> logging.Logger:
         sh.setFormatter(fmt)
         logger.addHandler(fh)
         logger.addHandler(sh)
-    return logger
+    return logger, ts
 
 
 # ── Scan: tìm file có vấn đề ─────────────────────────────────────────────────
@@ -153,17 +154,18 @@ def print_report(slug: str, result: dict):
     print(f"{'─'*60}")
 
 
-def _save_session_stats(slug: str, chapters_done: int, session_usage: dict, logger=None):
+def _save_session_stats(slug: str, chapters_done: int, session_usage: dict, logger=None, timestamp=None, started_at=None):
     """
     Lưu token/cost stats của session vào file JSON riêng.
-    File: logs/<slug>_<timestamp>_stats.json
+    File: logs/fix_<slug>_<timestamp>_stats.json
     """
     import json as _json
     from datetime import datetime as _dt
 
     os.makedirs("logs", exist_ok=True)
-    ts = _dt.now().strftime("%Y%m%d_%H%M%S")
-    stats_file = os.path.join("logs", f"{slug}_{ts}_stats.json")
+    if not timestamp:
+        timestamp = _dt.now().strftime("%Y%m%d_%H%M%S")
+    stats_file = os.path.join("logs", f"fix_{slug}_{timestamp}_stats.json")
 
     stats = {
         "slug":          slug,
@@ -174,7 +176,19 @@ def _save_session_stats(slug: str, chapters_done: int, session_usage: dict, logg
         "output_tokens": session_usage.get("output_tokens", 0),
         "cost_usd":      session_usage.get("cost_usd", 0.0),
         "models":        sorted(session_usage.get("models", set())),
+        "chapters_saved": session_usage.get("chapters_saved", []),
+        "errors":        session_usage.get("errors", []),
     }
+    
+    if started_at:
+        stats["started_at"] = started_at
+        stats["ended_at"] = _dt.now().isoformat()
+        try:
+            t0 = _dt.fromisoformat(started_at)
+            t1 = _dt.now()
+            stats["duration_sec"] = int((t1 - t0).total_seconds())
+        except Exception:
+            pass
     try:
         with open(stats_file, "w", encoding="utf-8") as f:
             _json.dump(stats, f, ensure_ascii=False, indent=2)
@@ -187,12 +201,14 @@ def _save_session_stats(slug: str, chapters_done: int, session_usage: dict, logg
 
 # ── Fix: dịch lại ─────────────────────────────────────────────────────────────
 
-def fix_novel(profile: NovelProfile, result: dict, force: bool, logger: logging.Logger) -> tuple[int, int]:
+def fix_novel(profile: NovelProfile, result: dict, force: bool, logger: logging.Logger, session_ts: str = None) -> tuple[int, int]:
     """
     Dịch lại tất cả chương có vấn đề.
     force=True: cũng dịch lại cả chương nghi vấn.
     Trả về (success_count, failed_count).
     """
+    from datetime import datetime
+    started_at = datetime.now().isoformat()
     # Import lazy để tránh lỗi khi chỉ chạy --report
     from translator import NovelTranslator
     translator = NovelTranslator()
@@ -223,7 +239,9 @@ def fix_novel(profile: NovelProfile, result: dict, force: bool, logger: logging.
         "input_tokens": 0,
         "output_tokens": 0,
         "cost_usd": 0.0,
-        "models": set()
+        "models": set(),
+        "chapters_saved": [],
+        "errors": []
     }
 
     for i, (raw_path, out_path, issue_type) in enumerate(to_fix, 1):
@@ -261,10 +279,12 @@ def fix_novel(profile: NovelProfile, result: dict, force: bool, logger: logging.
         if "[Translation failed" in translated[:400]:
             err = next((l.strip() for l in translated.splitlines() if "Error:" in l), "Unknown error")
             logger.error(f"  [!] FAILED: {err[:120]}")
+            session_usage["errors"].append(f"Dịch thất bại {stem}: {err[:120]}")
             fail_count += 1
         else:
             prev_summary = summary
             success += 1
+            session_usage["chapters_saved"].append(stem)
             logger.info(f"  [✓] Saved: {os.path.basename(out_path)}")
             
             # Tích lũy usage
@@ -279,7 +299,7 @@ def fix_novel(profile: NovelProfile, result: dict, force: bool, logger: logging.
         time.sleep(2)
 
     if success > 0:
-        _save_session_stats(profile.slug, success, session_usage, logger)
+        _save_session_stats(profile.slug, success, session_usage, logger, timestamp=session_ts, started_at=started_at)
 
     return success, fail_count
 
@@ -335,9 +355,9 @@ def main():
             print(f"  → Không cần làm gì thêm.\n")
             continue
 
-        logger = setup_logger(slug)
+        logger, session_ts = setup_logger(slug)
         print(f"\n  🔧 Đang sửa {total_issues} chương...\n")
-        s, f = fix_novel(profile, result, args.force, logger)
+        s, f = fix_novel(profile, result, args.force, logger, session_ts=session_ts)
         total_success += s
         total_failed  += f
 

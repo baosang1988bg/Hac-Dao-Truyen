@@ -332,6 +332,7 @@ async def cmd_translate_async(args, progress_callback=None):
         return
 
     logger, session_ts = setup_logging(profile.slug)
+    started_at = datetime.now().isoformat()
     translator = _get_translator()
     previous_summary = ""
 
@@ -367,6 +368,8 @@ async def cmd_translate_async(args, progress_callback=None):
         "output_tokens": 0,
         "cost_usd":      0.0,
         "models":        set(),
+        "chapters_saved": [],
+        "errors":        [],
     }
 
     logger.info(f"[*] Batch config: max {BATCH_SIZE} chapters/batch, max {BATCH_MAX_CHARS} chars/batch")
@@ -436,6 +439,12 @@ async def cmd_translate_async(args, progress_callback=None):
             with open(out, "w", encoding="utf-8") as f:
                 f.write(chunk)
             logger.info(f"[+] Saved: {out}")
+            
+            if "[Translation failed" in chunk[:100]:
+                session_usage["errors"].append(f"Dịch thất bại: {title}")
+            else:
+                session_usage["chapters_saved"].append(title)
+                
             translated_count += 1
             report_progress(
                 translated_count, args.chapters, "running",
@@ -565,13 +574,13 @@ async def cmd_translate_async(args, progress_callback=None):
         f"(in={session_usage['input_tokens']:,} out={session_usage['output_tokens']:,}) "
         f"| models={_ms} | cost={_cs}"
     )
-    _save_session_stats(profile.slug, chapter_count, session_usage, logger, timestamp=session_ts)
+    _save_session_stats(profile.slug, chapter_count, session_usage, logger, timestamp=session_ts, started_at=started_at)
     report_progress(chapter_count, args.chapters, "finished", f"Hoàn thành dịch {chapter_count} chương.")
 
 
 # ── Session stats persistence ─────────────────────────────────────────────────
 
-def _save_session_stats(slug: str, chapters_done: int, session_usage: dict, logger=None, timestamp=None):
+def _save_session_stats(slug: str, chapters_done: int, session_usage: dict, logger=None, timestamp=None, started_at=None):
     """
     Lưu token/cost stats của session vào file JSON riêng.
     File: logs/<slug>_<timestamp>_stats.json
@@ -593,7 +602,19 @@ def _save_session_stats(slug: str, chapters_done: int, session_usage: dict, logg
         "output_tokens": session_usage.get("output_tokens", 0),
         "cost_usd":      session_usage.get("cost_usd", 0.0),
         "models":        sorted(session_usage.get("models", set())),
+        "chapters_saved": session_usage.get("chapters_saved", []),
+        "errors":        session_usage.get("errors", []),
     }
+    
+    if started_at:
+        stats["started_at"] = started_at
+        stats["ended_at"] = _dt.now().isoformat()
+        try:
+            t0 = _dt.fromisoformat(started_at)
+            t1 = _dt.now()
+            stats["duration_sec"] = int((t1 - t0).total_seconds())
+        except Exception:
+            pass
     try:
         with open(stats_file, "w", encoding="utf-8") as f:
             _json.dump(stats, f, ensure_ascii=False, indent=2)

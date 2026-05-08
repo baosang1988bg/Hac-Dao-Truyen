@@ -10,5 +10,10 @@
     "deepseek-chat",
     "gemini-2.5-flash-lite",
     "gemini-flash-lite-latest"
-  ]
+  ],
+  "started_at": "2026-05-07T19:57:05",
+  "ended_at": "2026-05-07T19:57:05",
+  "duration_sec": 0,
+  "chapters_saved": [],
+  "errors": []
 }

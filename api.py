@@ -541,8 +541,8 @@ def _parse_log_file(filepath: str, filename: str) -> dict | None:
 def _parse_orphan_stats(stat_path: str, stat_filename: str) -> dict | None:
     """
     Tạo session entry từ _stats.json không có file .log đi kèm.
-    Thông tin sẽ ít hơn (không có log text, errors, batch_sizes...)
-    nhưng đảm bảo session vẫn hiển thị trong Lịch sử dịch.
+    Đọc đầy đủ các fields mới (started_at, ended_at, duration_sec,
+    chapters_saved, errors) nếu có trong file (format mới).
     """
     try:
         import json as _j
@@ -551,28 +551,46 @@ def _parse_orphan_stats(stat_path: str, stat_filename: str) -> dict | None:
     except Exception:
         return None
 
-    slug           = stats.get("slug", "")
-    chapters_done  = stats.get("chapters_done", 0)
-    total_tokens   = stats.get("total_tokens", 0)
-    input_tokens   = stats.get("input_tokens", 0)
-    output_tokens  = stats.get("output_tokens", 0)
-    cost_usd       = stats.get("cost_usd", 0.0)
-    models         = stats.get("models", [])
+    slug          = stats.get("slug", "")
+    chapters_done = stats.get("chapters_done", 0)
+    total_tokens  = stats.get("total_tokens", 0)
+    input_tokens  = stats.get("input_tokens", 0)
+    output_tokens = stats.get("output_tokens", 0)
+    cost_usd      = stats.get("cost_usd", 0.0)
+    models        = stats.get("models", [])
 
-    # Lấy timestamp từ JSON hoặc từ tên file
-    raw_ts = stats.get("timestamp", "")
-    if raw_ts:
-        # "2026-05-08T09:56:48.717413" → "2026-05-08 09:56:48"
+    # ── Timestamp: ưu tiên started_at (format mới) → timestamp → tên file ──
+    if stats.get("started_at"):
+        raw_ts     = stats["started_at"]
+        started_at = raw_ts[:19].replace("T", " ")
+    elif stats.get("timestamp"):
+        raw_ts     = stats["timestamp"]
         started_at = raw_ts[:19].replace("T", " ")
     else:
-        # Fallback: parse từ tên file  xich-tam-tuan-thien_20260508_095648_stats.json
         m = re.search(r'_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_stats', stat_filename)
-        if m:
-            started_at = f"{m.group(1)}-{m.group(2)}-{m.group(3)} {m.group(4)}:{m.group(5)}:{m.group(6)}"
-        else:
-            started_at = stat_filename
+        started_at = (f"{m.group(1)}-{m.group(2)}-{m.group(3)} {m.group(4)}:{m.group(5)}:{m.group(6)}"
+                      if m else stat_filename)
 
-    # Novel title: ưu tiên đọc từ novel.json nếu có, fallback về slug
+    # ── ended_at & duration_sec: đọc từ file nếu có ──
+    ended_at     = started_at  # fallback
+    duration_sec = 0
+    if stats.get("ended_at"):
+        ended_at = stats["ended_at"][:19].replace("T", " ")
+    if stats.get("duration_sec"):
+        duration_sec = int(stats["duration_sec"])
+
+    # ── chapters_saved & errors: đọc từ file nếu có ──
+    chapters_saved = stats.get("chapters_saved", [])
+    errors         = stats.get("errors", [])
+
+    # ── sec_per_chap: tính từ duration nếu có ──
+    sec_per_chap = round(duration_sec / chapters_done, 1) if duration_sec > 0 and chapters_done > 0 else None
+
+    # ── failed_count: đếm từ errors ──
+    failed_count = len(errors)
+    success_rate = round(((chapters_done - failed_count) / chapters_done) * 100, 1) if chapters_done > 0 else 0.0
+
+    # ── Novel title: ưu tiên đọc từ novel.json ──
     novel_title = slug.replace("-", " ").title() if slug else stat_filename.split("_")[0]
     if slug:
         novel_json_path = os.path.join(NOVELS_DIR, slug, "novel.json")
@@ -585,24 +603,23 @@ def _parse_orphan_stats(stat_path: str, stat_filename: str) -> dict | None:
             except Exception:
                 pass
 
-    # Session type: orphan stats thường là translate (fix sessions thường có .log)
     session_type = "fix" if stat_filename.startswith("fix_") else "translate"
 
     return {
-        "filename":           stat_filename,          # dùng stats filename làm ID
+        "filename":           stat_filename,
         "session_type":       session_type,
         "started_at":         started_at,
-        "ended_at":           started_at,             # không có log → không biết ended_at
-        "duration_sec":       0,
+        "ended_at":           ended_at,
+        "duration_sec":       duration_sec,
         "novel_title":        novel_title,
         "novel_slug":         slug,
-        "chapters_requested": chapters_done,          # không có log → dùng done
+        "chapters_requested": chapters_done,
         "chapters_done":      chapters_done,
-        "chapters_saved":     [],
-        "success_rate":       100.0 if chapters_done > 0 else 0.0,
-        "failed_count":       0,
+        "chapters_saved":     chapters_saved,
+        "success_rate":       success_rate,
+        "failed_count":       failed_count,
         "speed_cpm":          None,
-        "sec_per_chap":       None,
+        "sec_per_chap":       sec_per_chap,
         "models_used":        models,
         "auto_learned":       0,
         "batch_sizes":        [],
@@ -613,9 +630,12 @@ def _parse_orphan_stats(stat_path: str, stat_filename: str) -> dict | None:
         "has_stats_json":     True,
         "model_breakdown":    {},
         "cost_logs":          [],
-        "errors":             [],
-        "status":             "done" if chapters_done > 0 else "partial",
-        "is_orphan_stats":    True,   # flag để UI có thể style khác nếu muốn
+        "errors":             errors,
+        "status":             "error" if failed_count > 0 and chapters_done == 0
+                              else "partial" if failed_count > 0
+                              else "done" if chapters_done > 0
+                              else "partial",
+        "is_orphan_stats":    True,
     }
 
 

@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from dotenv import load_dotenv
 load_dotenv()
 
-def _save_session_stats(slug: str, chapters_done: int, session_usage: dict):
+def _save_session_stats(slug: str, chapters_done: int, session_usage: dict, started_at=None):
     """
     Lưu token/cost stats của session vào file JSON riêng.
     File: logs/<slug>_<timestamp>_stats.json
@@ -28,7 +28,14 @@ def _save_session_stats(slug: str, chapters_done: int, session_usage: dict):
 
     os.makedirs("logs", exist_ok=True)
     ts = _dt.now().strftime("%Y%m%d_%H%M%S")
-    stats_file = os.path.join("logs", f"{slug}_{ts}_stats.json")
+    stats_file = os.path.join("logs", f"fix_{slug}_{ts}_stats.json")
+    log_file = os.path.join("logs", f"fix_{slug}_{ts}.log")
+
+    # Tạo dummy log để Web UI nhận diện đầy đủ
+    ts_str = _dt.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(log_file, "w", encoding="utf-8") as f:
+        f.write(f"{ts_str} [INFO] Bắt đầu phiên dịch lẻ 1 chương\n")
+        f.write(f"{ts_str} [INFO] Kết thúc phiên\n")
 
     stats = {
         "slug":          slug,
@@ -39,7 +46,20 @@ def _save_session_stats(slug: str, chapters_done: int, session_usage: dict):
         "output_tokens": session_usage.get("output_tokens", 0),
         "cost_usd":      session_usage.get("cost_usd", 0.0),
         "models":        sorted(session_usage.get("models", set())),
+        "chapters_saved": session_usage.get("chapters_saved", []),
+        "errors":        session_usage.get("errors", []),
     }
+    
+    if started_at:
+        stats["started_at"] = started_at
+        stats["ended_at"] = _dt.now().isoformat()
+        try:
+            t0 = _dt.fromisoformat(started_at)
+            t1 = _dt.now()
+            stats["duration_sec"] = int((t1 - t0).total_seconds())
+        except Exception:
+            pass
+
     try:
         with open(stats_file, "w", encoding="utf-8") as f:
             _json.dump(stats, f, ensure_ascii=False, indent=2)
@@ -71,6 +91,9 @@ def main():
         content = f.read().strip()
 
     trans_size_before = os.path.getsize(trans_path) if os.path.exists(trans_path) else 0
+
+    from datetime import datetime
+    started_at = datetime.now().isoformat()
 
     print(f"\n{'='*60}")
     print(f"  Novel   : {profile.title}")
@@ -117,9 +140,11 @@ def main():
         "input_tokens": usage.get("input_tokens", 0),
         "output_tokens": usage.get("output_tokens", 0),
         "cost_usd": usage.get("cost_usd", 0.0),
-        "models": {usage["model"]} if usage.get("model") else set()
+        "models": {usage["model"]} if usage.get("model") else set(),
+        "chapters_saved": [args.chapter],
+        "errors": []
     }
-    _save_session_stats(profile.slug, 1, session_usage)
+    _save_session_stats(profile.slug, 1, session_usage, started_at=started_at)
 
     print(f"\n{'='*60}")
     print(f"  ✅ Thành công!")

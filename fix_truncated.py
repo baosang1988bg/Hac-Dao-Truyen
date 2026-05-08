@@ -11,12 +11,51 @@ Cách dùng:
     python fix_truncated.py --novel <slug> --report # chỉ báo cáo
     python fix_truncated.py --all                   # tất cả truyện
 """
-import os, sys, re, time, argparse
+import os, sys, re, time, argparse, json as _json
+from datetime import datetime as _dt
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from dotenv import load_dotenv
 load_dotenv()
 
 from novel_manager import load_novel, list_novel_slugs
+
+
+# ── Session stats persistence ─────────────────────────────────────────────────
+def _save_session_stats(slug: str, chapters_done: int, session_usage: dict, started_at: str = None):
+    """Lưu token/cost stats của phiên fix_truncated vào file JSON."""
+    os.makedirs("logs", exist_ok=True)
+    ts = _dt.now().strftime("%Y%m%d_%H%M%S")
+    stats_file = os.path.join("logs", f"fix_{slug}_{ts}_stats.json")
+
+    ended_at     = _dt.now().isoformat()
+    duration_sec = 0
+    if started_at:
+        try:
+            duration_sec = int((_dt.fromisoformat(ended_at) - _dt.fromisoformat(started_at)).total_seconds())
+        except Exception:
+            pass
+
+    stats = {
+        "slug":           slug,
+        "timestamp":      ended_at,
+        "chapters_done":  chapters_done,
+        "total_tokens":   session_usage.get("total_tokens", 0),
+        "input_tokens":   session_usage.get("input_tokens", 0),
+        "output_tokens":  session_usage.get("output_tokens", 0),
+        "cost_usd":       session_usage.get("cost_usd", 0.0),
+        "models":         sorted(session_usage.get("models", set())),
+        "chapters_saved": session_usage.get("chapters_saved", []),
+        "errors":         session_usage.get("errors", []),
+        "started_at":     started_at or ended_at,
+        "ended_at":       ended_at,
+        "duration_sec":   duration_sec,
+    }
+    try:
+        with open(stats_file, "w", encoding="utf-8") as f:
+            _json.dump(stats, f, ensure_ascii=False, indent=2)
+        print(f"  [*] Stats saved: {stats_file}")
+    except Exception as e:
+        print(f"  [!] Could not save stats: {e}")
 
 # ── Dấu hiệu bị cắt giữa chừng ──────────────────────────────────────────────
 # Câu cuối cùng của file không kết thúc đúng cách
@@ -119,15 +158,15 @@ def scan_novel(slug: str) -> list[dict]:
     return issues
 
 
-def fix_chapter(issue: dict, profile, translator) -> bool:
-    """Dịch lại 1 chương. Returns True nếu thành công."""
+def fix_chapter(issue: dict, profile, translator) -> tuple[bool, dict]:
+    """Dịch lại 1 chương. Returns (success, usage_dict)."""
     with open(issue["raw_path"], "r", encoding="utf-8") as f:
         content = f.read().strip()
 
     if not content:
-        return False
+        return False, {}
 
-    translated, _, _ = translator.translate_chapter(
+    translated, _, usage = translator.translate_chapter(
         title=issue["stem"],
         content=content,
         glossary=profile.glossary,
@@ -137,14 +176,14 @@ def fix_chapter(issue: dict, profile, translator) -> bool:
 
     if "[Translation failed" in translated[:200]:
         print(f"    ❌ FAILED: {translated[:120]}")
-        return False
+        return False, usage or {}
 
     with open(issue["trans_path"], "w", encoding="utf-8") as f:
         f.write(translated)
 
     new_size = os.path.getsize(issue["trans_path"])
     print(f"    ✅ {new_size:,}B — {translated[:70].replace(chr(10),' ')}...")
-    return True
+    return True, usage or {}
 
 
 def main():
@@ -185,14 +224,38 @@ def main():
         from translator import NovelTranslator
         translator = NovelTranslator()
         fixed = 0
+
+        # Session tracking
+        started_at = _dt.now().isoformat()
+        session_usage = {
+            "total_tokens": 0, "input_tokens": 0, "output_tokens": 0,
+            "cost_usd": 0.0, "models": set(),
+            "chapters_saved": [], "errors": [],
+        }
+
         for iss in issues:
             print(f"\n  [{fixed+1}/{len(issues)}] {iss['stem']}")
-            if fix_chapter(iss, profile, translator):
+            ok, usage = fix_chapter(iss, profile, translator)
+            if ok:
                 fixed += 1
+                session_usage["chapters_saved"].append(iss["stem"])
+            else:
+                session_usage["errors"].append(f"Truncated fix thất bại: {iss['stem']}")
+            # Accumulate tokens
+            session_usage["total_tokens"]  += usage.get("total_tokens", 0)
+            session_usage["input_tokens"]  += usage.get("input_tokens", 0)
+            session_usage["output_tokens"] += usage.get("output_tokens", 0)
+            session_usage["cost_usd"]      += usage.get("cost_usd", 0.0)
+            if usage.get("model"):
+                session_usage["models"].add(usage["model"])
             time.sleep(3)
 
         total_fixed += fixed
         print(f"\n  ✅ {fixed}/{len(issues)} chương đã fix")
+
+        # Lưu stats nếu có dịch
+        if fixed > 0 or len(issues) > 0:
+            _save_session_stats(slug, fixed, session_usage, started_at=started_at)
 
     print(f"\n{'='*55}")
     print(f"  Tổng: tìm {total_found} chương bị cắt, fix {total_fixed} thành công")
