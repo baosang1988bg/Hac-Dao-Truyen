@@ -308,11 +308,22 @@ def cmd_glossary(args):
 # ── Command: translate ────────────────────────────────────────────────────────
 
 async def cmd_translate_async(args, progress_callback=None):
-    def report_progress(current, total, status, log_msg="", active_batches=None, scraped_count=None):
+    def report_progress(current, total, status, log_msg="", active_batches=None, scraped_count=None,
+                        current_chapter=None, crawling_chapter=None,
+                        current_model=None, tokens_delta=0, cost_delta=0.0,
+                        chapter_ok=None, chapter_fail=None, batch_detail=None):
         if progress_callback:
             progress_callback(current, total, status, log_msg,
                               active_batches=active_batches,
-                              scraped_count=scraped_count)
+                              scraped_count=scraped_count,
+                              current_chapter=current_chapter,
+                              crawling_chapter=crawling_chapter,
+                              current_model=current_model,
+                              tokens_delta=tokens_delta,
+                              cost_delta=cost_delta,
+                              chapter_ok=chapter_ok,
+                              chapter_fail=chapter_fail,
+                              batch_detail=batch_detail)
 
     def is_cancelled() -> bool:
         """Kiểm tra xem có yêu cầu dừng không (từ progress_callback hoặc cancel_flags)."""
@@ -379,11 +390,16 @@ async def cmd_translate_async(args, progress_callback=None):
         nonlocal previous_summary, translated_count
         if not batch_copy: return
 
-        batch_len = len(batch_copy)
+        batch_len  = len(batch_copy)
+        batch_id   = id(batch_copy)   # unique id cho batch này
+        batch_titles = [t for t, _ in batch_copy]
+
         logger.info(f"[*] Translating batch of {batch_len} chapters (Background)...")
         report_progress(
             translated_count, args.chapters, "running",
-            f"Đang dịch {batch_len} chương (đa luồng)..."
+            f"Đang dịch {batch_len} chương (đa luồng)...",
+            current_chapter=batch_titles[0] if batch_titles else "",
+            batch_detail={"id": batch_id, "chapters": batch_titles, "status": "translating", "model": "...", "tokens": 0},
         )
 
         translated_chapters, summary, new_glossary, batch_usage = await asyncio.to_thread(
@@ -399,16 +415,24 @@ async def cmd_translate_async(args, progress_callback=None):
         session_usage["input_tokens"]  += batch_usage.get("input_tokens", 0)
         session_usage["output_tokens"] += batch_usage.get("output_tokens", 0)
         session_usage["cost_usd"]      += batch_usage.get("cost_usd", 0.0)
-        _m = batch_usage.get("model", "unknown")
+        _m   = batch_usage.get("model", "unknown")
+        _tok = batch_usage.get("total_tokens", 0)
+        _bc  = batch_usage.get("cost_usd", 0.0)
         if _m and _m != "unknown":
             session_usage["models"].add(_m)
-        _bc = batch_usage.get("cost_usd", 0.0)
         _bc_str = "free" if _bc == 0 else f"${_bc:.5f}"
         logger.info(
             f"[💰] {_m}: batch {batch_len}ch "
             f"~{batch_usage.get('input_tokens',0)}→{batch_usage.get('output_tokens',0)} tokens "
             f"{_bc_str}"
         )
+        # Emit token + cost + model ngay sau khi batch xong
+        report_progress(translated_count, args.chapters, "running",
+                        current_model=_m,
+                        tokens_delta=_tok,
+                        cost_delta=_bc,
+                        batch_detail={"id": batch_id, "chapters": batch_titles,
+                                      "status": "saving", "model": _m, "tokens": _tok, "cost": _bc})
 
         for i, (title, content) in enumerate(batch_copy):
             out = get_output_path(profile, title)
@@ -418,7 +442,8 @@ async def cmd_translate_async(args, progress_callback=None):
             if chunk is None:
                 logger.warning(f"  [!] Chunk {i} thiếu/bị cắt — retry riêng lẻ: {title}")
                 report_progress(translated_count, args.chapters, "running",
-                                f"Retry riêng lẻ: {title}")
+                                f"Retry riêng lẻ: {title}",
+                                current_chapter=title)
                 chunk, _, _ru = await asyncio.to_thread(
                     translator.translate_chapter,
                     title=title,
@@ -428,28 +453,36 @@ async def cmd_translate_async(args, progress_callback=None):
                     previous_summary=summary_copy,
                     max_retries=3,
                 )
-                session_usage["total_tokens"]  += _ru.get("total_tokens", 0)
+                _rm = _ru.get("model", "unknown")
+                _rt = _ru.get("total_tokens", 0)
+                _rc = _ru.get("cost_usd", 0.0)
+                session_usage["total_tokens"]  += _rt
                 session_usage["input_tokens"]  += _ru.get("input_tokens", 0)
                 session_usage["output_tokens"] += _ru.get("output_tokens", 0)
-                session_usage["cost_usd"]      += _ru.get("cost_usd", 0.0)
-                if _ru.get("model", "unknown") != "unknown":
-                    session_usage["models"].add(_ru["model"])
+                session_usage["cost_usd"]      += _rc
+                if _rm != "unknown":
+                    session_usage["models"].add(_rm)
+                report_progress(translated_count, args.chapters, "running",
+                                current_model=_rm, tokens_delta=_rt, cost_delta=_rc)
                 logger.info(f"  [{'✓' if '[Translation failed' not in chunk[:50] else '!'}] Retry result: {title}")
 
             with open(out, "w", encoding="utf-8") as f:
                 f.write(chunk)
             logger.info(f"[+] Saved: {out}")
-            
-            if "[Translation failed" in chunk[:100]:
+
+            failed = "[Translation failed" in chunk[:100]
+            if failed:
                 session_usage["errors"].append(f"Dịch thất bại: {title}")
+                report_progress(translated_count, args.chapters, "running",
+                                f"❌ Thất bại: {title}", chapter_fail=title)
             else:
                 session_usage["chapters_saved"].append(title)
-                
+                report_progress(translated_count, args.chapters, "running",
+                                f"✓ Đã lưu: {title}", chapter_ok=title)
+
             translated_count += 1
-            report_progress(
-                translated_count, args.chapters, "running",
-                f"Đã lưu: {title}"
-            )
+            report_progress(translated_count, args.chapters, "running",
+                            current_chapter=title)
 
         # Auto-update glossary with newly extracted terms
         if new_glossary:
@@ -494,6 +527,8 @@ async def cmd_translate_async(args, progress_callback=None):
             break
 
         logger.info(f"[*] Fetching {chapter_count + 1}/{args.chapters}: {current_url}")
+        report_progress(translated_count, args.chapters, "running",
+                        crawling_chapter=f"Chương {chapter_count + 1}...")
 
         html = await scraper.fetch_html(current_url)
         if not html:
@@ -510,7 +545,8 @@ async def cmd_translate_async(args, progress_callback=None):
 
         logger.info(f"[*] Scraped: {title}")
         report_progress(translated_count, args.chapters, "running", f"Đã lấy nội dung: {title}",
-                        scraped_count=chapter_count)
+                        scraped_count=chapter_count,
+                        crawling_chapter=title)
 
         if resume_from_next:
             resume_from_next = False

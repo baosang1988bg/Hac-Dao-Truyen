@@ -104,30 +104,62 @@ def start_translation(slug: str, req: TranslateRequest, background_tasks: Backgr
         
         # Initialize state
         translation_tasks[slug] = {
-            "status": "running",
-            "current": 0,
-            "total": req.chapters,
-            "logs": [],
-            "active_batches": 0,   # số batch đang dịch song song hiện tại
-            "scraped_count": 0,    # số chương đã cào xong (chờ dịch hoặc đang dịch)
+            "status":        "running",
+            "current":       0,
+            "total":         req.chapters,
+            "logs":          [],
+            "active_batches": 0,
+            "scraped_count": 0,
+            # ── Realtime admin fields ──────────────────────────
+            "current_chapter":  "",      # tên chương đang xử lý
+            "crawling_chapter": "",      # tên chương đang crawl
+            "current_model":    "",      # model AI đang dùng
+            "tokens_used":      0,       # tổng tokens tích lũy
+            "cost_so_far":      0.0,     # tổng cost tích lũy ($)
+            "chapters_ok":      [],      # danh sách chương đã dịch thành công
+            "chapters_fail":    [],      # danh sách chương thất bại
+            "batch_details":    [],      # [{id, chapters, model, status, tokens}]
         }
         cancel_flags[slug] = False
 
-        def progress_callback(current, total, status, log_msg="", active_batches=None, scraped_count=None):
+        def progress_callback(current, total, status, log_msg="",
+                              active_batches=None, scraped_count=None,
+                              current_chapter=None, crawling_chapter=None,
+                              current_model=None, tokens_delta=0, cost_delta=0.0,
+                              chapter_ok=None, chapter_fail=None, batch_detail=None):
             task = translation_tasks.get(slug)
             if task:
                 task["current"] = current
-                task["total"] = total
-                task["status"] = status
-                if active_batches is not None:
-                    task["active_batches"] = active_batches
-                if scraped_count is not None:
-                    task["scraped_count"] = scraped_count
+                task["total"]   = total
+                task["status"]  = status
+                if active_batches    is not None: task["active_batches"]    = active_batches
+                if scraped_count     is not None: task["scraped_count"]     = scraped_count
+                if current_chapter   is not None: task["current_chapter"]   = current_chapter
+                if crawling_chapter  is not None: task["crawling_chapter"]  = crawling_chapter
+                if current_model     is not None: task["current_model"]     = current_model
+                if tokens_delta:
+                    task["tokens_used"] += tokens_delta
+                if cost_delta:
+                    task["cost_so_far"] += cost_delta
+                if chapter_ok:
+                    task["chapters_ok"].append(chapter_ok)
+                    if len(task["chapters_ok"]) > 50:
+                        task["chapters_ok"] = task["chapters_ok"][-50:]
+                if chapter_fail:
+                    task["chapters_fail"].append(chapter_fail)
+                if batch_detail:
+                    # Upsert batch_detail bằng id
+                    existing = next((b for b in task["batch_details"] if b["id"] == batch_detail["id"]), None)
+                    if existing:
+                        existing.update(batch_detail)
+                    else:
+                        task["batch_details"].append(batch_detail)
+                        if len(task["batch_details"]) > 20:
+                            task["batch_details"] = task["batch_details"][-20:]
                 if log_msg:
                     task["logs"].append(log_msg)
                     if len(task["logs"]) > 100:
                         task["logs"] = task["logs"][-100:]
-            # Nếu bị cancel → đổi status ngay
             if cancel_flags.get(slug):
                 if task: task["status"] = "cancelled"
 

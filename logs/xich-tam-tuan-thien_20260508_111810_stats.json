@@ -1,0 +1,24 @@
+{
+  "slug": "xich-tam-tuan-thien",
+  "timestamp": "2026-05-08T11:20:30.097008",
+  "chapters_done": 6,
+  "total_tokens": 95461,
+  "input_tokens": 79087,
+  "output_tokens": 16374,
+  "cost_usd": 0.02354749,
+  "models": [
+    "deepseek-chat"
+  ],
+  "chapters_saved": [
+    "第473章 九旋流沙",
+    "第474章 无声杀人",
+    "第475章 四十三年",
+    "第476章 暴起",
+    "第477章 见我者",
+    "第478章 刀曰潮信"
+  ],
+  "errors": [],
+  "started_at": "2026-05-08T11:18:10.585485",
+  "ended_at": "2026-05-08T11:20:30.097022",
+  "duration_sec": 139
+}

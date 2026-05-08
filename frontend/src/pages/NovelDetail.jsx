@@ -223,7 +223,8 @@ export default function NovelDetail() {
 
 function TranslationPanel({ isRunning, translating, translateCount, setTranslateCount, taskStatus, elapsedSec, onStart, onStop }) {
   const [logsExpanded, setLogsExpanded] = useState(false)
-  const logRef = useRef(null)
+  const logRef     = useRef(null)
+  const feedRef    = useRef(null)
 
   const pct          = taskStatus ? Math.min(100, (taskStatus.current / Math.max(taskStatus.total, 1)) * 100) : 0
   const scrapedPct   = taskStatus ? Math.min(100, ((taskStatus.scraped_count || 0) / Math.max(taskStatus.total, 1)) * 100) : 0
@@ -232,42 +233,72 @@ function TranslationPanel({ isRunning, translating, translateCount, setTranslate
   const isCancelling = taskStatus?.status === 'cancelling'
   const isCancelled  = taskStatus?.status === 'cancelled'
   const isIdle       = !taskStatus || taskStatus.status === 'idle'
-  const activeBatches = taskStatus?.active_batches || 0
-  const scrapedCount  = taskStatus?.scraped_count  || 0
+  const activeBatches  = taskStatus?.active_batches  || 0
+  const scrapedCount   = taskStatus?.scraped_count   || 0
+  const chaptersOk     = taskStatus?.chapters_ok     || []
+  const chaptersFail   = taskStatus?.chapters_fail   || []
+  const batchDetails   = taskStatus?.batch_details   || []
+  const tokensUsed     = taskStatus?.tokens_used     || 0
+  const costSoFar      = taskStatus?.cost_so_far     || 0
+  const currentModel   = taskStatus?.current_model   || ''
+  const currentChapter = taskStatus?.current_chapter || ''
+  const crawlingChap   = taskStatus?.crawling_chapter|| ''
 
-  // Auto-scroll log to bottom
+  // Auto-scroll
   useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
-  }, [taskStatus?.logs])
+    if (logRef.current)  logRef.current.scrollTop  = logRef.current.scrollHeight
+    if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight
+  }, [taskStatus?.logs, chaptersOk.length, chaptersFail.length])
 
-  // Speed estimate: chapters per minute
+  // Speed & ETA
   const chapPerMin = elapsedSec > 5 && taskStatus?.current > 0
-    ? ((taskStatus.current / elapsedSec) * 60).toFixed(1)
-    : null
-
-  // ETA
+    ? ((taskStatus.current / elapsedSec) * 60).toFixed(1) : null
   const remaining = taskStatus ? taskStatus.total - taskStatus.current : 0
   const eta = chapPerMin && remaining > 0
-    ? fmtTime(Math.round((remaining / parseFloat(chapPerMin)) * 60))
-    : null
+    ? fmtTime(Math.round((remaining / parseFloat(chapPerMin)) * 60)) : null
+
+  // Model color helper
+  const modelColor = (m = '') => {
+    const n = m.toLowerCase()
+    if (n.includes('gemini'))   return { text: '#93c5fd', bg: 'rgba(59,130,246,0.15)',  dot: '#3b82f6' }
+    if (n.includes('deepseek')) return { text: '#c4b5fd', bg: 'rgba(139,92,246,0.15)', dot: '#8b5cf6' }
+    if (n.includes('ollama') || n.includes('hunyuan')) return { text: '#6ee7b7', bg: 'rgba(16,185,129,0.15)', dot: '#10b981' }
+    return { text: 'var(--text-muted)', bg: 'rgba(255,255,255,0.06)', dot: '#6b7280' }
+  }
+  const mc = modelColor(currentModel)
 
   return (
     <div className="glass-panel" style={{ overflow: 'hidden' }}>
-      {/* Header */}
-      <div style={{ padding: '1.25rem 1.25rem 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h2 style={{ ...sectionTitle, margin: 0 }}>
-            <Zap size={18} style={{ color: 'var(--accent)' }} /> Dịch truyện
+
+      {/* ── Header ── */}
+      <div style={{ padding: '1.1rem 1.1rem 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.9rem' }}>
+          <h2 style={{ ...sectionTitle, margin: 0, fontSize: '0.95rem' }}>
+            <Zap size={16} style={{ color: 'var(--accent)' }} /> Dịch truyện
           </h2>
           {isRunning && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              <Clock size={13} /> {fmtTime(elapsedSec)}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {/* Live model badge */}
+              {currentModel && (
+                <span style={{
+                  fontSize: '0.65rem', fontWeight: 700, padding: '2px 7px', borderRadius: '99px',
+                  background: mc.bg, color: mc.text,
+                  border: `1px solid ${mc.dot}44`,
+                  display: 'flex', alignItems: 'center', gap: '4px',
+                }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: mc.dot, animation: 'pulse-dot 1.5s infinite', display: 'inline-block' }} />
+                  {currentModel.length > 22 ? currentModel.slice(0, 22) + '…' : currentModel}
+                </span>
+              )}
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Clock size={11} /> {fmtTime(elapsedSec)}
+              </span>
             </div>
           )}
         </div>
 
         {/* Input + buttons */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.7rem' }}>
           <div style={{ position: 'relative', flex: 1 }}>
             <input
               type="number" className="input-field"
@@ -281,115 +312,190 @@ function TranslationPanel({ isRunning, translating, translateCount, setTranslate
               fontSize: '0.72rem', color: 'var(--text-muted)', pointerEvents: 'none',
             }}>chương</span>
           </div>
-
           {!isRunning && !isCancelling && (
-            <button className="btn btn-primary" onClick={onStart} disabled={translating} style={{ minWidth: '90px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Play size={15} fill="currentColor" /> Bắt đầu
-              </span>
+            <button className="btn btn-primary" onClick={onStart} disabled={translating} style={{ minWidth: '86px' }}>
+              <Play size={14} fill="currentColor" /> Bắt đầu
             </button>
           )}
           {(isRunning || isCancelling) && (
             <button
               onClick={isCancelling ? undefined : onStop} disabled={isCancelling}
               style={{
-                minWidth: '90px', padding: '10px 16px', borderRadius: '10px',
+                minWidth: '86px', padding: '10px 14px', borderRadius: '10px',
                 display: 'flex', alignItems: 'center', gap: '6px', border: 'none',
                 cursor: isCancelling ? 'not-allowed' : 'pointer',
                 background: isCancelling ? 'rgba(251,146,60,0.15)' : 'rgba(239,68,68,0.15)',
                 color: isCancelling ? '#fdba74' : '#fca5a5',
-                fontWeight: 500, fontSize: '0.9rem', transition: 'all 0.2s',
+                fontWeight: 500, fontSize: '0.88rem', transition: 'all 0.2s',
               }}
               onMouseEnter={e => { if (!isCancelling) e.currentTarget.style.background = 'rgba(239,68,68,0.25)' }}
               onMouseLeave={e => { if (!isCancelling) e.currentTarget.style.background = 'rgba(239,68,68,0.15)' }}
             >
-              {isCancelling ? <><SpinnerIcon /> Đang dừng</> : <><OctagonX size={15} /> Dừng</>}
+              {isCancelling ? <><SpinnerIcon /> Đang dừng</> : <><OctagonX size={14} /> Dừng</>}
             </button>
           )}
         </div>
 
-        {/* Speed stats */}
-        {isRunning && chapPerMin && (
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            <MiniStat icon={<TrendingUp size={12} />} label="Tốc độ" value={`${chapPerMin} ch/phút`} />
-            {eta && <MiniStat icon={<Clock size={12} />} label="Còn lại" value={eta} />}
+        {/* ── Speed row ── */}
+        {isRunning && (
+          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.8rem', flexWrap: 'wrap' }}>
+            {chapPerMin && <MiniStat icon={<TrendingUp size={11} />} label="Tốc độ" value={`${chapPerMin} ch/phút`} />}
+            {eta         && <MiniStat icon={<Clock size={11} />}      label="Còn lại" value={eta} />}
+            {tokensUsed > 0 && <MiniStat icon={<span style={{fontSize:'0.7rem'}}>⚡</span>} label="Tokens" value={tokensUsed >= 1000 ? `${(tokensUsed/1000).toFixed(1)}K` : tokensUsed} />}
+            {costSoFar  > 0 && <MiniStat icon={<span style={{fontSize:'0.7rem'}}>💰</span>} label="Chi phí" value={`$${costSoFar.toFixed(4)}`} color="#fb923c" />}
           </div>
         )}
       </div>
 
-      {/* Progress section */}
+      {/* ── Active section ── */}
       {taskStatus && taskStatus.status !== 'idle' && (
-        <div style={{ padding: '0 1.25rem 1.25rem' }}>
+        <div style={{ padding: '0 1.1rem 1.1rem' }}>
 
-          {/* Status + counter */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+          {/* Status row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.7rem' }}>
             <StatusBadge status={taskStatus.status} />
-            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: isDone ? '#6ee7b7' : isError ? '#fca5a5' : 'var(--text-main)' }}>
-              {taskStatus.current}
-              <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}> / {taskStatus.total}</span>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: isDone ? '#6ee7b7' : isError ? '#fca5a5' : 'var(--text-main)', fontVariantNumeric: 'tabular-nums' }}>
+              {taskStatus.current}<span style={{ color: 'var(--text-muted)', fontWeight: 400 }}> / {taskStatus.total}</span>
             </span>
           </div>
 
-          {/* ── Parallel pipeline visualization ── */}
+          {/* ── Progress bar (dual-layer) ── */}
+          <div style={{ marginBottom: '0.35rem' }}>
+            <div style={{
+              position: 'relative', background: 'rgba(255,255,255,0.06)',
+              borderRadius: '99px', height: '7px', overflow: 'hidden',
+            }}>
+              {isRunning && scrapedPct > pct && (
+                <div style={{
+                  position: 'absolute', left: 0, top: 0, height: '100%',
+                  background: 'rgba(16,185,129,0.18)', width: `${scrapedPct}%`,
+                  borderRadius: '99px', transition: 'width 0.4s ease',
+                }} />
+              )}
+              <div style={{
+                position: 'absolute', left: 0, top: 0, height: '100%', borderRadius: '99px',
+                background: isError   ? 'linear-gradient(90deg,#ef4444,#dc2626)'
+                  : isDone            ? 'linear-gradient(90deg,#10b981,#059669)'
+                  : isCancelled       ? 'linear-gradient(90deg,#f59e0b,#d97706)'
+                  : isCancelling      ? 'linear-gradient(90deg,#fb923c,#f59e0b)'
+                  : activeBatches > 1 ? 'linear-gradient(90deg,#8b5cf6,#3b82f6)'
+                                      : 'linear-gradient(90deg,#3b82f6,#8b5cf6)',
+                width: `${pct}%`,
+                transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
+                boxShadow: isDone ? '0 0 8px rgba(16,185,129,0.4)'
+                  : activeBatches > 1 ? '0 0 8px rgba(139,92,246,0.5)'
+                  : '0 0 6px rgba(59,130,246,0.4)',
+              }} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '0.9rem' }}>
+            <span style={{ color: isRunning && scrapedCount > taskStatus.current ? '#10b981' : 'transparent' }}>
+              Đã cào: {scrapedCount}
+            </span>
+            <span style={{ fontWeight: 600 }}>{pct.toFixed(0)}%</span>
+          </div>
+
+          {/* ── ADMIN LIVE DASHBOARD (chỉ hiển thị khi đang chạy) ── */}
           {isRunning && (
-            <div style={{ marginBottom: '1rem' }}>
-              {/* Pipeline stages */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 8px 1fr 8px 1fr', alignItems: 'center', gap: '4px', marginBottom: '0.65rem' }}>
-                {/* Stage: Crawl */}
-                <PipelineStage
-                  label="Cào nội dung"
-                  value={scrapedCount}
-                  total={taskStatus.total}
-                  active={isRunning && scrapedCount < taskStatus.total}
-                  color="#10b981"
-                  icon="🌐"
-                />
-                {/* Arrow */}
-                <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '10px' }}>›</div>
-                {/* Stage: Translating (parallel batches) */}
-                <PipelineStage
-                  label={activeBatches > 1 ? `Dịch song song ×${activeBatches}` : 'Dịch'}
-                  value={taskStatus.current}
-                  total={scrapedCount || taskStatus.total}
-                  active={activeBatches > 0}
-                  color={activeBatches > 1 ? '#8b5cf6' : '#3b82f6'}
-                  icon={activeBatches > 1 ? '⚡' : '🔤'}
-                  highlight={activeBatches > 1}
-                />
-                {/* Arrow */}
-                <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '10px' }}>›</div>
-                {/* Stage: Saved */}
-                <PipelineStage
-                  label="Đã lưu"
-                  value={taskStatus.current}
-                  total={taskStatus.total}
-                  active={false}
-                  color="#6ee7b7"
-                  icon="✓"
-                />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '0.9rem' }}>
+
+              {/* Crawl + Chapter đang xử lý */}
+              <div style={{
+                padding: '0.6rem 0.8rem', borderRadius: '9px',
+                background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.18)',
+              }}>
+                <div style={{ fontSize: '0.63rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
+                  🌐 Đang crawl
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {crawlingChap || <span style={{ color: 'var(--text-muted)' }}>Chờ...</span>}
+                </div>
               </div>
 
-              {/* Parallel batch indicators */}
-              {activeBatches > 0 && (
-                <div style={{ marginBottom: '0.6rem' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                    Luồng đang chạy:
+              {/* Active batches với detail */}
+              {batchDetails.length > 0 && (
+                <div style={{
+                  padding: '0.6rem 0.8rem', borderRadius: '9px',
+                  background: activeBatches > 1 ? 'rgba(139,92,246,0.07)' : 'rgba(59,130,246,0.07)',
+                  border: `1px solid ${activeBatches > 1 ? 'rgba(139,92,246,0.2)' : 'rgba(59,130,246,0.18)'}`,
+                }}>
+                  <div style={{ fontSize: '0.63rem', fontWeight: 700, color: activeBatches > 1 ? '#c4b5fd' : '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+                    ⚡ Đang dịch {activeBatches > 1 ? `(${activeBatches} luồng song song)` : ''}
                   </div>
-                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                    {Array.from({ length: activeBatches }).map((_, i) => (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {batchDetails.slice(-activeBatches || -3).map((bd, i) => {
+                      const bmc = modelColor(bd.model)
+                      return (
+                        <div key={bd.id || i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem' }}>
+                          {/* Pulsing dot */}
+                          <span style={{
+                            width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                            background: bmc.dot, display: 'inline-block',
+                            animation: 'pulse-dot 1.2s infinite', animationDelay: `${i * 0.25}s`,
+                          }} />
+                          {/* Chapters in batch */}
+                          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-main)' }}>
+                            {(bd.chapters || []).join(' · ')}
+                          </span>
+                          {/* Model */}
+                          {bd.model && bd.model !== '...' && (
+                            <span style={{ color: bmc.text, fontSize: '0.65rem', fontWeight: 600, flexShrink: 0 }}>
+                              {bd.model.length > 18 ? bd.model.slice(0, 18) + '…' : bd.model}
+                            </span>
+                          )}
+                          {/* Tokens */}
+                          {bd.tokens > 0 && (
+                            <span style={{ color: '#fbbf24', fontSize: '0.65rem', flexShrink: 0 }}>
+                              {bd.tokens >= 1000 ? `${(bd.tokens/1000).toFixed(1)}K` : bd.tokens}tok
+                            </span>
+                          )}
+                          {/* Cost */}
+                          {bd.cost > 0 && (
+                            <span style={{ color: '#fb923c', fontSize: '0.65rem', flexShrink: 0 }}>
+                              ${bd.cost.toFixed(4)}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Chapter result feed */}
+              {(chaptersOk.length > 0 || chaptersFail.length > 0) && (
+                <div style={{
+                  padding: '0.6rem 0.8rem', borderRadius: '9px',
+                  background: 'rgba(255,255,255,0.025)', border: '1px solid var(--border-panel)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
+                    <div style={{ fontSize: '0.63rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      📄 Kết quả chương
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', fontSize: '0.68rem' }}>
+                      <span style={{ color: '#6ee7b7', fontWeight: 700 }}>✓ {chaptersOk.length}</span>
+                      {chaptersFail.length > 0 && <span style={{ color: '#fca5a5', fontWeight: 700 }}>✗ {chaptersFail.length}</span>}
+                    </div>
+                  </div>
+                  <div ref={feedRef} style={{ maxHeight: '100px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    {/* Hiện 8 chương mới nhất */}
+                    {[...chaptersOk.map(c => ({c, ok: true})), ...chaptersFail.map(c => ({c, ok: false}))]
+                      .sort((a,b) => 0) // giữ thứ tự gốc
+                      .slice(-8)
+                      .map(({c, ok}, i) => (
                       <div key={i} style={{
-                        display: 'flex', alignItems: 'center', gap: '4px',
-                        padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem',
-                        background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)',
-                        color: '#c4b5fd',
+                        display: 'flex', alignItems: 'center', gap: '5px',
+                        fontSize: '0.7rem', padding: '1px 0',
                       }}>
+                        <span style={{ color: ok ? '#6ee7b7' : '#fca5a5', flexShrink: 0, fontSize: '0.65rem' }}>
+                          {ok ? '✓' : '✗'}
+                        </span>
                         <span style={{
-                          width: '6px', height: '6px', borderRadius: '50%',
-                          background: '#8b5cf6', display: 'inline-block', flexShrink: 0,
-                          animation: 'pulse-dot 1.2s infinite',
-                          animationDelay: `${i * 0.3}s`,
-                        }} />
-                        Batch {i + 1}
+                          color: ok ? 'var(--text-main)' : '#fca5a5',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
+                        }}>
+                          {c}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -398,82 +504,51 @@ function TranslationPanel({ isRunning, translating, translateCount, setTranslate
             </div>
           )}
 
-          {/* Main progress bar (translated) */}
-          <div style={{ marginBottom: '0.4rem' }}>
-            {/* Dual-layer bar: scraped (bg) + translated (fg) */}
-            <div style={{
-              position: 'relative', background: 'rgba(255,255,255,0.06)',
-              borderRadius: '99px', height: '8px', overflow: 'hidden',
-              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
-            }}>
-              {/* Scraped layer (lighter, behind) */}
-              {isRunning && scrapedPct > pct && (
-                <div style={{
-                  position: 'absolute', left: 0, top: 0, height: '100%',
-                  borderRadius: '99px', background: 'rgba(16,185,129,0.2)',
-                  width: `${scrapedPct}%`, transition: 'width 0.4s ease',
-                }} />
-              )}
-              {/* Translated layer (solid, front) */}
-              <div style={{
-                position: 'absolute', left: 0, top: 0, height: '100%',
-                borderRadius: '99px',
-                background: isError     ? 'linear-gradient(90deg,#ef4444,#dc2626)'
-                  : isDone              ? 'linear-gradient(90deg,#10b981,#059669)'
-                  : isCancelled         ? 'linear-gradient(90deg,#f59e0b,#d97706)'
-                  : isCancelling        ? 'linear-gradient(90deg,#fb923c,#f59e0b)'
-                  : activeBatches > 1   ? 'linear-gradient(90deg,#8b5cf6,#3b82f6)'
-                                        : 'linear-gradient(90deg,#3b82f6,#8b5cf6)',
-                width: `${pct}%`,
-                transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
-                boxShadow: isDone ? '0 0 8px rgba(16,185,129,0.5)'
-                  : activeBatches > 1 ? '0 0 10px rgba(139,92,246,0.6)'
-                  : '0 0 8px rgba(59,130,246,0.5)',
-              }} />
-            </div>
-          </div>
-
-          {/* Percent + scraped label */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-            <span style={{ color: isRunning && scrapedCount > taskStatus.current ? '#10b981' : 'transparent', fontSize: '0.68rem' }}>
-              {isRunning && scrapedCount > taskStatus.current ? `Đã cào: ${scrapedCount}` : ''}
-            </span>
-            <span>{pct.toFixed(0)}%</span>
-          </div>
-
-          {/* Banners */}
+          {/* ── Banners ── */}
           {isDone && (
             <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px', padding: '0.7rem 0.9rem',
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '0.65rem 0.85rem',
               borderRadius: '8px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
-              color: '#6ee7b7', fontSize: '0.875rem', marginBottom: '0.75rem',
+              color: '#6ee7b7', fontSize: '0.83rem', marginBottom: '0.7rem',
             }}>
-              <CheckCircle size={16} />
-              Dịch xong {taskStatus.current} chương thành công!
+              <CheckCircle size={15} />
+              <div>
+                <div style={{ fontWeight: 600 }}>Dịch xong {taskStatus.current} chương!</div>
+                {(chaptersFail.length > 0) && (
+                  <div style={{ fontSize: '0.72rem', color: '#fca5a5', marginTop: '2px' }}>
+                    {chaptersFail.length} chương thất bại — chạy fix_chapters để sửa
+                  </div>
+                )}
+                {costSoFar > 0 && (
+                  <div style={{ fontSize: '0.72rem', color: '#fbbf24', marginTop: '2px' }}>
+                    Tổng chi phí: ${costSoFar.toFixed(5)}
+                  </div>
+                )}
+              </div>
             </div>
           )}
           {(isCancelled || isCancelling) && (
             <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px', padding: '0.7rem 0.9rem',
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '0.65rem 0.85rem',
               borderRadius: '8px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
-              color: '#fcd34d', fontSize: '0.875rem', marginBottom: '0.75rem',
+              color: '#fcd34d', fontSize: '0.83rem', marginBottom: '0.7rem',
             }}>
-              <OctagonX size={16} />
-              {isCancelling ? 'Đang dừng — chờ batch hiện tại hoàn thành...' : `Đã dừng — ${taskStatus.current} chương đã được lưu`}
+              <OctagonX size={15} />
+              {isCancelling ? 'Đang dừng — chờ batch hiện tại...' : `Đã dừng — ${taskStatus.current} chương đã lưu`}
             </div>
           )}
           {isError && (
             <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px', padding: '0.7rem 0.9rem',
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '0.65rem 0.85rem',
               borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
-              color: '#fca5a5', fontSize: '0.875rem', marginBottom: '0.75rem',
+              color: '#fca5a5', fontSize: '0.83rem', marginBottom: '0.7rem',
             }}>
-              <AlertTriangle size={16} />
-              Có lỗi xảy ra — xem log bên dưới để biết chi tiết
+              <AlertTriangle size={15} />
+              Có lỗi xảy ra — xem log bên dưới
             </div>
           )}
 
-          {/* Log terminal */}
+          {/* ── Log (collapsible) ── */}
           {(taskStatus.logs || []).length > 0 && (
             <div>
               <button
@@ -481,29 +556,29 @@ function TranslationPanel({ isRunning, translating, translateCount, setTranslate
                 style={{
                   display: 'flex', alignItems: 'center', gap: '5px',
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--text-muted)', fontSize: '0.75rem', padding: '0 0 0.4rem',
+                  color: 'var(--text-muted)', fontSize: '0.72rem', padding: '0 0 0.35rem',
                 }}
               >
-                {logsExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                {logsExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                 Log ({taskStatus.logs.length})
               </button>
               {logsExpanded && (
                 <div ref={logRef} style={{
-                  background: 'rgba(0,0,0,0.4)', borderRadius: '8px',
+                  background: 'rgba(0,0,0,0.4)', borderRadius: '7px',
                   border: '1px solid rgba(255,255,255,0.06)',
-                  padding: '0.6rem 0.75rem', maxHeight: '160px', overflowY: 'auto',
-                  fontFamily: 'monospace', fontSize: '0.72rem', lineHeight: '1.6',
+                  padding: '0.55rem 0.7rem', maxHeight: '140px', overflowY: 'auto',
+                  fontFamily: 'monospace', fontSize: '0.69rem', lineHeight: '1.65',
                 }}>
                   {(taskStatus.logs || []).map((log, i) => {
-                    const isErr = log.includes('Lỗi') || log.includes('error') || log.includes('Error')
-                    const isOk  = log.includes('Đã lưu') || log.includes('thành công') || log.includes('✓')
+                    const isErr = /lỗi|error|❌|✗/i.test(log)
+                    const isOk  = /đã lưu|thành công|✓/i.test(log)
+                    const isCrawl = /đã lấy|crawl|fetch/i.test(log)
                     return (
                       <div key={i} style={{
-                        color: isErr ? '#fca5a5' : isOk ? '#6ee7b7' : '#9ca3af',
-                        paddingBottom: '2px', marginBottom: '2px',
-                        borderBottom: i < taskStatus.logs.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
+                        color: isErr ? '#fca5a5' : isOk ? '#6ee7b7' : isCrawl ? '#10b981' : '#9ca3af',
+                        paddingBottom: '1px',
                       }}>
-                        <span style={{ color: 'rgba(255,255,255,0.2)', marginRight: '6px', userSelect: 'none' }}>
+                        <span style={{ color: 'rgba(255,255,255,0.18)', marginRight: '5px', userSelect: 'none' }}>
                           {String(i + 1).padStart(2, '0')}
                         </span>
                         {log}
@@ -519,10 +594,14 @@ function TranslationPanel({ isRunning, translating, translateCount, setTranslate
 
       {/* Idle hint */}
       {isIdle && (
-        <div style={{ padding: '0 1.25rem 1rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+        <div style={{ padding: '0 1.1rem 0.9rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
           Nhập số chương và nhấn Bắt đầu để dịch tiếp.
         </div>
       )}
+
+      <style>{`
+        @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.35;transform:scale(0.65)} }
+      `}</style>
     </div>
   )
 }
