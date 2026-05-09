@@ -51,6 +51,21 @@ async function handleApi(request, url, env) {
     return jsonResponse({ server_start: new Date().toISOString(), mode: 'cloudflare' });
   }
 
+  // GET /api/debug/chapter/:slug/:num — kiểm tra D1 + R2 cho 1 chapter cụ thể
+  const debugMatch = path.match(/^\/api\/debug\/chapter\/([^/]+)\/(\d+)$/);
+  if (debugMatch && method === 'GET') {
+    const [, dSlug, dNum] = debugMatch;
+    const row = await env.DB.prepare(
+      `SELECT filename, r2_key, chapter_number FROM chapters
+       WHERE novel_slug = ? AND chapter_number = ? LIMIT 1`
+    ).bind(dSlug, parseInt(dNum)).first();
+    if (!row) return jsonResponse({ step: 'D1', error: 'NOT FOUND in D1', slug: dSlug, chapter_number: parseInt(dNum) }, 404);
+    const obj = await env.CHAPTERS.get(row.r2_key);
+    if (!obj) return jsonResponse({ step: 'R2', error: 'NOT FOUND in R2', r2_key: row.r2_key, filename: row.filename }, 404);
+    const preview = (await obj.text()).slice(0, 200);
+    return jsonResponse({ step: 'OK', filename: row.filename, r2_key: row.r2_key, preview });
+  }
+
   // GET /api/novels/:slug
   const novelMatch = path.match(/^\/api\/novels\/([^/]+)$/);
   if (novelMatch && method === 'GET') {
@@ -127,15 +142,49 @@ async function getChapters(env, slug) {
   return jsonResponse(results);
 }
 
-async function getChapterContent(env, slug, filename) {
-  // Lấy từ R2
-  const key = `${slug}/${filename}`;
-  const obj = await env.CHAPTERS.get(key);
+async function getChapterContent(env, slug, identifier) {
+  // identifier có thể là filename (từ frontend) hoặc số chương
+  const isNumber = /^\d+$/.test(identifier);
 
-  if (!obj) return jsonResponse({ error: 'Chapter not found' }, 404);
+  let rows = [];
+  if (isNumber) {
+    const { results } = await env.DB.prepare(
+      `SELECT filename, r2_key FROM chapters
+       WHERE novel_slug = ? AND chapter_number = ?
+       ORDER BY filename ASC`
+    ).bind(slug, parseInt(identifier)).all();
+    rows = results;
+  } else {
+    const row = await env.DB.prepare(
+      `SELECT filename, r2_key FROM chapters
+       WHERE novel_slug = ? AND filename = ?`
+    ).bind(slug, identifier).first();
+    if (row) rows = [row];
+  }
 
-  const content = await obj.text();
-  return jsonResponse({ content });
+  if (rows.length === 0) {
+    return jsonResponse({ error: 'Chapter not found in database', identifier, slug }, 404);
+  }
+
+  // Lấy content từ R2 — r2_key đã được lưu đúng từ migration script
+  let fullContent = '';
+  for (const row of rows) {
+    const obj = await env.CHAPTERS.get(row.r2_key);
+    if (obj) {
+      const text = await obj.text();
+      fullContent += (fullContent ? '\n\n' : '') + text;
+    } else {
+      // Debug: trả về thông tin để trace lỗi
+      return jsonResponse({
+        error: 'Content not found in R2',
+        r2_key: row.r2_key,
+        filename: row.filename,
+      }, 404);
+    }
+  }
+
+  if (!fullContent) return jsonResponse({ error: 'Empty content' }, 404);
+  return jsonResponse({ content: fullContent });
 }
 
 async function updateGlossary(env, slug, request) {

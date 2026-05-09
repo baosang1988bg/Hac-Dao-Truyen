@@ -134,6 +134,9 @@ export default function NovelDetail() {
 
   const isRunning = taskStatus?.status === 'running'
 
+  const role = localStorage.getItem('userRole')
+  const isAdmin = role === 'admin'
+
   return (
     <div className="container animate-fade-in">
       {/* Header */}
@@ -149,32 +152,36 @@ export default function NovelDetail() {
       </div>
 
       {/* Main layout */}
-      <div className="novel-detail-grid" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="novel-detail-grid" style={{ 
+        display: 'grid', 
+        gridTemplateColumns: isAdmin ? '300px 1fr' : '1fr', 
+        gap: '1.5rem', 
+        alignItems: 'start' 
+      }}>
 
-        {/* ── Left sidebar ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {/* ── Left sidebar (Admin only) ── */}
+        {isAdmin && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <TranslationPanel
+              isRunning={isRunning}
+              translating={translating}
+              translateCount={translateCount}
+              setTranslateCount={setTranslateCount}
+              taskStatus={taskStatus}
+              elapsedSec={elapsedSec}
+              onStart={handleTranslate}
+              onStop={handleStop}
+            />
 
-          {/* Translation Panel */}
-          <TranslationPanel
-            isRunning={isRunning}
-            translating={translating}
-            translateCount={translateCount}
-            setTranslateCount={setTranslateCount}
-            taskStatus={taskStatus}
-            elapsedSec={elapsedSec}
-            onStart={handleTranslate}
-            onStop={handleStop}
-          />
-
-          {/* Novel info */}
-          <div className="glass-panel p-6">
-            <h2 style={sectionTitle}><FileText size={18} style={{ color: 'var(--accent)' }} /> Thông tin</h2>
-            <InfoRow label="Slug"     value={novel.slug} mono />
-            <InfoRow label="Thể loại" value={novel.genre} />
-            <InfoRow label="Chương"   value={`${novel.last_chapter_number}${novel.total_chapters ? ' / ' + novel.total_chapters : ''}`} />
-            {novel.notes && <InfoRow label="Ghi chú" value={novel.notes} />}
+            <div className="glass-panel p-6">
+              <h2 style={sectionTitle}><FileText size={18} style={{ color: 'var(--accent)' }} /> Thông tin</h2>
+              <InfoRow label="Slug"     value={novel.slug} mono />
+              <InfoRow label="Thể loại" value={novel.genre} />
+              <InfoRow label="Chương"   value={`${novel.last_chapter_number}${novel.total_chapters ? ' / ' + novel.total_chapters : ''}`} />
+              {novel.notes && <InfoRow label="Ghi chú" value={novel.notes} />}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ── Right content: tabs ── */}
         <div className="glass-panel" style={{ overflow: 'hidden' }}>
@@ -182,9 +189,11 @@ export default function NovelDetail() {
           <div style={{ display: 'flex', borderBottom: '1px solid var(--border-panel)', padding: '0 1.5rem' }}>
             {[
               { id: TABS.CHAPTERS, label: `Chương (${chapters.length})`, icon: <BookOpen size={15} /> },
-              { id: TABS.GLOSSARY, label: `Glossary (${glossary.length})`, icon: <Book size={15} /> },
-              { id: TABS.HEALTH,   label: 'Kiểm tra', icon: <ShieldCheck size={15} /> },
-              { id: TABS.TOOLS,    label: 'Tính năng', icon: <Zap size={15} /> },
+              ...(isAdmin ? [
+                { id: TABS.GLOSSARY, label: `Glossary (${glossary.length})`, icon: <Book size={15} /> },
+                { id: TABS.HEALTH,   label: 'Kiểm tra', icon: <ShieldCheck size={15} /> },
+                { id: TABS.TOOLS,    label: 'Tính năng', icon: <Zap size={15} /> },
+              ] : [])
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
@@ -201,23 +210,28 @@ export default function NovelDetail() {
 
           <div style={{ padding: '1.5rem' }}>
             {activeTab === TABS.CHAPTERS && <ChaptersTab chapters={chapters} slug={slug} />}
-            {activeTab === TABS.GLOSSARY && (
-              <GlossaryTab
-                glossary={glossary} newKey={newKey} setNewKey={setNewKey}
-                newVal={newVal} setNewVal={setNewVal}
-                onAdd={addGlossary} onRemove={removeGlossary}
-              />
+            {isAdmin && (
+              <>
+                {activeTab === TABS.GLOSSARY && (
+                  <GlossaryTab
+                    glossary={glossary} newKey={newKey} setNewKey={setNewKey}
+                    newVal={newVal} setNewVal={setNewVal}
+                    onAdd={addGlossary} onRemove={removeGlossary}
+                  />
+                )}
+                {activeTab === TABS.HEALTH && (
+                  <HealthTab healthData={healthData} loading={healthLoading} onRefresh={fetchHealth} slug={slug} />
+                )}
+                {activeTab === TABS.TOOLS && <ToolsTab slug={slug} />}
+              </>
             )}
-            {activeTab === TABS.HEALTH && (
-              <HealthTab healthData={healthData} loading={healthLoading} onRefresh={fetchHealth} slug={slug} />
-            )}
-            {activeTab === TABS.TOOLS && <ToolsTab slug={slug} />}
           </div>
         </div>
       </div>
     </div>
   )
 }
+
 
 // ── Translation Panel ─────────────────────────────────────────────────────────
 
@@ -746,6 +760,7 @@ function AuthorNotesSection({ chapters, slug, getChapNum }) {
           padding: '4px 0',
         }}>
           {chapters.map((chap) => {
+            const num = getChapNum(chap.title)
             const cleanTitle = chap.title
               .replace(/第\d+章\s*/, '')
               .replace(/Chapter\s*\d+[\s:.]*/i, '')
@@ -754,9 +769,10 @@ function AuthorNotesSection({ chapters, slug, getChapNum }) {
             return (
               <Link
                 key={chap.filename}
-                to={`/novel/${slug}/read/${encodeURIComponent(chap.filename)}`}
+                to={`/novel/${slug}/read/${num ? num : encodeURIComponent(chap.filename)}`}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '10px',
+
                   padding: '0.5rem 0.85rem', margin: '0 4px', borderRadius: '7px',
                   color: 'var(--text-main)',
                   textDecoration: 'none', transition: 'background 0.12s',
@@ -847,7 +863,7 @@ function ChaptersTab({ chapters, slug }) {
               return (
                 <Link
                   key={`new-${chap.filename}`}
-                  to={`/novel/${slug}/read/${encodeURIComponent(chap.filename)}`}
+                  to={`/novel/${slug}/read/${num ? num : encodeURIComponent(chap.filename)}`}
                   style={{
                     flexShrink: 0,
                     display: 'flex', flexDirection: 'column', gap: '4px',
@@ -992,7 +1008,7 @@ function ChaptersTab({ chapters, slug }) {
             return (
               <Link
                 key={chap.filename}
-                to={`/novel/${slug}/read/${encodeURIComponent(chap.filename)}`}
+                to={`/novel/${slug}/read/${num ? num : encodeURIComponent(chap.filename)}`}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '10px',
                   padding: '0.55rem 0.75rem', borderRadius: '8px',

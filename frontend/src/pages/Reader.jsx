@@ -61,26 +61,33 @@ export default function Reader() {
   // Separate story chapters (numbered) from author notes
   const storyChapters = chapters.filter(c => getChapNum(c.title))
 
-  // Navigation within story chapters only
-  const currentStoryIndex = storyChapters.findIndex(c => c.filename === chapter)
-  const isAuthorNote      = currentStoryIndex === -1 && chapters.some(c => c.filename === chapter)
-
   // If reading a story chapter → navigate within story chapters
-  // If reading an author note  → no prev/next (or fallback to all chapters)
-  const prevChapter = currentStoryIndex > 0
-    ? storyChapters[currentStoryIndex - 1]
-    : null
-  const nextChapter = currentStoryIndex !== -1 && currentStoryIndex < storyChapters.length - 1
-    ? storyChapters[currentStoryIndex + 1]
-    : null
+  // isNumber detected if 'chapter' param is digits
+  const isNumberParam = /^\d+$/.test(chapter)
+  
+  const currentChapterIndex = isNumberParam
+    ? chapters.findIndex(c => getChapNum(c.title) === chapter)
+    : chapters.findIndex(c => c.filename === chapter)
+
+  const isAuthorNote = !isNumberParam && chapters.some(c => c.filename === chapter && !getChapNum(c.title))
+
+  const prevChapter = currentChapterIndex > 0 ? chapters[currentChapterIndex - 1] : null
+  const nextChapter = currentChapterIndex !== -1 && currentChapterIndex < chapters.length - 1 ? chapters[currentChapterIndex + 1] : null
+
+  const getChapterUrl = (c) => {
+    if (!c) return '#'
+    const num = getChapNum(c.title)
+    return `/novel/${slug}/read/${num ? num : encodeURIComponent(c.filename)}`
+  }
 
   const goNext = useCallback(() => {
-    if (nextChapter) navigate(`/novel/${slug}/read/${encodeURIComponent(nextChapter.filename)}`)
+    if (nextChapter) navigate(getChapterUrl(nextChapter))
   }, [nextChapter, slug, navigate])
 
   const goPrev = useCallback(() => {
-    if (prevChapter) navigate(`/novel/${slug}/read/${encodeURIComponent(prevChapter.filename)}`)
+    if (prevChapter) navigate(getChapterUrl(prevChapter))
   }, [prevChapter, slug, navigate])
+
 
   // Keyboard navigation: ← → arrow keys
   useEffect(() => {
@@ -135,7 +142,7 @@ export default function Reader() {
           }}>
             {isAuthorNote
               ? <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: 600 }}>📝 Lưu bút</span>
-              : <>{currentStoryIndex + 1} / {storyChapters.length}</>
+              : <>{currentChapterIndex + 1} / {chapters.length}</>
             }
           </span>
         )}
