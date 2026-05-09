@@ -1,4 +1,4 @@
-# Phải Giết Bằng Được (thêm chương cho minh chủ Raiselovell)
+# Chương 827: Phải Giết Bằng Được (thêm chương cho minh chủ Raiselovell)
 
 Sau lưng Khương Vọng là một thuyền đầy những người thường sẵn lòng làm chứng cho hắn, trước mặt là ba siêu phàm tu sĩ của Nộ Kình Bang.
 

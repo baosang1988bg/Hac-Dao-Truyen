@@ -1,0 +1,21 @@
+{
+  "slug": "xich-tam-tuan-thien",
+  "timestamp": "2026-05-09T09:02:23.618297",
+  "chapters_done": 3,
+  "total_tokens": 88873,
+  "input_tokens": 76585,
+  "output_tokens": 12288,
+  "cost_usd": 0.01887775,
+  "models": [
+    "deepseek-chat"
+  ],
+  "chapters_saved": [
+    "第1033章 自是人间第一流万字答谢书友",
+    "第1033章-1",
+    "第1033章-2"
+  ],
+  "errors": [],
+  "started_at": "2026-05-09T08:58:12.371368",
+  "ended_at": "2026-05-09T09:02:23.619009",
+  "duration_sec": 251
+}

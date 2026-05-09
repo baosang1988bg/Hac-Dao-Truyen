@@ -112,6 +112,176 @@ def find_untranslated_raws(profile: NovelProfile) -> list[tuple[str, str]]:
     return pending
 
 
+# ── Chapter split ─────────────────────────────────────────────────────────────
+
+# Ngưỡng ký tự tối đa mỗi phần khi split chương lớn.
+# 4500 chars ≈ 6750 tokens (1 Chinese char ≈ 1.5 token) → an toàn cho mọi model.
+CHAPTER_SPLIT_THRESHOLD = int(os.getenv("CHAPTER_SPLIT_THRESHOLD", "4500"))
+
+
+def split_chapter_content(content: str, threshold: int = CHAPTER_SPLIT_THRESHOLD) -> list[str]:
+    """
+    Chia nội dung chương dài thành các phần <= threshold ký tự.
+    Tách tại ranh giới đoạn văn (dòng trống) để không cắt giữa câu.
+    Nếu 1 đoạn đơn > threshold thì tách tại dấu câu cuối câu (。！？\n).
+
+    Returns: list[str] — mỗi phần là 1 đoạn nội dung hoàn chỉnh.
+    """
+    if len(content) <= threshold:
+        return [content]
+
+    # Tách thành các đoạn tự nhiên (theo dòng trống)
+    paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
+    if not paragraphs:
+        paragraphs = [p.strip() for p in content.split('\n') if p.strip()]
+
+    parts: list[str] = []
+    current: list[str] = []
+    current_len = 0
+
+    for para in paragraphs:
+        para_len = len(para) + 2  # +2 cho \n\n
+
+        # Nếu 1 đoạn đơn vượt threshold → tách thêm tại dấu câu
+        if para_len > threshold:
+            # Flush current trước
+            if current:
+                parts.append('\n\n'.join(current))
+                current = []
+                current_len = 0
+            # Tách đoạn lớn tại dấu câu
+            sub = _split_at_sentence(para, threshold)
+            parts.extend(sub)
+            continue
+
+        if current_len + para_len > threshold and current:
+            parts.append('\n\n'.join(current))
+            current = []
+            current_len = 0
+
+        current.append(para)
+        current_len += para_len
+
+    if current:
+        parts.append('\n\n'.join(current))
+
+    return [p for p in parts if p.strip()]
+
+
+def _split_at_sentence(text: str, threshold: int) -> list[str]:
+    """Tách text tại dấu câu Chinese/Vietnamese khi đoạn quá dài."""
+    import re
+    # Dấu câu kết thúc câu
+    sentence_ends = re.compile(r'(?<=[。！？\?\!])\s*')
+    sentences = sentence_ends.split(text)
+    parts = []
+    current = ""
+    for sent in sentences:
+        if len(current) + len(sent) > threshold and current:
+            parts.append(current.strip())
+            current = sent
+        else:
+            current += sent
+    if current.strip():
+        parts.append(current.strip())
+    return parts if parts else [text]
+
+
+def save_raw_parts(profile: NovelProfile, title: str, content: str) -> list[tuple[str, str]]:
+    """
+    Lưu raw content. Nếu content > CHAPTER_SPLIT_THRESHOLD:
+      - Lưu file gốc (title.txt) để tham khảo
+      - Lưu các phần nhỏ: title-1.txt, title-2.txt, ...
+      - Trả về list [(part_title, part_content)] để đưa vào pipeline dịch
+
+    Nếu content <= threshold:
+      - Lưu bình thường (title.txt)
+      - Trả về [(title, content)]
+    """
+    os.makedirs(profile.raw_dir, exist_ok=True)
+    safe_title = safe_filename(title)
+
+    if len(content) <= CHAPTER_SPLIT_THRESHOLD:
+        raw_path = os.path.join(profile.raw_dir, f"{safe_title}.txt")
+        if not os.path.exists(raw_path):
+            with open(raw_path, "w", encoding="utf-8") as f:
+                f.write(content)
+        return [(title, content)]
+
+    # Chương lớn → split
+    parts = split_chapter_content(content)
+    n = len(parts)
+
+    # Lưu file gốc (optional, để có thể kiểm tra lại)
+    orig_path = os.path.join(profile.raw_dir, f"{safe_title}.txt")
+    if not os.path.exists(orig_path):
+        with open(orig_path, "w", encoding="utf-8") as f:
+            f.write(content)
+
+    result = []
+    for i, part_content in enumerate(parts, start=1):
+        part_title = f"{title}-{i}"  # VD: "第1033章 xxx-1"
+        part_safe  = safe_filename(part_title)
+        part_path  = os.path.join(profile.raw_dir, f"{part_safe}.txt")
+        if not os.path.exists(part_path):
+            with open(part_path, "w", encoding="utf-8") as f:
+                f.write(part_content)
+        result.append((part_title, part_content))
+
+    return result
+
+
+def merge_translated_parts(profile: NovelProfile, original_title: str, num_parts: int) -> bool:
+    """
+    Sau khi dịch xong tất cả phần, ghép lại thành 1 file output duy nhất.
+    VD: title-1_VI.md + title-2_VI.md + title-3_VI.md → title_VI.md
+
+    Returns True nếu ghép thành công.
+    """
+    safe_orig = safe_filename(original_title)
+    final_out  = os.path.join(profile.translated_dir, f"{safe_orig}_VI.md")
+
+    # Kiểm tra tất cả phần đã dịch xong chưa
+    parts_content = []
+    for i in range(1, num_parts + 1):
+        part_title = f"{original_title}-{i}"
+        part_path  = os.path.join(profile.translated_dir, f"{safe_filename(part_title)}_VI.md")
+        if not os.path.exists(part_path) or os.path.getsize(part_path) == 0:
+            return False  # Chưa đủ phần
+        try:
+            with open(part_path, "r", encoding="utf-8") as f:
+                part_text = f.read().strip()
+            if "[Translation failed" in part_text[:100]:
+                return False  # Có phần lỗi
+            parts_content.append(part_text)
+        except Exception:
+            return False
+
+    if not parts_content:
+        return False
+
+    # Ghép: bỏ header trùng từ phần 2 trở đi, nối bằng \n\n
+    merged_parts = []
+    for idx, text in enumerate(parts_content):
+        if idx == 0:
+            merged_parts.append(text)
+        else:
+            # Bỏ dòng header (# ...) nếu trùng với phần đầu
+            lines = text.split('\n')
+            # Skip leading header lines từ phần 2+
+            start = 0
+            while start < len(lines) and lines[start].strip().startswith('#'):
+                start += 1
+            merged_parts.append('\n'.join(lines[start:]).strip())
+
+    final_text = '\n\n'.join(p for p in merged_parts if p)
+
+    with open(final_out, "w", encoding="utf-8") as f:
+        f.write(final_text)
+
+    return True
+
+
 def compute_batch_size(pending_batch: list[tuple[str, str]], new_content: str) -> int:
     """
     Kiểm tra xem có nên flush batch hiện tại trước khi thêm chương mới không.
@@ -139,11 +309,8 @@ def compute_batch_size(pending_batch: list[tuple[str, str]], new_content: str) -
 
 
 def save_raw(profile: NovelProfile, title: str, content: str):
-    os.makedirs(profile.raw_dir, exist_ok=True)
-    raw_path = os.path.join(profile.raw_dir, f"{safe_filename(title)}.txt")
-    if not os.path.exists(raw_path):
-        with open(raw_path, "w", encoding="utf-8") as f:
-            f.write(content)
+    """Legacy wrapper — dùng save_raw_parts nội bộ."""
+    save_raw_parts(profile, title, content)
 
 
 # ── Core: dịch 1 chương ──────────────────────────────────────────────────────
@@ -373,6 +540,7 @@ async def cmd_translate_async(args, progress_callback=None):
     batch = []
     batch_urls = []
     background_tasks = set()
+    _pending_merges: dict[str, int] = {}  # {original_title: num_parts} — chờ merge sau khi dịch xong
     session_usage = {
         "total_tokens":  0,
         "input_tokens":  0,
@@ -559,21 +727,43 @@ async def cmd_translate_async(args, progress_callback=None):
                 logger.info("[*] No next chapter found after resume point.")
                 break
 
-        save_raw(profile, title, content)
+        # ── Auto-split chương lớn ────────────────────────────────────────────
+        # Nếu content > CHAPTER_SPLIT_THRESHOLD → lưu thành title-1, title-2,...
+        # và đưa từng phần vào batch riêng lẻ thay vì cả chương một lúc.
+        work_items = save_raw_parts(profile, title, content)
+        is_split   = len(work_items) > 1
+
+        if is_split:
+            num_parts = len(work_items)
+            logger.info(
+                f"[✂] '{title}' quá lớn ({len(content):,} chars > {CHAPTER_SPLIT_THRESHOLD}) "
+                f"→ split thành {num_parts} phần"
+            )
+            report_progress(translated_count, args.chapters, "running",
+                            f"✂ Split '{title}' thành {num_parts} phần",
+                            crawling_chapter=title)
 
         chapter_count += 1
 
-        # Flush batch trước nếu thêm chương này sẽ vượt giới hạn chars hoặc số chương
-        if compute_batch_size(batch, content) == 0 and batch:
-            total_chars = sum(len(c) for _, c in batch)
-            logger.info(
-                f"[*] Batch flush: {len(batch)} chapter(s), {total_chars} chars "
-                f"(adding '{title}' would exceed limit)"
-            )
-            await flush_batch()
+        for part_title, part_content in work_items:
+            # Flush batch trước nếu cần
+            if compute_batch_size(batch, part_content) == 0 and batch:
+                total_chars = sum(len(c) for _, c in batch)
+                logger.info(
+                    f"[*] Batch flush: {len(batch)} chapter(s), {total_chars} chars "
+                    f"(adding '{part_title}' would exceed limit)"
+                )
+                await flush_batch()
 
-        batch.append((title, content))
-        batch_urls.append(current_url)
+            batch.append((part_title, part_content))
+            batch_urls.append(current_url)
+
+            if len(batch) >= BATCH_SIZE:
+                await flush_batch()
+
+        # Nếu đã split, đăng ký merge callback sau khi tất cả phần dịch xong
+        if is_split:
+            _pending_merges[title] = num_parts
 
         # Flush khi đạt đúng BATCH_SIZE
         if len(batch) >= BATCH_SIZE:
@@ -593,6 +783,19 @@ async def cmd_translate_async(args, progress_callback=None):
     if background_tasks:
         logger.info(f"[*] Chờ {len(background_tasks)} luồng dịch đang chạy hoàn tất...")
         await asyncio.gather(*background_tasks)
+
+    # ── Merge các chương đã split ─────────────────────────────────────────────
+    if _pending_merges:
+        logger.info(f"[*] Ghép {len(_pending_merges)} chương đã split...")
+        merged_ok = 0
+        for orig_title, num_parts in _pending_merges.items():
+            ok = merge_translated_parts(profile, orig_title, num_parts)
+            if ok:
+                logger.info(f"  [✓] Đã ghép: '{orig_title}' ({num_parts} phần → 1 file)")
+                merged_ok += 1
+            else:
+                logger.warning(f"  [!] Chưa ghép được '{orig_title}' — một số phần chưa dịch xong hoặc lỗi")
+        logger.info(f"[*] Ghép xong: {merged_ok}/{len(_pending_merges)} chương")
 
     await scraper.close()
 
