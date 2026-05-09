@@ -1,4 +1,4 @@
-# Chương 1: Từ sáu mươi đặt hàng đến vạn đặt hàng. Người trong sạch khó tự minh oan - 1
+#  Từ sáu mươi đặt hàng đến vạn đặt hàng. Người trong sạch khó tự minh oan
 
 *Từ sáu mươi đặt hàng đến vạn đặt hàng. Người trong sạch khó tự minh oan*
 
