@@ -405,9 +405,15 @@ def health_check(slug: str):
 
         # ── File thường ───────────────────────────────────────────────────
         total_raw_effective += 1
-        out_path = os.path.join(trans_dir, f"{stem}_VI.md")
+        # Dùng _find_merged_vi để fuzzy-match tên file dịch
+        # (xử lý trường hợp tên có ký tự đặc biệt bị strip khi lưu)
+        matched_name = _find_merged_vi(stem, all_trans)
+        if matched_name:
+            out_path = os.path.join(trans_dir, matched_name)
+        else:
+            out_path = os.path.join(trans_dir, f"{stem}_VI.md")
 
-        if not os.path.exists(out_path) or os.path.getsize(out_path) == 0:
+        if not matched_name or not os.path.exists(out_path) or os.path.getsize(out_path) == 0:
             issues.append({"filename": raw_name, "type": "missing",
                             "detail": "Chưa có bản dịch"})
             continue
@@ -463,6 +469,99 @@ def health_check(slug: str):
         },
         "issues": issues,
     }
+
+
+@app.get("/api/novels/{slug}/tools/merge_split_parts")
+async def tool_merge_split_parts(slug: str):
+    """
+    Streaming tool: Tìm và merge các chương split (xxx-1_VI.md + xxx-2_VI.md → xxx_VI.md).
+    Tự động phát hiện tất cả nhóm cần merge, gộp nội dung và ghi file output.
+    """
+    import re as _re
+    import asyncio
+
+    trans_dir = os.path.join(NOVELS_DIR, slug, "translated")
+    if not os.path.exists(trans_dir):
+        raise HTTPException(status_code=404, detail="Novel not found")
+
+    async def _stream():
+        yield f"🔍 Quét thư mục translated/...\n"
+        await asyncio.sleep(0.05)
+
+        all_trans = sorted(os.listdir(trans_dir))
+        # Tìm tất cả file phần: xxx-N_VI.md
+        part_re  = _re.compile(r'^(.+)-(\d+)_VI\.md$')
+        groups   = {}  # stem → list of (N, filename)
+        for f in all_trans:
+            m = part_re.match(f)
+            if m:
+                stem, n = m.group(1), int(m.group(2))
+                groups.setdefault(stem, []).append((n, f))
+
+        if not groups:
+            yield "✅ Không có nhóm nào cần merge.\n"
+            yield "[Process exited with code 0]\n"
+            return
+
+        yield f"📦 Tìm thấy {len(groups)} nhóm cần xem xét:\n"
+        merged_count  = 0
+        skipped_count = 0
+
+        for stem, parts in sorted(groups.items()):
+            parts.sort(key=lambda x: x[0])  # sắp xếp theo N
+            out_file = f"{stem}_VI.md"
+            out_path = os.path.join(trans_dir, out_file)
+
+            # Đọc nội dung từng phần
+            contents = []
+            ok = True
+            for n, fname in parts:
+                fpath = os.path.join(trans_dir, fname)
+                try:
+                    txt = open(fpath, encoding='utf-8').read().strip()
+                    contents.append(txt)
+                except Exception as e:
+                    yield f"  ❌ Không đọc được {fname}: {e}\n"
+                    ok = False
+                    break
+
+            if not ok:
+                skipped_count += 1
+                continue
+
+            # Gộp: loại bỏ tiêu đề `# ...` trùng từ phần 2 trở đi
+            merged_lines = []
+            for i, txt in enumerate(contents):
+                lines = txt.splitlines()
+                if i > 0:
+                    # Bỏ dòng tiêu đề đầu tiên (# ...) nếu trùng
+                    while lines and lines[0].startswith('#'):
+                        lines.pop(0)
+                    while lines and not lines[0].strip():
+                        lines.pop(0)
+                merged_lines.append('\n'.join(lines))
+
+            merged = '\n\n'.join(merged_lines)
+
+            # Ghi file output
+            try:
+                with open(out_path, 'w', encoding='utf-8') as wf:
+                    wf.write(merged + '\n')
+                part_names = ', '.join(f for _, f in parts)
+                yield f"  ✅ Merge: [{part_names}] → {out_file} ({len(merged):,} chars)\n"
+                merged_count += 1
+            except Exception as e:
+                yield f"  ❌ Ghi lỗi {out_file}: {e}\n"
+                skipped_count += 1
+
+            await asyncio.sleep(0.01)
+
+        yield f"\n📊 Kết quả: {merged_count} nhóm đã merge, {skipped_count} bỏ qua.\n"
+        if merged_count > 0:
+            yield f"💡 Gợi ý: Chạy lại tab 'Kiểm tra' để cập nhật trạng thái.\n"
+        yield "[Process exited with code 0]\n"
+
+    return StreamingResponse(_stream(), media_type="text/plain; charset=utf-8")
 
 
 @app.post("/api/novels/{slug}/cleanup-split-parts")

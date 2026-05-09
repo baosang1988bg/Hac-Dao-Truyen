@@ -4,7 +4,7 @@ import {
   Play, Square, Book, BookOpen, Plus, Trash2, FileText,
   ArrowLeft, AlertTriangle, CheckCircle, RefreshCw, ShieldCheck,
   Zap, Clock, TrendingUp, ChevronDown, ChevronUp, OctagonX,
-  Search, ArrowUpDown, Sparkles
+  Search, ArrowUpDown, Sparkles, GitMerge
 } from 'lucide-react'
 import api from '../api'
 
@@ -1296,6 +1296,16 @@ const TOOL_DEFS = [
     iconBg: 'rgba(16,185,129,0.12)',
     border: 'rgba(16,185,129,0.28)',
     btnLabel: 'Chạy check_keys',
+  },
+  {
+    id: 'merge_split_parts',
+    label: 'Merge chương split',
+    desc: 'Gộp các file -1, -2, ... _VI.md thành 1 file chương hoàn chỉnh. Chạy sau khi dịch xong các phần.',
+    Icon: GitMerge,
+    iconColor: '#a78bfa',
+    iconBg: 'rgba(139,92,246,0.12)',
+    border: 'rgba(139,92,246,0.28)',
+    btnLabel: 'Chạy merge',
   },
 ]
 
