@@ -605,9 +605,10 @@ async def cmd_translate_async(args, progress_callback=None):
     scraper = _get_scraper()
     current_url = start_url
     chapter_count = 0      # số chương đã fetch
-    translated_count = 0   # số chương đã dịch xong (dùng cho progress bar)
+    translated_count = 0   # số chương gốc đã dịch xong (không đếm từng phần split)
     batch = []
     batch_urls = []
+    batch_orig_count = 0   # số chương gốc trong batch hiện tại
     background_tasks = set()
     _pending_merges: dict[str, int] = {}  # {original_title: num_parts} — chờ merge sau khi dịch xong
     session_usage = {
@@ -623,9 +624,14 @@ async def cmd_translate_async(args, progress_callback=None):
     logger.info(f"[*] Batch config: max {BATCH_SIZE} chapters/batch, max {BATCH_MAX_CHARS} chars/batch")
     logger.info(f"[*] Concurrency limit: {MAX_CONCURRENT_BATCHES} parallel batches")
 
-    async def process_batch_async(batch_copy, urls_copy, summary_copy):
+    async def process_batch_async(batch_copy, urls_copy, summary_copy, orig_chapter_count=None):
         nonlocal previous_summary, translated_count
         if not batch_copy: return
+
+        # orig_chapter_count: số chương gốc thực sự trong batch này
+        # (khác với len(batch_copy) vì split chương tạo ra nhiều phần)
+        if orig_chapter_count is None:
+            orig_chapter_count = len(batch_copy)  # fallback: assume không có split
 
         batch_len  = len(batch_copy)
         batch_id   = id(batch_copy)   # unique id cho batch này
@@ -708,18 +714,37 @@ async def cmd_translate_async(args, progress_callback=None):
             logger.info(f"[+] Saved: {out}")
 
             failed = "[Translation failed" in chunk[:100]
+            is_split_part = bool(__import__('re').match(r'^.+-\d+$', title))
+            # Lấy tên chương gốc (bỏ phần "-N" cuối nếu là split part)
+            _re = __import__('re')
+            orig_title_match = _re.match(r'^(.+)-(\d+)$', title)
+            orig_title = orig_title_match.group(1) if orig_title_match else title
+
             if failed:
                 session_usage["errors"].append(f"Dịch thất bại: {title}")
                 report_progress(translated_count, args.chapters, "running",
                                 f"❌ Thất bại: {title}", chapter_fail=title)
             else:
                 session_usage["chapters_saved"].append(title)
-                report_progress(translated_count, args.chapters, "running",
-                                f"✓ Đã lưu: {title}", chapter_ok=title)
+                # Emit chapter_ok: nếu là split part chỉ emit khi là phần cuối
+                if is_split_part:
+                    part_n   = int(orig_title_match.group(2))
+                    n_total  = _pending_merges.get(orig_title, 1)
+                    if part_n == n_total:  # là phần cuối
+                        report_progress(translated_count, args.chapters, "running",
+                                        f"✓ Đã dịch xong '{orig_title}' ({n_total} phần)",
+                                        chapter_ok=orig_title)
+                    else:
+                        report_progress(translated_count, args.chapters, "running",
+                                        f"✓ Part {part_n}/{n_total}: {title}")
+                else:
+                    report_progress(translated_count, args.chapters, "running",
+                                    f"✓ Đã lưu: {title}", chapter_ok=title)
 
-            translated_count += 1
-            report_progress(translated_count, args.chapters, "running",
-                            current_chapter=title)
+        # Tăng translated_count theo số chương gốc (không phải số phần split)
+        translated_count += orig_chapter_count
+        report_progress(translated_count, args.chapters, "running",
+                        current_chapter=batch_copy[-1][0] if batch_copy else "")
 
         # Auto-update glossary with newly extracted terms
         if new_glossary:
@@ -742,16 +767,20 @@ async def cmd_translate_async(args, progress_callback=None):
                         scraped_count=chapter_count)
 
     async def flush_batch():
+        nonlocal batch_orig_count
         if not batch: return
         # Giới hạn số lượng task song song
         while len(background_tasks) >= MAX_CONCURRENT_BATCHES:
             done, pending = await asyncio.wait(background_tasks, return_when=asyncio.FIRST_COMPLETED)
             background_tasks.intersection_update(pending)
-            
-        task = asyncio.create_task(process_batch_async(list(batch), list(batch_urls), previous_summary))
+
+        task = asyncio.create_task(
+            process_batch_async(list(batch), list(batch_urls), previous_summary, orig_chapter_count=batch_orig_count)
+        )
         background_tasks.add(task)
         batch.clear()
         batch_urls.clear()
+        batch_orig_count = 0  # reset cượng đếm
         report_progress(translated_count, args.chapters, "running",
                         active_batches=len(background_tasks),
                         scraped_count=chapter_count)
@@ -829,6 +858,9 @@ async def cmd_translate_async(args, progress_callback=None):
 
             if len(batch) >= BATCH_SIZE:
                 await flush_batch()
+
+        # Tăng batch_orig_count đúng 1 lần cho mỗi chương gốc (dù có split hay không)
+        batch_orig_count += 1
 
         # Nếu đã split, đăng ký merge callback sau khi tất cả phần dịch xong
         if is_split:
