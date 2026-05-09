@@ -86,11 +86,35 @@ def is_failed_translation(path: str) -> bool:
         return False
 
 
+def is_split_original(raw_dir: str, stem: str) -> bool:
+    """
+    Kiểm tra xem file này có phải là file gốc đã được split không.
+    Dấu hiệu: tồn tại file stem-1.txt trong cùng thư mục.
+    """
+    return os.path.exists(os.path.join(raw_dir, f"{stem}-1.txt"))
+
+
+def get_split_part_count(raw_dir: str, stem: str) -> int:
+    """Đếm số phần split của file gốc (stem-1.txt, stem-2.txt, ...)."""
+    count = 0
+    for i in range(1, 20):
+        if os.path.exists(os.path.join(raw_dir, f"{stem}-{i}.txt")):
+            count = i
+        else:
+            break
+    return count
+
+
 def find_untranslated_raws(profile: NovelProfile) -> list[tuple[str, str]]:
     """
     Scan text_raw/ và trả về list các file chưa có bản dịch tốt.
     Trả về: list of (raw_filepath, expected_output_filepath)
     Bao gồm cả file chưa dịch lẫn file dịch bị lỗi (Translation failed).
+
+    Xử lý đặc biệt cho chương đã split:
+    - File gốc (stem.txt) được coi là "đã dịch" nếu stem_VI.md tồn tại
+      HOẶC tất cả phần split (stem-1_VI.md, stem-2_VI.md...) đều đã dịch xong
+    - File phần (stem-N.txt) được xử lý bình thường
     """
     if not os.path.isdir(profile.raw_dir):
         return []
@@ -102,10 +126,52 @@ def find_untranslated_raws(profile: NovelProfile) -> list[tuple[str, str]]:
     pending = []
     for raw_name in raw_files:
         raw_path = os.path.join(profile.raw_dir, raw_name)
-        # Output file: thay .txt → _VI.md
-        stem = os.path.splitext(raw_name)[0]
+        stem     = os.path.splitext(raw_name)[0]
         out_path = os.path.join(profile.translated_dir, f"{stem}_VI.md")
 
+        # ── Trường hợp file gốc đã split ──────────────────────────────────
+        if is_split_original(profile.raw_dir, stem):
+            # Nếu đã có file merge (stem_VI.md) → coi là hoàn tất
+            if is_already_translated(out_path) and not is_failed_translation(out_path):
+                continue
+
+            # Chưa có merge file → kiểm tra tất cả phần đã dịch chưa
+            num_parts = get_split_part_count(profile.raw_dir, stem)
+            all_parts_done = all(
+                is_already_translated(
+                    os.path.join(profile.translated_dir, f"{stem}-{i}_VI.md")
+                ) and not is_failed_translation(
+                    os.path.join(profile.translated_dir, f"{stem}-{i}_VI.md")
+                )
+                for i in range(1, num_parts + 1)
+            )
+
+            if all_parts_done:
+                # Tất cả phần dịch xong nhưng chưa merge → merge ngay
+                ok = merge_translated_parts(profile, stem, num_parts)
+                if ok:
+                    print(f"[*] Auto-merge: '{stem}' ({num_parts} phần → 1 file)")
+                    continue
+                # Merge thất bại → vẫn skip (không dịch lại file gốc khổng lồ)
+                continue
+            else:
+                # Một số phần chưa dịch → bỏ qua file GỐC,
+                # để các file PHẦN (-1, -2...) tự được xử lý bên dưới
+                continue
+
+        # ── Trường hợp file phần (stem-N) ────────────────────────────────
+        # Bỏ qua nếu không có _VI.md nhưng đây là phần của chapter đã merge
+        # (tức là file gốc đã có _VI.md rồi)
+        import re as _re
+        part_match = _re.match(r'^(.+)-(\d+)$', stem)
+        if part_match:
+            orig_stem = part_match.group(1)
+            orig_vi   = os.path.join(profile.translated_dir, f"{orig_stem}_VI.md")
+            if is_already_translated(orig_vi) and not is_failed_translation(orig_vi):
+                # File gốc đã được merge → không cần dịch lại phần này nữa
+                continue
+
+        # ── Trường hợp thông thường ───────────────────────────────────────
         if not is_already_translated(out_path) or is_failed_translation(out_path):
             pending.append((raw_path, out_path))
 
@@ -199,10 +265,10 @@ def save_raw_parts(profile: NovelProfile, title: str, content: str) -> list[tupl
       - Trả về [(title, content)]
     """
     os.makedirs(profile.raw_dir, exist_ok=True)
-    safe_title = safe_filename(title)
 
     if len(content) <= CHAPTER_SPLIT_THRESHOLD:
-        raw_path = os.path.join(profile.raw_dir, f"{safe_title}.txt")
+        # Dùng title trực tiếp (giữ ký tự Unicode) — nhất quán với tên file thực tế
+        raw_path = os.path.join(profile.raw_dir, f"{title}.txt")
         if not os.path.exists(raw_path):
             with open(raw_path, "w", encoding="utf-8") as f:
                 f.write(content)
@@ -210,19 +276,18 @@ def save_raw_parts(profile: NovelProfile, title: str, content: str) -> list[tupl
 
     # Chương lớn → split
     parts = split_chapter_content(content)
-    n = len(parts)
 
-    # Lưu file gốc (optional, để có thể kiểm tra lại)
-    orig_path = os.path.join(profile.raw_dir, f"{safe_title}.txt")
+    # Lưu file gốc (để tham khảo, không dịch trực tiếp)
+    orig_path = os.path.join(profile.raw_dir, f"{title}.txt")
     if not os.path.exists(orig_path):
         with open(orig_path, "w", encoding="utf-8") as f:
             f.write(content)
 
     result = []
     for i, part_content in enumerate(parts, start=1):
-        part_title = f"{title}-{i}"  # VD: "第1033章 xxx-1"
-        part_safe  = safe_filename(part_title)
-        part_path  = os.path.join(profile.raw_dir, f"{part_safe}.txt")
+        # Dùng title gốc trực tiếp — nhất quán với merge_translated_parts
+        part_title = f"{title}-{i}"   # VD: "第1033章 xxx-1"
+        part_path  = os.path.join(profile.raw_dir, f"{part_title}.txt")
         if not os.path.exists(part_path):
             with open(part_path, "w", encoding="utf-8") as f:
                 f.write(part_content)
@@ -234,18 +299,24 @@ def save_raw_parts(profile: NovelProfile, title: str, content: str) -> list[tupl
 def merge_translated_parts(profile: NovelProfile, original_title: str, num_parts: int) -> bool:
     """
     Sau khi dịch xong tất cả phần, ghép lại thành 1 file output duy nhất.
-    VD: title-1_VI.md + title-2_VI.md + title-3_VI.md → title_VI.md
+    VD: stem-1_VI.md + stem-2_VI.md → stem_VI.md
+
+    Dùng tên file trực tiếp (không qua safe_filename) để đảm bảo khớp
+    với tên file thực tế trên disk — tránh mismatch với ký tự Unicode.
 
     Returns True nếu ghép thành công.
     """
-    safe_orig = safe_filename(original_title)
-    final_out  = os.path.join(profile.translated_dir, f"{safe_orig}_VI.md")
+    # Dùng stem trực tiếp — không safe_filename để tránh mismatch
+    # Vì save_raw_parts lưu file bằng safe_filename(title) nhưng
+    # translated files được lưu bằng tên gốc (chứa ký tự Chinese)
+    final_out = os.path.join(profile.translated_dir, f"{original_title}_VI.md")
 
     # Kiểm tra tất cả phần đã dịch xong chưa
     parts_content = []
     for i in range(1, num_parts + 1):
-        part_title = f"{original_title}-{i}"
-        part_path  = os.path.join(profile.translated_dir, f"{safe_filename(part_title)}_VI.md")
+        # Tìm file phần: thử cả dạng "stem-i_VI.md" trực tiếp
+        part_stem = f"{original_title}-{i}"
+        part_path = os.path.join(profile.translated_dir, f"{part_stem}_VI.md")
         if not os.path.exists(part_path) or os.path.getsize(part_path) == 0:
             return False  # Chưa đủ phần
         try:
@@ -266,9 +337,7 @@ def merge_translated_parts(profile: NovelProfile, original_title: str, num_parts
         if idx == 0:
             merged_parts.append(text)
         else:
-            # Bỏ dòng header (# ...) nếu trùng với phần đầu
             lines = text.split('\n')
-            # Skip leading header lines từ phần 2+
             start = 0
             while start < len(lines) and lines[start].strip().startswith('#'):
                 start += 1

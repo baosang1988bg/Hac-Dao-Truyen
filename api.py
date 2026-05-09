@@ -211,18 +211,37 @@ def stop_translation(slug: str):
 
 @app.get("/api/novels/{slug}/chapters")
 def list_chapters(slug: str):
-    """Lấy danh sách các chương đã dịch."""
+    """Lấy danh sách các chương đã dịch.
+
+    Lọc bỏ các file phần split (xxx-N_VI.md) nếu file gốc đã được merge
+    (xxx_VI.md tồn tại) — tránh hiển thị trùng lặp trên UI.
+    """
     translated_dir = os.path.join(NOVELS_DIR, slug, "translated")
     if not os.path.exists(translated_dir):
         return []
-    
-    files = [f for f in os.listdir(translated_dir) if f.endswith(".md")]
+
     import re
+    all_files = set(f for f in os.listdir(translated_dir) if f.endswith(".md"))
+
+    # Pattern nhận diện file phần split: xxx-N_VI.md (N là số nguyên)
+    _split_part_re = re.compile(r'^(.+)-(\d+)_VI\.md$')
+
+    filtered = []
+    for f in all_files:
+        m = _split_part_re.match(f)
+        if m:
+            # File này là phần split (xxx-N_VI.md)
+            # Chỉ giữ nếu file gốc (xxx_VI.md) CHƯA tồn tại (merge chưa xong)
+            orig_file = f"{m.group(1)}_VI.md"
+            if orig_file in all_files:
+                continue  # Gốc đã merge → bỏ qua phần này
+        filtered.append(f)
+
     def get_chapter_num(filename):
         match = re.search(r'\d+', filename)
         return int(match.group()) if match else 999999
 
-    sorted_files = sorted(files, key=get_chapter_num)
+    sorted_files = sorted(filtered, key=get_chapter_num)
     result = []
     for f in sorted_files:
         filepath = os.path.join(translated_dir, f)
