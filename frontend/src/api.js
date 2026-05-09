@@ -1,7 +1,8 @@
 import axios from 'axios';
 
+// Dùng relative URL để hoạt động ở cả local (Vite proxy) lẫn production (Cloudflare Worker)
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:4444/api',
+  baseURL: '/api',
 });
 
 export default api;

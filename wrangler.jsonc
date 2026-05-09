@@ -1,14 +1,29 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "hac-dao-truyen",
-  "compatibility_date": "2026-05-07",
-  "observability": {
-    "enabled": true
-  },
-  "assets": {
-    "directory": "frontend"
-  },
-  "compatibility_flags": [
-    "nodejs_compat"
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "hac-dao-truyen",
+	"main": "src/index.js",
+	"compatibility_date": "2026-05-07",
+	"observability": {
+		"enabled": true
+	},
+	"assets": {
+		"directory": "frontend/dist",
+		"binding": "ASSETS"
+	},
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "hacdao-db",
+			"database_id": "284ebf75-a325-49b7-a065-818188a76b7b"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "CHAPTERS",
+			"bucket_name": "hacdao-chapters"
+		}
+	]
 }
