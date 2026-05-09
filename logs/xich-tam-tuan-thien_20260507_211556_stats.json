@@ -1,0 +1,19 @@
+{
+  "slug": "xich-tam-tuan-thien",
+  "timestamp": "2026-05-07T21:15:56.117731",
+  "chapters_done": 40,
+  "total_tokens": 360589,
+  "input_tokens": 250972,
+  "output_tokens": 109617,
+  "cost_usd": 0.020915200000000002,
+  "models": [
+    "deepseek-chat",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite"
+  ],
+  "started_at": "2026-05-07T21:15:56",
+  "ended_at": "2026-05-07T21:15:56",
+  "duration_sec": 0,
+  "chapters_saved": [],
+  "errors": []
+}
