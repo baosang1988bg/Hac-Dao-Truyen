@@ -52,10 +52,26 @@ export default function Reader() {
     return () => el.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const currentIndex = chapters.findIndex(c => c.filename === chapter)
-  const prevChapter = currentIndex > 0 ? chapters[currentIndex - 1] : null
-  const nextChapter = currentIndex !== -1 && currentIndex < chapters.length - 1
-    ? chapters[currentIndex + 1]
+  // Helper: detect if a chapter is an author note (no chapter number)
+  const getChapNum = (title) => {
+    const m = title.match(/第(\d+)章|[Cc]hapter\s*(\d+)|Chương\s*(\d+)|(\d+)\./)
+    return m ? (m[1] || m[2] || m[3] || m[4]) : null
+  }
+
+  // Separate story chapters (numbered) from author notes
+  const storyChapters = chapters.filter(c => getChapNum(c.title))
+
+  // Navigation within story chapters only
+  const currentStoryIndex = storyChapters.findIndex(c => c.filename === chapter)
+  const isAuthorNote      = currentStoryIndex === -1 && chapters.some(c => c.filename === chapter)
+
+  // If reading a story chapter → navigate within story chapters
+  // If reading an author note  → no prev/next (or fallback to all chapters)
+  const prevChapter = currentStoryIndex > 0
+    ? storyChapters[currentStoryIndex - 1]
+    : null
+  const nextChapter = currentStoryIndex !== -1 && currentStoryIndex < storyChapters.length - 1
+    ? storyChapters[currentStoryIndex + 1]
     : null
 
   const goNext = useCallback(() => {
@@ -117,7 +133,10 @@ export default function Reader() {
             display: 'flex', alignItems: 'center',
             color: 'var(--text-muted)', fontSize: '0.85rem', padding: '0 8px'
           }}>
-            {currentIndex + 1} / {chapters.length}
+            {isAuthorNote
+              ? <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: 600 }}>📝 Lưu bút</span>
+              : <>{currentStoryIndex + 1} / {storyChapters.length}</>
+            }
           </span>
         )}
 

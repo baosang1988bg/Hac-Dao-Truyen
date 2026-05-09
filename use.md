@@ -122,6 +122,44 @@ python fix_batch_mismatch.py    # Chỉnh TO_FIX trong file trước khi chạy
 
 ---
 
+## ✂️ AUTO-SPLIT CHƯƠNG LỚN
+
+Hệ thống tự động phát hiện và xử lý chương có nội dung quá dài (> `CHAPTER_SPLIT_THRESHOLD` ký tự, mặc định **4500**).
+
+### Cơ chế hoạt động
+
+| Bước | Hành động |
+|---|---|
+| Crawl | Phát hiện chương > 4500 chars → lưu `第N章.txt` (gốc) + `第N章-1.txt`, `第N章-2.txt`... |
+| Dịch | Mỗi phần được dịch riêng lẻ (không bao giờ bị cắt output) |
+| Merge | Sau khi tất cả phần xong → ghép thành `第N章_VI.md` duy nhất |
+| Cleanup | File phần (`-1.txt`, `-2.txt`) có thể xóa sau khi verify merge |
+
+### Cấu hình
+```env
+CHAPTER_SPLIT_THRESHOLD=4500   # ký tự tối đa mỗi phần (default)
+```
+
+### Dọn dẹp file phần sau merge
+
+Sau khi dịch xong, tab **Kiểm tra** trên Web UI hiển thị:
+- **N parts OK** — file phần đã có merge hoàn chỉnh → có thể dọn
+- **Nút "Dọn file phần"** — xóa tự động sau khi verify an toàn
+
+Hoặc qua API:
+```bash
+curl -X POST http://localhost:4444/api/novels/<slug>/cleanup-split-parts
+```
+
+### Logic fix_chapters / fix_truncated với split
+
+Cả hai script đã được cập nhật để nhận biết split chapters:
+- File gốc đã split (`第N章.txt` khi có `第N章-1.txt`) → kiểm tra merged file
+- File phần đã merge → không báo "missing" / không dịch lại thừa
+- Chương lớn trong `fix_chapters` → tự động split trước khi dịch lại
+
+---
+
 ## 🔑 GEMINI API KEY MANAGEMENT
 
 ```bash

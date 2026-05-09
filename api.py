@@ -272,6 +272,50 @@ def get_chapter_content(slug: str, filename: str):
         return {"content": f.read()}
 
 
+def _find_merged_vi(stem: str, all_trans: set) -> str | None:
+    """
+    Tìm file merged _VI.md cho một stem (có thể là gốc hoặc phần).
+    Chiến lược tìm kiếm theo thứ tự ưu tiên:
+    1. Exact: stem_VI.md
+    2. Prefix match bằng chapter number: 第N章... (xử lý safe_filename diff)
+    3. Prefix match trực tiếp: stem bắt đầu bằng orig_stem
+    """
+    import re as _re2
+
+    # Lấy orig_stem nếu là file phần (xxx-N → xxx)
+    pm = _re2.match(r'^(.+)-(\d+)$', stem)
+    orig_stem = pm.group(1) if pm else stem
+
+    # 1. Exact match
+    exact = f"{orig_stem}_VI.md"
+    if exact in all_trans:
+        return exact
+
+    # 2. Chapter number prefix: tìm 第N章 ở đầu
+    chap_m = _re2.match(r'^(第\d+章)', orig_stem)
+    if chap_m:
+        chap_prefix = chap_m.group(1)
+        _cpat = _re2.compile(rf'^{_re2.escape(chap_prefix)}.*_VI\.md$')
+        # Loại bỏ file phần (-N_VI.md)
+        _no_part = _re2.compile(r'-\d+_VI\.md$')
+        for f in all_trans:
+            if _cpat.match(f) and not _no_part.search(f):
+                return f
+
+    # 3. Prefix match trực tiếp (tên không có 第N章)
+    _ppat = _re2.compile(rf'^{_re2.escape(orig_stem)}(?:[^-].*)?_VI\.md$')
+    for f in all_trans:
+        if _ppat.match(f):
+            return f
+
+    return None
+
+
+def _is_split_part_merged(stem: str, trans_dir: str, all_trans: set) -> bool:
+    """Kiểm tra file phần split đã có file gốc merge chưa."""
+    return _find_merged_vi(stem, all_trans) is not None
+
+
 @app.get("/api/novels/{slug}/health")
 def health_check(slug: str):
     """
@@ -279,6 +323,11 @@ def health_check(slug: str):
     - Chương trong raw nhưng chưa có bản dịch (missing)
     - Chương đã dịch nhưng chứa '[Translation failed' (failed)
     - Chương đã dịch quá ngắn bất thường so với raw (suspicious)
+
+    Nhận biết split chapters:
+    - File gốc đã split (xxx.txt khi có xxx-1.txt) → kiểm tra merged file
+    - File phần (xxx-N.txt) → bỏ qua nếu gốc đã merge OK (không count vào total_raw)
+    - Phần chưa merge → hiển thị riêng với type "split_pending"
     """
     import re as _re
 
@@ -288,70 +337,110 @@ def health_check(slug: str):
     if not os.path.exists(raw_dir):
         raise HTTPException(status_code=404, detail="text_raw directory not found")
 
-    raw_files = sorted(
-        f for f in os.listdir(raw_dir) if f.endswith(".txt")
-    )
+    all_raw_files = sorted(f for f in os.listdir(raw_dir) if f.endswith(".txt"))
+    all_raw_set   = set(all_raw_files)
+    all_trans     = set(os.listdir(trans_dir)) if os.path.exists(trans_dir) else set()
+
+    _part_re = _re.compile(r'^(.+)-(\d+)$')
 
     issues = []
     total_translated = 0
+    total_raw_effective = 0   # chỉ đếm file gốc (không đếm file phần đã merge)
+    split_parts_ok    = 0     # file phần đã có gốc merge → ẩn khỏi count
 
-    for raw_name in raw_files:
+    for raw_name in all_raw_files:
         stem     = os.path.splitext(raw_name)[0]
-        out_name = f"{stem}_VI.md"
         raw_path = os.path.join(raw_dir, raw_name)
-        out_path = os.path.join(trans_dir, out_name)
 
-        # 1. Missing — chưa có file dịch
+        # ── File gốc đã split (có xxx-1.txt đi kèm) ────────────────────
+        has_part1 = f"{stem}-1.txt" in all_raw_set
+        if has_part1:
+            total_raw_effective += 1
+            # Tìm merged file bằng _find_merged_vi (hỗ trợ safe_filename diff)
+            merged_name = _find_merged_vi(stem, all_trans)
+            if merged_name:
+                merged_path = os.path.join(trans_dir, merged_name)
+                try:
+                    head = open(merged_path, encoding='utf-8').read(300)
+                    if "[Translation failed" in head:
+                        issues.append({"filename": raw_name, "type": "failed",
+                                        "detail": "Merged file có lỗi dịch"})
+                    else:
+                        total_translated += 1
+                except Exception:
+                    issues.append({"filename": raw_name, "type": "failed",
+                                    "detail": "Không đọc được merged file"})
+            else:
+                # Kiểm tra các phần đã dịch chưa
+                part_count = sum(1 for i in range(1, 20)
+                                 if f"{stem}-{i}.txt" in all_raw_set)
+                parts_done = sum(1 for i in range(1, part_count + 1)
+                                 if any(f.startswith(f"{stem}-{i}") and f.endswith("_VI.md")
+                                        for f in all_trans))
+                if parts_done == part_count and part_count > 0:
+                    issues.append({"filename": raw_name, "type": "split_pending",
+                                    "detail": f"Đã dịch {parts_done} phần nhưng chưa merge thành 1 file"})
+                else:
+                    issues.append({"filename": raw_name, "type": "missing",
+                                    "detail": f"Chưa có bản dịch ({parts_done}/{part_count} phần xong)"})
+            continue
+
+        # ── File phần split (xxx-N.txt) ──────────────────────────────────
+        pm = _part_re.match(stem)
+        if pm:
+            # Kiểm tra gốc đã merge chưa
+            if _is_split_part_merged(stem, trans_dir, all_trans):
+                split_parts_ok += 1
+                # Không count vào total_raw_effective
+            else:
+                # Phần chưa merge gốc → count như chương thường
+                total_raw_effective += 1
+                out_path = os.path.join(trans_dir, f"{stem}_VI.md")
+                if not os.path.exists(out_path) or os.path.getsize(out_path) == 0:
+                    issues.append({"filename": raw_name, "type": "missing",
+                                    "detail": "Phần split chưa có bản dịch"})
+                else:
+                    total_translated += 1
+            continue
+
+        # ── File thường ───────────────────────────────────────────────────
+        total_raw_effective += 1
+        out_path = os.path.join(trans_dir, f"{stem}_VI.md")
+
         if not os.path.exists(out_path) or os.path.getsize(out_path) == 0:
-            issues.append({
-                "filename": raw_name,
-                "type": "missing",
-                "detail": "Chưa có bản dịch",
-            })
+            issues.append({"filename": raw_name, "type": "missing",
+                            "detail": "Chưa có bản dịch"})
             continue
 
         total_translated += 1
 
-        # Đọc 300 bytes đầu để kiểm tra failed message
         try:
             with open(out_path, "r", encoding="utf-8") as f:
                 head = f.read(300)
                 f.seek(0)
                 full_trans = f.read()
         except Exception:
-            issues.append({
-                "filename": raw_name,
-                "type": "failed",
-                "detail": "Không đọc được file dịch",
-            })
+            issues.append({"filename": raw_name, "type": "failed",
+                            "detail": "Không đọc được file dịch"})
             continue
 
-        # 2. Failed — chứa error marker
         if "[Translation failed" in head:
-            # Trích lấy dòng error để hiển thị
             err_line = next(
                 (l.strip() for l in head.splitlines() if "[Translation failed" in l),
                 "Translation failed"
             )
-            issues.append({
-                "filename": raw_name,
-                "type": "failed",
-                "detail": err_line[:120],
-            })
+            issues.append({"filename": raw_name, "type": "failed", "detail": err_line[:120]})
             continue
 
-        # 3. Suspicious ratio — bản dịch quá ngắn so với raw
         try:
-            raw_chars = os.path.getsize(raw_path)
+            raw_chars   = os.path.getsize(raw_path)
             trans_chars = len(full_trans.strip())
             if raw_chars > 100:
                 ratio = trans_chars / raw_chars
-                # Vietnamese is typically 1.3–2.5× longer than Chinese source
                 if ratio < 0.8:
                     issues.append({
-                        "filename": raw_name,
-                        "type": "suspicious",
-                        "detail": f"Bản dịch quá ngắn (tỷ lệ ký tự: {ratio:.2f}×, kỳ vọng ≥ 1.3×)",
+                        "filename": raw_name, "type": "suspicious",
+                        "detail": f"Bản dịch quá ngắn (tỷ lệ: {ratio:.2f}×, kỳ vọng ≥ 1.3×)",
                     })
         except Exception:
             pass
@@ -359,16 +448,98 @@ def health_check(slug: str):
     missing_count  = sum(1 for i in issues if i["type"] == "missing")
     failed_count   = sum(1 for i in issues if i["type"] == "failed")
     suspect_count  = sum(1 for i in issues if i["type"] == "suspicious")
+    pending_count  = sum(1 for i in issues if i["type"] == "split_pending")
 
     return {
         "summary": {
-            "total_raw":        len(raw_files),
+            "total_raw":        total_raw_effective,
+            "total_raw_all":    len(all_raw_files),     # bao gồm cả file phần
+            "split_parts_ok":   split_parts_ok,          # file phần đã có merge
             "total_translated": total_translated,
             "missing":          missing_count,
             "failed":           failed_count,
             "suspicious":       suspect_count,
+            "split_pending":    pending_count,
         },
         "issues": issues,
+    }
+
+
+@app.post("/api/novels/{slug}/cleanup-split-parts")
+async def cleanup_split_parts(slug: str):
+    """
+    Xóa các file phần split (-N.txt raw và -N_VI.md translated) sau khi đã verify
+    rằng file gốc merged OK. Chỉ xóa phần khi merged file tồn tại và hợp lệ.
+    """
+    import re as _re
+
+    raw_dir   = os.path.join(NOVELS_DIR, slug, "text_raw")
+    trans_dir = os.path.join(NOVELS_DIR, slug, "translated")
+
+    if not os.path.exists(raw_dir):
+        raise HTTPException(status_code=404, detail="Novel not found")
+
+    all_trans  = set(os.listdir(trans_dir)) if os.path.exists(trans_dir) else set()
+    _part_re   = _re.compile(r'^(.+)-(\d+)\.txt$')
+
+    deleted_raw   = []
+    deleted_trans = []
+    skipped       = []
+
+    for raw_name in sorted(os.listdir(raw_dir)):
+        m = _part_re.match(raw_name)
+        if not m:
+            continue
+
+        part_stem = os.path.splitext(raw_name)[0]   # "第1033章-1"
+        orig_stem = m.group(1)                        # "第1033章"
+
+        # Kiểm tra merged file tồn tại và không lỗi
+        _mpat = _re.compile(rf'^{_re.escape(orig_stem)}(?:[^-].*)?_VI\.md$')
+        merged_ok = False
+        for tf in all_trans:
+            if _mpat.match(tf):
+                mp = os.path.join(trans_dir, tf)
+                if os.path.exists(mp) and os.path.getsize(mp) > 500:
+                    try:
+                        head = open(mp, encoding='utf-8').read(200)
+                        if "[Translation failed" not in head:
+                            merged_ok = True
+                            break
+                    except Exception:
+                        pass
+
+        if not merged_ok:
+            skipped.append(raw_name)
+            continue
+
+        # Xóa raw phần
+        rp = os.path.join(raw_dir, raw_name)
+        try:
+            os.remove(rp)
+            deleted_raw.append(raw_name)
+        except Exception as e:
+            skipped.append(f"{raw_name} (raw error: {e})")
+
+        # Xóa translated phần nếu tồn tại
+        trans_part = f"{part_stem}_VI.md"
+        if trans_part in all_trans:
+            tp = os.path.join(trans_dir, trans_part)
+            try:
+                os.remove(tp)
+                deleted_trans.append(trans_part)
+            except Exception as e:
+                skipped.append(f"{trans_part} (trans error: {e})")
+
+    return {
+        "status": "ok",
+        "deleted_raw":   deleted_raw,
+        "deleted_trans": deleted_trans,
+        "skipped":       skipped,
+        "summary": (
+            f"Đã xóa {len(deleted_raw)} raw parts, {len(deleted_trans)} translated parts"
+            + (f", bỏ qua {len(skipped)} (chưa merge)" if skipped else "")
+        ),
     }
 
 

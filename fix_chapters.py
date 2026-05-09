@@ -64,16 +64,65 @@ def scan_novel(profile: NovelProfile) -> dict:
         return {"missing": [], "failed": [], "suspicious": [], "ok": 0}
 
     raw_files = sorted(f for f in os.listdir(profile.raw_dir) if f.endswith(".txt"))
+    all_raw   = set(raw_files)
 
     missing    = []
     failed     = []
     suspicious = []
     ok_count   = 0
 
+    import re as _re
+    _part_re = _re.compile(r'^(.+)-(\d+)$')
+
     for raw_name in raw_files:
         stem     = os.path.splitext(raw_name)[0]
         raw_path = os.path.join(profile.raw_dir, raw_name)
         out_path = os.path.join(profile.translated_dir, f"{stem}_VI.md")
+
+        # ── Xử lý file gốc đã split (stem-1.txt tồn tại) ──────────────────
+        has_part1 = f"{stem}-1.txt" in all_raw
+        if has_part1:
+            # File gốc đã được split — kiểm tra merged _VI.md
+            if os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+                try:
+                    with open(out_path, "r", encoding="utf-8") as f:
+                        head = f.read(200)
+                    if "[Translation failed" not in head:
+                        ok_count += 1
+                        continue  # Merged OK → bỏ qua file gốc
+                except Exception:
+                    pass
+            # Merged chưa có hoặc lỗi → kiểm tra từng phần
+            # (các phần sẽ được xử lý riêng bên dưới như file thường)
+            continue  # Không report file gốc là "missing" — để phần xử lý
+
+        # ── Xử lý file phần split (stem dạng xxx-N) ────────────────────────
+        part_m = _part_re.match(stem)
+        if part_m:
+            orig_stem = part_m.group(1)
+            # Tìm file gốc đã merge: prefix match vì gốc có thể có tiêu đề dài hơn
+            # VD: "第1033章-1" → orig_stem="第1033章" → tìm "第1033章 xxx_VI.md"
+            _no_extra_part = _re.compile(rf'^{_re.escape(orig_stem)}(?:[^-].*)?_VI\.md$')
+            all_trans = os.listdir(profile.translated_dir)
+            orig_merged_ok = False
+            for orig_f in all_trans:
+                if not _no_extra_part.match(orig_f):
+                    continue
+                orig_vi = os.path.join(profile.translated_dir, orig_f)
+                if os.path.exists(orig_vi) and os.path.getsize(orig_vi) > 0:
+                    try:
+                        with open(orig_vi, "r", encoding="utf-8") as f:
+                            head = f.read(200)
+                        if "[Translation failed" not in head:
+                            orig_merged_ok = True
+                            break
+                    except Exception:
+                        pass
+            if orig_merged_ok:
+                ok_count += 1
+                continue  # gốc đã merge OK → bỏ qua phần này
+
+        # ── Kiểm tra thông thường ───────────────────────────────────────────
 
         # 1. Chưa có bản dịch
         if not os.path.exists(out_path) or os.path.getsize(out_path) == 0:
@@ -262,41 +311,86 @@ def fix_novel(profile: NovelProfile, result: dict, force: bool, logger: logging.
             fail_count += 1
             continue
 
-        logger.info(f"  [*] Dịch {len(content)} chars...")
+        # ── Auto-split chương lớn trước khi dịch ──────────────────────────
+        # Import hàm split từ main.py (tránh duplicate code)
+        try:
+            from main import split_chapter_content, merge_translated_parts, CHAPTER_SPLIT_THRESHOLD
+        except ImportError:
+            CHAPTER_SPLIT_THRESHOLD = 4500
+            split_chapter_content   = None
+            merge_translated_parts  = None
 
-        translated, summary, usage = translator.translate_chapter(
-            title=stem,
-            content=content,
-            glossary=profile.glossary,
-            translation_style=profile.translation_style,
-            previous_summary=prev_summary,
-            max_retries=3,
-        )
+        parts_to_translate = [(stem, content, out_path)]  # default: 1 phần
+        is_large = split_chapter_content and len(content) > CHAPTER_SPLIT_THRESHOLD
 
-        with open(out_path, "w", encoding="utf-8") as f:
-            f.write(translated)
+        if is_large:
+            chunks = split_chapter_content(content)
+            logger.info(f"  [✂] Chương lớn ({len(content):,} chars) → split thành {len(chunks)} phần")
+            parts_to_translate = []
+            for idx, chunk in enumerate(chunks, start=1):
+                part_stem    = f"{stem}-{idx}"
+                part_out     = os.path.join(profile.translated_dir, f"{part_stem}_VI.md")
+                # Lưu raw phần vào text_raw/
+                part_raw     = os.path.join(profile.raw_dir, f"{part_stem}.txt")
+                if not os.path.exists(part_raw):
+                    with open(part_raw, "w", encoding="utf-8") as f:
+                        f.write(chunk)
+                parts_to_translate.append((part_stem, chunk, part_out))
 
-        if "[Translation failed" in translated[:400]:
-            err = next((l.strip() for l in translated.splitlines() if "Error:" in l), "Unknown error")
-            logger.error(f"  [!] FAILED: {err[:120]}")
-            session_usage["errors"].append(f"Dịch thất bại {stem}: {err[:120]}")
-            fail_count += 1
-        else:
-            prev_summary = summary
+        chapter_success = True
+        part_summaries  = []
+
+        for part_stem, part_content, part_out in parts_to_translate:
+            logger.info(f"  [*] Dịch '{part_stem}' ({len(part_content):,} chars)...")
+
+            translated, summary, usage = translator.translate_chapter(
+                title=part_stem,
+                content=part_content,
+                glossary=profile.glossary,
+                translation_style=profile.translation_style,
+                previous_summary=prev_summary,
+                max_retries=3,
+            )
+
+            with open(part_out, "w", encoding="utf-8") as f:
+                f.write(translated)
+
+            if "[Translation failed" in translated[:400]:
+                err = next((l.strip() for l in translated.splitlines() if "Error:" in l), "Unknown error")
+                logger.error(f"  [!] FAILED part '{part_stem}': {err[:120]}")
+                session_usage["errors"].append(f"Dịch thất bại {part_stem}: {err[:120]}")
+                chapter_success = False
+            else:
+                prev_summary = summary
+                part_summaries.append(part_stem)
+                logger.info(f"  [✓] Saved part: {os.path.basename(part_out)}")
+                session_usage["total_tokens"]  += usage.get("total_tokens", 0)
+                session_usage["input_tokens"]  += usage.get("input_tokens", 0)
+                session_usage["output_tokens"] += usage.get("output_tokens", 0)
+                session_usage["cost_usd"]      += usage.get("cost_usd", 0.0)
+                if usage.get("model"):
+                    session_usage["models"].add(usage["model"])
+
+            time.sleep(2)
+
+        # Merge nếu là chương lớn đã split
+        if is_large and chapter_success and merge_translated_parts:
+            ok = merge_translated_parts(profile, stem, len(parts_to_translate))
+            if ok:
+                logger.info(f"  [✓] Merged: '{stem}' ({len(parts_to_translate)} phần → 1 file)")
+            else:
+                logger.warning(f"  [!] Merge thất bại cho '{stem}'")
+                chapter_success = False
+
+        if chapter_success:
             success += 1
             session_usage["chapters_saved"].append(stem)
-            logger.info(f"  [✓] Saved: {os.path.basename(out_path)}")
-            
-            # Tích lũy usage
-            session_usage["total_tokens"] += usage.get("total_tokens", 0)
-            session_usage["input_tokens"] += usage.get("input_tokens", 0)
-            session_usage["output_tokens"] += usage.get("output_tokens", 0)
-            session_usage["cost_usd"] += usage.get("cost_usd", 0.0)
-            if usage.get("model"):
-                session_usage["models"].add(usage["model"])
+            logger.info(f"  [✓] Hoàn thành: {stem}")
+        else:
+            fail_count += 1
 
-        # Throttle giữa các chương
-        time.sleep(2)
+        # Throttle
+        time.sleep(1)
 
     if success > 0:
         _save_session_stats(profile.slug, success, session_usage, logger, timestamp=session_ts, started_at=started_at)

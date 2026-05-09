@@ -209,7 +209,7 @@ export default function NovelDetail() {
               />
             )}
             {activeTab === TABS.HEALTH && (
-              <HealthTab healthData={healthData} loading={healthLoading} onRefresh={fetchHealth} />
+              <HealthTab healthData={healthData} loading={healthLoading} onRefresh={fetchHealth} slug={slug} />
             )}
             {activeTab === TABS.TOOLS && <ToolsTab slug={slug} />}
           </div>
@@ -695,6 +695,96 @@ function SpinnerIcon() {
 
 // ── Chapters Tab ──────────────────────────────────────────────────────────────
 
+function AuthorNotesSection({ chapters, slug, getChapNum }) {
+  const [expanded, setExpanded] = useState(false)
+  if (chapters.length === 0) return null
+
+  return (
+    <div style={{
+      marginBottom: '0.75rem',
+      borderRadius: '10px',
+      border: '1px solid rgba(251,191,36,0.2)',
+      background: 'rgba(251,191,36,0.04)',
+      overflow: 'hidden',
+    }}>
+      {/* Header - always visible */}
+      <button
+        onClick={() => setExpanded(v => !v)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0.65rem 0.85rem', background: 'none', border: 'none', cursor: 'pointer',
+          gap: '8px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+          <span style={{ fontSize: '0.95rem' }}>📝</span>
+          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#fbbf24', letterSpacing: '0.02em' }}>
+            Lưu Bút Tác Giả
+          </span>
+          <span style={{
+            fontSize: '0.68rem', fontWeight: 700,
+            padding: '1px 7px', borderRadius: '99px',
+            background: 'rgba(251,191,36,0.15)', color: '#fbbf24',
+            border: '1px solid rgba(251,191,36,0.3)',
+          }}>
+            {chapters.length}
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+            {expanded ? 'Thu gọn' : 'Xem'}
+          </span>
+          {expanded ? <ChevronUp size={14} style={{ color: '#fbbf24', opacity: 0.7 }} /> : <ChevronDown size={14} style={{ color: '#fbbf24', opacity: 0.7 }} />}
+        </div>
+      </button>
+
+      {/* Collapsible content */}
+      {expanded && (
+        <div style={{
+          borderTop: '1px solid rgba(251,191,36,0.12)',
+          display: 'flex', flexDirection: 'column', gap: '1px',
+          padding: '4px 0',
+        }}>
+          {chapters.map((chap) => {
+            const cleanTitle = chap.title
+              .replace(/第\d+章\s*/, '')
+              .replace(/Chapter\s*\d+[\s:.]*/i, '')
+              .trim() || chap.title
+
+            return (
+              <Link
+                key={chap.filename}
+                to={`/novel/${slug}/read/${encodeURIComponent(chap.filename)}`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '0.5rem 0.85rem', margin: '0 4px', borderRadius: '7px',
+                  color: 'var(--text-main)',
+                  textDecoration: 'none', transition: 'background 0.12s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(251,191,36,0.08)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <span style={{
+                  fontSize: '0.7rem', flexShrink: 0,
+                  color: '#fbbf24', opacity: 0.6,
+                }}>✦</span>
+                <span style={{
+                  flex: 1, fontSize: '0.85rem',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  color: 'var(--text-main)',
+                }}>
+                  {cleanTitle}
+                </span>
+                <span style={{ color: 'var(--text-muted)', opacity: 0.35, flexShrink: 0, fontSize: '0.75rem' }}>›</span>
+              </Link>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ChaptersTab({ chapters, slug }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortDesc, setSortDesc] = useState(true)
@@ -707,21 +797,30 @@ function ChaptersTab({ chapters, slug }) {
     )
   }
 
-  // Top 7 newest chapters (horizontal scroll strip)
-  const newestChapters = [...chapters].reverse().slice(0, 7)
-
-  // Filter & Sort
-  let displayChapters = chapters.filter(chap =>
-    chap.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    chap.filename.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-  if (sortDesc) displayChapters = [...displayChapters].reverse()
-
   // Extract chapter number from title for display
   const getChapNum = (title) => {
     const m = title.match(/第(\d+)章|[Cc]hapter\s*(\d+)|Chương\s*(\d+)|(\d+)\./)
     return m ? (m[1] || m[2] || m[3] || m[4]) : null
   }
+
+  // Separate numbered (story) chapters and author-note chapters
+  const storyChapters = chapters.filter(c => getChapNum(c.title))
+  const authorNotes   = chapters.filter(c => !getChapNum(c.title))
+
+  // Top 7 newest story chapters (horizontal scroll strip)
+  const newestChapters = [...storyChapters].reverse().slice(0, 7)
+
+  // Filter & Sort (only story chapters)
+  let displayChapters = storyChapters.filter(chap =>
+    chap.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    chap.filename.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+  // Also include author notes in search results
+  let displayNotes = authorNotes.filter(chap =>
+    chap.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    chap.filename.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+  if (sortDesc) displayChapters = [...displayChapters].reverse()
 
   return (
     <div>
@@ -816,8 +915,8 @@ function ChaptersTab({ chapters, slug }) {
           whiteSpace: 'nowrap', flexShrink: 0,
         }}>
           {searchTerm
-            ? <>{displayChapters.length} <span style={{ opacity: 0.6 }}>/ {chapters.length}</span></>
-            : <><strong style={{ color: 'var(--text-main)' }}>{chapters.length}</strong> chương</>
+            ? <>{displayChapters.length + displayNotes.length} <span style={{ opacity: 0.6 }}>/ {chapters.length}</span></>
+            : <><strong style={{ color: 'var(--text-main)' }}>{storyChapters.length}</strong> chương</>
           }
         </span>
 
@@ -839,13 +938,50 @@ function ChaptersTab({ chapters, slug }) {
         </button>
       </div>
 
+      {/* ── Author Notes (collapsible) — shown above chapter list when not searching ── */}
+      {!searchTerm && (
+        <AuthorNotesSection chapters={authorNotes} slug={slug} getChapNum={getChapNum} />
+      )}
+
       {/* ── Chapter List ── */}
-      {displayChapters.length === 0 ? (
+      {displayChapters.length === 0 && displayNotes.length === 0 ? (
         <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2.5rem 0' }}>
           Không tìm thấy chương phù hợp.
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {/* When searching, show matching author notes inline with a small tag */}
+          {searchTerm && displayNotes.map((chap) => {
+            const cleanTitle = chap.title
+              .replace(/第\d+章\s*/, '')
+              .replace(/Chapter\s*\d+[\s:.]*/i, '')
+              .trim() || chap.title
+            return (
+              <Link
+                key={chap.filename}
+                to={`/novel/${slug}/read/${encodeURIComponent(chap.filename)}`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '0.55rem 0.75rem', borderRadius: '8px',
+                  color: 'var(--text-main)',
+                  textDecoration: 'none', transition: 'background 0.12s',
+                  background: 'rgba(251,191,36,0.04)',
+                  border: '1px solid rgba(251,191,36,0.12)',
+                  marginBottom: '2px',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(251,191,36,0.09)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(251,191,36,0.04)'}
+              >
+                <span style={{ fontSize: '0.7rem', flexShrink: 0, color: '#fbbf24', opacity: 0.7 }}>✦</span>
+                <span style={{ flex: 1, fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {cleanTitle}
+                </span>
+                <span style={{ fontSize: '0.65rem', color: '#fbbf24', opacity: 0.7, flexShrink: 0, fontWeight: 600 }}>lưu bút</span>
+                <span style={{ color: 'var(--text-muted)', opacity: 0.4, flexShrink: 0, fontSize: '0.75rem' }}>›</span>
+              </Link>
+            )
+          })}
+
           {displayChapters.map((chap, idx) => {
             const num = getChapNum(chap.title)
             const cleanTitle = chap.title
@@ -870,11 +1006,11 @@ function ChaptersTab({ chapters, slug }) {
                 <span style={{
                   flexShrink: 0, minWidth: '42px', textAlign: 'right',
                   fontSize: '0.72rem', fontWeight: 600,
-                  color: num ? 'var(--accent)' : 'var(--text-muted)',
-                  opacity: num ? 0.85 : 0.5,
+                  color: 'var(--accent)',
+                  opacity: 0.85,
                   fontVariantNumeric: 'tabular-nums',
                 }}>
-                  {num ? `#${num}` : `—`}
+                  #{num}
                 </span>
 
                 {/* Divider */}
@@ -942,7 +1078,26 @@ function GlossaryTab({ glossary, newKey, setNewKey, newVal, setNewVal, onAdd, on
 
 // ── Health Tab ────────────────────────────────────────────────────────────────
 
-function HealthTab({ healthData, loading, onRefresh }) {
+function HealthTab({ healthData, loading, onRefresh, slug }) {
+  const [cleaning, setCleaning] = useState(false)
+  const [cleanResult, setCleanResult] = useState(null)
+
+  const handleCleanup = async () => {
+    if (!window.confirm('Xóa tất cả file phần split đã merge? Hành động này không thể hoàn tác.')) return
+    setCleaning(true)
+    setCleanResult(null)
+    try {
+      const res = await fetch(`http://localhost:4444/api/novels/${slug}/cleanup-split-parts`, { method: 'POST' })
+      const data = await res.json()
+      setCleanResult(data)
+      onRefresh()  // refresh health sau cleanup
+    } catch (e) {
+      setCleanResult({ error: e.message })
+    } finally {
+      setCleaning(false)
+    }
+  }
+
   if (loading) return (
     <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 0' }}>
       <RefreshCw size={20} style={{ animation: 'spin 1s linear infinite', display: 'inline' }} />
@@ -960,19 +1115,88 @@ function HealthTab({ healthData, loading, onRefresh }) {
       <AlertTriangle size={18} /> {healthData.error}
     </div>
   )
+
   const { summary, issues } = healthData
-  const hasIssues = issues && issues.length > 0
+  const hasIssues     = issues && issues.length > 0
+  const splitPartsOk  = summary?.split_parts_ok ?? 0
+  const splitPending  = summary?.split_pending  ?? 0
+
+  // Phân loại issues
+  const typeConfig = {
+    failed:        { color: '#fca5a5', bg: 'rgba(239,68,68,0.08)',  border: 'rgba(239,68,68,0.25)',  label: 'Lỗi dịch' },
+    missing:       { color: '#fdba74', bg: 'rgba(251,146,60,0.08)', border: 'rgba(251,146,60,0.25)', label: 'Chưa dịch' },
+    suspicious:    { color: '#fcd34d', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)', label: 'Nghi vấn' },
+    split_pending: { color: '#a78bfa', bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.25)', label: 'Chờ merge' },
+  }
+
   return (
     <div>
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-        <StatBadge label="Raw"      value={summary?.total_raw ?? 0}        color="var(--text-muted)" />
-        <StatBadge label="Đã dịch"  value={summary?.total_translated ?? 0} color="var(--success)" />
-        <StatBadge label="Còn thiếu" value={summary?.missing ?? 0}         color={summary?.missing > 0 ? '#fb923c' : 'var(--success)'} />
-        <StatBadge label="Bị lỗi"   value={summary?.failed ?? 0}           color={summary?.failed > 0 ? '#fca5a5' : 'var(--success)'} />
-        <button className="btn btn-secondary" onClick={onRefresh} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', padding: '6px 12px' }}>
+      {/* Stats badges */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <StatBadge label="Raw"       value={summary?.total_raw ?? 0}        color="var(--text-muted)" />
+        <StatBadge label="Đã dịch"   value={summary?.total_translated ?? 0} color="var(--success)" />
+        <StatBadge label="Còn thiếu" value={summary?.missing ?? 0}          color={summary?.missing > 0 ? '#fb923c' : 'var(--success)'} />
+        <StatBadge label="Bị lỗi"    value={summary?.failed ?? 0}           color={summary?.failed > 0 ? '#fca5a5' : 'var(--success)'} />
+        {splitPartsOk > 0 && (
+          <StatBadge label="Parts OK" value={splitPartsOk} color="#a78bfa" />
+        )}
+        <button className="btn btn-secondary" onClick={onRefresh}
+          style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', padding: '6px 12px' }}>
           <RefreshCw size={14} /> Làm mới
         </button>
       </div>
+
+      {/* Info: file phần split */}
+      {splitPartsOk > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0.65rem 0.9rem', borderRadius: '8px', marginBottom: '0.85rem',
+          background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.25)',
+          gap: '0.75rem', flexWrap: 'wrap',
+        }}>
+          <div style={{ fontSize: '0.82rem', color: '#c4b5fd', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CheckCircle size={14} />
+            <span>
+              <strong>{splitPartsOk}</strong> file phần split đã có bản merge hoàn chỉnh
+              {summary?.total_raw_all && (
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginLeft: '6px' }}>
+                  (tổng raw: {summary.total_raw_all}, hiển thị {summary.total_raw} chương thực)
+                </span>
+              )}
+            </span>
+          </div>
+          <button
+            onClick={handleCleanup}
+            disabled={cleaning}
+            style={{
+              flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px',
+              padding: '5px 12px', borderRadius: '7px', border: '1px solid rgba(139,92,246,0.4)',
+              background: 'rgba(139,92,246,0.15)', color: '#c4b5fd',
+              fontSize: '0.78rem', fontWeight: 600, cursor: cleaning ? 'not-allowed' : 'pointer',
+              opacity: cleaning ? 0.6 : 1, transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { if (!cleaning) e.currentTarget.style.background = 'rgba(139,92,246,0.28)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.15)' }}
+          >
+            {cleaning ? <><SpinnerIcon /> Đang xóa...</> : <><Trash2 size={13} /> Dọn file phần</>}
+          </button>
+        </div>
+      )}
+
+      {/* Cleanup result */}
+      {cleanResult && (
+        <div style={{
+          padding: '0.65rem 0.9rem', borderRadius: '8px', marginBottom: '0.85rem',
+          background: cleanResult.error ? 'rgba(239,68,68,0.08)' : 'rgba(16,185,129,0.08)',
+          border: `1px solid ${cleanResult.error ? 'rgba(239,68,68,0.25)' : 'rgba(16,185,129,0.25)'}`,
+          fontSize: '0.8rem',
+          color: cleanResult.error ? '#fca5a5' : '#6ee7b7',
+        }}>
+          {cleanResult.error ? `Lỗi: ${cleanResult.error}` : cleanResult.summary}
+        </div>
+      )}
+
+      {/* Issues */}
       {!hasIssues ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '1rem 1.25rem', borderRadius: '10px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', color: '#6ee7b7' }}>
           <CheckCircle size={20} /> Tất cả chương đều ổn — không có vấn đề gì!
@@ -983,19 +1207,16 @@ function HealthTab({ healthData, loading, onRefresh }) {
             Phát hiện <strong style={{ color: 'var(--text-main)' }}>{issues.length}</strong> vấn đề:
           </p>
           {issues.map((issue, i) => {
-            const isFailed = issue.type === 'failed'
-            const bgColor = isFailed ? 'rgba(239,68,68,0.08)' : 'rgba(251,146,60,0.08)'
-            const borderColor = isFailed ? 'rgba(239,68,68,0.25)' : 'rgba(251,146,60,0.25)'
-            const iconColor = isFailed ? '#fca5a5' : '#fdba74'
+            const cfg = typeConfig[issue.type] || typeConfig.missing
             return (
-              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '0.7rem 1rem', borderRadius: '8px', background: bgColor, border: `1px solid ${borderColor}` }}>
-                <AlertTriangle size={16} style={{ color: iconColor, flexShrink: 0, marginTop: '2px' }} />
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '0.7rem 1rem', borderRadius: '8px', background: cfg.bg, border: `1px solid ${cfg.border}` }}>
+                <AlertTriangle size={16} style={{ color: cfg.color, flexShrink: 0, marginTop: '2px' }} />
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ fontSize: '0.875rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{issue.filename}</div>
                   {issue.detail && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{issue.detail}</div>}
                 </div>
-                <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '2px 8px', borderRadius: '99px', background: borderColor, color: iconColor, flexShrink: 0, alignSelf: 'center' }}>
-                  {isFailed ? 'Lỗi dịch' : 'Chưa dịch'}
+                <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '2px 8px', borderRadius: '99px', background: cfg.border, color: cfg.color, flexShrink: 0, alignSelf: 'center' }}>
+                  {cfg.label}
                 </span>
               </div>
             )

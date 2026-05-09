@@ -125,49 +125,160 @@ def ratio_check(raw_path: str, trans_path: str) -> float:
 
 
 def scan_novel(slug: str) -> list[dict]:
-    """Trả về danh sách chương bị truncate."""
+    """Trả về danh sách chương bị truncate.
+
+    Nhận biết split chapters:
+    - File gốc đã split (stem-1.txt tồn tại) → kiểm tra merged file
+    - File phần (stem-N) → bỏ qua nếu file gốc đã merge OK
+    """
     profile = load_novel(slug)
     if not os.path.isdir(profile.raw_dir) or not os.path.isdir(profile.translated_dir):
         return []
 
-    issues = []
-    for raw_name in sorted(f for f in os.listdir(profile.raw_dir) if f.endswith('.txt')):
-        stem      = os.path.splitext(raw_name)[0]
-        trans_name = f"{stem}_VI.md"
-        raw_path   = os.path.join(profile.raw_dir, raw_name)
-        trans_path = os.path.join(profile.translated_dir, trans_name)
+    all_raw = set(os.listdir(profile.raw_dir))
+    _part_re = re.compile(r'^(.+)-(\d+)$')
 
+    issues = []
+    for raw_name in sorted(f for f in all_raw if f.endswith('.txt')):
+        stem       = os.path.splitext(raw_name)[0]
+        raw_path   = os.path.join(profile.raw_dir, raw_name)
+        trans_path = os.path.join(profile.translated_dir, f"{stem}_VI.md")
+
+        # ── File gốc đã split → kiểm tra merged file ────────────────────
+        if f"{stem}-1.txt" in all_raw:
+            # Dùng merged file để check truncation
+            if not os.path.exists(trans_path) or os.path.getsize(trans_path) < 100:
+                continue  # chưa merge → fix_chapters xử lý
+            ratio     = ratio_check(raw_path, trans_path)
+            truncated = is_truncated(trans_path)
+            if truncated or ratio < 0.5:
+                issues.append({
+                    "stem": stem, "raw_path": raw_path,
+                    "trans_path": trans_path,
+                    "ratio": ratio, "truncated": truncated,
+                    "is_split_orig": True,
+                })
+            continue
+
+        # ── File phần split (stem-N) → bỏ qua nếu gốc đã merge OK ──────
+        pm = _part_re.match(stem)
+        if pm:
+            orig_stem = pm.group(1)
+            # Prefix match vì gốc có thể có tiêu đề dài: "第1033章 xxx_VI.md"
+            _no_extra_part = re.compile(rf'^{re.escape(orig_stem)}(?:[^-].*)?_VI\.md$')
+            all_trans = os.listdir(profile.translated_dir)
+            orig_merged_ok = False
+            for orig_f in all_trans:
+                if not _no_extra_part.match(orig_f):
+                    continue
+                orig_vi = os.path.join(profile.translated_dir, orig_f)
+                if os.path.exists(orig_vi) and os.path.getsize(orig_vi) > 100:
+                    try:
+                        head = open(orig_vi, encoding='utf-8').read(200)
+                        if "[Translation failed" not in head:
+                            orig_merged_ok = True
+                            break
+                    except Exception:
+                        pass
+            if orig_merged_ok:
+                continue  # gốc đã merge OK → bỏ qua phần
+
+        # ── File thường ──────────────────────────────────────────────────
         if not os.path.exists(trans_path):
             continue  # missing → fix_chapters.py
-
         if os.path.getsize(trans_path) < 100:
             continue  # quá ngắn → fix_chapters.py
 
-        ratio = ratio_check(raw_path, trans_path)
+        ratio     = ratio_check(raw_path, trans_path)
         truncated = is_truncated(trans_path)
-
         if truncated or ratio < 0.5:
             issues.append({
-                "stem":       stem,
-                "raw_path":   raw_path,
+                "stem": stem, "raw_path": raw_path,
                 "trans_path": trans_path,
-                "ratio":      ratio,
-                "truncated":  truncated,
+                "ratio": ratio, "truncated": truncated,
+                "is_split_orig": False,
             })
 
     return issues
 
 
 def fix_chapter(issue: dict, profile, translator) -> tuple[bool, dict]:
-    """Dịch lại 1 chương. Returns (success, usage_dict)."""
+    """Dịch lại 1 chương. Tự động split nếu raw > CHAPTER_SPLIT_THRESHOLD.
+    Returns (success, merged_usage_dict).
+    """
     with open(issue["raw_path"], "r", encoding="utf-8") as f:
         content = f.read().strip()
 
     if not content:
         return False, {}
 
+    # Import split logic từ main.py
+    try:
+        from main import split_chapter_content, merge_translated_parts, CHAPTER_SPLIT_THRESHOLD
+    except ImportError:
+        CHAPTER_SPLIT_THRESHOLD = 4500
+        split_chapter_content   = None
+        merge_translated_parts  = None
+
+    stem       = issue["stem"]
+    trans_path = issue["trans_path"]
+    is_large   = split_chapter_content and len(content) > CHAPTER_SPLIT_THRESHOLD
+
+    # Nếu là file gốc đã split → dịch lại từng phần rồi re-merge
+    is_split_orig = issue.get("is_split_orig", False)
+
+    if is_split_orig or is_large:
+        chunks = split_chapter_content(content) if split_chapter_content else [content]
+        print(f"    [✂] {len(content):,} chars → {len(chunks)} phần")
+
+        merged_usage = {"total_tokens":0,"input_tokens":0,"output_tokens":0,"cost_usd":0.0,"model":""}
+        all_ok = True
+
+        for idx, chunk in enumerate(chunks, start=1):
+            part_stem  = f"{stem}-{idx}"
+            part_out   = os.path.join(profile.translated_dir, f"{part_stem}_VI.md")
+            part_raw   = os.path.join(profile.raw_dir, f"{part_stem}.txt")
+            # Lưu raw phần nếu chưa có
+            if not os.path.exists(part_raw):
+                with open(part_raw, "w", encoding="utf-8") as f:
+                    f.write(chunk)
+
+            translated, _, usage = translator.translate_chapter(
+                title=part_stem,
+                content=chunk,
+                glossary=profile.glossary,
+                translation_style=profile.translation_style,
+                max_retries=3,
+            )
+            if "[Translation failed" in translated[:200]:
+                print(f"    ❌ FAILED part {idx}: {translated[:80]}")
+                all_ok = False
+                break
+
+            with open(part_out, "w", encoding="utf-8") as f:
+                f.write(translated)
+            print(f"    ✓ Part {idx}: {os.path.getsize(part_out):,}B")
+            merged_usage["total_tokens"]  += usage.get("total_tokens", 0)
+            merged_usage["input_tokens"]  += usage.get("input_tokens", 0)
+            merged_usage["output_tokens"] += usage.get("output_tokens", 0)
+            merged_usage["cost_usd"]      += usage.get("cost_usd", 0.0)
+            merged_usage["model"]          = usage.get("model", merged_usage["model"])
+            time.sleep(2)
+
+        if all_ok and merge_translated_parts:
+            ok = merge_translated_parts(profile, stem, len(chunks))
+            if ok:
+                print(f"    ✅ Merged {len(chunks)} phần → {os.path.getsize(trans_path):,}B")
+                return True, merged_usage
+            else:
+                print(f"    ❌ Merge thất bại")
+                return False, merged_usage
+
+        return all_ok, merged_usage
+
+    # ── File thường (không split) ────────────────────────────────────────
     translated, _, usage = translator.translate_chapter(
-        title=issue["stem"],
+        title=stem,
         content=content,
         glossary=profile.glossary,
         translation_style=profile.translation_style,
@@ -178,11 +289,10 @@ def fix_chapter(issue: dict, profile, translator) -> tuple[bool, dict]:
         print(f"    ❌ FAILED: {translated[:120]}")
         return False, usage or {}
 
-    with open(issue["trans_path"], "w", encoding="utf-8") as f:
+    with open(trans_path, "w", encoding="utf-8") as f:
         f.write(translated)
 
-    new_size = os.path.getsize(issue["trans_path"])
-    print(f"    ✅ {new_size:,}B — {translated[:70].replace(chr(10),' ')}...")
+    print(f"    ✅ {os.path.getsize(trans_path):,}B — {translated[:70].replace(chr(10),' ')}...")
     return True, usage or {}
 
 
