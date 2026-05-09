@@ -44,6 +44,10 @@ class TranslateRequest(BaseModel):
 class GlossaryUpdateRequest(BaseModel):
     glossary: Dict[str, str]
 
+class QuickTranslateRequest(BaseModel):
+    text: str
+    model: str = ""
+
 class DummyArgs:
     def __init__(self, novel, chapters, force=False, url=None):
         self.novel = novel
@@ -347,6 +351,51 @@ def health_check(slug: str):
         },
         "issues": issues,
     }
+
+
+@app.post("/api/translate-quick")
+async def translate_quick(req: QuickTranslateRequest):
+    """
+    Quick translate endpoint cho Chrome Extension.
+    Key Gemini/DeepSeek nằm trong .env trên server — không bao giờ lộ ra client.
+    """
+    if not req.text or not req.text.strip():
+        raise HTTPException(status_code=400, detail="text is required")
+
+    try:
+        from translator import NovelTranslator
+        translator = NovelTranslator()
+
+        prompt = (
+            "Dịch đoạn text tiếng Trung sau sang tiếng Việt tự nhiên, văn học.\n"
+            "Nếu là tên nhân vật hoặc địa danh Trung Quốc, hãy phiên âm sang tiếng Việt (VD: 乔桑 → Kiều Tang).\n"
+            "Chỉ trả về bản dịch, không giải thích gì thêm.\n\n"
+            f"Text cần dịch:\n{req.text.strip()}"
+        )
+
+        # Dùng translate_chapter để tận dụng retry + fallback logic
+        result, _, usage = await asyncio.to_thread(
+            translator.translate_chapter,
+            title="quick-translate",
+            content=req.text.strip(),
+            glossary={},
+            translation_style="",
+            max_retries=2,
+        )
+
+        # Strip translation failed marker
+        if "[Translation failed" in result[:100]:
+            raise HTTPException(status_code=500, detail="Translation failed — thử lại sau")
+
+        return {
+            "result": result.strip(),
+            "model":  usage.get("model", "unknown"),
+            "tokens": usage.get("total_tokens", 0),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/server-info")

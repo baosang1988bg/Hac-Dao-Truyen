@@ -1,0 +1,25 @@
+{
+  "slug": "xich-tam-tuan-thien",
+  "timestamp": "2026-05-08T16:55:56.236973",
+  "chapters_done": 7,
+  "total_tokens": 197301,
+  "input_tokens": 177289,
+  "output_tokens": 20012,
+  "cost_usd": 0.03442343,
+  "models": [
+    "deepseek-chat"
+  ],
+  "chapters_saved": [
+    "第956章 圆满",
+    "第957章 唯独于我",
+    "第959章 浮生半日为盟主书圆圆满满加更感谢狄D盟主赞助",
+    "第961章 欺我年少",
+    "第962章 万仙宫",
+    "第963章 不负我者我必不负",
+    "第965章万仙来朝图"
+  ],
+  "errors": [],
+  "started_at": "2026-05-08T16:44:41.684091",
+  "ended_at": "2026-05-08T16:55:56.237266",
+  "duration_sec": 674
+}

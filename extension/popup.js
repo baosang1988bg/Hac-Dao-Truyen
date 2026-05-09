@@ -55,22 +55,18 @@ $("translateBtn").addEventListener("click", async () => {
   const text = $("quickInput").value.trim();
   if (!text) { showToast("Nhập text cần dịch!", true); return; }
 
-  const { apiKey, model } = await chrome.storage.sync.get(["apiKey", "model"]);
-  if (!apiKey) {
-    showToast("Chưa có API Key! Nhập key bên trên rồi Save.", true);
-    $("apiKey").focus();
-    return;
-  }
+  // Không dùng key trực tiếp — route qua backend local để key không lộ ra network
+  const { model } = await chrome.storage.sync.get(["model"]);
 
   // Show loading state
   $("translateBtn").innerHTML = '<span class="spinner"></span>Đang dịch...';
   $("translateBtn").disabled  = true;
-  $("quickResult").innerHTML  = '<span style="color:#888;font-size:12px">⏳ Đang gửi tới Gemini AI…</span>';
+  $("quickResult").innerHTML  = '<span style="color:#888;font-size:12px">⏳ Đang gửi tới backend…</span>';
   $("quickResult").className  = "quick-result show";
   $("copyBtn").style.display  = "none";
 
   try {
-    const result = await callGemini(apiKey, model || "gemini-3-flash-preview", text);
+    const result = await callViaBackend(model || "gemini-2.5-flash", text);
     // Format result: convert newlines to paragraphs
     const html = result.split("\n").filter(l => l.trim())
       .map(l => `<span style="display:block;margin-bottom:6px">${escHtml(l)}</span>`)
@@ -104,34 +100,25 @@ $("copyBtn").addEventListener("click", () => {
     .catch(() => showToast("Copy thất bại!", true));
 });
 
-// ── Gemini API call ───────────────────────────────────────────────────────────
+// ── Translation via local backend (key không lộ ra ngoài) ────────────────────
+// Route qua http://localhost:4444 thay vì gọi Gemini trực tiếp.
+// Lý do: gọi Gemini API từ browser với key trong URL sẽ bị lộ qua DevTools
+// và có thể bị Google scanner phát hiện → revoke key.
 
-async function callGemini(apiKey, model, text) {
-  const prompt = `Dịch đoạn text tiếng Trung sau sang tiếng Việt tự nhiên, văn học. 
-Nếu là tên nhân vật hoặc địa danh Trung Quốc, hãy phiên âm sang tiếng Việt (VD: 乔桑 → Kiều Tang).
-Chỉ trả về bản dịch, không giải thích gì thêm.
-
-Text cần dịch:
-${text}`;
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-  const resp = await fetch(url, {
+async function callViaBackend(model, text) {
+  const resp = await fetch("http://localhost:4444/api/translate-quick", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.3, maxOutputTokens: 2048 },
-    }),
+    body: JSON.stringify({ text, model }),
   });
 
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+    throw new Error(err?.detail || `HTTP ${resp.status} — Backend không phản hồi. Đảm bảo server đang chạy.`);
   }
 
   const data = await resp.json();
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text || "(Không có kết quả)";
+  return data?.result || "(Không có kết quả)";
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────

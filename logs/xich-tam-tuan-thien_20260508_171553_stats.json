@@ -1,0 +1,23 @@
+{
+  "slug": "xich-tam-tuan-thien",
+  "timestamp": "2026-05-08T17:17:57.565935",
+  "chapters_done": 5,
+  "total_tokens": 140917,
+  "input_tokens": 128317,
+  "output_tokens": 12600,
+  "cost_usd": 0.022842190000000002,
+  "models": [
+    "deepseek-chat"
+  ],
+  "chapters_saved": [
+    "第996章 囚我于水中",
+    "第998章 问楚",
+    "第997章 驾两龙兮骖螭（为盟主陈泽青加更46）",
+    "第999章 第一杀伐术",
+    "第1000章 强者风范（为盟主陈泽青加更56）"
+  ],
+  "errors": [],
+  "started_at": "2026-05-08T17:15:53.908706",
+  "ended_at": "2026-05-08T17:17:57.565946",
+  "duration_sec": 123
+}

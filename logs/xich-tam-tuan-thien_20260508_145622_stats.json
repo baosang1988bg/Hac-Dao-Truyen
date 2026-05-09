@@ -1,0 +1,29 @@
+{
+  "slug": "xich-tam-tuan-thien",
+  "timestamp": "2026-05-08T15:02:45.356951",
+  "chapters_done": 10,
+  "total_tokens": 153046,
+  "input_tokens": 127576,
+  "output_tokens": 25470,
+  "cost_usd": 0.007393,
+  "models": [
+    "deepseek-chat",
+    "gemini-2.5-flash"
+  ],
+  "chapters_saved": [
+    "第831章 各有所求",
+    "第832章 听潮",
+    "第829章 正声",
+    "第830章 八音焚海",
+    "第827章 必杀之（为盟主Raiselovell加更）",
+    "第828章 五仙者",
+    "第833章 各为鱼，互为饵",
+    "第834章 斯人若梦",
+    "第835章 情之所起",
+    "第836章 大人物"
+  ],
+  "errors": [],
+  "started_at": "2026-05-08T14:56:22.601597",
+  "ended_at": "2026-05-08T15:02:45.356961",
+  "duration_sec": 382
+}
