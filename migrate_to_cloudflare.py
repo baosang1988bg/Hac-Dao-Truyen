@@ -20,10 +20,42 @@ import os, re, json, subprocess, argparse, sys, tempfile, base64
 from pathlib import Path
 from datetime import datetime
 
-NOVELS_DIR = Path("novels")
-D1_DB_NAME = "hacdao-db"
-R2_BUCKET  = "hacdao-chapters"
-BATCH_SIZE = 10
+NOVELS_DIR  = Path("novels")
+D1_DB_NAME  = "hacdao-db"
+R2_BUCKET   = "hacdao-chapters"
+BATCH_SIZE  = 10
+SYNC_STATE  = Path(".sync_state.json")   # lưu trạng thái sync mỗi novel
+
+# ── Sync State ────────────────────────────────────────────────────────────────
+
+def load_sync_state() -> dict:
+    """Đọc file .sync_state.json — trả về {} nếu chưa có."""
+    if SYNC_STATE.exists():
+        try:
+            return json.loads(SYNC_STATE.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+    return {}
+
+def save_sync_state(state: dict):
+    """Ghi state vào .sync_state.json."""
+    SYNC_STATE.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding='utf-8')
+
+def get_novel_sync_info(slug: str) -> dict:
+    """Lấy thông tin sync của 1 novel. Trả về dict rỗng nếu chưa sync lần nào."""
+    return load_sync_state().get(slug, {})
+
+def update_novel_sync(slug: str, last_chapter: int, last_filename: str, total_synced: int):
+    """Cập nhật trạng thái sync sau khi hoàn tất."""
+    state = load_sync_state()
+    state[slug] = {
+        "last_synced_at":      datetime.now().isoformat(),
+        "last_chapter_number": last_chapter,
+        "last_filename":       last_filename,
+        "total_synced":        total_synced,
+    }
+    save_sync_state(state)
+    print(f"  💾 Sync state saved → last chapter: {last_chapter}, total: {total_synced}")
 
 # ── Wrangler ──────────────────────────────────────────────────────────────────
 
@@ -156,7 +188,7 @@ def get_effective_files(trans_dir: Path) -> list:
 
 # ── Migration ─────────────────────────────────────────────────────────────────
 
-def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=None, resume=False):
+def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=None, resume=False, from_chapter=None):
     novel_dir = NOVELS_DIR / slug
     nj        = novel_dir / "novel.json"
     trans_dir = novel_dir / "translated"
@@ -212,6 +244,13 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
         return
 
     files = get_effective_files(trans_dir)
+
+    # --from-chapter N: chỉ lấy chapters từ N trở đi, không check R2
+    if from_chapter is not None:
+        files = [f for f in files
+                 if get_chapter_number(get_title(f), f.name) >= from_chapter
+                 or get_chapter_number(get_title(f), f.name) == 0]  # giữ author notes
+
     if limit:
         files = files[:limit]
     total = len(files)
@@ -283,6 +322,26 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
     if fail_n:  summary += f", {fail_n} lỗi"
     print(f"  {'✅' if fail_n==0 else '⚠️ '} {summary}")
 
+    # ── Lưu sync state tự động sau mỗi lần chạy thành công ───────────────
+    if not dry_run and ok_n > 0:
+        # Tìm chapter number lớn nhất trong batch vừa sync
+        synced_files = [f for f in files if not (
+            resume and r2_exists(filename_to_r2key(slug, f.name))
+        )] if resume else files
+
+        max_chapter = max(
+            (get_chapter_number(get_title(f), f.name) for f in files),
+            default=0
+        )
+        last_file = files[-1].name if files else ""
+
+        # Đếm tổng chapters đã sync (lấy từ state cũ + mới upload)
+        prev_state   = get_novel_sync_info(slug)
+        prev_total   = prev_state.get("total_synced", 0)
+        total_synced = max(prev_total, prev_total + ok_n)
+
+        update_novel_sync(slug, max_chapter, last_file, total_synced)
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 def main():
@@ -293,11 +352,62 @@ def main():
     ap.add_argument('--skip-d1', action='store_true', help='Bỏ qua D1, chỉ upload R2')
     ap.add_argument('--resume', action='store_true',
                     help='Bỏ qua file đã có trong R2, chỉ upload phần còn thiếu')
+    ap.add_argument('--from-chapter', type=int, dest='from_chapter',
+                    help='Chỉ sync chapters từ số N trở đi (nhanh, không check R2)')
+    ap.add_argument('--smart-sync', action='store_true', dest='smart_sync',
+                    help='Tự động đọc sync state, chỉ upload chapters mới hơn lần sync trước')
+    ap.add_argument('--status', action='store_true',
+                    help='Xem trạng thái sync hiện tại của tất cả novels')
+    ap.add_argument('--set-synced', action='store_true', dest='set_synced',
+                    help='Đánh dấu toàn bộ local files là đã synced (dùng khi đã sync thủ công trước đó)')
     ap.add_argument('--limit', type=int, help='Giới hạn số file (để test)')
     args = ap.parse_args()
 
     if args.dry_run:
         print("🔍 DRY RUN\n")
+
+    # --set-synced: cập nhật state từ local files, không upload gì
+    if args.set_synced:
+        slugs = [args.slug] if args.slug else [
+            d.name for d in NOVELS_DIR.iterdir()
+            if d.is_dir() and (d / "novel.json").exists()
+        ]
+        for slug in slugs:
+            trans_dir = NOVELS_DIR / slug / "translated"
+            if not trans_dir.exists():
+                print(f"  [skip] {slug}: không có translated/")
+                continue
+            files = get_effective_files(trans_dir)
+            max_chap  = max((get_chapter_number(get_title(f), f.name) for f in files), default=0)
+            last_file = files[-1].name if files else ""
+            update_novel_sync(slug, max_chap, last_file, len(files))
+            print(f"  ✅ {slug}: marked {len(files)} files synced, last chapter {max_chap}")
+        return
+
+    # --status: chỉ xem state, không làm gì
+    if args.status:
+        state = load_sync_state()
+        if not state:
+            print("Chưa có sync state nào. Chạy migrate lần đầu trước.")
+            return
+        print("📊 Sync State:\n")
+        for slug, info in state.items():
+            # Đếm total files local hiện tại
+            trans_dir = NOVELS_DIR / slug / "translated"
+            local_total = len([f for f in trans_dir.iterdir() if f.suffix == '.md']) if trans_dir.exists() else 0
+            local_effective = len(get_effective_files(trans_dir)) if trans_dir.exists() else 0
+            new_count = local_effective - info.get('total_synced', 0)
+            print(f"  📚 {slug}")
+            print(f"     Last sync   : {info.get('last_synced_at','?')[:19]}")
+            print(f"     Last chapter: {info.get('last_chapter_number','?')}")
+            print(f"     Synced      : {info.get('total_synced','?')} files")
+            print(f"     Local now   : {local_effective} files (raw: {local_total})")
+            if new_count > 0:
+                print(f"     ⚠️  Chưa sync: ~{new_count} files mới")
+            else:
+                print(f"     ✅ Đã sync đầy đủ")
+            print()
+        return
 
     r = run_safe([get_wrangler(), 'whoami'])
     if r.returncode != 0:
@@ -316,8 +426,23 @@ def main():
         print(f"📦 {len(slugs)} novels: {', '.join(slugs)}\n")
 
     for slug in slugs:
+        from_chapter = args.from_chapter
+
+        # --smart-sync: tự đọc state để biết sync từ chương nào
+        if args.smart_sync and from_chapter is None:
+            info = get_novel_sync_info(slug)
+            if info:
+                last_chap = info.get('last_chapter_number', 0)
+                last_sync = info.get('last_synced_at', '?')[:19]
+                # Sync từ chapter tiếp theo sau lần trước
+                from_chapter = last_chap + 1
+                print(f"  🔄 Smart sync: last sync {last_sync}, chapter {last_chap} → sync từ {from_chapter}")
+            else:
+                print(f"  ℹ️  Chưa có sync state cho {slug}, sync toàn bộ")
+
         migrate_novel(slug, dry_run=args.dry_run, skip_r2=args.skip_r2,
-                      skip_d1=args.skip_d1, limit=args.limit, resume=args.resume)
+                      skip_d1=args.skip_d1, limit=args.limit, resume=args.resume,
+                      from_chapter=from_chapter)
 
     print("\n🎉 Xong!")
     if not args.dry_run:

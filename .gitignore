@@ -95,6 +95,11 @@ dist/
 build/
 
 # ─────────────────────────────────────────────
+# CLOUDFLARE SYNC STATE — local only
+# ─────────────────────────────────────────────
+.sync_state.json
+
+# ─────────────────────────────────────────────
 # PROJECT DATA — TRÁNH COMMIT DỮ LIỆU TRUYỆN
 # ─────────────────────────────────────────────
 # Bỏ comment dòng dưới nếu bạn muốn exclude toàn bộ data truyện
