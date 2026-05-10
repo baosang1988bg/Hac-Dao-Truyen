@@ -45,6 +45,26 @@ def get_novel_sync_info(slug: str) -> dict:
     """Lấy thông tin sync của 1 novel. Trả về dict rỗng nếu chưa sync lần nào."""
     return load_sync_state().get(slug, {})
 
+def get_synced_filenames(slug: str) -> set:
+    """Query D1 để lấy danh sách filenames đã có — dùng để detect author notes mới."""
+    sql = f"SELECT filename FROM chapters WHERE novel_slug='{slug}';"
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.sql', encoding='utf-8', delete=False) as f:
+        f.write(sql)
+        tmp = f.name
+    try:
+        r = run_safe([get_wrangler(), 'd1', 'execute', D1_DB_NAME, '--remote',
+                      f'--file={tmp}', '--json'])
+        if r.returncode != 0:
+            return set()
+        data = json.loads(r.stdout)
+        # Wrangler JSON output: list of result sets
+        rows = data[0].get('results', []) if data else []
+        return {row['filename'] for row in rows}
+    except Exception:
+        return set()
+    finally:
+        os.unlink(tmp)
+
 def update_novel_sync(slug: str, last_chapter: int, last_filename: str, total_synced: int):
     """Cập nhật trạng thái sync sau khi hoàn tất."""
     state = load_sync_state()
@@ -188,7 +208,7 @@ def get_effective_files(trans_dir: Path) -> list:
 
 # ── Migration ─────────────────────────────────────────────────────────────────
 
-def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=None, resume=False, from_chapter=None):
+def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=None, resume=False, from_chapter=None, extra_files=None):
     novel_dir = NOVELS_DIR / slug
     nj        = novel_dir / "novel.json"
     trans_dir = novel_dir / "translated"
@@ -245,11 +265,14 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
 
     files = get_effective_files(trans_dir)
 
-    # --from-chapter N: chỉ lấy chapters từ N trở đi, không check R2
+    # --from-chapter N: chapters từ N trở đi + extra_files (author notes mới từ smart-sync)
     if from_chapter is not None:
-        files = [f for f in files
-                 if get_chapter_number(get_title(f), f.name) >= from_chapter
-                 or get_chapter_number(get_title(f), f.name) == 0]  # giữ author notes
+        new_chapters = [f for f in files
+                        if get_chapter_number(get_title(f), f.name) >= from_chapter]
+        new_notes    = extra_files or []
+        files        = new_notes + new_chapters
+        if new_notes:
+            print(f"  📝 {len(new_notes)} author note(s) mới sẽ được sync")
 
     if limit:
         files = files[:limit]
@@ -426,23 +449,44 @@ def main():
         print(f"📦 {len(slugs)} novels: {', '.join(slugs)}\n")
 
     for slug in slugs:
-        from_chapter = args.from_chapter
+        from_chapter   = args.from_chapter
+        extra_files    = []   # author notes mới cần sync thêm
 
-        # --smart-sync: tự đọc state để biết sync từ chương nào
+        # --smart-sync: tự đọc state + query D1 để detect mọi file mới
         if args.smart_sync and from_chapter is None:
             info = get_novel_sync_info(slug)
             if info:
                 last_chap = info.get('last_chapter_number', 0)
                 last_sync = info.get('last_synced_at', '?')[:19]
-                # Sync từ chapter tiếp theo sau lần trước
                 from_chapter = last_chap + 1
-                print(f"  🔄 Smart sync: last sync {last_sync}, chapter {last_chap} → sync từ {from_chapter}")
+                print(f"  🔄 Smart sync: last sync {last_sync}, chapter {last_chap} → chapters từ {from_chapter}")
+
+                # Detect author notes mới: query D1 lấy filenames đã có,
+                # so sánh với local để tìm files num=0 chưa được sync
+                print(f"  🔍 Kiểm tra author notes mới...")
+                synced_names = get_synced_filenames(slug)
+                if synced_names:
+                    trans_dir = NOVELS_DIR / slug / "translated"
+                    all_local = get_effective_files(trans_dir)
+                    # Author notes local chưa có trong D1
+                    extra_files = [
+                        f for f in all_local
+                        if get_chapter_number(get_title(f), f.name) == 0
+                        and f.name not in synced_names
+                    ]
+                    if extra_files:
+                        print(f"  📝 Phát hiện {len(extra_files)} author note(s) mới: "
+                              + ", ".join(f.name[:40] for f in extra_files))
+                    else:
+                        print(f"  ✅ Không có author note mới")
+                else:
+                    print(f"  ⚠️  Không query được D1, bỏ qua check author notes")
             else:
                 print(f"  ℹ️  Chưa có sync state cho {slug}, sync toàn bộ")
 
         migrate_novel(slug, dry_run=args.dry_run, skip_r2=args.skip_r2,
                       skip_d1=args.skip_d1, limit=args.limit, resume=args.resume,
-                      from_chapter=from_chapter)
+                      from_chapter=from_chapter, extra_files=extra_files)
 
     print("\n🎉 Xong!")
     if not args.dry_run:
