@@ -51,7 +51,7 @@ def fix_all_titles():
             
             # If the first line is already perfectly formatted, skip.
             # E.g. "# Chương 10: Title"
-            if re.match(rf'^# Chương {chap_num}:\s+\S+', first_line, re.IGNORECASE):
+            if re.match(rf'^# Chương {chap_num}:\s+\S+', first_line):
                 continue
             
             # Otherwise, we need to fix it.
