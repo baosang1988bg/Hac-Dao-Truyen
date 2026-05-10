@@ -127,7 +127,7 @@ export default function Reader() {
         to={`/novel/${slug}`}
         style={{ 
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: '40px', height: '40px', borderRadius: '10px',
+          width: '48px', height: '48px', borderRadius: '12px',
           background: currentTheme.panel, color: currentTheme.text,
           border: `1px solid ${currentTheme.border}`, textDecoration: 'none'
         }}
@@ -143,20 +143,21 @@ export default function Reader() {
           style={{ 
             background: currentTheme.panel, color: currentTheme.text, 
             border: `1px solid ${currentTheme.border}`,
-            opacity: prevChapter ? 1 : 0.4, padding: '0 1rem', height: '40px'
+            opacity: prevChapter ? 1 : 0.4, padding: '0 1.25rem', height: '48px',
+            borderRadius: '12px'
           }}
         >
-          <ArrowLeft size={16} />
-          <span className="hide-mobile">Trước</span>
+          <ArrowLeft size={18} />
+          <span className="hide-mobile" style={{ marginLeft: '6px' }}>Trước</span>
         </button>
 
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: currentTheme.panel, color: currentTheme.text, 
           border: `1px solid ${currentTheme.border}`,
-          borderRadius: '10px', padding: '0 12px', fontSize: '0.85rem', fontWeight: 600, opacity: 0.8
+          borderRadius: '12px', padding: '0 14px', fontSize: '0.9rem', fontWeight: 600, opacity: 0.9
         }}>
-          {isAuthorNote ? '📝 NB' : `${currentChapterIndex + 1} / ${chapters.length}`}
+          {isAuthorNote ? '📝' : `${currentChapterIndex + 1}/${chapters.length}`}
         </div>
 
         <button
@@ -165,12 +166,12 @@ export default function Reader() {
           disabled={!nextChapter}
           style={{ 
             background: 'var(--accent)', color: 'white', 
-            border: 'none', opacity: nextChapter ? 1 : 0.4, padding: '0 1rem', height: '40px',
-            boxShadow: '0 4px 12px rgba(59,130,246,0.2)'
+            border: 'none', opacity: nextChapter ? 1 : 0.4, padding: '0 1.25rem', height: '48px',
+            borderRadius: '12px', boxShadow: '0 4px 12px rgba(59,130,246,0.2)'
           }}
         >
-          <span className="hide-mobile">Tiếp</span>
-          <ArrowRight size={16} />
+          <span className="hide-mobile" style={{ marginRight: '6px' }}>Tiếp</span>
+          <ArrowRight size={18} />
         </button>
       </div>
       
@@ -178,7 +179,7 @@ export default function Reader() {
         onClick={() => setShowSettings(true)}
         style={{ 
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: '40px', height: '40px', borderRadius: '10px',
+          width: '48px', height: '48px', borderRadius: '12px',
           background: currentTheme.panel, color: currentTheme.text,
           border: `1px solid ${currentTheme.border}`, cursor: 'pointer'
         }}

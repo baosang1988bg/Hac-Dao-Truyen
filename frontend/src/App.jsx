@@ -36,6 +36,7 @@ function NavLink({ to, icon, label, adminOnly }) {
 
 function App() {
   const [role, setRole] = useState(localStorage.getItem('userRole'))
+  const location = useLocation()
 
   const handleLogin = (newRole) => {
     localStorage.setItem('userRole', newRole)
@@ -47,70 +48,72 @@ function App() {
     setRole(null)
   }
 
+  // Detect if we are in reader mode to hide sidebar
+  const isReaderPage = location.pathname.includes('/read/')
+
   return (
-    <BrowserRouter>
+    <div className="app-root">
       {!role ? (
         <Routes>
           <Route path="*" element={<LoginPage onLogin={handleLogin} />} />
         </Routes>
       ) : (
-        <div className="app-container">
-          {/* Sidebar for Desktop */}
-          <div className="glass-panel sidebar">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2rem', padding: '0 4px' }}>
-              <div style={{ background: 'var(--accent-gradient)', padding: '8px', borderRadius: '8px', flexShrink: 0 }}>
-                <BookOpen size={22} color="white" />
+        <div className={`app-container ${isReaderPage ? 'reader-mode' : ''}`}>
+          {/* Sidebar - Hidden in Reader Mode */}
+          {!isReaderPage && (
+            <div className="glass-panel sidebar">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2rem', padding: '0 4px' }}>
+                <div style={{ background: 'var(--accent-gradient)', padding: '8px', borderRadius: '8px', flexShrink: 0 }}>
+                  <BookOpen size={22} color="white" />
+                </div>
+                <h1 style={{ fontSize: '1.15rem', fontWeight: 700, letterSpacing: '0.3px' }}>
+                  Hắc Đạo<span style={{ color: 'var(--accent)' }}>Truyện</span>
+                </h1>
               </div>
-              <h1 style={{ fontSize: '1.15rem', fontWeight: 700, letterSpacing: '0.3px' }}>
-                Hắc Đạo<span style={{ color: 'var(--accent)' }}>Truyện</span>
-              </h1>
+
+              <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <NavLink to="/"     icon={<Home size={18} />}       label="Thư viện" />
+                <NavLink to="/logs" icon={<ScrollText size={18} />} label="Lịch sử" adminOnly />
+                <button 
+                  onClick={handleLogout}
+                  style={{ 
+                    marginTop: 'auto', background: 'none', border: 'none', 
+                    color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer',
+                    padding: '10px', textAlign: 'left'
+                  }}
+                >
+                  Đăng xuất
+                </button>
+              </nav>
+            </div>
+          )}
+
+          {/* Main Content Area */}
+          <div className="main-content">
+            <div className="content-wrap">
+              <Routes>
+                <Route path="/"                             element={<Dashboard />} />
+                <Route path="/novel/:slug"                  element={<NovelDetail />} />
+                <Route path="/novel/:slug/read/:chapter"    element={<Reader />} />
+                <Route path="/logs"                         element={<Logs />} />
+                <Route path="/login"                        element={<LoginPage onLogin={handleLogin} />} />
+              </Routes>
             </div>
 
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <NavLink to="/"     icon={<Home size={18} />}       label="Thư viện" />
-              <NavLink to="/logs" icon={<ScrollText size={18} />} label="Lịch sử" adminOnly />
-              <button 
-                onClick={handleLogout}
-                style={{ 
-                  marginTop: 'auto', background: 'none', border: 'none', 
-                  color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer',
-                  padding: '10px', textAlign: 'left'
-                }}
-              >
-                Đăng xuất
-              </button>
-            </nav>
-          </div>
-
-          {/* Main Content */}
-          <div className="main-content">
-            <Routes>
-              <Route path="/"                             element={<Dashboard />} />
-              <Route path="/novel/:slug"                  element={<NovelDetail />} />
-              <Route path="/novel/:slug/read/:chapter"    element={<Reader />} />
-              <Route path="/logs"                         element={<Logs />} />
-              <Route path="/login"                        element={<LoginPage onLogin={handleLogin} />} />
-            </Routes>
-          </div>
-
-          {/* Bottom Navigation for Mobile */}
-          <div className="bottom-nav">
-            <Link to="/">
-              <Home size={22} />
-              <span>Thư viện</span>
-            </Link>
-            {role === 'admin' && (
-              <Link to="/logs">
-                <ScrollText size={22} />
-                <span>Lịch sử</span>
-              </Link>
-            )}
+            {/* Global Footer */}
+            <footer className="app-footer">
+              <div style={{ opacity: 0.3, fontSize: '0.8rem' }}>
+                Hắc Đạo Truyện &copy; 2026 • Premium Novel Translation
+              </div>
+            </footer>
           </div>
         </div>
       )}
-    </BrowserRouter>
+    </div>
   )
 }
+
+
 
 
 export default App
