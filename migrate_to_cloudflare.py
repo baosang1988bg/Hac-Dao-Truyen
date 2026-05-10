@@ -19,6 +19,12 @@ Cách dùng:
 import os, re, json, subprocess, argparse, sys, tempfile, base64
 from pathlib import Path
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
+
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 NOVELS_DIR  = Path("novels")
 D1_DB_NAME  = "hacdao-db"
@@ -102,11 +108,16 @@ def update_novel_sync(slug: str, last_chapter: int, last_filename: str, total_sy
 # ── Wrangler ──────────────────────────────────────────────────────────────────
 
 def get_wrangler():
-    local = os.path.join(os.getcwd(), 'node_modules', '.bin', 'wrangler')
-    return local if os.path.exists(local) else 'wrangler'
+    ext = '.cmd' if os.name == 'nt' else ''
+    local = os.path.join(os.getcwd(), 'node_modules', '.bin', f'wrangler{ext}')
+    if os.path.exists(local):
+        return [local]
+    return [f'npx{ext}', 'wrangler']
 
 def run_safe(args: list) -> subprocess.CompletedProcess:
-    return subprocess.run(args, capture_output=True, text=True)
+    if isinstance(args[0], list):
+        args = args[0] + args[1:]
+    return subprocess.run(args, capture_output=True, text=True, encoding='utf-8')
 
 def d1_file(sql: str, dry_run=False) -> bool:
     if dry_run:
