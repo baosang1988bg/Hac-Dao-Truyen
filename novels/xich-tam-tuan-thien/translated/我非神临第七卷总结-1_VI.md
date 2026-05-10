@@ -1,4 +1,4 @@
-# Chương 1: Tổng kết quyển thứ bảy của Ta Không Phải Thần Lâm 
+# Tổng kết quyển thứ bảy của Ta Không Phải Thần Lâm 
 
 **Tổng kết quyển thứ bảy của Ta Không Phải Thần Lâm**
 **Ngày 29 tháng 5 năm 2024**
