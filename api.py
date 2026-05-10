@@ -262,14 +262,39 @@ def list_chapters(slug: str):
         result.append({"filename": f, "title": title})
     return result
 
-@app.get("/api/novels/{slug}/chapters/{filename}")
-def get_chapter_content(slug: str, filename: str):
-    """Lấy nội dung Markdown của chương."""
-    filepath = os.path.join(NOVELS_DIR, slug, "translated", filename)
-    if not os.path.exists(filepath):
-        raise HTTPException(status_code=404, detail="Chapter not found")
-    with open(filepath, "r", encoding="utf-8") as f:
-        return {"content": f.read()}
+@app.get("/api/novels/{slug}/chapters/{identifier}")
+def get_chapter_content(slug: str, identifier: str):
+    """Lấy nội dung Markdown của chương.
+    identifier: filename đầy đủ HOẶC số chương (ví dụ: '1497')
+    """
+    translated_dir = os.path.join(NOVELS_DIR, slug, "translated")
+    if not os.path.exists(translated_dir):
+        raise HTTPException(status_code=404, detail="Novel not found")
+
+    # Thử trực tiếp theo filename trước
+    filepath = os.path.join(translated_dir, identifier)
+    if os.path.exists(filepath):
+        with open(filepath, "r", encoding="utf-8") as f:
+            return {"content": f.read()}
+
+    # Nếu identifier là số → tìm file có chapter number khớp
+    if identifier.isdigit():
+        chap_num = int(identifier)
+        all_files = [f for f in os.listdir(translated_dir) if f.endswith(".md")]
+        # Pattern khớp: 第1497章, Chương 1497, 1497_
+        patterns = [
+            re.compile(rf'^第{chap_num}章'),
+            re.compile(rf'^0*{chap_num}_'),
+            re.compile(rf'[Cc]h(ương|apter)\s*{chap_num}[^0-9]'),
+        ]
+        for fname in sorted(all_files):
+            for pat in patterns:
+                if pat.search(fname):
+                    fpath = os.path.join(translated_dir, fname)
+                    with open(fpath, "r", encoding="utf-8") as f:
+                        return {"content": f.read()}
+
+    raise HTTPException(status_code=404, detail=f"Chapter not found: {identifier}")
 
 
 def _find_merged_vi(stem: str, all_trans: set) -> str | None:

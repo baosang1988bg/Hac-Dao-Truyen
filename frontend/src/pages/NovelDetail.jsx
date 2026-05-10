@@ -1103,7 +1103,7 @@ function HealthTab({ healthData, loading, onRefresh, slug }) {
     setCleaning(true)
     setCleanResult(null)
     try {
-      const res = await fetch(`http://localhost:4444/api/novels/${slug}/cleanup-split-parts`, { method: 'POST' })
+      const res = await fetch(`/api/novels/${slug}/cleanup-split-parts`, { method: 'POST' })
       const data = await res.json()
       setCleanResult(data)
       onRefresh()  // refresh health sau cleanup
@@ -1343,7 +1343,7 @@ function ToolsTab({ slug }) {
     setRunningTool(toolId)
     try {
       const params = toolId === 'fix_one' ? `?chapter_title=${encodeURIComponent(chapterTitle)}` : ''
-      const response = await fetch(`http://localhost:4444/api/novels/${slug}/tools/${toolId}${params}`)
+      const response = await fetch(`/api/novels/${slug}/tools/${toolId}${params}`)
       if (!response.ok) {
         setLogs(prev => prev + `\n✗ Lỗi HTTP ${response.status}\n`)
         setRunningTool(null)
