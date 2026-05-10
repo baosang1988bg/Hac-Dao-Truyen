@@ -1089,17 +1089,10 @@ class NovelTranslator:
         }
         return cleaned_chapters, summary, new_glossary, _batch_usage
 
-
-
-class _DailyQuotaExhausted(Exception):
-    """Raised khi tất cả Gemini key đã hết daily quota."""
-    pass
-
-
     def _fix_stuck_paragraphs(self, text: str) -> str:
         """
         Phát hiện và sửa các đoạn văn bị 'dính' (quá dài).
-        Nếu một dòng > 500 ký tự, tự động ngắt đoạn tại các dấu chấm câu.
+        Chỉ ngắt đoạn khi khối văn bản > 300 ký tự và chọn điểm ngắt là sau 2-3 câu.
         """
         if not text:
             return text
@@ -1109,17 +1102,38 @@ class _DailyQuotaExhausted(Exception):
         
         for line in lines:
             stripped = line.strip()
-            # Bỏ qua các dòng tiêu đề hoặc dòng đã ngắn sẵn
-            if not stripped or line.startswith('#') or len(stripped) < 500:
+            # Bỏ qua tiêu đề hoặc dòng ngắn
+            if not stripped or line.startswith('#') or len(stripped) < 300:
                 fixed_lines.append(line)
                 continue
             
-            # Ngắt đoạn tại các dấu kết thúc câu (. ! ? ...) theo sau là khoảng trắng
-            # Sử dụng lookbehind để không ngắt ở giữa các từ viết tắt nếu có (nhưng hiếm trong truyện)
-            fixed_line = re.sub(r'([.!?…])\s+', r'\1\n\n', stripped)
-            fixed_lines.append(fixed_line)
+            # Tách thành các câu (giữ lại dấu câu)
+            parts = re.split(r'([.!?…])\s+', stripped)
             
-        return '\n'.join(fixed_lines)
+            new_block = ""
+            current_segment = ""
+            
+            # Duyệt qua các cặp (nội dung câu, dấu câu)
+            for i in range(0, len(parts) - 1, 2):
+                sentence = parts[i] + parts[i+1]
+                current_segment += sentence + " "
+                
+                # Nếu đoạn hiện tại đã đủ dài (> 250 ký tự), thực hiện ngắt
+                if len(current_segment) > 250:
+                    new_block += current_segment.strip() + "\n\n"
+                    current_segment = ""
+            
+            # Thêm phần còn lại
+            new_block += current_segment.strip()
+            fixed_lines.append(new_block.strip())
+            
+        return '\n\n'.join([l for l in fixed_lines if l.strip()])
+
+
+
+class _DailyQuotaExhausted(Exception):
+    """Raised khi tất cả Gemini key đã hết daily quota."""
+    pass
 
 if __name__ == "__main__":
     t = NovelTranslator()

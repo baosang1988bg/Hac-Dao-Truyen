@@ -4,8 +4,8 @@ import re
 
 def fix_stuck_paragraphs(text):
     """
-    Detect and fix 'stuck' paragraphs (very long lines).
-    If a line is > 500 chars, split at sentence endings.
+    Phát hiện và sửa các đoạn văn bị 'dính' (quá dài).
+    Chỉ ngắt đoạn khi khối văn bản > 300 ký tự và chọn điểm ngắt là sau 2-3 câu.
     """
     if not text:
         return text
@@ -15,17 +15,32 @@ def fix_stuck_paragraphs(text):
     
     for line in lines:
         stripped = line.strip()
-        # Skip headers or already short lines
-        if not stripped or line.startswith('#') or len(stripped) < 500:
+        # Bỏ qua tiêu đề hoặc dòng ngắn
+        if not stripped or line.startswith('#') or len(stripped) < 300:
             fixed_lines.append(line)
             continue
         
-        # Split at sentence endings (. ! ? ...) followed by space
-        # We replace it with the punctuation + double newline
-        fixed_line = re.sub(r'([.!?…])\s+', r'\1\n\n', stripped)
-        fixed_lines.append(fixed_line)
+        # Tách thành các câu (giữ lại dấu câu)
+        parts = re.split(r'([.!?…])\s+', stripped)
         
-    return '\n'.join(fixed_lines)
+        new_block = ""
+        current_segment = ""
+        
+        # Duyệt qua các cặp (nội dung câu, dấu câu)
+        for i in range(0, len(parts) - 1, 2):
+            sentence = parts[i] + parts[i+1]
+            current_segment += sentence + " "
+            
+            # Nếu đoạn hiện tại đã đủ dài (> 250 ký tự), thực hiện ngắt
+            if len(current_segment) > 250:
+                new_block += current_segment.strip() + "\n\n"
+                current_segment = ""
+        
+        # Thêm phần còn lại
+        new_block += current_segment.strip()
+        fixed_lines.append(new_block.strip())
+        
+    return '\n\n'.join([l for l in fixed_lines if l.strip()])
 
 def process_directory(directory):
     files = glob.glob(os.path.join(directory, "*.md"))

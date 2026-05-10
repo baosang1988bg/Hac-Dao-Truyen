@@ -722,8 +722,22 @@ async def cmd_translate_async(args, progress_callback=None):
 
             if failed:
                 session_usage["errors"].append(f"Dịch thất bại: {title}")
-                report_progress(translated_count, args.chapters, "running",
-                                f"❌ Thất bại: {title}", chapter_fail=title)
+                # Với split part, chỉ tính là xong 1 chương khi đến part cuối
+                if is_split_part:
+                    part_n   = int(orig_title_match.group(2))
+                    n_total  = _pending_merges.get(orig_title, 1)
+                    if part_n == n_total:
+                        translated_count += 1
+                        report_progress(translated_count, args.chapters, "running",
+                                        f"❌ Thất bại: {orig_title} ({n_total} phần)", 
+                                        chapter_fail=orig_title)
+                    else:
+                        report_progress(translated_count, args.chapters, "running",
+                                        f"❌ Part {part_n}/{n_total} lỗi: {title}")
+                else:
+                    translated_count += 1
+                    report_progress(translated_count, args.chapters, "running",
+                                    f"❌ Thất bại: {title}", chapter_fail=title)
             else:
                 session_usage["chapters_saved"].append(title)
                 # Emit chapter_ok: nếu là split part chỉ emit khi là phần cuối
@@ -731,18 +745,20 @@ async def cmd_translate_async(args, progress_callback=None):
                     part_n   = int(orig_title_match.group(2))
                     n_total  = _pending_merges.get(orig_title, 1)
                     if part_n == n_total:  # là phần cuối
+                        translated_count += 1
                         report_progress(translated_count, args.chapters, "running",
                                         f"✓ Đã dịch xong '{orig_title}' ({n_total} phần)",
                                         chapter_ok=orig_title)
                     else:
+                        # Vẫn gửi progress nhưng không tăng translated_count
                         report_progress(translated_count, args.chapters, "running",
                                         f"✓ Part {part_n}/{n_total}: {title}")
                 else:
+                    translated_count += 1
                     report_progress(translated_count, args.chapters, "running",
                                     f"✓ Đã lưu: {title}", chapter_ok=title)
 
-        # Tăng translated_count theo số chương gốc (không phải số phần split)
-        translated_count += orig_chapter_count
+        # Batch finished, ensure final count is sent (redundant but safe)
         report_progress(translated_count, args.chapters, "running",
                         current_chapter=batch_copy[-1][0] if batch_copy else "")
 
