@@ -1,5 +1,10 @@
 import os
 import re
+import sys
+
+# Sửa lỗi Unicode khi in tiếng Việt ra terminal Windows
+if sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 NOVELS_DIR = "novels"
 
