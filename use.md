@@ -379,3 +379,120 @@ ollama run hunyuan-mt "Dịch: 他走向远方"
 | 69shuba.com | Đầy đủ (GBK encoding) |
 | novel543.com | Cơ bản |
 | Khác | Dùng selector mặc định — chỉnh `SITE_SELECTORS` trong `config.py` |
+
+---
+
+## ☁️ CLOUDFLARE DEPLOY
+
+Website đọc truyện chạy hoàn toàn trên Cloudflare (free):
+- **Frontend** → Cloudflare Pages (React/Vite build)
+- **API** → Cloudflare Worker (`src/index.js`)
+- **Database** → Cloudflare D1 (`hacdao-db`) — metadata chapters
+- **Storage** → Cloudflare R2 (`hacdao-chapters`) — nội dung chapter
+
+**URL production:** `https://hacdaotruyen.com` (hoặc `https://hac-dao-truyen.nguyenbaosang1998.workers.dev`)
+
+### Deploy frontend + worker
+```bash
+npm run deploy          # build frontend → deploy lên Cloudflare
+```
+
+### Migrate data lên Cloudflare D1 + R2
+
+#### Lần đầu (full migrate)
+```bash
+# 1. Tạo schema D1
+npx wrangler d1 execute hacdao-db --file=schema.sql --remote
+
+# 2. Migrate toàn bộ
+python3 migrate_to_cloudflare.py --slug xich-tam-tuan-thien
+```
+
+#### Sau khi dịch chapters mới (workflow hàng ngày) ⭐
+```bash
+# Tự động detect chapters mới, sync nhanh — LỆNH DUY NHẤT CẦN NHỚ
+python3 migrate_to_cloudflare.py --slug xich-tam-tuan-thien --smart-sync
+```
+
+#### Xem trạng thái sync
+```bash
+python3 migrate_to_cloudflare.py --status
+```
+Output ví dụ:
+```
+📚 xich-tam-tuan-thien
+   Last sync   : 2026-05-10 10:40:57
+   Last chapter: 1579
+   Synced      : 1580 files
+   Local now   : 1586 files
+   ⚠️  Chưa sync: ~6 files mới
+```
+
+#### Các flags migrate_to_cloudflare.py
+
+| Flag | Tác dụng | Khi nào dùng |
+|---|---|---|
+| `--smart-sync` | Tự đọc state, chỉ sync chapters mới ⭐ | **Hàng ngày sau dịch** |
+| `--status` | Xem trạng thái sync, không upload | Kiểm tra nhanh |
+| `--set-synced` | Đánh dấu local files là đã sync | Sau migrate thủ công |
+| `--from-chapter N` | Chỉ sync từ chương N trở đi | Biết chính xác điểm bắt đầu |
+| `--skip-d1` | Bỏ qua D1, chỉ upload R2 | D1 đã OK, fix R2 |
+| `--skip-r2` | Bỏ qua R2, chỉ update D1 | R2 đã OK, fix D1 |
+| `--resume` | Skip files đã có trong R2 | Tiếp tục bị ngắt giữa chừng |
+| `--limit N` | Chỉ xử lý N files đầu | Test nhanh |
+| `--dry-run` | Xem trước, không upload | Debug |
+
+#### Debug Cloudflare
+```bash
+# Kiểm tra 1 chapter cụ thể (D1 + R2)
+curl "https://hacdaotruyen.com/api/debug/chapter/xich-tam-tuan-thien/5"
+# → {"step":"OK","filename":"...","preview":"# Chương 5..."}
+
+# Xem chapters trong D1
+npx wrangler d1 execute hacdao-db --remote \
+  --command="SELECT COUNT(*), MAX(chapter_number) FROM chapters WHERE novel_slug='xich-tam-tuan-thien';"
+```
+
+### Cloudflare Worker API (production)
+```
+GET  /api/novels                              # Danh sách truyện
+GET  /api/novels/{slug}                       # Chi tiết novel
+GET  /api/novels/{slug}/chapters              # Danh sách chapters
+GET  /api/novels/{slug}/chapters/{num|file}   # Nội dung chapter (số hoặc filename)
+POST /api/novels/{slug}/glossary              # Cập nhật glossary
+GET  /api/novels/{slug}/health                # Health check
+GET  /api/debug/chapter/{slug}/{num}          # Debug D1 + R2
+```
+> Translate/tools endpoints tự động proxy về Python backend (nếu có `BACKEND_URL`).
+
+### Wrangler config (`wrangler.jsonc`)
+```jsonc
+{
+  "name": "hac-dao-truyen",
+  "main": "src/index.js",
+  "assets": { "directory": "frontend/dist", "binding": "ASSETS" },
+  "d1_databases": [{ "binding": "DB", "database_name": "hacdao-db",
+                     "database_id": "284ebf75-a325-49b7-a065-818188a76b7b" }],
+  "r2_buckets":   [{ "binding": "CHAPTERS", "bucket_name": "hacdao-chapters" }]
+}
+```
+
+### Thêm custom domain
+```
+Cloudflare Dashboard → Workers & Pages → hac-dao-truyen
+→ Settings → Domains & Routes → Add Custom Domain
+→ Nhập: hacdaotruyen.com → Save
+```
+
+---
+
+## 🔄 QUY TRÌNH ĐẦY ĐỦ (local + cloud)
+
+```
+# Mỗi ngày:
+1. Dịch local:    python3 main.py translate --novel xich-tam-tuan-thien --chapters 20
+2. Fix nếu cần:   python3 fix_chapters.py --novel xich-tam-tuan-thien
+3. Sync cloud:    python3 migrate_to_cloudflare.py --slug xich-tam-tuan-thien --smart-sync
+4. Deploy:        npm run deploy   (chỉ cần nếu có thay đổi code)
+5. Verify:        curl "https://hacdaotruyen.com/api/debug/chapter/xich-tam-tuan-thien/1580"
+```

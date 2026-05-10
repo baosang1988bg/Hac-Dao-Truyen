@@ -55,12 +55,34 @@ def get_synced_filenames(slug: str) -> set:
         r = run_safe([get_wrangler(), 'd1', 'execute', D1_DB_NAME, '--remote',
                       f'--file={tmp}', '--json'])
         if r.returncode != 0:
+            print(f"    [D1-query-ERR] {r.stderr[-200:].strip()}")
             return set()
-        data = json.loads(r.stdout)
-        # Wrangler JSON output: list of result sets
+
+        # Wrangler có thể in warning/log lines trước JSON thật
+        # Scan từng dòng, tìm dòng bắt đầu bằng '[' và parse được
+        stdout = r.stdout.strip()
+        data = None
+        for i, line in enumerate(stdout.splitlines()):
+            line = line.strip()
+            if line.startswith('['):
+                try:
+                    data = json.loads('\n'.join(stdout.splitlines()[i:]))
+                    break
+                except json.JSONDecodeError:
+                    continue
+
+        if not data:
+            print(f"    [D1-query-ERR] Không parse được JSON. stdout: {stdout[:300]}")
+            return set()
+
         rows = data[0].get('results', []) if data else []
-        return {row['filename'] for row in rows}
-    except Exception:
+        return {row['filename'] for row in rows if 'filename' in row}
+
+    except json.JSONDecodeError as e:
+        print(f"    [D1-query-ERR] JSON parse: {e}")
+        return set()
+    except Exception as e:
+        print(f"    [D1-query-ERR] {e}")
         return set()
     finally:
         os.unlink(tmp)
