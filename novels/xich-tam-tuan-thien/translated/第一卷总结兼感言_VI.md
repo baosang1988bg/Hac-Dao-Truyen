@@ -26,7 +26,21 @@ Nhưng không sao, chỉ cần có dù chỉ một độc giả nhận ra sự b
 
 Có người phê bình tôi, viết mạng văn chính là bán hàng hóa, văn học mạng chính là văn học hàng hóa. Hy vọng tôi có thể nhận thức rõ thực tế. Tôi hoàn toàn thừa nhận thực tế. Với tỷ lệ đặt mua trung bình chỉ hơn sáu mươi, tôi còn gì mà không rõ thực tế chứ?
 
-Có độc giả khuyên nhủ tôi, theo đuổi văn học trong mạng văn là việc chỉ nên làm sau khi đã thành danh. Tôi rất hiểu sự quan tâm trong lời nói đó dành cho tôi. Nhưng với quy mô của "Xích Tâm Tuần Thiên" như thế này, viết xong một bộ cũng mất một hai năm. Tôi còn bao nhiêu hai năm để thử nghiệm, bao nhiêu hai năm để lãng phí? Đối với tôi, nếu chỉ đơn thuần kiếm tiền trong hai năm, đó chính là sự lãng phí. Bởi vì tôi chưa bao giờ theo đuổi việc trở thành một thương nhân thành công. Tôi muốn kiếm tiền, có rất nhiều cách. Tôi muốn theo đuổi văn học, chỉ có một con đường duy nhất.
+Có độc giả khuyên nhủ tôi, theo đuổi văn học trong mạng văn là việc chỉ nên làm sau khi đã thành danh.
+
+Tôi rất hiểu sự quan tâm trong lời nói đó dành cho tôi.
+
+Nhưng với quy mô của "Xích Tâm Tuần Thiên" như thế này, viết xong một bộ cũng mất một hai năm.
+
+Tôi còn bao nhiêu hai năm để thử nghiệm, bao nhiêu hai năm để lãng phí?
+
+Đối với tôi, nếu chỉ đơn thuần kiếm tiền trong hai năm, đó chính là sự lãng phí.
+
+Bởi vì tôi chưa bao giờ theo đuổi việc trở thành một thương nhân thành công.
+
+Tôi muốn kiếm tiền, có rất nhiều cách.
+
+Tôi muốn theo đuổi văn học, chỉ có một con đường duy nhất.
 
 Tất nhiên, đến giờ phút này, bộ tiểu thuyết này cũng không thể quay đầu lại được nữa.
 
@@ -48,7 +62,17 @@ Tôi phải thừa nhận sai lầm này, nhưng dù đã cố gắng sửa đ�
 
 [Vấn đề thứ hai của "Xích Tâm Tuần Thiên" là nhịp độ chậm.]
 
-Tôi đã dành nhiều bút mực cho cuộc sống đời thường, cho các chi tiết, cho những nhân vật nhỏ bé. Không có sự tiến công ồ ạt chỉ tập trung vào nhân vật chính, và vì vậy đã mất đi rất nhiều độc giả. Tôi viết "Xích Tâm Tuần Thiên" không chỉ đơn thuần là kể một câu chuyện, tôi mong muốn xây dựng một thế giới tương đối hoàn chỉnh. Nếu không có những hơi thở đời thường đó, thế giới này sẽ không đủ chân thực. Nếu không có những tháng ngày bình dị đáng yêu, thì nó không đủ để trở thành quá khứ bi thương đau khổ. Nếu không có những nụ cười thấu hiểu, tôi không thể thuyết phục bản thân rơi lệ.
+Tôi đã dành nhiều bút mực cho cuộc sống đời thường, cho các chi tiết, cho những nhân vật nhỏ bé.
+
+Không có sự tiến công ồ ạt chỉ tập trung vào nhân vật chính, và vì vậy đã mất đi rất nhiều độc giả.
+
+Tôi viết "Xích Tâm Tuần Thiên" không chỉ đơn thuần là kể một câu chuyện, tôi mong muốn xây dựng một thế giới tương đối hoàn chỉnh.
+
+Nếu không có những hơi thở đời thường đó, thế giới này sẽ không đủ chân thực.
+
+Nếu không có những tháng ngày bình dị đáng yêu, thì nó không đủ để trở thành quá khứ bi thương đau khổ.
+
+Nếu không có những nụ cười thấu hiểu, tôi không thể thuyết phục bản thân rơi lệ.
 
 Để xây dựng tình cảm, chẳng lẽ không cần quá trình sao? Để xây dựng lòng tin, chẳng lẽ không cần sự hòa hợp sao? Ba câu hai lời đã sinh tử tương giao, thề non hẹn biển, nó thực sự có thể thuyết phục độc giả sao? Tôi là độc giả đầu tiên của chính mình, nó trước hết không thể thuyết phục được tôi.
 
@@ -66,17 +90,59 @@ Nhưng các tuyến truyện phụ khác cộng lại, không đủ sức chốn
 
 Còn đối với tôi.
 
-Tôi không thể thuyết phục bản thân rằng, trong một thế giới chân thực, sẽ có vô số kẻ địch yếu đuối đến để nhân vật chính vô não ngược đãi. Chưa nói đến một thế giới mà sức mạnh siêu phàm đã phát triển vô số năm, ngay cả trong thế giới thực. Khi bạn đang học cấp ba, lẽ nào những người xung đột với bạn lại là những học sinh tiểu học liên tục xuất hiện? Họ thường là những bạn học cao lớn hơn, khỏe mạnh hơn bạn, thường là các anh chị khóa trên, thậm chí là thanh niên ngoài xã hội. Khi bạn còn yếu đuối, điều thường xảy ra là làm thế nào để tránh xung đột với những tồn tại mạnh mẽ đó, làm thế nào để mượn lực đánh lực, làm thế nào để bản thân trở nên mạnh mẽ. Khi bạn đã mạnh mẽ, mới có thể xảy ra câu chuyện một mình quét ngang tám trăm dặm.
+Tôi không thể thuyết phục bản thân rằng, trong một thế giới chân thực, sẽ có vô số kẻ địch yếu đuối đến để nhân vật chính vô não ngược đãi.
+
+Chưa nói đến một thế giới mà sức mạnh siêu phàm đã phát triển vô số năm, ngay cả trong thế giới thực.
+
+Khi bạn đang học cấp ba, lẽ nào những người xung đột với bạn lại là những học sinh tiểu học liên tục xuất hiện?
+
+Họ thường là những bạn học cao lớn hơn, khỏe mạnh hơn bạn, thường là các anh chị khóa trên, thậm chí là thanh niên ngoài xã hội.
+
+Khi bạn còn yếu đuối, điều thường xảy ra là làm thế nào để tránh xung đột với những tồn tại mạnh mẽ đó, làm thế nào để mượn lực đánh lực, làm thế nào để bản thân trở nên mạnh mẽ.
+
+Khi bạn đã mạnh mẽ, mới có thể xảy ra câu chuyện một mình quét ngang tám trăm dặm.
 
 Tôi không phải là không viết được cảm giác "sảng" đó, "Dĩ Thần Chi Danh" là một truyện ngắn bùng nổ từ đầu đến cuối, trong một trường thiên như "Tây Du Chí", mỗi lần Tôn Ngộ Không ra tay đều đủ sức đốt cháy, chỉ nhìn câu "một mình quét ngang tám trăm dặm" đã rất "sảng", đúng không? Chỉ là trong giai đoạn trưởng thành, nó không đủ chân thực. Đây là cách tôi hiểu về sự chân thực của thế giới.
 
-Có người còn nói về cảnh giới tu luyện, viết Cửu Phẩm, Bát Phẩm, Thất Phẩm ở phía trước quá thiếu tiên khí, quá giống văn não tàn. Tôi... Tôi đã dành rất nhiều tâm huyết để xây dựng hệ thống tu luyện, từ Du Mạch, Chu Thiên, Thông Thiên, Đằng Long, Nội Phủ, Ngoại Lâu, Thần Lâm... Đi lên, mỗi cảnh giới đều có miêu tả chi tiết, có quá trình kỳ diệu. Tôi tin rằng nó là logic tự thân, trên cơ sở đó, tôi hy vọng nó cũng là hùng vĩ và kỳ diệu. Sở dĩ ở phía trước dùng mấy phẩm mấy phẩm để giải thích, chỉ là để độc giả dễ dàng hiểu nhanh cấp độ tu luyện. Để theo đuổi sự chân thực, cảnh giới tu luyện là theo góc nhìn của nhân vật chính từng bước đi lên. Trước đó, sợ độc giả không có ấn tượng về những cảnh giới này. Điểm này có lẽ vẫn chưa làm hài lòng độc giả, nhưng ít nhất có thể cho thấy, tôi không giống như nhiều người phê bình, lao vào mạng văn mà không có bất kỳ hiểu biết nào. Tôi đã cân nhắc đến cảm nhận của độc giả mạng.
+Có người còn nói về cảnh giới tu luyện, viết Cửu Phẩm, Bát Phẩm, Thất Phẩm ở phía trước quá thiếu tiên khí, quá giống văn não tàn.
+
+Tôi...
+
+Tôi đã dành rất nhiều tâm huyết để xây dựng hệ thống tu luyện, từ Du Mạch, Chu Thiên, Thông Thiên, Đằng Long, Nội Phủ, Ngoại Lâu, Thần Lâm...
+
+Đi lên, mỗi cảnh giới đều có miêu tả chi tiết, có quá trình kỳ diệu.
+
+Tôi tin rằng nó là logic tự thân, trên cơ sở đó, tôi hy vọng nó cũng là hùng vĩ và kỳ diệu.
+
+Sở dĩ ở phía trước dùng mấy phẩm mấy phẩm để giải thích, chỉ là để độc giả dễ dàng hiểu nhanh cấp độ tu luyện.
+
+Để theo đuổi sự chân thực, cảnh giới tu luyện là theo góc nhìn của nhân vật chính từng bước đi lên.
+
+Trước đó, sợ độc giả không có ấn tượng về những cảnh giới này.
+
+Điểm này có lẽ vẫn chưa làm hài lòng độc giả, nhưng ít nhất có thể cho thấy, tôi không giống như nhiều người phê bình, lao vào mạng văn mà không có bất kỳ hiểu biết nào.
+
+Tôi đã cân nhắc đến cảm nhận của độc giả mạng.
 
 ...
 
 Ngoài những vấn đề này.
 
-Tôi tự nhận thấy phần kết của quyển một kết thúc vô cùng hoàn hảo, nếu chấm mười điểm, tôi cho mình chín điểm. Bớt một điểm là vì không đủ thời gian để trau chuốt tỉ mỉ. Lúc kết thúc, chuyển cảnh rất dồn dập, nhưng tôi đã làm hết sức mình trong khoảng thời gian cho phép cho mỗi cảnh. Có rất nhiều nhân vật xuất hiện như đoàn tàu lướt qua, nhưng tôi đều đã truyền đạt được những gì mình muốn nói. Có những đoạn không thể tách rời, chỉ có thể phân tán trục thời gian. Có những đoạn cần liền mạch, chỉ có thể bù đắp đường không gian. Với sự phức tạp của nhân vật, dòng thời gian, đường không gian như vậy, tôi đã thu thập chúng lại và triển khai một cách có quy củ. Tôi đã làm hết sức mình ở giai đoạn hiện tại.
+Tôi tự nhận thấy phần kết của quyển một kết thúc vô cùng hoàn hảo, nếu chấm mười điểm, tôi cho mình chín điểm.
+
+Bớt một điểm là vì không đủ thời gian để trau chuốt tỉ mỉ.
+
+Lúc kết thúc, chuyển cảnh rất dồn dập, nhưng tôi đã làm hết sức mình trong khoảng thời gian cho phép cho mỗi cảnh.
+
+Có rất nhiều nhân vật xuất hiện như đoàn tàu lướt qua, nhưng tôi đều đã truyền đạt được những gì mình muốn nói.
+
+Có những đoạn không thể tách rời, chỉ có thể phân tán trục thời gian.
+
+Có những đoạn cần liền mạch, chỉ có thể bù đắp đường không gian.
+
+Với sự phức tạp của nhân vật, dòng thời gian, đường không gian như vậy, tôi đã thu thập chúng lại và triển khai một cách có quy củ.
+
+Tôi đã làm hết sức mình ở giai đoạn hiện tại.
 
 Từ những tu sĩ Ti Trinh Ty tự sát để truyền tin, ông lão đứng chắn trước mặt học sinh, chiến sĩ Phong Lâm Thành nhảy xuống đất nứt vỡ… Từ những nhân vật không có cả tên này, đến những nhân vật có tên có họ, đến những nhân vật phụ quan trọng ở giai đoạn đầu. Mỗi người trong số họ đều có máu thịt, có cuộc sống của riêng mình. Tinh thần, ý chí, yêu hận, lựa chọn của họ, đều được thể hiện rõ ràng trước mắt độc giả. Tôi rất hài lòng.
 
@@ -106,7 +172,17 @@ Với tư cách là một sự vật, nó dường như không đủ quý giá. 
 
 Tôi đã dùng ba mươi lăm vạn chữ để hoàn thành quyển một, đặt nền móng cho thế giới "Xích Tâm Tuần Thiên". Tôi có lòng tin có thể xây dựng một thế giới hùng vĩ trên cơ sở này. Nhưng tôi cần độc giả ủng hộ tôi, để tôi không bị chết đói trên con đường xây gạch, lát tường.
 
-Rất nhiều người có lẽ không biết, khi viết mạng văn trên起点, tác giả sở hữu tất cả bản quyền truyện ngắn trong thời gian liên tục đăng tải. Đối với người khác thì không là gì. Đối với tôi, điều đó có nghĩa là trong thời gian viết "Xích Tâm Tuần Thiên", tôi không có bất kỳ thu nhập nào ngoài bộ truyện này. Bởi vì công việc vốn có của tôi là viết theo yêu cầu, viết chuyên mục, viết truyện ngắn, viết kịch bản. Tôi đã mang tâm thế sẵn sàng một năm không kiếm được một xu để viết "Xích Tâm Tuần Thiên". Ngoài việc may mắn vì đã chia tay, không cần lo lắng về việc có lỗi với bạn đời, thì không còn tin tức tốt nào khác.
+Rất nhiều người có lẽ không biết, khi viết mạng văn trên起点, tác giả sở hữu tất cả bản quyền truyện ngắn trong thời gian liên tục đăng tải.
+
+Đối với người khác thì không là gì.
+
+Đối với tôi, điều đó có nghĩa là trong thời gian viết "Xích Tâm Tuần Thiên", tôi không có bất kỳ thu nhập nào ngoài bộ truyện này.
+
+Bởi vì công việc vốn có của tôi là viết theo yêu cầu, viết chuyên mục, viết truyện ngắn, viết kịch bản.
+
+Tôi đã mang tâm thế sẵn sàng một năm không kiếm được một xu để viết "Xích Tâm Tuần Thiên".
+
+Ngoài việc may mắn vì đã chia tay, không cần lo lắng về việc có lỗi với bạn đời, thì không còn tin tức tốt nào khác.
 
 ...
 

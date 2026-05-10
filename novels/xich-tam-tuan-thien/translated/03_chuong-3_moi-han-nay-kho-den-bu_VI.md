@@ -86,7 +86,13 @@ Cảm nhận được bầu không khí đột nhiên trở nên ngưng trọng,
 "Ta thấy không giống... Khương sư huynh đâu phải kẻ ngốc dễ bị người ta lừa gạt."
 Đám đông xì xào bàn tán.
 "Đều là huynh đệ ruột thịt, đệ đừng nói bậy!" Đỗ Dã Hổ nhìn chằm chằm Khương Vọng, sắc mặt vô cùng lo lắng. Trực giác của hắn mách bảo điều chẳng lành, nhưng lại không có cách nào ngăn cản những chuyện sắp xảy ra.
-Lăng Hà suy nghĩ một lát, lên tiếng khuyên nhủ: "Tam đệ, khoảng thời gian này chắc đệ cũng đã trải qua nhiều chuyện, chịu không ít khổ sở. Chi bằng trước tiên hãy an ổn lại, mấy ngày nữa là kỳ tuyển sinh nội viện rồi, đây là đại sự liên quan đến cả đời người, cần phải thận trọng đối đãi. Bọn tàn dư Tây Sơn kia đã bị chúng ta liên thủ tiêu diệt, nếu trong chuyện này còn ẩn tình gì, cũng có thể từ từ làm rõ. Nếu đệ có oan, có hận, huynh đệ chúng ta nhất định sẽ giúp đệ, dù có phải làm lớn đến tận quận Đạo Viện, quốc Đạo Viện, cũng không tiếc!
+Lăng Hà suy nghĩ một lát, lên tiếng khuyên nhủ: "Tam đệ, khoảng thời gian này chắc đệ cũng đã trải qua nhiều chuyện, chịu không ít khổ sở.
+
+Chi bằng trước tiên hãy an ổn lại, mấy ngày nữa là kỳ tuyển sinh nội viện rồi, đây là đại sự liên quan đến cả đời người, cần phải thận trọng đối đãi.
+
+Bọn tàn dư Tây Sơn kia đã bị chúng ta liên thủ tiêu diệt, nếu trong chuyện này còn ẩn tình gì, cũng có thể từ từ làm rõ.
+
+Nếu đệ có oan, có hận, huynh đệ chúng ta nhất định sẽ giúp đệ, dù có phải làm lớn đến tận quận Đạo Viện, quốc Đạo Viện, cũng không tiếc!
 Nhưng Bằng Cử là huynh đệ cùng chúng ta thề huyết minh, ta tin chắc trong đó nhất định có hiểu lầm gì đó. Có lẽ là có kẻ ở giữa ly gián..."
 
 "Đại ca." Khương Vọng cắt ngang lời hắn: "Khi nào ta từng nói năng bừa bãi? Đối với đoạn tình huynh đệ này, lòng ta trân trọng không kém gì huynh. Cho nên hôm nay ta đã nói như vậy, thì điều đó chứng tỏ sự việc đích xác chính là như thế."
@@ -107,11 +113,23 @@ Kiếm này vừa nhanh vừa chuẩn, máu tươi bắn tung tóe. Phương Đ�
 "Nhị ca." Phương Bằng Cử cúi đầu, trường kiếm đẫm máu buông thõng, mặt đầy hổ thẹn: "Đệ... nhất thời lửa giận công tâm, chỉ nghĩ đến việc giết chết súc sinh này để trút giận cho Tam ca!"
 "Không sao." Khương Vọng chờ Phương Bằng Cử diễn xong, mới từ trong lòng áo rút ra một tờ giấy, bên trên có những dòng chữ chi chít: "Đây có lời cung khai và dấu tay của Phương Đắc Tài, Bằng Cử có muốn xem không?"
 "Loảng xoảng!"
-Phương Bằng Cử tùy tiện vứt thanh trường kiếm, đột ngột quỳ xuống: "Đệ không xem cũng biết trên đó đại khái viết gì, chỉ có thể nói lũ giặc cướp Tây Sơn lòng không từ bỏ ý đồ hại ta, không biết đã bỏ ra cái giá nào, khiến tên súc sinh Đắc Tài này cam tâm tình nguyện đến vậy! Nhưng Tam ca huynh tin đệ, đệ xưa nay làm người quang minh chính đại, hà cớ gì lại có hành động tiểu nhân? Dù cho chuyện này nguyên nhân thế nào, Phương gia đệ nhất định sẽ cho huynh một lời giải thích. Đệ sẽ treo thưởng vạn tiền, nhất định quét sạch lũ thổ phỉ trong phạm vi trăm dặm, để rửa mối hận trong lòng Tam ca!"
+Phương Bằng Cử tùy tiện vứt thanh trường kiếm, đột ngột quỳ xuống: "Đệ không xem cũng biết trên đó đại khái viết gì, chỉ có thể nói lũ giặc cướp Tây Sơn lòng không từ bỏ ý đồ hại ta, không biết đã bỏ ra cái giá nào, khiến tên súc sinh Đắc Tài này cam tâm tình nguyện đến vậy!
+
+Nhưng Tam ca huynh tin đệ, đệ xưa nay làm người quang minh chính đại, hà cớ gì lại có hành động tiểu nhân?
+
+Dù cho chuyện này nguyên nhân thế nào, Phương gia đệ nhất định sẽ cho huynh một lời giải thích.
+
+Đệ sẽ treo thưởng vạn tiền, nhất định quét sạch lũ thổ phỉ trong phạm vi trăm dặm, để rửa mối hận trong lòng Tam ca!"
 Trong đám đông cũng có đệ tử ngoại viện lên tiếng: "Phải đó Khương sư huynh, các huynh Phong Lâm Ngũ Hiệp ai nấy đều là hảo hán, là niềm kiêu hãnh của ngoại viện Đạo Viện Phong Lâm Thành ta, ngàn vạn lần đừng để tiểu nhân ly gián a!"
 "Ngày xưa mẫu thân ta bệnh nặng, là Phương sư huynh đã hào phóng giúp đỡ. Ta tin hắn không phải loại người đó."
 Lại có người nhổ nước bọt vào thi thể Phương Đắc Tài: "Tên ác nô này chết không đáng tiếc, lại còn bôi nhọ danh tiếng Phương sư huynh, làm hỏng tình huynh đệ của Phong Lâm Ngũ Hiệp. Nếu còn sống, ta hận không thể thiên đao vạn quả hắn!"
-"Chư vị đồng môn không cần nói nhiều!" Phương Bằng Cử vung tay chặn lại lời bàn tán của mọi người, quỳ gối tiến lên mấy bước, thành khẩn nhìn Khương Vọng: "Sau khi Tam ca mất tích, đệ đã dẫn người đi khắp nơi tìm kiếm, vài lần khóc không thành tiếng! Tình nghĩa của đệ với Tam ca ai cũng biết, trời đất chứng giám! Nhưng dù cho đệ hỏi lòng không thẹn, nếu không phải đệ tin tưởng Đắc Tài, Tam ca lại tin tưởng đệ, thì làm sao tên súc sinh này có thể thừa cơ chứ? Mọi tội lỗi đều do đệ, đệ nguyện một mình gánh chịu!"
+"Chư vị đồng môn không cần nói nhiều!" Phương Bằng Cử vung tay chặn lại lời bàn tán của mọi người, quỳ gối tiến lên mấy bước, thành khẩn nhìn Khương Vọng: "Sau khi Tam ca mất tích, đệ đã dẫn người đi khắp nơi tìm kiếm, vài lần khóc không thành tiếng!
+
+Tình nghĩa của đệ với Tam ca ai cũng biết, trời đất chứng giám!
+
+Nhưng dù cho đệ hỏi lòng không thẹn, nếu không phải đệ tin tưởng Đắc Tài, Tam ca lại tin tưởng đệ, thì làm sao tên súc sinh này có thể thừa cơ chứ?
+
+Mọi tội lỗi đều do đệ, đệ nguyện một mình gánh chịu!"
 "Đệ nguyện dùng hết tài vật trong tư khố, để đền bù nỗi đau của Tam ca; đệ nguyện chịu roi vọt, để bù đắp sai lầm tin lầm người; đệ nguyện một mình trừ giặc, thề diệt sạch tàn dư Tây Sơn, tàn dư không tuyệt, đệ quyết không về thành!"
 "Đệ nguyện làm như vậy, không phải để đền bù, Tam ca suýt mất mạng, mối hận này khó đền bù! Chỉ là chúng ta huynh đệ một trường, đệ không thể tha thứ cho chính mình!"
 "Nếu..." Phương Bằng Cử cuối cùng gần như nước mắt đầm đìa, nghiến răng nói: "Nếu Tam ca vẫn hận ý khó nguôi, vậy thì hãy cầm lấy thanh trường kiếm này, một kiếm giết chết đệ! Bằng Cử tuyệt không oán than!"

@@ -118,76 +118,88 @@ export default function Reader() {
 
   const currentTheme = THEMES[settings.theme] || THEMES.sepia
 
-  const NavBar = () => (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '1.25rem 0', gap: '8px'
-    }}>
-      <Link
-        to={`/novel/${slug}`}
-        style={{ 
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: '48px', height: '48px', borderRadius: '12px',
-          background: currentTheme.panel, color: currentTheme.text,
-          border: `1px solid ${currentTheme.border}`, textDecoration: 'none'
-        }}
-      >
-        <Home size={18} />
-      </Link>
-
-      <div style={{ display: 'flex', gap: '8px', flex: 1, justifyContent: 'center' }}>
-        <button
-          className="btn"
-          onClick={goPrev}
-          disabled={!prevChapter}
+  const NavBar = ({ position }) => {
+    const isBottom = position === 'bottom'
+    
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: isBottom ? '2rem 0 4rem' : '1.5rem 0', gap: '12px',
+        flexWrap: 'wrap'
+      }}>
+        <Link
+          to={`/novel/${slug}`}
+          title="Về trang chi tiết"
           style={{ 
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '58px', height: '58px', borderRadius: '18px',
+            background: currentTheme.panel, color: currentTheme.text,
+            border: `2px solid ${currentTheme.border}`, textDecoration: 'none',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}
+        >
+          <Home size={24} />
+        </Link>
+
+        <div style={{ display: 'flex', gap: '12px', flex: 1, justifyContent: 'center' }}>
+          <button
+            className="btn"
+            onClick={goPrev}
+            disabled={!prevChapter}
+            style={{ 
+              background: currentTheme.panel, color: currentTheme.text, 
+              border: `2px solid ${currentTheme.border}`,
+              opacity: prevChapter ? 1 : 0.3, padding: '0 1.5rem', height: '58px',
+              borderRadius: '18px', minWidth: '80px'
+            }}
+          >
+            <ArrowLeft size={22} />
+            <span className="hide-mobile" style={{ marginLeft: '8px', fontWeight: 700 }}>Trước</span>
+          </button>
+
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: currentTheme.panel, color: currentTheme.text, 
-            border: `1px solid ${currentTheme.border}`,
-            opacity: prevChapter ? 1 : 0.4, padding: '0 1.25rem', height: '48px',
-            borderRadius: '12px'
-          }}
-        >
-          <ArrowLeft size={18} />
-          <span className="hide-mobile" style={{ marginLeft: '6px' }}>Trước</span>
-        </button>
+            border: `2px solid ${currentTheme.border}`,
+            borderRadius: '18px', padding: '0 20px', fontSize: '1.1rem', fontWeight: 800, 
+            opacity: 0.9, minWidth: '90px'
+          }}>
+            {isAuthorNote ? '📝' : `${currentChapterIndex + 1}/${chapters.length}`}
+          </div>
 
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: currentTheme.panel, color: currentTheme.text, 
-          border: `1px solid ${currentTheme.border}`,
-          borderRadius: '12px', padding: '0 14px', fontSize: '0.9rem', fontWeight: 600, opacity: 0.9
-        }}>
-          {isAuthorNote ? '📝' : `${currentChapterIndex + 1}/${chapters.length}`}
+          <button
+            className="btn"
+            onClick={goNext}
+            disabled={!nextChapter}
+            style={{ 
+              background: 'var(--accent)', color: 'white', 
+              border: 'none', opacity: nextChapter ? 1 : 0.3, padding: '0 1.5rem', height: '58px',
+              borderRadius: '18px', boxShadow: '0 8px 25px rgba(59,130,246,0.4)',
+              flex: isBottom ? 1 : 'unset', // Make it larger at bottom
+              minWidth: '100px'
+            }}
+          >
+            <span style={{ marginRight: '8px', fontWeight: 800 }}>{isBottom ? 'CHƯƠNG TIẾP' : 'Tiếp'}</span>
+            <ArrowRight size={22} />
+          </button>
         </div>
-
+        
         <button
-          className="btn"
-          onClick={goNext}
-          disabled={!nextChapter}
+          onClick={() => setShowSettings(true)}
+          title="Cài đặt giao diện"
           style={{ 
-            background: 'var(--accent)', color: 'white', 
-            border: 'none', opacity: nextChapter ? 1 : 0.4, padding: '0 1.25rem', height: '48px',
-            borderRadius: '12px', boxShadow: '0 4px 12px rgba(59,130,246,0.2)'
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '58px', height: '58px', borderRadius: '18px',
+            background: currentTheme.panel, color: currentTheme.text,
+            border: `2px solid ${currentTheme.border}`, cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
           }}
         >
-          <span className="hide-mobile" style={{ marginRight: '6px' }}>Tiếp</span>
-          <ArrowRight size={18} />
+          <Settings size={24} />
         </button>
       </div>
-      
-      <button
-        onClick={() => setShowSettings(true)}
-        style={{ 
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: '48px', height: '48px', borderRadius: '12px',
-          background: currentTheme.panel, color: currentTheme.text,
-          border: `1px solid ${currentTheme.border}`, cursor: 'pointer'
-        }}
-      >
-        <Settings size={18} />
-      </button>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="reader-root" style={{ 
@@ -196,14 +208,14 @@ export default function Reader() {
     }}>
       <div className="container" style={{ 
         maxWidth: `${settings.contentWidth}px`, 
-        margin: '0 auto', padding: '0 1rem'
+        margin: '0 auto', padding: '0 1.25rem'
       }}>
-        <NavBar />
+        <NavBar position="top" />
 
         <div
           className="reader-content"
           style={{ 
-            padding: '1.5rem 0 5rem', 
+            padding: '1rem 0 3rem', 
             fontSize: `${settings.fontSize}px`, 
             fontFamily: settings.fontFamily,
             lineHeight: settings.lineHeight,
@@ -211,8 +223,8 @@ export default function Reader() {
           }}
         >
           {loading ? (
-            <div style={{ textAlign: 'center', opacity: 0.5, padding: '4rem 0' }}>
-              <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📖</div>
+            <div style={{ textAlign: 'center', opacity: 0.5, padding: '6rem 0' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>📖</div>
               Đang tải nội dung...
             </div>
           ) : (
@@ -221,21 +233,21 @@ export default function Reader() {
                 h1: ({ node, ...props }) => (
                   <h1 style={{
                     fontSize: '1.6em', fontWeight: 800,
-                    marginBottom: '2rem', color: 'inherit',
-                    borderBottom: `2px solid ${currentTheme.border}`,
-                    paddingBottom: '1rem', lineHeight: 1.3,
+                    marginBottom: '2.5rem', color: 'inherit',
+                    borderBottom: `3px solid ${currentTheme.border}`,
+                    paddingBottom: '1.25rem', lineHeight: 1.3,
                   }} {...props} />
                 ),
                 p: ({ node, ...props }) => (
                   <p style={{
-                    marginBottom: '1.5em', textIndent: '1.2em',
+                    marginBottom: '1.6em', textIndent: '1.2em',
                     textAlign: 'justify'
                   }} {...props} />
                 ),
                 hr: ({ node, ...props }) => (
                   <hr style={{
-                    border: 'none', borderTop: `1px solid ${currentTheme.border}`,
-                    margin: '3rem 0',
+                    border: 'none', borderTop: `2px solid ${currentTheme.border}`,
+                    margin: '3.5rem 0',
                   }} {...props} />
                 ),
               }}
@@ -245,10 +257,9 @@ export default function Reader() {
           )}
         </div>
 
-        <div style={{ paddingBottom: '5rem' }}>
-          <NavBar />
-        </div>
+        <NavBar position="bottom" />
       </div>
+
 
       {/* Settings Panel (Mobile Drawer Style) */}
       {showSettings && (
@@ -271,29 +282,29 @@ export default function Reader() {
             </div>
 
             {/* Theme Grid */}
-            <div style={{ marginBottom: '1.75rem' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '0.75rem', letterSpacing: '0.05em' }}>CHỦ ĐỀ</div>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ marginBottom: '2rem' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '1rem', letterSpacing: '0.05em' }}>CHỦ ĐỀ</div>
+              <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
                 {Object.entries(THEMES).map(([id, colors]) => (
                   <button 
                     key={id}
                     onClick={() => updateSetting('theme', id)}
                     style={{
-                      width: '44px', height: '44px', borderRadius: '12px', 
-                      background: colors.bg, border: settings.theme === id ? '2px solid var(--accent)' : '2px solid rgba(255,255,255,0.05)',
+                      width: '54px', height: '54px', borderRadius: '16px', 
+                      background: colors.bg, border: settings.theme === id ? '3px solid var(--accent)' : '2px solid rgba(255,255,255,0.1)',
                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
                     }}
                   >
-                    {settings.theme === id && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent)' }} />}
+                    {settings.theme === id && <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--accent)' }} />}
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Font Selector */}
-            <div style={{ marginBottom: '1.75rem' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '0.75rem', letterSpacing: '0.05em' }}>FONT CHỮ</div>
-              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+            <div style={{ marginBottom: '2rem' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '1rem', letterSpacing: '0.05em' }}>FONT CHỮ</div>
+              <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '8px', scrollbarWidth: 'none' }}>
                 {['Times New Roman', 'Arial', 'Georgia', 'Palatino', 'Inter'].map(f => {
                   const isActive = settings.fontFamily.includes(f)
                   return (
@@ -301,10 +312,11 @@ export default function Reader() {
                       key={f}
                       onClick={() => updateSetting('fontFamily', f === 'Arial' || f === 'Inter' ? `${f}, sans-serif` : `${f}, serif`)}
                       style={{
-                        padding: '8px 16px', borderRadius: '10px', fontSize: '0.85rem', whiteSpace: 'nowrap',
-                        background: isActive ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
-                        color: isActive ? 'white' : 'rgba(255,255,255,0.6)',
-                        border: 'none', cursor: 'pointer', transition: 'all 0.2s'
+                        padding: '12px 20px', borderRadius: '14px', fontSize: '1rem', whiteSpace: 'nowrap',
+                        background: isActive ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
+                        color: isActive ? 'white' : 'rgba(255,255,255,0.7)',
+                        border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                        fontWeight: isActive ? 700 : 500
                       }}
                     >
                       {f}
@@ -315,21 +327,21 @@ export default function Reader() {
             </div>
 
             {/* Controls Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1rem' }}>
               <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '0.75rem' }}>CỠ CHỮ</div>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px' }}>
-                  <button className="ctrl-btn" onClick={() => updateSetting('fontSize', Math.max(14, settings.fontSize - 1))}><Type size={14} /></button>
-                  <span style={{ flex: 1, textAlign: 'center', fontSize: '0.9rem', fontWeight: 700 }}>{settings.fontSize}</span>
-                  <button className="ctrl-btn" onClick={() => updateSetting('fontSize', Math.min(36, settings.fontSize + 1))}><Type size={18} /></button>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '0.8rem' }}>CỠ CHỮ</div>
+                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '16px', padding: '6px' }}>
+                  <button className="ctrl-btn" onClick={() => updateSetting('fontSize', Math.max(14, settings.fontSize - 1))}><Type size={18} /></button>
+                  <span style={{ flex: 1, textAlign: 'center', fontSize: '1.1rem', fontWeight: 800 }}>{settings.fontSize}</span>
+                  <button className="ctrl-btn" onClick={() => updateSetting('fontSize', Math.min(36, settings.fontSize + 1))}><Type size={24} /></button>
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '0.75rem' }}>DÀN TRANG</div>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px' }}>
-                  <button className="ctrl-btn" onClick={() => updateSetting('contentWidth', Math.max(400, settings.contentWidth - 50))}><Maximize2 size={14} /></button>
-                  <span style={{ flex: 1, textAlign: 'center', fontSize: '0.9rem', fontWeight: 700 }}>{settings.contentWidth}</span>
-                  <button className="ctrl-btn" onClick={() => updateSetting('contentWidth', Math.min(1200, settings.contentWidth + 50))}><Maximize2 size={18} /></button>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '0.8rem' }}>DÀN TRANG</div>
+                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '16px', padding: '6px' }}>
+                  <button className="ctrl-btn" onClick={() => updateSetting('contentWidth', Math.max(400, settings.contentWidth - 50))}><Maximize2 size={18} /></button>
+                  <span style={{ flex: 1, textAlign: 'center', fontSize: '1.1rem', fontWeight: 800 }}>{settings.contentWidth}</span>
+                  <button className="ctrl-btn" onClick={() => updateSetting('contentWidth', Math.min(1200, settings.contentWidth + 50))}><Maximize2 size={24} /></button>
                 </div>
               </div>
             </div>
@@ -338,12 +350,12 @@ export default function Reader() {
       )}
 
       {/* FABs */}
-      <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', zIndex: 90 }}>
+      <div style={{ position: 'fixed', bottom: '2rem', right: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', zIndex: 90 }}>
         {showScrollTop && (
-          <button onClick={scrollToTop} className="fab"><ChevronUp size={20} /></button>
+          <button onClick={scrollToTop} className="fab"><ChevronUp size={24} /></button>
         )}
         <button onClick={() => setShowSettings(true)} className="fab" style={{ background: 'var(--accent)', color: 'white', border: 'none' }}>
-          <Settings size={20} />
+          <Settings size={24} />
         </button>
       </div>
 
@@ -351,23 +363,25 @@ export default function Reader() {
         @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .reader-root { cursor: default; }
         .fab {
-          width: 48px; height: 48px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);
-          background: rgba(30,41,59,0.8); backdrop-filter: blur(12px); color: rgba(255,255,255,0.7);
+          width: 58px; height: 58px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(30,41,59,0.85); backdrop-filter: blur(12px); color: rgba(255,255,255,0.8);
           cursor: pointer; display: flex; align-items: center; justify-content: center;
-          transition: all 0.2s; box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+          transition: all 0.2s; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
+        .fab:active { transform: scale(0.92); }
         .ctrl-btn {
-          width: 36px; height: 36px; border-radius: 10px; border: none;
-          background: rgba(255,255,255,0.1); color: white; cursor: pointer;
+          width: 48px; height: 48px; border-radius: 12px; border: none;
+          background: rgba(255,255,255,0.15); color: white; cursor: pointer;
           display: flex; align-items: center; justify-content: center;
         }
-        .ctrl-btn:active { background: var(--accent); }
+        .ctrl-btn:active { background: var(--accent); transform: scale(0.95); }
         .hide-mobile { display: inline; }
         @media (max-width: 600px) {
           .hide-mobile { display: none; }
-          .reader-content { padding: 1rem 0 4rem !important; }
+          .reader-content { padding: 1rem 0 3rem !important; }
         }
       `}</style>
+
     </div>
   )
 }

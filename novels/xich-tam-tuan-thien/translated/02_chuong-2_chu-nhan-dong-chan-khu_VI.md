@@ -48,7 +48,27 @@ Sẽ có ngày, Công Dương Bạch, Mặc Kinh Vũ, thậm chí là Tả Quang
 
 ...
 
-Khất cái đứng dậy, chăm chú nhìn đống thịt nát dưới chân. Sống nhìn chết, mở đầu liền nối liền kết thúc. Hắn chôn cất Tả Quang Liệt cùng những khất cái kia bên ngoài phế quán. Mặc dù hắn Đạo Mạch vừa hiển lộ, tinh lực dồi dào, cũng phải đến tận nửa đêm mới hoàn tất. Đây là một việc nhỏ có lẽ vô dụng, nhưng lại là đạo lý hắn luôn thực hành. Đám khất cái kia tuy rằng khi hiểm nguy ập đến đã chọn từ bỏ hắn, nhưng trong những ngày hắn hấp hối trước đó, cũng không bỏ mặc hắn nơi hoang dã. Dù không thể mời thầy lang khám bệnh cho hắn, nhưng ít nhất cũng đã cho hắn vài ngụm nước uống. Chỉ cần những điều này, trong khả năng của mình, cũng nên để bọn họ nhập thổ vi an. Không đến nỗi đời này chịu khổ, kiếp sau vẫn không nơi nương tựa. Mọi người tin rằng, chỉ khi được chôn cất, linh hồn mới có thể an nghỉ. Trong vòng tay bao la vô tận và đầy từ bi của đại địa, những linh hồn đã khuất mới có thể an nghỉ.
+Khất cái đứng dậy, chăm chú nhìn đống thịt nát dưới chân.
+
+Sống nhìn chết, mở đầu liền nối liền kết thúc.
+
+Hắn chôn cất Tả Quang Liệt cùng những khất cái kia bên ngoài phế quán.
+
+Mặc dù hắn Đạo Mạch vừa hiển lộ, tinh lực dồi dào, cũng phải đến tận nửa đêm mới hoàn tất.
+
+Đây là một việc nhỏ có lẽ vô dụng, nhưng lại là đạo lý hắn luôn thực hành.
+
+Đám khất cái kia tuy rằng khi hiểm nguy ập đến đã chọn từ bỏ hắn, nhưng trong những ngày hắn hấp hối trước đó, cũng không bỏ mặc hắn nơi hoang dã.
+
+Dù không thể mời thầy lang khám bệnh cho hắn, nhưng ít nhất cũng đã cho hắn vài ngụm nước uống.
+
+Chỉ cần những điều này, trong khả năng của mình, cũng nên để bọn họ nhập thổ vi an.
+
+Không đến nỗi đời này chịu khổ, kiếp sau vẫn không nơi nương tựa.
+
+Mọi người tin rằng, chỉ khi được chôn cất, linh hồn mới có thể an nghỉ.
+
+Trong vòng tay bao la vô tận và đầy từ bi của đại địa, những linh hồn đã khuất mới có thể an nghỉ.
 
 Cuối cùng, khất cái đứng trước mộ Tả Quang Liệt.
 
@@ -114,7 +134,19 @@ Vầng trăng khuyết màu bạc mà hắn nắm lấy tên là Hư Thược, l
 
 Diễn Đạo Đài là nơi suy diễn công pháp đạo thuật, tiêu hao cần thiết cho việc suy diễn, chính là "công". Luận Kiếm Đài thì chuyên dùng để xuyên qua Thái Hư Huyễn Cảnh, giao lưu so tài với các tu giả khác.
 
-Sự sản sinh của "công", chủ yếu đến từ chiến đấu, chiến đấu cùng cấp bậc, thắng thì tăng "công", thua thì trừ "công". Vượt cấp khiêu chiến có thêm điểm cộng tương ứng. Ngoài ra còn có một số phương thức khác. Ví dụ, các động thiên phúc địa tương ứng sẽ định kỳ sản xuất "công". Trong bảy mươi hai phúc địa, Đông Hải Sơn Phúc Địa xếp hạng thấp nhất, mỗi tháng sản xuất một trăm "công". Mà ba mươi sáu phúc địa hạ tầng mỗi khi lên một cấp, sản xuất "công" tăng thêm mười. Ba mươi sáu phúc địa thượng tầng mỗi khi lên một cấp, sản xuất "công" tăng thêm một trăm.
+Sự sản sinh của "công", chủ yếu đến từ chiến đấu, chiến đấu cùng cấp bậc, thắng thì tăng "công", thua thì trừ "công".
+
+Vượt cấp khiêu chiến có thêm điểm cộng tương ứng.
+
+Ngoài ra còn có một số phương thức khác.
+
+Ví dụ, các động thiên phúc địa tương ứng sẽ định kỳ sản xuất "công".
+
+Trong bảy mươi hai phúc địa, Đông Hải Sơn Phúc Địa xếp hạng thấp nhất, mỗi tháng sản xuất một trăm "công".
+
+Mà ba mươi sáu phúc địa hạ tầng mỗi khi lên một cấp, sản xuất "công" tăng thêm mười.
+
+Ba mươi sáu phúc địa thượng tầng mỗi khi lên một cấp, sản xuất "công" tăng thêm một trăm.
 
 Động Chân Khư Phúc Địa mà Tả Quang Liệt chiếm giữ xếp hạng hai mươi ba, mỗi tháng có thể sản xuất một ngàn tám trăm năm mươi điểm "công". Đây chính là tư liệu của Khương Vọng hiện giờ. Mặc dù còn chưa rõ tác dụng cụ thể, nhưng Khương Vọng đã nghe thấy tiếng tim mình đập dồn dập.
 

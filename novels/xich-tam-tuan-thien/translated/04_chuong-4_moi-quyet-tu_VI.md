@@ -24,9 +24,31 @@ Phương Bằng Cử trợn mắt nhìn giận dữ: "Đỗ Dã Hổ! Chuyện n
 
 "Phương Bằng Cử, ngươi quá khiến ta thất vọng rồi!" Lăng Hà vốn luôn khoan hậu cũng không kìm được vẻ giận dữ, hắn bước lên một bước, rút thanh kiếm đeo bên hông, cắt một góc áo choàng, nặng nề ném xuống đất: "Từ nay về sau, ngươi ta cắt áo đoạn nghĩa!"
 
-"Đại ca!" Phương Bằng Cử cười thảm một tiếng: "Nhị ca tính tình bốc đồng thì thôi đi, ngay cả huynh cũng không thể hiểu đệ sao? Vì chứng minh trong sạch đệ cam nguyện chết, nhưng cha mẹ đệ chỉ có một mình đệ là con, đệ là hương hỏa duy nhất của họ, là hy vọng đến chết cũng không buông bỏ được! Mạng của đệ không phải của riêng đệ, làm sao có thể chết ở đây được? Khương Vọng mù quáng tin gian nhân, không nghe giải thích, một lòng muốn đẩy đệ vào chỗ chết! Trong lòng hắn liệu có còn tình nghĩa huynh đệ không?"
+"Đại ca!" Phương Bằng Cử cười thảm một tiếng: "Nhị ca tính tình bốc đồng thì thôi đi, ngay cả huynh cũng không thể hiểu đệ sao?
 
-"Tứ ca, đây là lần cuối cùng đệ gọi huynh là Tứ ca," Triệu Nhữ Thành, người nhỏ tuổi nhất trong Ngũ Hiệp Phong Lâm, cuối cùng cũng lên tiếng. Gương mặt hắn tuy còn chút non nớt nhưng đã cực kỳ tuấn mỹ, lúc này nói chuyện, lại như vàng ngọc, lời nói có trọng lượng: "Phương Đắc Tài họ Phương! Đời đời phục vụ Phương gia huynh! Một lũ phỉ tặc thất bại có thể đưa ra điều kiện gì để mua chuộc hắn? Huynh đang sỉ nhục gia thế tài lực của Phương gia huynh, hay đang sỉ nhục trí tuệ của tất cả chúng ta? Một đám chó nhà tan của Tây Sơn, làm sao lại trà trộn vào Phong Lâm Thành mà còn đường đường bày ra cạm bẫy ở Vọng Nguyệt Lâu? Cuối cùng, đã không có quyết tâm lấy cái chết để minh chứng chí hướng, vậy vừa rồi màn làm bộ làm tịch này, là diễn cho ai xem? Triệu Nhữ Thành ta hổ thẹn khi cùng huynh kết bạn!"
+Vì chứng minh trong sạch đệ cam nguyện chết, nhưng cha mẹ đệ chỉ có một mình đệ là con, đệ là hương hỏa duy nhất của họ, là hy vọng đến chết cũng không buông bỏ được!
+
+Mạng của đệ không phải của riêng đệ, làm sao có thể chết ở đây được?
+
+Khương Vọng mù quáng tin gian nhân, không nghe giải thích, một lòng muốn đẩy đệ vào chỗ chết!
+
+Trong lòng hắn liệu có còn tình nghĩa huynh đệ không?"
+
+"Tứ ca, đây là lần cuối cùng đệ gọi huynh là Tứ ca," Triệu Nhữ Thành, người nhỏ tuổi nhất trong Ngũ Hiệp Phong Lâm, cuối cùng cũng lên tiếng.
+
+Gương mặt hắn tuy còn chút non nớt nhưng đã cực kỳ tuấn mỹ, lúc này nói chuyện, lại như vàng ngọc, lời nói có trọng lượng: "Phương Đắc Tài họ Phương!
+
+Đời đời phục vụ Phương gia huynh!
+
+Một lũ phỉ tặc thất bại có thể đưa ra điều kiện gì để mua chuộc hắn?
+
+Huynh đang sỉ nhục gia thế tài lực của Phương gia huynh, hay đang sỉ nhục trí tuệ của tất cả chúng ta?
+
+Một đám chó nhà tan của Tây Sơn, làm sao lại trà trộn vào Phong Lâm Thành mà còn đường đường bày ra cạm bẫy ở Vọng Nguyệt Lâu?
+
+Cuối cùng, đã không có quyết tâm lấy cái chết để minh chứng chí hướng, vậy vừa rồi màn làm bộ làm tịch này, là diễn cho ai xem?
+
+Triệu Nhữ Thành ta hổ thẹn khi cùng huynh kết bạn!"
 
 Trong năm người, Lăng Hà và Khương Vọng gia cảnh bần hàn, Đỗ Dã Hổ gia cảnh không tốt không xấu, còn Phương Bằng Cử và Triệu Nhữ Thành đều là công tử nhà giàu. Phương gia tự nhiên không cần nói, Triệu gia tuy mới mười năm gần đây mới dời đến Phong Lâm Thành, nhưng gia sản sâu không lường được.
 
@@ -102,7 +124,21 @@ Sau đó hắn chậm rãi nói: "Vì viên Khai Mạch Đan này, ta một ki�
 
 "Để Khai Mạch đạt được hiệu quả tốt nhất, ta chuẩn bị chờ cơ thể khôi phục đến trạng thái đỉnh phong rồi mới dùng viên đan này. Đạo lý hoài bích kỳ tội ta hiểu, do đó ta không hề tiết lộ nửa lời với bất cứ ai. Mọi người đều cho rằng ta sẽ nuốt đan dược ngay trong ngày, trừ ngươi, trừ năm huynh đệ vào sinh ra tử của chúng ta. Bởi vì ta không có bất cứ chuyện gì, cần phải giấu giếm các ngươi."
 
-"Từ năm năm tuổi ta tiếp xúc với thế giới tu hành, ta đã truy đuổi viên Khai Mạch Đan này. Ta không có thiên sinh đạo mạch ngoại hiển, muốn siêu phàm chỉ có thể dựa vào đan dược. Nó là con đường tu hành của ta, là hy vọng của ta, là ánh sáng duy nhất của ta. Ngươi biết gia cảnh của ta mà, ngươi biết ta đã nỗ lực đến nhường nào. Ta mỗi ngày trời chưa sáng đã dậy luyện kiếm, trăng lên đến giữa trời mới đi nghỉ. Ta chưa từng đến thanh lâu kỹ quán, cũng chưa từng dùng bất cứ cách nào phóng túng bản thân. Cả Đạo Viện Phong Lâm, ta dám nói không có bất kỳ đệ tử ngoại môn nào nỗ lực hơn ta. Vì viên Khai Mạch Đan này, ta đã nỗ lực ròng rã mười một năm!"
+"Từ năm năm tuổi ta tiếp xúc với thế giới tu hành, ta đã truy đuổi viên Khai Mạch Đan này.
+
+Ta không có thiên sinh đạo mạch ngoại hiển, muốn siêu phàm chỉ có thể dựa vào đan dược.
+
+Nó là con đường tu hành của ta, là hy vọng của ta, là ánh sáng duy nhất của ta.
+
+Ngươi biết gia cảnh của ta mà, ngươi biết ta đã nỗ lực đến nhường nào.
+
+Ta mỗi ngày trời chưa sáng đã dậy luyện kiếm, trăng lên đến giữa trời mới đi nghỉ.
+
+Ta chưa từng đến thanh lâu kỹ quán, cũng chưa từng dùng bất cứ cách nào phóng túng bản thân.
+
+Cả Đạo Viện Phong Lâm, ta dám nói không có bất kỳ đệ tử ngoại môn nào nỗ lực hơn ta.
+
+Vì viên Khai Mạch Đan này, ta đã nỗ lực ròng rã mười một năm!"
 
 Khương Vọng nói đoạn, cũng chết dí nhìn Phương Bằng Cử: "Hòa cùng mồ hôi của ta, máu của ta, nước mắt của ta, viên Khai Mạch Đan như vậy của ta, dùng tốt chứ?"
 
@@ -114,7 +150,11 @@ Lăng Hà môi mím chặt, Triệu Nhữ Thành nghiến răng không nói, th�
 
 Mà Phương Bằng Cử, lại có thể nhẫn tâm đến mức này!
 
-"Ta không biết ngươi đang nói linh tinh gì!" Trên mặt Phương Bằng Cử thoáng qua một tia không tự nhiên, nhưng rất nhanh bị hắn mạnh mẽ đè nén xuống, "Bá phụ ta thượng tuần dẫn thương đội đi qua Vân Quốc, tình cờ từ một tu giả thiếu thốn tiền bạc mua được một viên Khai Mạch Đan, ta do đó mới có thể đạo mạch ngoại hiển, với ngươi lại có liên quan gì? Đừng tưởng ai cũng như ngươi xuất thân thấp kém, vì cầu tiến mà không từ thủ đoạn nào! Phương gia ta gia tài bạc vạn, chẳng lẽ lại không mua nổi một viên Khai Mạch Đan sao?"
+"Ta không biết ngươi đang nói linh tinh gì!" Trên mặt Phương Bằng Cử thoáng qua một tia không tự nhiên, nhưng rất nhanh bị hắn mạnh mẽ đè nén xuống, "Bá phụ ta thượng tuần dẫn thương đội đi qua Vân Quốc, tình cờ từ một tu giả thiếu thốn tiền bạc mua được một viên Khai Mạch Đan, ta do đó mới có thể đạo mạch ngoại hiển, với ngươi lại có liên quan gì?
+
+Đừng tưởng ai cũng như ngươi xuất thân thấp kém, vì cầu tiến mà không từ thủ đoạn nào!
+
+Phương gia ta gia tài bạc vạn, chẳng lẽ lại không mua nổi một viên Khai Mạch Đan sao?"
 
 Triệu Nhữ Thành đã hận đến cực điểm, nói chuyện không còn kiêng dè lời lẽ: "Đúng vậy, Phương gia quả thực gia tài bạc vạn. Tiếc là cha mẹ ngươi mất sớm, ngươi lại không phải con độc cháu đích tôn của Phương gia, tài nguyên gia tộc phân phối cho ngươi càng hữu hạn. Nếu không, làm sao lâu như vậy, ngươi đều không thể có Khai Mạch Đan, mà lại trùng hợp đến thế, sau khi Tam ca ta bị tập kích thì lại có?"
 

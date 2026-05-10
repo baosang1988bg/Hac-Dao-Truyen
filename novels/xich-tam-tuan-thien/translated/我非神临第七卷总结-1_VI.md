@@ -8,39 +8,321 @@
 
 *Ta Như Thần Lâm* là quyển truyện có tham vọng lớn nhất của tôi tính đến nay. Cũng là quyển tôi viết vất vả nhất, dồn nhiều tâm huyết nhất. Đồng thời, nó cũng là quyển gây tranh cãi nhiều nhất, dường như ít được độc giả yêu thích nhất. Viết đến lúc kết thúc quyển, cấu trúc của nó đã rất rõ ràng. Quyển này có hai mạch truyện chính song song—
 
-Một mạch chính là những nhân vật thiên kiêu trong "Ta Như Thần Lâm". Một mạch chính là con đường của Khương Vọng trên hành trình thành tựu Thần Lâm. Hai mạch truyện đan xen vào nhau, va chạm tạo nên câu chuyện của quyển này. Khi viết Hoàng Hà Chi Hội, tôi đã từng nói, đây thực sự là một hội ngộ của các thiên kiêu chư hầu. Lúc này, những thiên kiêu xuất hiện tại hội thịnh hội này sẽ quyết định vận mệnh của thế gian trong mười năm, vài chục năm, thậm chí vài trăm năm tới. Làm sao họ có thể không quan trọng? Thậm chí có thể nói, quyển "Ta Như Thần Lâm" này, là một Hoàng Hà Chi Hội phức tạp hơn, lập thể hơn, hoành tráng hơn. Bởi vì lịch sử mà những thiên kiêu khi ấy gánh vác, trách nhiệm mà họ đảm đương, trên Quan Hà Đài chỉ có thể thoáng thấy một móng vuốt, dưới Luận Kiếm Đài, trong cuộc sống chân thực, mới có thể nhìn thấy những năm tháng nặng nề ấy. Lịch sử soi chiếu hiện tại, mới biết cuộc chiến tranh giành bá quyền Tề-Hạ năm xưa rốt cuộc là một cuộc chiến như thế nào. Mới biết Thái Dần và Xúc Mẫn, trên Quan Hà Đài vì sao mà chiến. Mới có thể biết, Cách Phi, Tiêu Thứ chỉ được nhắc qua một câu, họ đang gánh vác cuộc đời thế nào...
+Một mạch chính là những nhân vật thiên kiêu trong "Ta Như Thần Lâm".
 
-Sức hút của thế gian quá nặng nề, lật giở lịch sử, không phải vinh quang, chính là máu và nước mắt. Từ khi Khương Vô Khí kết làm Sương Thu bắt đầu, đến khi Khương Vọng kiếm chạm vào chiếc đỉnh đồng kết thúc. Ở giữa, Khương Vô Hoa một câu "Ta nên Thần Lâm rồi", liền vượt qua cách biệt trời người. Tiêu Thứ ở Bất Thục Thành ngồi giữ bốn mươi ngày, cuối cùng vẫn công bại suýt thành. Đấu Chiêu, Chung Ly Diễm, Vương Trường Cát, Nguyệt Thiên Nô, Chúc Duy Ngã, Trọng Huyền Tuân, Thái Dần, Dịch Thắng Phong...
+Một mạch chính là con đường của Khương Vọng trên hành trình thành tựu Thần Lâm.
 
-Những người này thực hành đạo của mình, từng bước một tiến về con đường "Thần nhi minh chi", đó chính là chủ đề của quyển này. Một tu sĩ, làm thế nào để siêu thoát thể xác phàm trần, đánh vỡ cách biệt trời người? Làm thế nào để bước tới bước đó, đạt được "Ta như thần linh giáng thế"? Và Khương Vọng trong quá trình này, là một người chứng kiến, một người trải nghiệm, một người đồng hành, cũng là một người lướt qua bọn họ. Khương Vọng có con đường của riêng hắn. Đây là mạch chính thứ hai của quyển này. Lấy việc Khương Vô Khí kết làm Sương Thu làm mở đầu, định hình âm điệu cơ bản của quyển. Và chính xác là từ khi Khương Vô Khí Thần Lâm bắt đầu, quyển này đã đón nhận những tranh cãi khá gay gắt, nhưng so với sau này thì không đáng kể. Bây giờ nghĩ lại, dường như cuộc tranh cãi lần đó, cũng đã định hình âm điệu tranh cãi không ngừng của quyển này. Trong sách ngoài sách, luôn kỳ diệu hội tụ như vậy.
+Hai mạch truyện đan xen vào nhau, va chạm tạo nên câu chuyện của quyển này.
+
+Khi viết Hoàng Hà Chi Hội, tôi đã từng nói, đây thực sự là một hội ngộ của các thiên kiêu chư hầu.
+
+Lúc này, những thiên kiêu xuất hiện tại hội thịnh hội này sẽ quyết định vận mệnh của thế gian trong mười năm, vài chục năm, thậm chí vài trăm năm tới.
+
+Làm sao họ có thể không quan trọng?
+
+Thậm chí có thể nói, quyển "Ta Như Thần Lâm" này, là một Hoàng Hà Chi Hội phức tạp hơn, lập thể hơn, hoành tráng hơn.
+
+Bởi vì lịch sử mà những thiên kiêu khi ấy gánh vác, trách nhiệm mà họ đảm đương, trên Quan Hà Đài chỉ có thể thoáng thấy một móng vuốt, dưới Luận Kiếm Đài, trong cuộc sống chân thực, mới có thể nhìn thấy những năm tháng nặng nề ấy.
+
+Lịch sử soi chiếu hiện tại, mới biết cuộc chiến tranh giành bá quyền Tề-Hạ năm xưa rốt cuộc là một cuộc chiến như thế nào.
+
+Mới biết Thái Dần và Xúc Mẫn, trên Quan Hà Đài vì sao mà chiến.
+
+Mới có thể biết, Cách Phi, Tiêu Thứ chỉ được nhắc qua một câu, họ đang gánh vác cuộc đời thế nào...
+
+Sức hút của thế gian quá nặng nề, lật giở lịch sử, không phải vinh quang, chính là máu và nước mắt.
+
+Từ khi Khương Vô Khí kết làm Sương Thu bắt đầu, đến khi Khương Vọng kiếm chạm vào chiếc đỉnh đồng kết thúc.
+
+Ở giữa, Khương Vô Hoa một câu "Ta nên Thần Lâm rồi", liền vượt qua cách biệt trời người.
+
+Tiêu Thứ ở Bất Thục Thành ngồi giữ bốn mươi ngày, cuối cùng vẫn công bại suýt thành.
+
+Đấu Chiêu, Chung Ly Diễm, Vương Trường Cát, Nguyệt Thiên Nô, Chúc Duy Ngã, Trọng Huyền Tuân, Thái Dần, Dịch Thắng Phong...
+
+Những người này thực hành đạo của mình, từng bước một tiến về con đường "Thần nhi minh chi", đó chính là chủ đề của quyển này.
+
+Một tu sĩ, làm thế nào để siêu thoát thể xác phàm trần, đánh vỡ cách biệt trời người?
+
+Làm thế nào để bước tới bước đó, đạt được "Ta như thần linh giáng thế"?
+
+Và Khương Vọng trong quá trình này, là một người chứng kiến, một người trải nghiệm, một người đồng hành, cũng là một người lướt qua bọn họ.
+
+Khương Vọng có con đường của riêng hắn.
+
+Đây là mạch chính thứ hai của quyển này.
+
+Lấy việc Khương Vô Khí kết làm Sương Thu làm mở đầu, định hình âm điệu cơ bản của quyển.
+
+Và chính xác là từ khi Khương Vô Khí Thần Lâm bắt đầu, quyển này đã đón nhận những tranh cãi khá gay gắt, nhưng so với sau này thì không đáng kể.
+
+Bây giờ nghĩ lại, dường như cuộc tranh cãi lần đó, cũng đã định hình âm điệu tranh cãi không ngừng của quyển này.
+
+Trong sách ngoài sách, luôn kỳ diệu hội tụ như vậy.
 
 Trong thế giới hoành tráng và phức tạp này, câu chuyện của Khương Vô Khí đã có quá nhiều sự dẫn dắt. Tất cả đều rải rác trong các tình tiết câu chuyện khác. Tay không đỡ chân hỏa, lật tay trấn Lôi Tỷ, sau khi Trọng Huyền Tuân Thiên Phủ Ngoại Lâu, thì hăm hở muốn thử, sau khi Khương Vọng Hoàng Hà đoạt quán, thì ngứa tay thử sức...
 
 Những lúc ấy, viết là Trương Vịnh, viết là Lôi Chiếm Càn, viết là Trọng Huyền Tuân...
 
-Khương Vô Khí khoác lông hồ, lúc ẩn lúc hiện. Cuối cùng một chuỗi ngọc, kết thành Sương Thu. Cái chết của Khương Vô Khí, thuận lý thành chương dẫn ra vụ án Lôi Quý Phi nhiều năm trước. Mạch truyện này, lại đan xen với mạch truyện Thanh Bài nước Tề đã được dẫn dắt từ lâu. Tứ Đại Thanh Bài Thế Gia, vì sao mà suy tàn? Lâm Hữu Tà vì sao là bộ dạng hôm nay? Lâm Huống vì sao chết? Ô Liệt làm thế nào rời khỏi Thanh Bài, lại đang truy tra cái gì? Năm đó... đã xảy ra chuyện gì? Đây chắc chắn là một vụ án không thể có kết quả. Bởi vì thiên tử như Khương Thuật, thái độ của ông ta đối với vụ án này, đã sớm thể hiện trong lịch sử. Ở nước Tề, ai có thể thực sự trái ngược thái độ của Khương Thuật? Cho nên vụ án này không thể có chứng cứ xác thực, tất cả chứng cứ xuất hiện, đều sẽ bị xóa sạch không thương tiếc. Cho nên sự thật của vụ án này, chỉ có thể lưu lại trong lòng vài người, im lặng trong miệng nhiều người hơn. Cho nên khi Khương Vọng cuốn vào vụ án này, cảm nhận được áp lực khủng khiếp tràn ngập trời đất, hắn cũng chắc chắn không thể như nhiều độc giả kỳ vọng, đánh tan màn u ám bao phủ bầu trời mấy chục năm này, làm cái anh hùng cái thế xé rách ánh sáng. Hắn chỉ có thể, sau khi từng người phấn đấu vì điều này chết đi một cách uổng phí, làm một số việc trong khả năng của mình. Ví dụ như giữ lại Lâm Hữu Tà, ví dụ như cho Dương Kính một lời giải thích. Sau đó tự mình từ bỏ Bắc Nha Đô Úy, như một kẻ thất bại, rời khỏi nước Tề "lánh gió". Và đây chính là hình ảnh thu nhỏ của Khương Vọng trong quyển này.
+Khương Vô Khí khoác lông hồ, lúc ẩn lúc hiện.
 
-Tinh Lâu là nền tảng thuật đạo, cho nên quyển Thần Lâm chắc chắn là quyển thuật đạo không thể tránh né. Từ Ngoại Lâu, đến Thần Lâm, hắn nhất định phải nhận thức rõ, hắn muốn đi một con đường như thế nào. Hắn giằng co, hắn nhiều lúc mâu thuẫn. Sự dẫn dắt của Sơn Hải Cảnh, sự dẫn dắt của Hoàng Duy Chân, đã có từ lâu. Trên Quan Hà Đài, Hạng Bắc nói, hận không thể sinh sớm chín trăm năm, không thể tận mắt thấy Hoàng Duy Chân. Hắn đã chết từ lâu, nhưng truyền thuyết của hắn vẫn luôn tồn tại. Khương Vọng rời khỏi nước Tề, thuận lý thành chương đến cuộc hẹn Sơn Hải Cảnh. Trước hết tôi phải viết ra phong lưu đất Sở, cho nên có những điều mắt thấy tai nghe của Khương Vọng ở nước Sở. Để viết Sơn Hải Cảnh, tôi đã lật đi lật lại Sơn Hải Kinh, làm rất nhiều chỉnh lý sửa đổi biên tập, cố gắng cấu tạo một thế giới giữa thực và ảo—
+Cuối cùng một chuỗi ngọc, kết thành Sương Thu.
 
-Những truyền thuyết bạn thấy đều là dĩ nhiên nhưng không phải, cũng giống như truyền thuyết mà người Sở nghe được, có một phần lớn là hư cấu của Hoàng Duy Chân. Nhân vật thiên kiêu nước Sở, mỗi người mỗi tính cách khác nhau, những người trợ quyền mà họ mời đến, mỗi người đều mang trên mình gánh nặng cuộc đời, thêm vào Vương Trường Cát, Phương Hạc Linh, Chúc Duy Ngã, Khôi Sơn, cùng nhau trở thành những người trải nghiệm thế giới này. Mỗi nhân vật này đều khác biệt, và so với Hoàng Hà Chi Hội, họ có nhiều dung lượng hơn để thể hiện bản thân. Nhưng đồng thời, họ không phải là chủ nhân của thế giới này. Họ có yêu hận tình thù của riêng mình, có tranh giành theo đuổi của riêng mình, theo một nghĩa nào đó, là "nhân vật chính" của cuộc chơi Sơn Hải Cảnh này. Nhưng những dị thú trong Sơn Hải Cảnh, cũng không phải là phông nền. Chúng không công nhận cái gọi là nhân vật chính, trong thế giới này, thiên kiêu nhân loại chỉ là người ngoài đến, chỉ là một đám khán giả yếu ớt. Cuộc tranh giành tự do giữa Trúc Cửu Âm và Hỗn Độn, mới là mạch chính xuyên suốt Sơn Hải Cảnh. Nhưng sau chúng, là Già Huyền và Không Uyên. Trên chúng, là ý chí của Hoàng Duy Chân, xuyên suốt thực và ảo, đánh vỡ lịch sử và hiện tại. Tôi đang thực sự miêu tả phong cảnh trên đỉnh tuyệt luân, dùng cả một thế giới làm bút vẽ. Đây cũng là lần đầu tiên cuốn sách này triển khai tầng lớp lực lượng đến đây. Sau hơn bốn triệu chữ, mỗi người đều có thể cảm nhận được, thế giới này đang từng bước mở ra như thế nào.
+Cái chết của Khương Vô Khí, thuận lý thành chương dẫn ra vụ án Lôi Quý Phi nhiều năm trước.
 
-Cuộc đối thoại giữa Khương Vọng và Phương Hạc Linh trong Sơn Hải Cảnh, thể hiện chính là sự giằng co mâu thuẫn của hắn. Một mặt hắn và nhân ma có lập trường căn bản khác nhau, Trịnh Béo Lý Gầy dù có tình anh em sâu đậm thế nào, dù có tò mò với hắn như trẻ con thế nào, thích chơi cùng hắn thế nào, cũng không ảnh hưởng đến kiếm của hắn. Nhưng mặt khác, hắn phải đối mặt, rất nhiều chuyện, rất nhiều lúc, hắn bất lực. Từ Trịnh Thương Minh đến Phương Hạc Linh, đều đang nói với hắn, hắn cũng phải nhận thức được, sự bất lực của người khác. 【Hắn chỉ có thể tận khả năng làm ra lựa chọn tốt nhất trong phạm vi năng lực của mình.】
+Mạch truyện này, lại đan xen với mạch truyện Thanh Bài nước Tề đã được dẫn dắt từ lâu.
 
-Đây là logic hành vi của Khương Vọng trong nhiều cửa ải cuộc đời. Và tính cách của hắn quyết định, rất nhiều lúc cái 【tốt nhất】 này, không phải là tốt nhất đối với bản thân hắn. Mà là tốt nhất đối với Khương An An, đối với Trọng Huyền Thắng, đối với những người hắn trân trọng, đối với một số người hắn kính trọng. Cho nên rất nhiều lúc bạn sẽ thấy hắn nỗ lực cả buổi, cuối cùng chẳng thu được gì — hắn vốn dĩ cũng không phải nhắm vào việc mình sẽ thu được gì mà đi. Khương Vọng có thể đồng cảm với nỗi đau của Phương Hạc Linh, nhưng sẽ không bao giờ tán đồng sự lựa chọn của Phương Hạc Linh. Trong màn kịch giao lưu của ba người này, phần diễn của Vương Trường Cát là quyến rũ nhất, phần diễn của Phương Hạc Linh có sức căng nhất, phần diễn của Khương Vọng là không được lòng người nhất, dễ gây chán ghét nhất, nhưng cũng thực sự là phần diễn mà nhân vật chính nên có, như đá tảng đè thuyền. Ngoài hắn, ai có thể đè được trận này, có thể khiến Vương Trường Cát quyến rũ như vậy, khiến Phương Hạc Linh lập thể như vậy? Viết như vậy rất không được lòng người, tôi cũng có thể khiến Khương Vọng quyến rũ hơn — chỉ cần xóa đi sự phức tạp của Phương Hạc Linh. Nhưng đó là lựa chọn của tôi.
+Tứ Đại Thanh Bài Thế Gia, vì sao mà suy tàn?
+
+Lâm Hữu Tà vì sao là bộ dạng hôm nay?
+
+Lâm Huống vì sao chết?
+
+Ô Liệt làm thế nào rời khỏi Thanh Bài, lại đang truy tra cái gì?
+
+Năm đó...
+
+đã xảy ra chuyện gì?
+
+Đây chắc chắn là một vụ án không thể có kết quả.
+
+Bởi vì thiên tử như Khương Thuật, thái độ của ông ta đối với vụ án này, đã sớm thể hiện trong lịch sử.
+
+Ở nước Tề, ai có thể thực sự trái ngược thái độ của Khương Thuật?
+
+Cho nên vụ án này không thể có chứng cứ xác thực, tất cả chứng cứ xuất hiện, đều sẽ bị xóa sạch không thương tiếc.
+
+Cho nên sự thật của vụ án này, chỉ có thể lưu lại trong lòng vài người, im lặng trong miệng nhiều người hơn.
+
+Cho nên khi Khương Vọng cuốn vào vụ án này, cảm nhận được áp lực khủng khiếp tràn ngập trời đất, hắn cũng chắc chắn không thể như nhiều độc giả kỳ vọng, đánh tan màn u ám bao phủ bầu trời mấy chục năm này, làm cái anh hùng cái thế xé rách ánh sáng.
+
+Hắn chỉ có thể, sau khi từng người phấn đấu vì điều này chết đi một cách uổng phí, làm một số việc trong khả năng của mình.
+
+Ví dụ như giữ lại Lâm Hữu Tà, ví dụ như cho Dương Kính một lời giải thích.
+
+Sau đó tự mình từ bỏ Bắc Nha Đô Úy, như một kẻ thất bại, rời khỏi nước Tề "lánh gió".
+
+Và đây chính là hình ảnh thu nhỏ của Khương Vọng trong quyển này.
+
+Tinh Lâu là nền tảng thuật đạo, cho nên quyển Thần Lâm chắc chắn là quyển thuật đạo không thể tránh né.
+
+Từ Ngoại Lâu, đến Thần Lâm, hắn nhất định phải nhận thức rõ, hắn muốn đi một con đường như thế nào.
+
+Hắn giằng co, hắn nhiều lúc mâu thuẫn.
+
+Sự dẫn dắt của Sơn Hải Cảnh, sự dẫn dắt của Hoàng Duy Chân, đã có từ lâu.
+
+Trên Quan Hà Đài, Hạng Bắc nói, hận không thể sinh sớm chín trăm năm, không thể tận mắt thấy Hoàng Duy Chân.
+
+Hắn đã chết từ lâu, nhưng truyền thuyết của hắn vẫn luôn tồn tại.
+
+Khương Vọng rời khỏi nước Tề, thuận lý thành chương đến cuộc hẹn Sơn Hải Cảnh.
+
+Trước hết tôi phải viết ra phong lưu đất Sở, cho nên có những điều mắt thấy tai nghe của Khương Vọng ở nước Sở.
+
+Để viết Sơn Hải Cảnh, tôi đã lật đi lật lại Sơn Hải Kinh, làm rất nhiều chỉnh lý sửa đổi biên tập, cố gắng cấu tạo một thế giới giữa thực và ảo—
+
+Những truyền thuyết bạn thấy đều là dĩ nhiên nhưng không phải, cũng giống như truyền thuyết mà người Sở nghe được, có một phần lớn là hư cấu của Hoàng Duy Chân.
+
+Nhân vật thiên kiêu nước Sở, mỗi người mỗi tính cách khác nhau, những người trợ quyền mà họ mời đến, mỗi người đều mang trên mình gánh nặng cuộc đời, thêm vào Vương Trường Cát, Phương Hạc Linh, Chúc Duy Ngã, Khôi Sơn, cùng nhau trở thành những người trải nghiệm thế giới này.
+
+Mỗi nhân vật này đều khác biệt, và so với Hoàng Hà Chi Hội, họ có nhiều dung lượng hơn để thể hiện bản thân.
+
+Nhưng đồng thời, họ không phải là chủ nhân của thế giới này.
+
+Họ có yêu hận tình thù của riêng mình, có tranh giành theo đuổi của riêng mình, theo một nghĩa nào đó, là "nhân vật chính" của cuộc chơi Sơn Hải Cảnh này.
+
+Nhưng những dị thú trong Sơn Hải Cảnh, cũng không phải là phông nền.
+
+Chúng không công nhận cái gọi là nhân vật chính, trong thế giới này, thiên kiêu nhân loại chỉ là người ngoài đến, chỉ là một đám khán giả yếu ớt.
+
+Cuộc tranh giành tự do giữa Trúc Cửu Âm và Hỗn Độn, mới là mạch chính xuyên suốt Sơn Hải Cảnh.
+
+Nhưng sau chúng, là Già Huyền và Không Uyên.
+
+Trên chúng, là ý chí của Hoàng Duy Chân, xuyên suốt thực và ảo, đánh vỡ lịch sử và hiện tại.
+
+Tôi đang thực sự miêu tả phong cảnh trên đỉnh tuyệt luân, dùng cả một thế giới làm bút vẽ.
+
+Đây cũng là lần đầu tiên cuốn sách này triển khai tầng lớp lực lượng đến đây.
+
+Sau hơn bốn triệu chữ, mỗi người đều có thể cảm nhận được, thế giới này đang từng bước mở ra như thế nào.
+
+Cuộc đối thoại giữa Khương Vọng và Phương Hạc Linh trong Sơn Hải Cảnh, thể hiện chính là sự giằng co mâu thuẫn của hắn.
+
+Một mặt hắn và nhân ma có lập trường căn bản khác nhau, Trịnh Béo Lý Gầy dù có tình anh em sâu đậm thế nào, dù có tò mò với hắn như trẻ con thế nào, thích chơi cùng hắn thế nào, cũng không ảnh hưởng đến kiếm của hắn.
+
+Nhưng mặt khác, hắn phải đối mặt, rất nhiều chuyện, rất nhiều lúc, hắn bất lực.
+
+Từ Trịnh Thương Minh đến Phương Hạc Linh, đều đang nói với hắn, hắn cũng phải nhận thức được, sự bất lực của người khác.
+
+【Hắn chỉ có thể tận khả năng làm ra lựa chọn tốt nhất trong phạm vi năng lực của mình.】
+
+Đây là logic hành vi của Khương Vọng trong nhiều cửa ải cuộc đời.
+
+Và tính cách của hắn quyết định, rất nhiều lúc cái 【tốt nhất】 này, không phải là tốt nhất đối với bản thân hắn.
+
+Mà là tốt nhất đối với Khương An An, đối với Trọng Huyền Thắng, đối với những người hắn trân trọng, đối với một số người hắn kính trọng.
+
+Cho nên rất nhiều lúc bạn sẽ thấy hắn nỗ lực cả buổi, cuối cùng chẳng thu được gì — hắn vốn dĩ cũng không phải nhắm vào việc mình sẽ thu được gì mà đi.
+
+Khương Vọng có thể đồng cảm với nỗi đau của Phương Hạc Linh, nhưng sẽ không bao giờ tán đồng sự lựa chọn của Phương Hạc Linh.
+
+Trong màn kịch giao lưu của ba người này, phần diễn của Vương Trường Cát là quyến rũ nhất, phần diễn của Phương Hạc Linh có sức căng nhất, phần diễn của Khương Vọng là không được lòng người nhất, dễ gây chán ghét nhất, nhưng cũng thực sự là phần diễn mà nhân vật chính nên có, như đá tảng đè thuyền.
+
+Ngoài hắn, ai có thể đè được trận này, có thể khiến Vương Trường Cát quyến rũ như vậy, khiến Phương Hạc Linh lập thể như vậy?
+
+Viết như vậy rất không được lòng người, tôi cũng có thể khiến Khương Vọng quyến rũ hơn — chỉ cần xóa đi sự phức tạp của Phương Hạc Linh.
+
+Nhưng đó là lựa chọn của tôi.
 
 Sự xuất hiện của Chúc Duy Ngã trong Sơn Hải Cảnh, lại móc nối với tình tiết Bất Thục Thành sau này, thậm chí cả mạch truyện của Tiêu Thứ, cũng đan xen ở đây. Mạch truyện của Hoang Kim Mặc đã có từ lâu, nhiều độc giả cũng đã sớm đoán, cũng là họ hiếm thấy như vậy, cô ta có liên quan gì với Hoàng Duy Chân? Cách Phi bị thay thế, Đấu Chiêu thành Thần Lâm, Nguyệt Thiên Nô từ bỏ đoạt xá, Sở Dục Chi cắt tịch, Tiêu Thứ trộm đan, Trương Tuần nhẫn đau...
 
-Mấy tình tiết này được khen ngợi như sóng triều, cho đến khi Tiêu Thứ Thần Lâm thất bại, Khương Vọng một mình rời đi trúng phục kích. Tất cả đột ngột dừng lại. Sự ấm áp giữa độc giả và tác giả bị xé rách, chúng ta đón nhận thời đại máu me đầm đìa. Đoạn tình tiết này có quá nhiều điểm khiến độc giả không thể chấp nhận. Đầu tiên là sự đột ngột. Để tạo ra sức công phá, trong dư âm bi thương của cái chết Tiêu Thứ, tôi cố tình đâm một nhát đột ngột. Trong tình tiết, Khương Vọng bị tập kích, ngoài tình tiết, độc giả cũng bị tập kích. Thứ hai là tình cảm. Tình cảm có hai phương diện, một là kẻ tập kích có Lâm Chính Nhân, nhân vật mà độc giả cực kỳ ghét, đã sớm bị nhân vật chính bỏ lại phía sau, đáng lẽ không nên ở cùng một tầng thứ, lại như rắn độc cắn nhân vật chính một phát. Một kẻ tập kích Khương Vọng nữa là Đỗ Dã Hổ, là người anh hai từng khóc ba ngày ngoài thành Phong Lâm. Đây là điểm khó chịu nhất về mặt tình cảm đối với độc giả. Thậm chí để giữ được sự đột ngột, sự nghi hoặc này, ngoài câu 【Khương Vọng dùng sự bình tĩnh lớn nhất để đối mặt trận chiến này, hắn biết mỗi một bước của hắn đều không thể sai. Bất kỳ một chỗ sai nào cũng có thể tạo thành tiếc nuối cả đời!】, ngoài cuộc đối thoại về rượu ngon giữa Đỗ Dã Hổ và Khương Vọng. Tôi không làm bất kỳ ám chỉ nào khác. Điều này quả thực rất khó xoa dịu cảm xúc của độc giả, cho nên tôi hiểu tất cả sự không hiểu của độc giả.
+Mấy tình tiết này được khen ngợi như sóng triều, cho đến khi Tiêu Thứ Thần Lâm thất bại, Khương Vọng một mình rời đi trúng phục kích.
 
-Còn về chiến lực mà nhiều người thích lấy ra nói, thực ra lại không đau không ngứa. Nội Phủ và Ngoại Lâu, vốn là hai cảnh giới dễ xuất hiện tổn thương vượt cấp nhất, càng không cần nói Khương Vọng còn bị chặn mất cảnh báo. Quân trận lại là lực lượng thông thường mà cuốn sách này nhiều lần nhấn mạnh, rõ ràng có thể vượt qua phẩm cấp siêu phàm. Khương Vọng và Trọng Huyền Thắng, có thể ở chiến trường nước Dương, lấy Đằng Long giết Ngoại Lâu, chẳng phải dựa vào quân trận sao? Đỗ Dã Hổ mang theo Cửu Giang Huyền Giáp tinh nhuệ nhất của nước Trang, trong tình huống có tình báo trước nhắm vào, cộng thêm tập kích, cộng thêm bố cục của Lâm Chính Nhân, cộng thêm trận pháp, cộng thêm Dịch Thắng Phong chặn năng lực cảnh báo, hoàn toàn có khả năng gây sát thương cho Khương Vọng — ít nhất trong góc nhìn của nhân vật trong truyện là như vậy.
+Tất cả đột ngột dừng lại.
 
-Vậy tại sao tôi lại viết như vậy? Bởi vì logic nhân vật của Trang Cao Tiện, quyết định hắn nhất định sẽ có hành động sau khi Chúc Duy Ngã Thần Lâm, nhất định sẽ có động tác với Bất Thục Thành. Việc nước Trang muốn nhổ Bất Thục Thành, hoàn toàn không liên quan đến Khương Vọng, sự áp lực mà hắn phải chịu, thậm chí chỉ là một việc tiện tay. Hắn đi ngang qua, nhất định sẽ xảy ra. Và các bạn biết, đây là một lần bất lực nữa của Khương Vọng. Hắn phải kiềm chế, kiềm chế phẫn nộ, kiềm chế thù hận, kiềm chế nóng vội, như hắn vẫn luôn làm, kiên định, trầm mặc, vững vàng bước về phía trước. Trong mạch tình tiết của tôi, đây chính là cú nén cuối cùng của Ta Như Thần Lâm. Bởi vì tiếp theo, tôi sẽ tung ra toàn bộ cao trào của cuộc chiến phạt Hạ. Cái chết của Khương Vô Khí ở đầu quyển, đã sớm chỉ về cuộc phạt Hạ ở cuối quyển! Tất cả sự tích lũy cảm xúc, đều phải giải phóng ở phần này.
+Sự ấm áp giữa độc giả và tác giả bị xé rách, chúng ta đón nhận thời đại máu me đầm đìa.
 
-Trên đường về nước Tề, một loạt thử thách, mục đích có ba. Thứ nhất, mài giũa cuối cùng cho Khương Vọng vung kiếm thiên hạ. Thứ hai, xoa dịu cảm xúc áp lực của độc giả. Thứ ba, đại khái miêu tả một chút về các tông môn lớn của thế gian, phác họa đường nét, tiện cho việc lấp đầy sau này. Dù sao cũng đã lâu rồi, chúng còn chưa xuất hiện nhiều. Trên Điểm Tướng Đài, khi Khương Vọng đứng ra tranh giành với Trọng Huyền Tuân. Mọi người cũng đã có thể thấy, mạch chính rõ ràng của quyển này — con đường đạo đồ của Khương Vọng, hành trình Thần Lâm. Sâu trong Ngọc Hành, dựng chữ Tín lâu. Trong Sơn Hải Cảnh, dựng chữ Thành lâu. Ngoài Bất Thục Thành, dựng chữ Nhân lâu. Phía tây Lâm Tri, dựng chữ Vũ lâu. Thế là có dựng Tứ Đức để tự giam cầm, có định Tâm Viên, hàng Ý Mã, năng Ngộ Không, có con đường Chân Ngã. Đến chương "Định Tâm Viên, Hàng Ý Mã, Năng Ngộ Không", mạch tình tiết về đạo đồ liền một lần thu lại. Nhưng đây không phải là cao trào nên có của quyển này, cho nên phải dừng một bút, rồi đi tiếp. Ở đây, đã kích nổ mâu thuẫn lớn nhất kể từ khi cuốn tiểu thuyết viết đến nay.
+Đoạn tình tiết này có quá nhiều điểm khiến độc giả không thể chấp nhận.
 
-Tôi phát hiện tôi và rất nhiều độc giả, có khác biệt quan niệm căn bản — đó là tôi hoàn toàn không cho rằng nhân vật chính thua Trọng Huyền Tuân là 【nén】, còn rất nhiều độc giả có sự phẫn nộ từ gốc rễ đối với điều này. Sau đó tôi đã nhiều lần suy nghĩ về vấn đề này, tôi cảm thấy có lẽ vấn đề lớn nhất, vẫn là ở sự khác biệt giữa góc nhìn của tác giả và độc giả. Trong bố cục câu chuyện của tôi, con đường đạo đồ của Khương Vọng, đến Định Tâm Viên, Hàng Ý Mã, Năng Ngộ Không, đã kết thúc. Trận chiến giữa hắn và Trọng Huyền Tuân, chỉ là một góc của toàn bộ cục diện phạt Hạ, là bước đầu tiên trong cuộc tranh giành trên chiến trường giữa Trọng Huyền Thắng và Trọng Huyền Tuân. Trong cảm nhận của tôi, đây là trong ván cờ Thắng-Tuân, phe Trọng Huyền Thắng và Khương Vọng trước hết thua một con tốt. Và bởi vì tư thái vô địch lâu nay của Trọng Huyền Tuân, bởi vì Khương Vọng vốn còn chưa đuổi kịp Đấu Chiêu, tôi cho rằng điều này là hợp tình hợp lý, không ảnh hưởng gì. Lần đầu Khương Vọng và Trọng Huyền Tuân gặp mặt, Trọng Huyền Tuân thậm chí còn không liếc nhìn Khương Vọng một lần! Sau Đại Sư Chi Lễ, Trọng Huyền Tuân mới chú ý đến người này. Sau Hoàng Hà Chi Hội, Trọng Huyền Tuân mới coi trọng người này. Đến trận tranh tiên phong này, hắn đã phải thành tựu Thần Lâm, mới có thể áp chế một đầu. Quỹ đạo trưởng thành này rõ ràng có thể thấy. Nhưng trong cảm nhận của rất nhiều độc giả, Khương Vọng một đường tích thế, trên Điểm Tướng Đài, nên thắng Trọng Huyền Tuân, mới có thể đạt được sự giải tỏa cảm xúc. Còn tôi cho rằng nắm giữ đạo đồ đã là giải tỏa, cao trào thực sự tôi muốn, còn ở phía sau.
+Đầu tiên là sự đột ngột.
+
+Để tạo ra sức công phá, trong dư âm bi thương của cái chết Tiêu Thứ, tôi cố tình đâm một nhát đột ngột.
+
+Trong tình tiết, Khương Vọng bị tập kích, ngoài tình tiết, độc giả cũng bị tập kích.
+
+Thứ hai là tình cảm.
+
+Tình cảm có hai phương diện, một là kẻ tập kích có Lâm Chính Nhân, nhân vật mà độc giả cực kỳ ghét, đã sớm bị nhân vật chính bỏ lại phía sau, đáng lẽ không nên ở cùng một tầng thứ, lại như rắn độc cắn nhân vật chính một phát.
+
+Một kẻ tập kích Khương Vọng nữa là Đỗ Dã Hổ, là người anh hai từng khóc ba ngày ngoài thành Phong Lâm.
+
+Đây là điểm khó chịu nhất về mặt tình cảm đối với độc giả.
+
+Thậm chí để giữ được sự đột ngột, sự nghi hoặc này, ngoài câu 【Khương Vọng dùng sự bình tĩnh lớn nhất để đối mặt trận chiến này, hắn biết mỗi một bước của hắn đều không thể sai.
+
+Bất kỳ một chỗ sai nào cũng có thể tạo thành tiếc nuối cả đời!】, ngoài cuộc đối thoại về rượu ngon giữa Đỗ Dã Hổ và Khương Vọng.
+
+Tôi không làm bất kỳ ám chỉ nào khác.
+
+Điều này quả thực rất khó xoa dịu cảm xúc của độc giả, cho nên tôi hiểu tất cả sự không hiểu của độc giả.
+
+Còn về chiến lực mà nhiều người thích lấy ra nói, thực ra lại không đau không ngứa.
+
+Nội Phủ và Ngoại Lâu, vốn là hai cảnh giới dễ xuất hiện tổn thương vượt cấp nhất, càng không cần nói Khương Vọng còn bị chặn mất cảnh báo.
+
+Quân trận lại là lực lượng thông thường mà cuốn sách này nhiều lần nhấn mạnh, rõ ràng có thể vượt qua phẩm cấp siêu phàm.
+
+Khương Vọng và Trọng Huyền Thắng, có thể ở chiến trường nước Dương, lấy Đằng Long giết Ngoại Lâu, chẳng phải dựa vào quân trận sao?
+
+Đỗ Dã Hổ mang theo Cửu Giang Huyền Giáp tinh nhuệ nhất của nước Trang, trong tình huống có tình báo trước nhắm vào, cộng thêm tập kích, cộng thêm bố cục của Lâm Chính Nhân, cộng thêm trận pháp, cộng thêm Dịch Thắng Phong chặn năng lực cảnh báo, hoàn toàn có khả năng gây sát thương cho Khương Vọng — ít nhất trong góc nhìn của nhân vật trong truyện là như vậy.
+
+Vậy tại sao tôi lại viết như vậy?
+
+Bởi vì logic nhân vật của Trang Cao Tiện, quyết định hắn nhất định sẽ có hành động sau khi Chúc Duy Ngã Thần Lâm, nhất định sẽ có động tác với Bất Thục Thành.
+
+Việc nước Trang muốn nhổ Bất Thục Thành, hoàn toàn không liên quan đến Khương Vọng, sự áp lực mà hắn phải chịu, thậm chí chỉ là một việc tiện tay.
+
+Hắn đi ngang qua, nhất định sẽ xảy ra.
+
+Và các bạn biết, đây là một lần bất lực nữa của Khương Vọng.
+
+Hắn phải kiềm chế, kiềm chế phẫn nộ, kiềm chế thù hận, kiềm chế nóng vội, như hắn vẫn luôn làm, kiên định, trầm mặc, vững vàng bước về phía trước.
+
+Trong mạch tình tiết của tôi, đây chính là cú nén cuối cùng của Ta Như Thần Lâm.
+
+Bởi vì tiếp theo, tôi sẽ tung ra toàn bộ cao trào của cuộc chiến phạt Hạ.
+
+Cái chết của Khương Vô Khí ở đầu quyển, đã sớm chỉ về cuộc phạt Hạ ở cuối quyển!
+
+Tất cả sự tích lũy cảm xúc, đều phải giải phóng ở phần này.
+
+Trên đường về nước Tề, một loạt thử thách, mục đích có ba.
+
+Thứ nhất, mài giũa cuối cùng cho Khương Vọng vung kiếm thiên hạ.
+
+Thứ hai, xoa dịu cảm xúc áp lực của độc giả.
+
+Thứ ba, đại khái miêu tả một chút về các tông môn lớn của thế gian, phác họa đường nét, tiện cho việc lấp đầy sau này.
+
+Dù sao cũng đã lâu rồi, chúng còn chưa xuất hiện nhiều.
+
+Trên Điểm Tướng Đài, khi Khương Vọng đứng ra tranh giành với Trọng Huyền Tuân.
+
+Mọi người cũng đã có thể thấy, mạch chính rõ ràng của quyển này — con đường đạo đồ của Khương Vọng, hành trình Thần Lâm.
+
+Sâu trong Ngọc Hành, dựng chữ Tín lâu.
+
+Trong Sơn Hải Cảnh, dựng chữ Thành lâu.
+
+Ngoài Bất Thục Thành, dựng chữ Nhân lâu.
+
+Phía tây Lâm Tri, dựng chữ Vũ lâu.
+
+Thế là có dựng Tứ Đức để tự giam cầm, có định Tâm Viên, hàng Ý Mã, năng Ngộ Không, có con đường Chân Ngã.
+
+Đến chương "Định Tâm Viên, Hàng Ý Mã, Năng Ngộ Không", mạch tình tiết về đạo đồ liền một lần thu lại.
+
+Nhưng đây không phải là cao trào nên có của quyển này, cho nên phải dừng một bút, rồi đi tiếp.
+
+Ở đây, đã kích nổ mâu thuẫn lớn nhất kể từ khi cuốn tiểu thuyết viết đến nay.
+
+Tôi phát hiện tôi và rất nhiều độc giả, có khác biệt quan niệm căn bản — đó là tôi hoàn toàn không cho rằng nhân vật chính thua Trọng Huyền Tuân là 【nén】, còn rất nhiều độc giả có sự phẫn nộ từ gốc rễ đối với điều này.
+
+Sau đó tôi đã nhiều lần suy nghĩ về vấn đề này, tôi cảm thấy có lẽ vấn đề lớn nhất, vẫn là ở sự khác biệt giữa góc nhìn của tác giả và độc giả.
+
+Trong bố cục câu chuyện của tôi, con đường đạo đồ của Khương Vọng, đến Định Tâm Viên, Hàng Ý Mã, Năng Ngộ Không, đã kết thúc.
+
+Trận chiến giữa hắn và Trọng Huyền Tuân, chỉ là một góc của toàn bộ cục diện phạt Hạ, là bước đầu tiên trong cuộc tranh giành trên chiến trường giữa Trọng Huyền Thắng và Trọng Huyền Tuân.
+
+Trong cảm nhận của tôi, đây là trong ván cờ Thắng-Tuân, phe Trọng Huyền Thắng và Khương Vọng trước hết thua một con tốt.
+
+Và bởi vì tư thái vô địch lâu nay của Trọng Huyền Tuân, bởi vì Khương Vọng vốn còn chưa đuổi kịp Đấu Chiêu, tôi cho rằng điều này là hợp tình hợp lý, không ảnh hưởng gì.
+
+Lần đầu Khương Vọng và Trọng Huyền Tuân gặp mặt, Trọng Huyền Tuân thậm chí còn không liếc nhìn Khương Vọng một lần!
+
+Sau Đại Sư Chi Lễ, Trọng Huyền Tuân mới chú ý đến người này.
+
+Sau Hoàng Hà Chi Hội, Trọng Huyền Tuân mới coi trọng người này.
+
+Đến trận tranh tiên phong này, hắn đã phải thành tựu Thần Lâm, mới có thể áp chế một đầu.
+
+Quỹ đạo trưởng thành này rõ ràng có thể thấy.
+
+Nhưng trong cảm nhận của rất nhiều độc giả, Khương Vọng một đường tích thế, trên Điểm Tướng Đài, nên thắng Trọng Huyền Tuân, mới có thể đạt được sự giải tỏa cảm xúc.
+
+Còn tôi cho rằng nắm giữ đạo đồ đã là giải tỏa, cao trào thực sự tôi muốn, còn ở phía sau.
 
 Tôi phải thừa nhận một điểm là—
-Trong viết lách, tôi cố chấp, tự ngã, không thể lý giải. Rất nhiều lúc, tôi không phải không biết cảm nhận của độc giả. Nhưng tôi cho rằng kết cấu của tác phẩm là việc quan trọng hơn. Tôi đương nhiên biết chiến thắng Trọng Huyền Tuân trước vạn quân là một cao trào lớn nhường nào, chẳng khác nào tái diễn Hoàng Hà Chi Hội Kiếm Tiên Nhân. Sự nồng nhiệt của độc giả thời gian đó cũng đang nhắc nhở tôi rất rõ ràng, độc giả đang kỳ vọng điều gì, muốn điều gì. Tôi đương nhiên biết đó là sự nâng cao lớn nhường nào đối với thành tích thương mại. Thậm chí trong cương lĩnh chi tiết của tôi, có một câu đối thoại tình huống như vậy. Là sau trận chiến Tuân-Vọng, Trọng Huyền Tuân nói với Vương Di Ngô. Câu thoại đó là: "Ở Ngoại Lâu Cảnh, ta đã áp không được hắn rồi..."
+Trong viết lách, tôi cố chấp, tự ngã, không thể lý giải.
 
-Nhưng cuối cùng tôi đã không viết cảnh này, không viết câu nói này. Bởi vì khi viết, tôi cảm thấy với tính cách của Trọng Huyền Tuân, sẽ không nói một câu như vậy. Và trong trận đại chiến phạt Hạ này, tôi cũng không cảm thấy nên cho Trọng Huyền Tuân và Vương Di Ngô thêm phần đối thoại. Cho nên đã xóa bỏ. Trước hết nói về, vì sao có đoạn tình tiết tranh tiên phong này. Trước hết là thay vào Trọng Huyền Tuân, phong cách bố cục của hắn là gì? Cũng giống như đạo đồ của hắn là Trảm Vọng, hắn hạ quân cờ cũng thích trực chỉ căn bản.
+Rất nhiều lúc, tôi không phải không biết cảm nhận của độc giả.
+
+Nhưng tôi cho rằng kết cấu của tác phẩm là việc quan trọng hơn.
+
+Tôi đương nhiên biết chiến thắng Trọng Huyền Tuân trước vạn quân là một cao trào lớn nhường nào, chẳng khác nào tái diễn Hoàng Hà Chi Hội Kiếm Tiên Nhân.
+
+Sự nồng nhiệt của độc giả thời gian đó cũng đang nhắc nhở tôi rất rõ ràng, độc giả đang kỳ vọng điều gì, muốn điều gì.
+
+Tôi đương nhiên biết đó là sự nâng cao lớn nhường nào đối với thành tích thương mại.
+
+Thậm chí trong cương lĩnh chi tiết của tôi, có một câu đối thoại tình huống như vậy.
+
+Là sau trận chiến Tuân-Vọng, Trọng Huyền Tuân nói với Vương Di Ngô.
+
+Câu thoại đó là: "Ở Ngoại Lâu Cảnh, ta đã áp không được hắn rồi..."
+
+Nhưng cuối cùng tôi đã không viết cảnh này, không viết câu nói này.
+
+Bởi vì khi viết, tôi cảm thấy với tính cách của Trọng Huyền Tuân, sẽ không nói một câu như vậy.
+
+Và trong trận đại chiến phạt Hạ này, tôi cũng không cảm thấy nên cho Trọng Huyền Tuân và Vương Di Ngô thêm phần đối thoại.
+
+Cho nên đã xóa bỏ.
+
+Trước hết nói về, vì sao có đoạn tình tiết tranh tiên phong này.
+
+Trước hết là thay vào Trọng Huyền Tuân, phong cách bố cục của hắn là gì?
+
+Cũng giống như đạo đồ của hắn là Trảm Vọng, hắn hạ quân cờ cũng thích trực chỉ căn bản.

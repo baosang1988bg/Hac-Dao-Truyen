@@ -66,7 +66,17 @@ Khương Vọng không nói gì.
 
 “Bá phụ ta đã đến Vân Quốc, nhưng căn bản không mua được Khai Mạch Đan. Cho dù mua được, cũng chưa chắc sẽ cho ta. Việc quản chế Khai Mạch Đan ngày càng nghiêm ngặt, chỉ ban thưởng cho những đệ tử ngoại môn có hi vọng nhất, toàn bộ Phong Lâm Đạo Viện chỉ có ngươi đạt được công huân như vậy, ta không còn cách nào, ta không còn cách nào cả!” Phương Bằng Cử khóc rống lên.
 
-Khương Vọng nheo mắt lại: “Ta kỳ thực hiểu ngươi. Hiểu sự lo lắng, bất an, sợ hãi của ngươi. Phương gia là một đại gia tộc, đã cho ngươi môi trường ưu việt, nhưng cạnh tranh cũng vô cùng kịch liệt. Ta sớm đã biết dục vọng của con người là vô cùng vô tận. Ta cũng biết ngươi khao khát chứng minh bản thân đến nhường nào, khao khát thay phụ thân đoản mệnh của ngươi mà tranh thủ vinh quang ra sao, ngươi đều đã nói qua, ta đều nhớ rõ. Ngươi cấp công cận lợi, quỷ mê tâm khiếu, kỳ thực ta có thể hiểu được.”
+Khương Vọng nheo mắt lại: “Ta kỳ thực hiểu ngươi.
+
+Hiểu sự lo lắng, bất an, sợ hãi của ngươi.
+
+Phương gia là một đại gia tộc, đã cho ngươi môi trường ưu việt, nhưng cạnh tranh cũng vô cùng kịch liệt.
+
+Ta sớm đã biết dục vọng của con người là vô cùng vô tận.
+
+Ta cũng biết ngươi khao khát chứng minh bản thân đến nhường nào, khao khát thay phụ thân đoản mệnh của ngươi mà tranh thủ vinh quang ra sao, ngươi đều đã nói qua, ta đều nhớ rõ.
+
+Ngươi cấp công cận lợi, quỷ mê tâm khiếu, kỳ thực ta có thể hiểu được.”
 
 Trong tia hi vọng chợt lóe lên trong mắt Phương Bằng Cử, hắn tiếp lời: “Nhưng hiểu được không có nghĩa là tha thứ.”
 

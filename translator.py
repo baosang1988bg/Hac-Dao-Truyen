@@ -921,6 +921,9 @@ class NovelTranslator:
             return "[Translation failed]\nError: No backend available", ""
 
         translated, summary = parse_response(raw)
+        
+        # ── Bước 3.5: Sửa lỗi dính chữ (stuck paragraphs) ──
+        translated = self._fix_stuck_paragraphs(translated)
 
         # Tính usage stats
         in_tok  = estimate_tokens(prompt)
@@ -1041,6 +1044,9 @@ class NovelTranslator:
 
         translated_chapters, summary, new_glossary = parse_batch_response(raw, len(chapters))
 
+        # ── Bước 3.5: Sửa lỗi dính chữ cho từng chương ──
+        translated_chapters = [self._fix_stuck_paragraphs(ch) if ch else ch for ch in translated_chapters]
+
         # Cleanup pass
         cleaned_chapters = []
         for translated in translated_chapters:
@@ -1089,6 +1095,31 @@ class _DailyQuotaExhausted(Exception):
     """Raised khi tất cả Gemini key đã hết daily quota."""
     pass
 
+
+    def _fix_stuck_paragraphs(self, text: str) -> str:
+        """
+        Phát hiện và sửa các đoạn văn bị 'dính' (quá dài).
+        Nếu một dòng > 500 ký tự, tự động ngắt đoạn tại các dấu chấm câu.
+        """
+        if not text:
+            return text
+            
+        lines = text.split('\n')
+        fixed_lines = []
+        
+        for line in lines:
+            stripped = line.strip()
+            # Bỏ qua các dòng tiêu đề hoặc dòng đã ngắn sẵn
+            if not stripped or line.startswith('#') or len(stripped) < 500:
+                fixed_lines.append(line)
+                continue
+            
+            # Ngắt đoạn tại các dấu kết thúc câu (. ! ? ...) theo sau là khoảng trắng
+            # Sử dụng lookbehind để không ngắt ở giữa các từ viết tắt nếu có (nhưng hiếm trong truyện)
+            fixed_line = re.sub(r'([.!?…])\s+', r'\1\n\n', stripped)
+            fixed_lines.append(fixed_line)
+            
+        return '\n'.join(fixed_lines)
 
 if __name__ == "__main__":
     t = NovelTranslator()
