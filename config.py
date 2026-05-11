@@ -6,7 +6,11 @@ Settings riêng của từng truyện (glossary, style, URL...) nằm trong nove
 """
 
 import os
+import sys
 from dotenv import load_dotenv
+
+if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 load_dotenv()
 

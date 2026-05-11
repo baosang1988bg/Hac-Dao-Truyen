@@ -62,7 +62,7 @@ def get_synced_filenames(slug: str) -> set:
                       f'--file={tmp}', '--json'])
         if r.returncode != 0:
             print(f"    [D1-query-ERR] {r.stderr[-200:].strip()}")
-            return set()
+            return None
 
         # Wrangler có thể in warning/log lines trước JSON thật
         # Scan từng dòng, tìm dòng bắt đầu bằng '[' và parse được
@@ -78,18 +78,18 @@ def get_synced_filenames(slug: str) -> set:
                     continue
 
         if not data:
-            print(f"    [D1-query-ERR] Không parse được JSON. stdout: {stdout[:300]}")
-            return set()
+            print(f"    [D1-query-ERR] Không có data. stdout: {stdout[:300]}")
+            return None
 
         rows = data[0].get('results', []) if data else []
         return {row['filename'] for row in rows if 'filename' in row}
 
     except json.JSONDecodeError as e:
         print(f"    [D1-query-ERR] JSON parse: {e}")
-        return set()
+        return None
     except Exception as e:
         print(f"    [D1-query-ERR] {e}")
-        return set()
+        return None
     finally:
         os.unlink(tmp)
 
@@ -498,7 +498,7 @@ def main():
                 # so sánh với local để tìm files num=0 chưa được sync
                 print(f"  🔍 Kiểm tra author notes mới...")
                 synced_names = get_synced_filenames(slug)
-                if synced_names:
+                if synced_names is not None:
                     trans_dir = NOVELS_DIR / slug / "translated"
                     all_local = get_effective_files(trans_dir)
                     # Author notes local chưa có trong D1
