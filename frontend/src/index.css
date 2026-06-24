@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
 
 :root {
   /* Dark mode glassmorphism by default */
@@ -144,12 +144,14 @@ a:hover {
 }
 
 .page-title {
-  font-size: 2rem;
-  font-weight: 700;
-  background: linear-gradient(to right, #fff, #94a3b8);
+  font-family: 'Outfit', sans-serif;
+  font-size: 2.25rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
   -webkit-background-clip: text;
   color: transparent;
   margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
 }
 
 .page-subtitle {
@@ -189,6 +191,10 @@ a:hover {
   height: 100vh;
   padding: 2rem 1rem;
   border-right: 1px solid var(--border-panel);
+}
+.sidebar h1 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
 }
 
 .main-content {
@@ -252,11 +258,13 @@ a:hover {
 .text-muted { color: var(--text-muted); }
 
 .novel-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border-panel);
 }
 .novel-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  transform: translateY(-5px);
+  border-color: rgba(59, 130, 246, 0.25);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.1);
 }
 
 @media (max-width: 900px) {

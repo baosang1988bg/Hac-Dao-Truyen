@@ -8,7 +8,7 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 # Import existing logic
 from novel_manager import load_novel
@@ -40,6 +40,7 @@ SERVER_START_TIME = datetime.now().isoformat()
 class TranslateRequest(BaseModel):
     chapters: int = 3
     force: bool = False
+    url: Optional[str] = None
 
 class GlossaryUpdateRequest(BaseModel):
     glossary: Dict[str, str]
@@ -76,6 +77,53 @@ def list_novels():
                         pass
     return novels
 
+def chinese_to_arabic(cn_str: str) -> int:
+    cn_num = {
+        '零': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9,
+        '十': 10, '百': 100, '千': 1000, '廿': 20, '卅': 30
+    }
+    clean_str = ""
+    for char in cn_str:
+        if char in cn_num:
+            clean_str += char
+    if not clean_str:
+        return 0
+    val = 0
+    temp = 0
+    for char in clean_str:
+        num = cn_num[char]
+        if num == 10:
+            if temp == 0:
+                temp = 1
+            val += temp * 10
+            temp = 0
+        elif num == 100:
+            if temp == 0:
+                temp = 1
+            val += temp * 100
+            temp = 0
+        elif num == 1000:
+            if temp == 0:
+                temp = 1
+            val += temp * 1000
+            temp = 0
+        else:
+            temp = num
+    val += temp
+    return val
+
+def extract_chapter_number_from_text(text: str) -> int:
+    m = re.search(r'\d+', text)
+    if m:
+        return int(m.group())
+    m_cn = re.search(r'第([一二三四五六七八九十百千廿卅]+)章', text)
+    if m_cn:
+        return chinese_to_arabic(m_cn.group(1))
+    m_cn_loose = re.search(r'([一二三四五六七八九十百千廿卅]+)章', text)
+    if m_cn_loose:
+        return chinese_to_arabic(m_cn_loose.group(1))
+    return 999999
+
 @app.get("/api/novels/{slug}")
 def get_novel(slug: str):
     """Lấy chi tiết truyện (gồm cả glossary)."""
@@ -104,7 +152,7 @@ def start_translation(slug: str, req: TranslateRequest, background_tasks: Backgr
     """Bắt đầu dịch N chương (chạy background)."""
     try:
         profile = load_novel(slug)
-        args = DummyArgs(novel=slug, chapters=req.chapters, force=req.force)
+        args = DummyArgs(novel=slug, chapters=req.chapters, force=req.force, url=req.url)
         
         # Initialize state
         translation_tasks[slug] = {
@@ -209,6 +257,19 @@ def stop_translation(slug: str):
     return {"status": "ok", "message": "Đã gửi yêu cầu dừng"}
 
 
+@app.get("/api/novels/{slug}/catalog")
+def get_novel_catalog(slug: str):
+    """Lấy danh sách catalog chương của truyện từ catalog.json."""
+    catalog_path = os.path.join(NOVELS_DIR, slug, "catalog.json")
+    if not os.path.exists(catalog_path):
+        return []
+    try:
+        with open(catalog_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading catalog: {e}")
+
+
 @app.get("/api/novels/{slug}/chapters")
 def list_chapters(slug: str):
     """Lấy danh sách các chương đã dịch.
@@ -238,8 +299,7 @@ def list_chapters(slug: str):
         filtered.append(f)
 
     def get_chapter_num(filename):
-        match = re.search(r'\d+', filename)
-        return int(match.group()) if match else 999999
+        return extract_chapter_number_from_text(filename)
 
     sorted_files = sorted(filtered, key=get_chapter_num)
     result = []
@@ -281,18 +341,11 @@ def get_chapter_content(slug: str, identifier: str):
     if identifier.isdigit():
         chap_num = int(identifier)
         all_files = [f for f in os.listdir(translated_dir) if f.endswith(".md")]
-        # Pattern khớp: 第1497章, Chương 1497, 1497_
-        patterns = [
-            re.compile(rf'^第{chap_num}章'),
-            re.compile(rf'^0*{chap_num}_'),
-            re.compile(rf'[Cc]h(ương|apter)\s*{chap_num}[^0-9]'),
-        ]
         for fname in sorted(all_files):
-            for pat in patterns:
-                if pat.search(fname):
-                    fpath = os.path.join(translated_dir, fname)
-                    with open(fpath, "r", encoding="utf-8") as f:
-                        return {"content": f.read()}
+            if extract_chapter_number_from_text(fname) == chap_num:
+                fpath = os.path.join(translated_dir, fname)
+                with open(fpath, "r", encoding="utf-8") as f:
+                    return {"content": f.read()}
 
     raise HTTPException(status_code=404, detail=f"Chapter not found: {identifier}")
 

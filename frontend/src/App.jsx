@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import { BookOpen, Home, ScrollText } from 'lucide-react'
 import Dashboard from './pages/Dashboard'
 import NovelDetail from './pages/NovelDetail'
@@ -34,9 +34,36 @@ function NavLink({ to, icon, label, adminOnly }) {
   )
 }
 
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+  return null;
+}
+
 function App() {
   const [role, setRole] = useState(localStorage.getItem('userRole'))
   const location = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!role) return // Chưa đăng nhập thì không redirect
+
+    const autoRedirected = sessionStorage.getItem('autoRedirected')
+    if (!autoRedirected) {
+      sessionStorage.setItem('autoRedirected', 'true')
+      
+      const lastNovel = localStorage.getItem('last_read_novel') || getCookie('last_read_novel')
+      if (lastNovel) {
+        const lastChapter = localStorage.getItem(`last_read_chapter_${lastNovel}`) || getCookie(`last_read_chapter_${lastNovel}`)
+        if (lastChapter) {
+          if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '') {
+            navigate(`/novel/${lastNovel}/read/${lastChapter}`)
+          }
+        }
+      }
+    }
+  }, [role, navigate, location.pathname])
 
   const handleLogin = (newRole) => {
     localStorage.setItem('userRole', newRole)

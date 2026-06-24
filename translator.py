@@ -24,6 +24,7 @@ from config import (
     TRANSLATION_PROVIDER, FALLBACK_ORDER,
     REQUEST_DELAY_SECONDS,
     TARGET_LANGUAGE, DEFAULT_TRANSLATION_STYLE,
+    SHORT_CHAPTER_THRESHOLD, SHORT_CHAPTER_PROVIDER,
 )
 
 # Model fallback list: rotate khi model bị daily quota
@@ -863,6 +864,14 @@ class NovelTranslator:
 
         # ── Duyệt qua danh sách fallback ──
         active_chain = FALLBACK_ORDER if self._provider == "auto" else [self._provider]
+
+        # Ngưỡng chương ngắn -> Ưu tiên đưa SHORT_CHAPTER_PROVIDER lên đầu chain
+        if len(content) < SHORT_CHAPTER_THRESHOLD:
+            print(f"  [*] Chương ngắn ({len(content)} ký tự < {SHORT_CHAPTER_THRESHOLD}) -> Ưu tiên dùng provider rẻ: {SHORT_CHAPTER_PROVIDER}")
+            if SHORT_CHAPTER_PROVIDER in active_chain:
+                active_chain = [SHORT_CHAPTER_PROVIDER] + [p for p in active_chain if p != SHORT_CHAPTER_PROVIDER]
+            else:
+                active_chain = [SHORT_CHAPTER_PROVIDER] + active_chain
         
         for p in active_chain:
             if p == "gemini" and self._gemini:
@@ -983,6 +992,16 @@ class NovelTranslator:
 
         # ── Duyệt qua danh sách fallback ──
         active_chain = FALLBACK_ORDER if self._provider == "auto" else [self._provider]
+
+        # Ngưỡng chương ngắn -> Ưu tiên đưa SHORT_CHAPTER_PROVIDER lên đầu chain cho batch ngắn
+        total_content_len = sum(len(c[1]) for c in chapters)
+        avg_len = total_content_len / len(chapters) if chapters else 0
+        if avg_len < SHORT_CHAPTER_THRESHOLD:
+            print(f"  [*] Batch ngắn (TB {avg_len:.0f} ký tự < {SHORT_CHAPTER_THRESHOLD}) -> Ưu tiên dùng provider rẻ: {SHORT_CHAPTER_PROVIDER}")
+            if SHORT_CHAPTER_PROVIDER in active_chain:
+                active_chain = [SHORT_CHAPTER_PROVIDER] + [p for p in active_chain if p != SHORT_CHAPTER_PROVIDER]
+            else:
+                active_chain = [SHORT_CHAPTER_PROVIDER] + active_chain
         
         for p in active_chain:
             if p == "gemini" and self._gemini:
@@ -1050,7 +1069,7 @@ class NovelTranslator:
         # Cleanup pass
         cleaned_chapters = []
         for translated in translated_chapters:
-            if has_chinese_chars(translated):
+            if translated and has_chinese_chars(translated):
                 chinese_count = len(re.findall(r'[\u4e00-\u9fff\u3400-\u4dbf]', translated))
                 print(f"  [⚠] Found {chinese_count} Chinese chars. Running cleanup pass...")
                 cleanup_prompt = build_cleanup_prompt(translated)

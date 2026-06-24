@@ -4,11 +4,12 @@ import {
   Play, Square, Book, BookOpen, Plus, Trash2, FileText,
   ArrowLeft, AlertTriangle, CheckCircle, RefreshCw, ShieldCheck,
   Zap, Clock, TrendingUp, ChevronDown, ChevronUp, OctagonX,
-  Search, ArrowUpDown, Sparkles, GitMerge
+  Search, ArrowUpDown, Sparkles, GitMerge, Edit2, Check, X,
+  ChevronLeft, ChevronRight
 } from 'lucide-react'
 import api from '../api'
 
-const TABS = { CHAPTERS: 'chapters', GLOSSARY: 'glossary', HEALTH: 'health', TOOLS: 'tools' }
+const TABS = { CATALOG: 'catalog', CHAPTERS: 'chapters', GLOSSARY: 'glossary', HEALTH: 'health', TOOLS: 'tools' }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtTime(seconds) {
@@ -23,6 +24,7 @@ export default function NovelDetail() {
   const { slug } = useParams()
   const [novel, setNovel]                   = useState(null)
   const [chapters, setChapters]             = useState([])
+  const [catalog, setCatalog]               = useState([])
   const [translating, setTranslating]       = useState(false)
   const [translateCount, setTranslateCount] = useState(5)
   const [glossary, setGlossary]             = useState([])
@@ -65,12 +67,14 @@ export default function NovelDetail() {
 
   const fetchData = async () => {
     try {
-      const [nRes, cRes] = await Promise.all([
+      const [nRes, cRes, catRes] = await Promise.all([
         api.get(`/novels/${slug}`),
         api.get(`/novels/${slug}/chapters`),
+        api.get(`/novels/${slug}/catalog`).catch(() => ({ data: [] })),
       ])
       setNovel(nRes.data)
       setChapters(cRes.data)
+      setCatalog(catRes.data || [])
       setGlossary(Object.entries(nRes.data.glossary || {}).map(([k, v]) => ({ key: k, val: v })))
     } catch (err) { console.error(err) }
   }
@@ -90,7 +94,7 @@ export default function NovelDetail() {
   }, [activeTab])
 
   const handleTranslate = async () => {
-    if (!translateCount || translateCount < 1) return
+    if (translateCount !== 0 && (!translateCount || translateCount < 1)) return
     setTranslating(true)
     setElapsedSec(0)
     startTimeRef.current = Date.now()
@@ -189,6 +193,9 @@ export default function NovelDetail() {
           <div style={{ display: 'flex', borderBottom: '1px solid var(--border-panel)', padding: '0 1.5rem' }}>
             {[
               { id: TABS.CHAPTERS, label: `Chương (${chapters.length})`, icon: <BookOpen size={15} /> },
+              ...(catalog.length > 0 ? [
+                { id: TABS.CATALOG, label: `Mục lục gốc (${catalog.length})`, icon: <Sparkles size={15} /> }
+              ] : []),
               ...(isAdmin ? [
                 { id: TABS.GLOSSARY, label: `Glossary (${glossary.length})`, icon: <Book size={15} /> },
                 { id: TABS.HEALTH,   label: 'Kiểm tra', icon: <ShieldCheck size={15} /> },
@@ -210,13 +217,28 @@ export default function NovelDetail() {
 
           <div style={{ padding: '1.5rem' }}>
             {activeTab === TABS.CHAPTERS && <ChaptersTab chapters={chapters} slug={slug} />}
+            {activeTab === TABS.CATALOG && (
+              <CatalogTab
+                catalog={catalog}
+                chapters={chapters}
+                slug={slug}
+                onTranslateFromChapter={async (startUrl) => {
+                  try {
+                    await api.post(`/novels/${slug}/translate`, { chapters: parseInt(translateCount), url: startUrl, force: false })
+                    fetchStatus()
+                  } catch (err) {
+                    console.error(err)
+                    alert('Lỗi khi kích hoạt dịch: ' + (err.response?.data?.detail || err.message))
+                  }
+                }}
+              />
+            )}
             {isAdmin && (
               <>
                 {activeTab === TABS.GLOSSARY && (
                   <GlossaryTab
-                    glossary={glossary} newKey={newKey} setNewKey={setNewKey}
-                    newVal={newVal} setNewVal={setNewVal}
-                    onAdd={addGlossary} onRemove={removeGlossary}
+                    glossary={glossary}
+                    saveGlossary={saveGlossary}
                   />
                 )}
                 {activeTab === TABS.HEALTH && (
@@ -236,40 +258,55 @@ export default function NovelDetail() {
 // ── Translation Panel ─────────────────────────────────────────────────────────
 
 function TranslationPanel({ isRunning, translating, translateCount, setTranslateCount, taskStatus, elapsedSec, onStart, onStop }) {
+  const logRef = useRef(null)
   const [logsExpanded, setLogsExpanded] = useState(false)
-  const logRef     = useRef(null)
-  const feedRef    = useRef(null)
+  const [userDismissedSummary, setUserDismissedSummary] = useState(false)
 
-  const pct          = taskStatus ? Math.min(100, (taskStatus.current / Math.max(taskStatus.total, 1)) * 100) : 0
-  const scrapedPct   = taskStatus ? Math.min(100, ((taskStatus.scraped_count || 0) / Math.max(taskStatus.total, 1)) * 100) : 0
+  const isCancelling = taskStatus?.status === 'cancelling'
   const isDone       = taskStatus?.status === 'finished'
   const isError      = taskStatus?.status === 'error'
-  const isCancelling = taskStatus?.status === 'cancelling'
   const isCancelled  = taskStatus?.status === 'cancelled'
   const isIdle       = !taskStatus || taskStatus.status === 'idle'
-  const activeBatches  = taskStatus?.active_batches  || 0
-  const scrapedCount   = taskStatus?.scraped_count   || 0
-  const chaptersOk     = taskStatus?.chapters_ok     || []
-  const chaptersFail   = taskStatus?.chapters_fail   || []
-  const batchDetails   = taskStatus?.batch_details   || []
-  const tokensUsed     = taskStatus?.tokens_used     || 0
-  const costSoFar      = taskStatus?.cost_so_far     || 0
-  const currentModel   = taskStatus?.current_model   || ''
-  const currentChapter = taskStatus?.current_chapter || ''
-  const crawlingChap   = taskStatus?.crawling_chapter|| ''
+
+  useEffect(() => {
+    if (isRunning) {
+      setUserDismissedSummary(false)
+    }
+  }, [isRunning])
 
   // Auto-scroll
   useEffect(() => {
-    if (logRef.current)  logRef.current.scrollTop  = logRef.current.scrollHeight
-    if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight
-  }, [taskStatus?.logs, chaptersOk.length, chaptersFail.length])
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
+  }, [taskStatus?.logs, logsExpanded])
+
+  const total        = taskStatus?.total || 0
+  const current      = taskStatus?.current || 0
+  const scrapedCount = taskStatus?.scraped_count || 0
+  const chaptersOk   = taskStatus?.chapters_ok || []
+  const chaptersFail = taskStatus?.chapters_fail || []
+  const tokensUsed   = taskStatus?.tokens_used || 0
+  const costSoFar    = taskStatus?.cost_so_far || 0
+  const currentModel = taskStatus?.current_model || ''
+
+  const pct          = total > 0 ? Math.min(100, (current / total) * 100) : 0
+  const scrapedPct   = total > 0 ? Math.min(100, (scrapedCount / total) * 100) : 0
+
+  const fmtTime = (sec) => {
+    if (!sec) return '00:00'
+    const m = Math.floor(sec / 60)
+    const s = sec % 60
+    return `${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`
+  }
 
   // Speed & ETA
-  const chapPerMin = elapsedSec > 5 && taskStatus?.current > 0
-    ? ((taskStatus.current / elapsedSec) * 60).toFixed(1) : null
-  const remaining = taskStatus ? taskStatus.total - taskStatus.current : 0
+  const chapPerMin = elapsedSec > 5 && current > 0
+    ? ((current / elapsedSec) * 60).toFixed(1) : null
+  const remaining = total - current
   const eta = chapPerMin && remaining > 0
-    ? fmtTime(Math.round((remaining / parseFloat(chapPerMin)) * 60)) : null
+    ? fmtTime(Math.round((remaining / parseFloat(chapPerMin)) * 60)) : 'Tính toán...'
+
+  const totalProcessed = chaptersOk.length + chaptersFail.length
+  const successRate = totalProcessed > 0 ? Math.round((chaptersOk.length / totalProcessed) * 100) : 100
 
   // Model color helper
   const modelColor = (m = '') => {
@@ -281,343 +318,441 @@ function TranslationPanel({ isRunning, translating, translateCount, setTranslate
   }
   const mc = modelColor(currentModel)
 
-  return (
-    <div className="glass-panel" style={{ overflow: 'hidden' }}>
+  const SpinnerIcon = () => (
+    <span style={{
+      display: 'inline-block', width: '14px', height: '14px',
+      border: '2px solid currentColor', borderTopColor: 'transparent',
+      borderRadius: '50%', animation: 'spin 0.8s linear infinite'
+    }} />
+  )
 
-      {/* ── Header ── */}
-      <div style={{ padding: '1.1rem 1.1rem 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.9rem' }}>
-          <h2 style={{ ...sectionTitle, margin: 0, fontSize: '0.95rem' }}>
-            <Zap size={16} style={{ color: 'var(--accent)' }} /> Dịch truyện
-          </h2>
-          {isRunning && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {/* Live model badge */}
-              {currentModel && (
-                <span style={{
-                  fontSize: '0.65rem', fontWeight: 700, padding: '2px 7px', borderRadius: '99px',
-                  background: mc.bg, color: mc.text,
-                  border: `1px solid ${mc.dot}44`,
-                  display: 'flex', alignItems: 'center', gap: '4px',
-                }}>
-                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: mc.dot, animation: 'pulse-dot 1.5s infinite', display: 'inline-block' }} />
-                  {currentModel.length > 22 ? currentModel.slice(0, 22) + '…' : currentModel}
-                </span>
-              )}
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Clock size={11} /> {fmtTime(elapsedSec)}
-              </span>
+  const statCardStyle = {
+    background: 'rgba(0, 0, 0, 0.2)',
+    border: '1px solid var(--border-panel)',
+    borderRadius: '12px',
+    padding: '0.65rem 0.8rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+    minWidth: 0,
+  }
+
+  const statHeaderStyle = {
+    fontSize: '0.65rem',
+    fontWeight: 700,
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+  }
+
+  const statValueStyle = {
+    fontSize: '1.1rem',
+    fontWeight: 800,
+    color: 'white',
+    fontVariantNumeric: 'tabular-nums',
+  }
+
+  const statSubStyle = {
+    fontSize: '0.68rem',
+    color: 'var(--text-muted)',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  }
+
+  const billRowStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: '0.82rem',
+    borderBottom: '1px dashed rgba(255,255,255,0.06)',
+    paddingBottom: '6px',
+    color: 'var(--text-main)'
+  }
+
+  const isAllChapters = translateCount === 0 || translateCount === '0'
+
+  const handleToggleAll = (e) => {
+    const checked = e.target.checked
+    if (checked) {
+      setTranslateCount(0)
+    } else {
+      setTranslateCount(5)
+    }
+  }
+
+  const showProcessing = isRunning || isCancelling
+  const showSummary    = !showProcessing && (isDone || isError || isCancelled) && !userDismissedSummary
+  const showConfig     = !showProcessing && !showSummary
+
+  // 1. CONFIGURATION VIEW
+  if (showConfig) {
+    return (
+      <div className="glass-panel animate-fade-in" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ background: 'var(--accent-gradient)', padding: '8px', borderRadius: '10px', display: 'flex', alignItems: 'center', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)' }}>
+            <Zap size={20} color="white" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'white', fontFamily: 'Outfit, sans-serif' }}>Bảng Điều Khiển</h2>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>Cấu hình và bắt đầu dịch truyện</p>
+          </div>
+        </div>
+
+        {/* Input Số chương & Checkbox */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'rgba(0,0,0,0.12)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-panel)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Số chương cần dịch</span>
+              {isAllChapters && <span style={{ color: 'var(--accent)', fontWeight: 700 }}>Dịch toàn bộ</span>}
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="number"
+                className="input-field"
+                value={isAllChapters ? '' : translateCount}
+                onChange={e => setTranslateCount(e.target.value)}
+                min="1" max="2500"
+                disabled={translating || isAllChapters}
+                placeholder="Ví dụ: 5, 10, 20..."
+                style={{ paddingRight: '4rem', height: '42px', fontSize: '0.95rem', background: isAllChapters ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.25)', borderColor: isAllChapters ? 'rgba(255,255,255,0.03)' : 'var(--border-panel)' }}
+              />
+              <span style={{
+                position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                fontSize: '0.75rem', fontWeight: 700, color: isAllChapters ? 'var(--accent)' : 'var(--text-muted)', pointerEvents: 'none',
+                textTransform: 'uppercase'
+              }}>{isAllChapters ? 'VÔ HẠN' : 'CHƯƠNG'}</span>
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Input + buttons */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.7rem' }}>
-          <div style={{ position: 'relative', flex: 1 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none', padding: '4px 0' }}>
             <input
-              type="number" className="input-field"
-              value={translateCount}
-              onChange={e => setTranslateCount(e.target.value)}
-              min="1" max="2500" disabled={isRunning || isCancelling}
-              style={{ paddingRight: '2.5rem' }}
-            />
-            <span style={{
-              position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
-              fontSize: '0.72rem', color: 'var(--text-muted)', pointerEvents: 'none',
-            }}>chương</span>
-          </div>
-          {!isRunning && !isCancelling && (
-            <button className="btn btn-primary" onClick={onStart} disabled={translating} style={{ minWidth: '86px' }}>
-              <Play size={14} fill="currentColor" /> Bắt đầu
-            </button>
-          )}
-          {(isRunning || isCancelling) && (
-            <button
-              onClick={isCancelling ? undefined : onStop} disabled={isCancelling}
+              type="checkbox"
+              checked={isAllChapters}
+              onChange={handleToggleAll}
+              disabled={translating}
               style={{
-                minWidth: '86px', padding: '10px 14px', borderRadius: '10px',
-                display: 'flex', alignItems: 'center', gap: '6px', border: 'none',
-                cursor: isCancelling ? 'not-allowed' : 'pointer',
-                background: isCancelling ? 'rgba(251,146,60,0.15)' : 'rgba(239,68,68,0.15)',
-                color: isCancelling ? '#fdba74' : '#fca5a5',
-                fontWeight: 500, fontSize: '0.88rem', transition: 'all 0.2s',
+                width: '16px', height: '16px', borderRadius: '4px',
+                accentColor: 'var(--accent)', cursor: 'pointer'
               }}
-              onMouseEnter={e => { if (!isCancelling) e.currentTarget.style.background = 'rgba(239,68,68,0.25)' }}
-              onMouseLeave={e => { if (!isCancelling) e.currentTarget.style.background = 'rgba(239,68,68,0.15)' }}
-            >
-              {isCancelling ? <><SpinnerIcon /> Đang dừng</> : <><OctagonX size={14} /> Dừng</>}
-            </button>
-          )}
+            />
+            <span style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--text-main)' }}>
+              Dịch toàn bộ chương còn lại
+            </span>
+          </label>
         </div>
 
-        {/* ── Speed row ── */}
-        {isRunning && (
-          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.8rem', flexWrap: 'wrap' }}>
-            {chapPerMin && <MiniStat icon={<TrendingUp size={11} />} label="Tốc độ" value={`${chapPerMin} ch/phút`} />}
-            {eta         && <MiniStat icon={<Clock size={11} />}      label="Còn lại" value={eta} />}
-            {tokensUsed > 0 && <MiniStat icon={<span style={{fontSize:'0.7rem'}}>⚡</span>} label="Tokens" value={tokensUsed >= 1000 ? `${(tokensUsed/1000).toFixed(1)}K` : tokensUsed} />}
-            {costSoFar  > 0 && <MiniStat icon={<span style={{fontSize:'0.7rem'}}>💰</span>} label="Chi phí" value={`$${costSoFar.toFixed(4)}`} color="#fb923c" />}
-          </div>
-        )}
+        {/* Start Button */}
+        <button
+          className="btn btn-primary"
+          onClick={onStart}
+          disabled={translating || (!isAllChapters && (!translateCount || translateCount < 1))}
+          style={{
+            width: '100%',
+            height: '46px',
+            fontSize: '0.95rem',
+            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+            boxShadow: '0 4px 15px rgba(59, 130, 246, 0.4)',
+            transition: 'all 0.25s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}
+        >
+          {translating ? (
+            <>
+              <SpinnerIcon /> Đang khởi động...
+            </>
+          ) : (
+            <>
+              <Play size={16} fill="white" /> Bắt đầu dịch
+            </>
+          )}
+        </button>
       </div>
+    )
+  }
 
-      {/* ── Active section ── */}
-      {taskStatus && taskStatus.status !== 'idle' && (
-        <div style={{ padding: '0 1.1rem 1.1rem' }}>
-
-          {/* Status row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.7rem' }}>
-            <StatusBadge status={taskStatus.status} />
-            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: isDone ? '#6ee7b7' : isError ? '#fca5a5' : 'var(--text-main)', fontVariantNumeric: 'tabular-nums' }}>
-              {taskStatus.current}<span style={{ color: 'var(--text-muted)', fontWeight: 400 }}> / {taskStatus.total}</span>
-            </span>
+  // 2. PROCESSING VIEW
+  if (showProcessing) {
+    return (
+      <div className="glass-panel animate-fade-in" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent)', animation: 'pulse-dot 1.5s infinite' }} />
+            <h2 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: 'white', fontFamily: 'Outfit, sans-serif' }}>Đang xử lý</h2>
           </div>
+          <StatusBadge status={taskStatus?.status} />
+        </div>
 
-          {/* ── Progress bar (dual-layer) ── */}
-          <div style={{ marginBottom: '0.35rem' }}>
-            <div style={{
-              position: 'relative', background: 'rgba(255,255,255,0.06)',
-              borderRadius: '99px', height: '7px', overflow: 'hidden',
-            }}>
-              {isRunning && scrapedPct > pct && (
-                <div style={{
-                  position: 'absolute', left: 0, top: 0, height: '100%',
-                  background: 'rgba(16,185,129,0.18)', width: `${scrapedPct}%`,
-                  borderRadius: '99px', transition: 'width 0.4s ease',
-                }} />
-              )}
+        {/* Dual Progress Bars */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'rgba(0,0,0,0.15)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-panel)' }}>
+          {/* Cào Progress */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              <span>Tiến trình cào truyện</span>
+              <span style={{ fontWeight: 700, color: '#a78bfa' }}>{Math.round(scrapedPct)}%</span>
+            </div>
+            <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '99px', overflow: 'hidden' }}>
               <div style={{
-                position: 'absolute', left: 0, top: 0, height: '100%', borderRadius: '99px',
-                background: isError   ? 'linear-gradient(90deg,#ef4444,#dc2626)'
-                  : isDone            ? 'linear-gradient(90deg,#10b981,#059669)'
-                  : isCancelled       ? 'linear-gradient(90deg,#f59e0b,#d97706)'
-                  : isCancelling      ? 'linear-gradient(90deg,#fb923c,#f59e0b)'
-                  : activeBatches > 1 ? 'linear-gradient(90deg,#8b5cf6,#3b82f6)'
-                                      : 'linear-gradient(90deg,#3b82f6,#8b5cf6)',
-                width: `${pct}%`,
-                transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
-                boxShadow: isDone ? '0 0 8px rgba(16,185,129,0.4)'
-                  : activeBatches > 1 ? '0 0 8px rgba(139,92,246,0.5)'
-                  : '0 0 6px rgba(59,130,246,0.4)',
+                height: '100%', borderRadius: '99px',
+                background: 'linear-gradient(90deg, #a78bfa 0%, #8b5cf6 100%)',
+                width: `${scrapedPct}%`,
+                transition: 'width 0.4s ease',
+                boxShadow: '0 0 8px rgba(139, 92, 246, 0.4)'
               }} />
             </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '0.9rem' }}>
-            <span style={{ color: isRunning && scrapedCount > taskStatus.current ? '#10b981' : 'transparent' }}>
-              Đã cào: {scrapedCount}
-            </span>
-            <span style={{ fontWeight: 600 }}>{pct.toFixed(0)}%</span>
+
+          {/* Dịch Progress */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              <span>Tiến trình dịch thuật</span>
+              <span style={{ fontWeight: 700, color: 'var(--success)' }}>{Math.round(pct)}%</span>
+            </div>
+            <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '99px', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: '99px',
+                background: 'linear-gradient(90deg, #10b981 0%, #34d399 100%)',
+                width: `${pct}%`,
+                transition: 'width 0.4s ease',
+                boxShadow: '0 0 8px rgba(16, 185, 129, 0.4)'
+              }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Grid Stats 2x2 */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          {/* Card 1: Thời gian */}
+          <div style={statCardStyle}>
+            <div style={statHeaderStyle}><Clock size={11} /> Thời gian</div>
+            <div style={statValueStyle}>{fmtTime(elapsedSec)}</div>
+            <div style={statSubStyle}>ETA: {eta}</div>
           </div>
 
-          {/* ── ADMIN LIVE DASHBOARD (chỉ hiển thị khi đang chạy) ── */}
-          {isRunning && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '0.9rem' }}>
+          {/* Card 2: Tiến trình */}
+          <div style={statCardStyle}>
+            <div style={statHeaderStyle}><TrendingUp size={11} /> Chương</div>
+            <div style={statValueStyle}>{current}/{total}</div>
+            <div style={statSubStyle}>Đã cào: {scrapedCount}/{total}</div>
+          </div>
 
-              {/* Crawl + Chapter đang xử lý */}
-              <div style={{
-                padding: '0.6rem 0.8rem', borderRadius: '9px',
-                background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.18)',
-              }}>
-                <div style={{ fontSize: '0.63rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
-                  🌐 Đang crawl
-                </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {crawlingChap || <span style={{ color: 'var(--text-muted)' }}>Chờ...</span>}
-                </div>
-              </div>
+          {/* Card 3: Tài nguyên */}
+          <div style={statCardStyle}>
+            <div style={statHeaderStyle}><Sparkles size={11} /> Tài nguyên</div>
+            <div style={statValueStyle}>{tokensUsed.toLocaleString()} tkn</div>
+            <div style={statSubStyle}>Chi phí: ${costSoFar.toFixed(4)}</div>
+          </div>
 
-              {/* Active batches với detail */}
-              {batchDetails.length > 0 && (
-                <div style={{
-                  padding: '0.6rem 0.8rem', borderRadius: '9px',
-                  background: activeBatches > 1 ? 'rgba(139,92,246,0.07)' : 'rgba(59,130,246,0.07)',
-                  border: `1px solid ${activeBatches > 1 ? 'rgba(139,92,246,0.2)' : 'rgba(59,130,246,0.18)'}`,
-                }}>
-                  <div style={{ fontSize: '0.63rem', fontWeight: 700, color: activeBatches > 1 ? '#c4b5fd' : '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-                    ⚡ Đang dịch {activeBatches > 1 ? `(${activeBatches} luồng song song)` : ''}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {batchDetails.slice(-activeBatches || -3).map((bd, i) => {
-                      const bmc = modelColor(bd.model)
-                      return (
-                        <div key={bd.id || i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem' }}>
-                          {/* Pulsing dot */}
-                          <span style={{
-                            width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-                            background: bmc.dot, display: 'inline-block',
-                            animation: 'pulse-dot 1.2s infinite', animationDelay: `${i * 0.25}s`,
-                          }} />
-                          {/* Chapters in batch */}
-                          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-main)' }}>
-                            {(bd.chapters || []).join(' · ')}
-                          </span>
-                          {/* Model */}
-                          {bd.model && bd.model !== '...' && (
-                            <span style={{ color: bmc.text, fontSize: '0.65rem', fontWeight: 600, flexShrink: 0 }}>
-                              {bd.model.length > 18 ? bd.model.slice(0, 18) + '…' : bd.model}
-                            </span>
-                          )}
-                          {/* Tokens */}
-                          {bd.tokens > 0 && (
-                            <span style={{ color: '#fbbf24', fontSize: '0.65rem', flexShrink: 0 }}>
-                              {bd.tokens >= 1000 ? `${(bd.tokens/1000).toFixed(1)}K` : bd.tokens}tok
-                            </span>
-                          )}
-                          {/* Cost */}
-                          {bd.cost > 0 && (
-                            <span style={{ color: '#fb923c', fontSize: '0.65rem', flexShrink: 0 }}>
-                              ${bd.cost.toFixed(4)}
-                            </span>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Chapter result feed */}
-              {(chaptersOk.length > 0 || chaptersFail.length > 0) && (
-                <div style={{
-                  padding: '0.6rem 0.8rem', borderRadius: '9px',
-                  background: 'rgba(255,255,255,0.025)', border: '1px solid var(--border-panel)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
-                    <div style={{ fontSize: '0.63rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                      📄 Kết quả chương
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', fontSize: '0.68rem' }}>
-                      <span style={{ color: '#6ee7b7', fontWeight: 700 }}>✓ {chaptersOk.length}</span>
-                      {chaptersFail.length > 0 && <span style={{ color: '#fca5a5', fontWeight: 700 }}>✗ {chaptersFail.length}</span>}
-                    </div>
-                  </div>
-                  <div ref={feedRef} style={{ maxHeight: '100px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    {/* Hiện 8 chương mới nhất */}
-                    {[...chaptersOk.map(c => ({c, ok: true})), ...chaptersFail.map(c => ({c, ok: false}))]
-                      .sort((a,b) => 0) // giữ thứ tự gốc
-                      .slice(-8)
-                      .map(({c, ok}, i) => (
-                      <div key={i} style={{
-                        display: 'flex', alignItems: 'center', gap: '5px',
-                        fontSize: '0.7rem', padding: '1px 0',
-                      }}>
-                        <span style={{ color: ok ? '#6ee7b7' : '#fca5a5', flexShrink: 0, fontSize: '0.65rem' }}>
-                          {ok ? '✓' : '✗'}
-                        </span>
-                        <span style={{
-                          color: ok ? 'var(--text-main)' : '#fca5a5',
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
-                        }}>
-                          {c}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+          {/* Card 4: Độ thành công */}
+          <div style={statCardStyle}>
+            <div style={statHeaderStyle}>
+              <CheckCircle size={11} style={{ color: successRate === 100 ? 'var(--success)' : 'var(--danger)' }} /> Thành công
             </div>
-          )}
-
-          {/* ── Banners ── */}
-          {isDone && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px', padding: '0.65rem 0.85rem',
-              borderRadius: '8px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
-              color: '#6ee7b7', fontSize: '0.83rem', marginBottom: '0.7rem',
-            }}>
-              <CheckCircle size={15} />
-              <div>
-                <div style={{ fontWeight: 600 }}>Dịch xong {taskStatus.current} chương!</div>
-                {(chaptersFail.length > 0) && (
-                  <div style={{ fontSize: '0.72rem', color: '#fca5a5', marginTop: '2px' }}>
-                    {chaptersFail.length} chương thất bại — chạy fix_chapters để sửa
-                  </div>
-                )}
-                {costSoFar > 0 && (
-                  <div style={{ fontSize: '0.72rem', color: '#fbbf24', marginTop: '2px' }}>
-                    Tổng chi phí: ${costSoFar.toFixed(5)}
-                  </div>
-                )}
-              </div>
+            <div style={{ ...statValueStyle, color: successRate === 100 ? 'var(--success)' : successRate >= 80 ? '#fbbf24' : 'var(--danger)' }}>
+              {successRate}%
             </div>
-          )}
-          {(isCancelled || isCancelling) && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px', padding: '0.65rem 0.85rem',
-              borderRadius: '8px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
-              color: '#fcd34d', fontSize: '0.83rem', marginBottom: '0.7rem',
-            }}>
-              <OctagonX size={15} />
-              {isCancelling ? 'Đang dừng — chờ batch hiện tại...' : `Đã dừng — ${taskStatus.current} chương đã lưu`}
-            </div>
-          )}
-          {isError && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px', padding: '0.65rem 0.85rem',
-              borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
-              color: '#fca5a5', fontSize: '0.83rem', marginBottom: '0.7rem',
-            }}>
-              <AlertTriangle size={15} />
-              Có lỗi xảy ra — xem log bên dưới
-            </div>
-          )}
-
-          {/* ── Log (collapsible) ── */}
-          {(taskStatus.logs || []).length > 0 && (
-            <div>
-              <button
-                onClick={() => setLogsExpanded(v => !v)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '5px',
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--text-muted)', fontSize: '0.72rem', padding: '0 0 0.35rem',
-                }}
-              >
-                {logsExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                Log ({taskStatus.logs.length})
-              </button>
-              {logsExpanded && (
-                <div ref={logRef} style={{
-                  background: 'rgba(0,0,0,0.4)', borderRadius: '7px',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  padding: '0.55rem 0.7rem', maxHeight: '140px', overflowY: 'auto',
-                  fontFamily: 'monospace', fontSize: '0.69rem', lineHeight: '1.65',
-                }}>
-                  {(taskStatus.logs || []).map((log, i) => {
-                    const isErr = /lỗi|error|❌|✗/i.test(log)
-                    const isOk  = /đã lưu|thành công|✓/i.test(log)
-                    const isCrawl = /đã lấy|crawl|fetch/i.test(log)
-                    return (
-                      <div key={i} style={{
-                        color: isErr ? '#fca5a5' : isOk ? '#6ee7b7' : isCrawl ? '#10b981' : '#9ca3af',
-                        paddingBottom: '1px',
-                      }}>
-                        <span style={{ color: 'rgba(255,255,255,0.18)', marginRight: '5px', userSelect: 'none' }}>
-                          {String(i + 1).padStart(2, '0')}
-                        </span>
-                        {log}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )}
+            <div style={statSubStyle}>Lỗi: {chaptersFail.length} chương</div>
+          </div>
         </div>
-      )}
 
-      {/* Idle hint */}
-      {isIdle && (
-        <div style={{ padding: '0 1.1rem 0.9rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-          Nhập số chương và nhấn Bắt đầu để dịch tiếp.
+        {/* Model Badge */}
+        {currentModel && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: mc.bg, border: '1px solid rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '8px' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: mc.dot }} />
+            <span style={{ fontSize: '0.75rem', color: mc.text, fontWeight: 600 }}>Model: {currentModel}</span>
+          </div>
+        )}
+
+        {/* Console logs */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Nhật ký dịch thuật (Live)</span>
+            <button
+              onClick={() => setLogsExpanded(!logsExpanded)}
+              style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '0.72rem', cursor: 'pointer', padding: 0 }}
+            >
+              {logsExpanded ? 'Thu nhỏ' : 'Mở rộng'}
+            </button>
+          </div>
+          <div
+            ref={logRef}
+            style={{
+              height: logsExpanded ? '220px' : '100px',
+              background: 'rgba(0, 0, 0, 0.35)',
+              border: '1px solid var(--border-panel)',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              fontFamily: 'monospace',
+              fontSize: '0.75rem',
+              color: '#34d399',
+              overflowY: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+              transition: 'height 0.2s ease',
+              lineHeight: '1.4'
+            }}
+          >
+            {taskStatus?.logs?.join('\n') || 'Đang chờ nhật ký...'}
+          </div>
         </div>
-      )}
 
-      <style>{`
-        @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.35;transform:scale(0.65)} }
-      `}</style>
-    </div>
-  )
+        {/* Stop Button */}
+        <button
+          className="btn btn-danger"
+          onClick={onStop}
+          disabled={isCancelling}
+          style={{
+            width: '100%',
+            height: '40px',
+            fontSize: '0.88rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            background: 'rgba(239, 68, 68, 0.1)',
+            borderColor: 'rgba(239, 68, 68, 0.2)'
+          }}
+        >
+          {isCancelling ? (
+            <>
+              <SpinnerIcon /> Đang dừng...
+            </>
+          ) : (
+            <>
+              <Square size={14} fill="var(--danger)" stroke="none" /> Dừng dịch khẩn cấp
+            </>
+          )}
+        </button>
+      </div>
+    )
+  }
+
+  // 3. SUMMARY VIEW
+  if (showSummary) {
+    const isErrorState = isError
+    const isCancelledState = isCancelled
+    
+    // Status color configs
+    let statusLabel = 'Hoàn thành'
+    let statusBg = 'rgba(16, 185, 129, 0.12)'
+    let statusBorder = 'rgba(16, 185, 129, 0.3)'
+    let statusColor = 'var(--success)'
+    
+    if (isErrorState) {
+      statusLabel = 'Bị lỗi'
+      statusBg = 'rgba(239, 68, 68, 0.12)'
+      statusBorder = 'rgba(239, 68, 68, 0.3)'
+      statusColor = 'var(--danger)'
+    } else if (isCancelledState) {
+      statusLabel = 'Đã dừng'
+      statusBg = 'rgba(245, 158, 11, 0.12)'
+      statusBorder = 'rgba(245, 158, 11, 0.3)'
+      statusColor = '#fbbf24'
+    }
+
+    return (
+      <div className="glass-panel animate-fade-in" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {/* Title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ background: statusBg, border: `1px solid ${statusBorder}`, padding: '6px 12px', borderRadius: '20px', display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: statusColor }}>{statusLabel.toUpperCase()}</span>
+          </div>
+          <h2 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: 'white', fontFamily: 'Outfit, sans-serif' }}>Kết Quả Dịch</h2>
+        </div>
+
+        {/* Detailed Bill/Receipt */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', background: 'rgba(0,0,0,0.18)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border-panel)', fontFamily: 'system-ui, sans-serif' }}>
+          <div style={billRowStyle}>
+            <span style={{ color: 'var(--text-muted)' }}>Thời gian thực hiện</span>
+            <span style={{ fontWeight: 600 }}>{fmtTime(elapsedSec || taskStatus?.elapsed_seconds || 0)}</span>
+          </div>
+          <div style={billRowStyle}>
+            <span style={{ color: 'var(--text-muted)' }}>Số chương xử lý</span>
+            <span style={{ fontWeight: 600 }}>{chaptersOk.length} / {total} chương OK</span>
+          </div>
+          {chaptersFail.length > 0 && (
+            <div style={billRowStyle}>
+              <span style={{ color: 'var(--danger)' }}>Số chương thất bại</span>
+              <span style={{ fontWeight: 600, color: 'var(--danger)' }}>{chaptersFail.length} chương</span>
+            </div>
+          )}
+          <div style={billRowStyle}>
+            <span style={{ color: 'var(--text-muted)' }}>Tổng tokens tiêu thụ</span>
+            <span style={{ fontWeight: 600 }}>{tokensUsed.toLocaleString()} tkn</span>
+          </div>
+          <div style={{ ...billRowStyle, borderBottom: 'none', paddingBottom: 0 }}>
+            <span style={{ color: 'var(--text-muted)' }}>Chi phí ước tính</span>
+            <span style={{ fontWeight: 700, color: 'var(--success)' }}>${costSoFar.toFixed(4)}</span>
+          </div>
+        </div>
+
+        {/* Mini progress bar success rate */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+            <span style={{ color: 'var(--text-muted)' }}>Tỷ lệ thành công</span>
+            <span style={{ fontWeight: 700, color: successRate === 100 ? 'var(--success)' : '#fbbf24' }}>{successRate}%</span>
+          </div>
+          <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '99px', overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', borderRadius: '99px',
+              background: successRate === 100 ? 'var(--success)' : successRate >= 80 ? '#fbbf24' : 'var(--danger)',
+              width: `${successRate}%`,
+              transition: 'width 0.5s ease'
+            }} />
+          </div>
+        </div>
+
+        {/* Failed Chapters List if any */}
+        {chaptersFail.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <AlertTriangle size={12} /> Danh sách chương lỗi ({chaptersFail.length})
+            </span>
+            <div style={{
+              maxHeight: '80px',
+              overflowY: 'auto',
+              background: 'rgba(239, 68, 68, 0.05)',
+              border: '1px solid rgba(239, 68, 68, 0.15)',
+              borderRadius: '6px',
+              padding: '6px 10px',
+              fontSize: '0.72rem',
+              color: '#fca5a5',
+              fontFamily: 'monospace'
+            }}>
+              {chaptersFail.map((chap, idx) => (
+                <div key={idx} style={{ padding: '2px 0' }}>• {chap}</div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Reset / Dismiss button */}
+        <button
+          className="btn btn-secondary"
+          onClick={() => setUserDismissedSummary(true)}
+          style={{
+            width: '100%',
+            height: '40px',
+            fontSize: '0.88rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px'
+          }}
+        >
+          <RefreshCw size={14} /> Cấu hình dịch mới
+        </button>
+      </div>
+    )
+  }
+
+  return null
 }
 
 // ── Pipeline Stage component ───────────────────────────────────────────────────
@@ -711,6 +846,14 @@ function SpinnerIcon() {
 
 function AuthorNotesSection({ chapters, slug, getChapNum }) {
   const [expanded, setExpanded] = useState(false)
+  const readChapters = React.useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`read_chapters_${slug}`) || '[]')
+    } catch (e) {
+      return []
+    }
+  }, [slug])
+
   if (chapters.length === 0) return null
 
   return (
@@ -766,16 +909,17 @@ function AuthorNotesSection({ chapters, slug, getChapNum }) {
               .replace(/Chapter\s*\d+[\s:.]*/i, '')
               .trim() || chap.title
 
+            const isRead = readChapters.includes(chap.filename) || (num && readChapters.includes(String(num)))
             return (
               <Link
                 key={chap.filename}
                 to={`/novel/${slug}/read/${num ? num : encodeURIComponent(chap.filename)}`}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '10px',
-
                   padding: '0.5rem 0.85rem', margin: '0 4px', borderRadius: '7px',
                   color: 'var(--text-main)',
                   textDecoration: 'none', transition: 'background 0.12s',
+                  opacity: isRead ? 0.6 : 1,
                 }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(251,191,36,0.08)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -791,6 +935,14 @@ function AuthorNotesSection({ chapters, slug, getChapNum }) {
                 }}>
                   {cleanTitle}
                 </span>
+                {isRead && (
+                  <span style={{
+                    fontSize: '0.68rem', color: '#10b981', background: 'rgba(16,185,129,0.1)',
+                    padding: '1px 6px', borderRadius: '4px', flexShrink: 0, fontWeight: 500
+                  }}>
+                    ✓ Đã đọc
+                  </span>
+                )}
                 <span style={{ color: 'var(--text-muted)', opacity: 0.35, flexShrink: 0, fontSize: '0.75rem' }}>›</span>
               </Link>
             )
@@ -804,6 +956,14 @@ function AuthorNotesSection({ chapters, slug, getChapNum }) {
 function ChaptersTab({ chapters, slug }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortDesc, setSortDesc] = useState(true)
+
+  const readChapters = React.useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`read_chapters_${slug}`) || '[]')
+    } catch (e) {
+      return []
+    }
+  }, [slug])
 
   if (chapters.length === 0) {
     return (
@@ -860,6 +1020,7 @@ function ChaptersTab({ chapters, slug }) {
           }}>
             {newestChapters.map((chap) => {
               const num = getChapNum(chap.title)
+              const isRead = readChapters.includes(chap.filename) || (num && readChapters.includes(String(num)))
               return (
                 <Link
                   key={`new-${chap.filename}`}
@@ -869,20 +1030,32 @@ function ChaptersTab({ chapters, slug }) {
                     display: 'flex', flexDirection: 'column', gap: '4px',
                     padding: '0.6rem 0.85rem',
                     borderRadius: '10px', minWidth: '120px', maxWidth: '160px',
-                    background: 'rgba(59,130,246,0.08)',
-                    border: '1px solid rgba(59,130,246,0.2)',
+                    background: isRead ? 'rgba(16,185,129,0.04)' : 'rgba(59,130,246,0.08)',
+                    border: isRead ? '1px solid rgba(16,185,129,0.2)' : '1px solid rgba(59,130,246,0.2)',
                     color: 'var(--text-main)',
                     textDecoration: 'none',
+                    opacity: isRead ? 0.75 : 1,
                     transition: 'background 0.15s, border-color 0.15s',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.16)'; e.currentTarget.style.borderColor = 'rgba(59,130,246,0.4)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.08)'; e.currentTarget.style.borderColor = 'rgba(59,130,246,0.2)' }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = isRead ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.16)';
+                    e.currentTarget.style.borderColor = isRead ? 'rgba(16,185,129,0.4)' : 'rgba(59,130,246,0.4)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = isRead ? 'rgba(16,185,129,0.04)' : 'rgba(59,130,246,0.08)';
+                    e.currentTarget.style.borderColor = isRead ? 'rgba(16,185,129,0.2)' : 'rgba(59,130,246,0.2)';
+                  }}
                 >
-                  {num && (
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.04em' }}>
-                      CH. {num}
-                    </span>
-                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    {num && (
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: isRead ? 'var(--success)' : 'var(--accent)', letterSpacing: '0.04em' }}>
+                        CH. {num}
+                      </span>
+                    )}
+                    {isRead && (
+                      <span style={{ fontSize: '0.65rem', color: 'var(--success)', fontWeight: 600 }}>✓</span>
+                    )}
+                  </div>
                   <span style={{
                     fontSize: '0.8rem', lineHeight: '1.3',
                     display: '-webkit-box', WebkitLineClamp: 2,
@@ -968,6 +1141,8 @@ function ChaptersTab({ chapters, slug }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {/* When searching, show matching author notes inline with a small tag */}
           {searchTerm && displayNotes.map((chap) => {
+            const num = getChapNum(chap.title)
+            const isRead = readChapters.includes(chap.filename) || (num && readChapters.includes(String(num)))
             const cleanTitle = chap.title
               .replace(/第\d+章\s*/, '')
               .replace(/Chapter\s*\d+[\s:.]*/i, '')
@@ -984,6 +1159,7 @@ function ChaptersTab({ chapters, slug }) {
                   background: 'rgba(251,191,36,0.04)',
                   border: '1px solid rgba(251,191,36,0.12)',
                   marginBottom: '2px',
+                  opacity: isRead ? 0.65 : 1,
                 }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(251,191,36,0.09)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'rgba(251,191,36,0.04)'}
@@ -992,6 +1168,14 @@ function ChaptersTab({ chapters, slug }) {
                 <span style={{ flex: 1, fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {cleanTitle}
                 </span>
+                {isRead && (
+                  <span style={{
+                    fontSize: '0.68rem', color: '#10b981', background: 'rgba(16,185,129,0.1)',
+                    padding: '1px 6px', borderRadius: '4px', flexShrink: 0, fontWeight: 500
+                  }}>
+                    ✓ Đã đọc
+                  </span>
+                )}
                 <span style={{ fontSize: '0.65rem', color: '#fbbf24', opacity: 0.7, flexShrink: 0, fontWeight: 600 }}>lưu bút</span>
                 <span style={{ color: 'var(--text-muted)', opacity: 0.4, flexShrink: 0, fontSize: '0.75rem' }}>›</span>
               </Link>
@@ -1004,6 +1188,7 @@ function ChaptersTab({ chapters, slug }) {
               .replace(/第\d+章\s*/, '')
               .replace(/Chapter\s*\d+[\s:.]*/i, '')
               .trim() || chap.title
+            const isRead = readChapters.includes(chap.filename) || (num && readChapters.includes(String(num)))
 
             return (
               <Link
@@ -1014,6 +1199,7 @@ function ChaptersTab({ chapters, slug }) {
                   padding: '0.55rem 0.75rem', borderRadius: '8px',
                   color: 'var(--text-main)',
                   textDecoration: 'none', transition: 'background 0.12s',
+                  opacity: isRead ? 0.65 : 1,
                 }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -1051,41 +1237,440 @@ function ChaptersTab({ chapters, slug }) {
   )
 }
 
-// ── Glossary Tab ──────────────────────────────────────────────────────────────
+// ── Catalog Tab ──────────────────────────────────────────────────────────────
 
-function GlossaryTab({ glossary, newKey, setNewKey, newVal, setNewVal, onAdd, onRemove }) {
+function CatalogTab({ catalog, chapters, slug, onTranslateFromChapter }) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 40
+
+  const readChapters = React.useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`read_chapters_${slug}`) || '[]')
+    } catch (e) {
+      return []
+    }
+  }, [slug])
+
+  // 1. Helpers for clean match
+  const getChapNum = (title) => {
+    const m = title.match(/第(\d+)章|[Cc]hapter\s*(\d+)|Chương\s*(\d+)|(\d+)\./)
+    return m ? parseInt(m[1] || m[2] || m[3] || m[4]) : null
+  }
+
+  const cleanCatalogTitle = (title) => {
+    return title.split('').filter(c => /[\p{L}\p{N} \-_]/u.test(c)).join('').trim()
+  }
+
+  // 2. Pre-process translated list to index for fast O(1) matching
+  const translatedTitlesSet = new Set(chapters.map(c => c.title))
+  const translatedNumbersSet = new Set(
+    chapters.map(c => getChapNum(c.title) || getChapNum(c.display_title)).filter(Boolean)
+  )
+
+  // 3. Search filter
+  const filtered = catalog.filter(item =>
+    item.title.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  // 4. Pagination
+  const totalPages = Math.ceil(filtered.length / itemsPerPage)
+  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
+
+  if (catalog.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 0' }}>
+        Truyện này chưa được nhập mục lục gốc (không có catalog.json).
+      </div>
+    )
+  }
+
   return (
     <div>
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <input type="text" placeholder="Hán tự (tiếng Trung)" className="input-field"
-          value={newKey} onChange={e => setNewKey(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && onAdd()} style={{ flex: '1 1 140px' }} />
-        <input type="text" placeholder="Tiếng Việt" className="input-field"
-          value={newVal} onChange={e => setNewVal(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && onAdd()} style={{ flex: '1 1 140px' }} />
-        <button className="btn btn-primary" onClick={onAdd} style={{ padding: '10px 14px' }}>
-          <Plus size={18} />
-        </button>
+      {/* Toolbar Tìm kiếm & Thống kê */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+        <div style={{ position: 'relative', flex: '1 1 250px' }}>
+          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666', display: 'flex', alignItems: 'center' }}>
+            <Search size={16} />
+          </span>
+          <input
+            type="text"
+            placeholder="Tìm chương mục lục gốc..."
+            className="input-field"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{ paddingLeft: '36px', width: '100%', fontSize: '0.875rem', height: '36px' }}
+          />
+        </div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          Tìm thấy: <strong>{filtered.length}</strong> / <strong>{catalog.length}</strong> chương gốc
+        </div>
       </div>
-      {glossary.length === 0 ? (
-        <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem 0' }}>Chưa có entry nào.</div>
+
+      {/* Danh sách catalog */}
+      {filtered.length === 0 ? (
+        <div style={{
+          textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 0',
+          background: 'rgba(255,255,255,0.01)', borderRadius: '10px',
+          border: '1px dashed var(--border-panel)'
+        }}>
+          Không tìm thấy chương nào phù hợp trong mục lục.
+        </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '420px', overflowY: 'auto', paddingRight: '4px' }}>
-          {glossary.map((item, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '0.6rem 0.85rem', borderRadius: '8px',
-              background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-panel)', gap: '0.5rem',
-            }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.key}</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{item.val}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {paginated.map((item) => {
+            // Check if item is already translated
+            const cleanTitle = cleanCatalogTitle(item.title)
+            const matchedChapter = chapters.find(c =>
+              c.title === cleanTitle ||
+              (getChapNum(c.title) || getChapNum(c.display_title)) === item.number ||
+              (getChapNum(c.title) || getChapNum(c.display_title)) === item.original_chapter_number
+            )
+            const isTranslated = !!matchedChapter
+            const isRead = matchedChapter && (
+              readChapters.includes(matchedChapter.filename) ||
+              (getChapNum(matchedChapter.title) && readChapters.includes(String(getChapNum(matchedChapter.title))))
+            )
+
+            return (
+              <div
+                key={item.number}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.6rem 0.85rem',
+                  borderRadius: '8px',
+                  background: isTranslated ? (isRead ? 'rgba(16,185,129,0.01)' : 'rgba(16,185,129,0.02)') : 'rgba(255,255,255,0.01)',
+                  border: isTranslated ? (isRead ? '1px solid rgba(16,185,129,0.05)' : '1px solid rgba(16,185,129,0.1)') : '1px solid var(--border-panel)',
+                  gap: '1rem',
+                  opacity: isRead ? 0.65 : 1,
+                  transition: 'all 0.15s'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                  {/* STT/Number */}
+                  <span style={{
+                    flexShrink: 0, minWidth: '42px', textAlign: 'right',
+                    fontSize: '0.75rem', fontWeight: 700,
+                    color: isTranslated ? 'var(--success)' : 'var(--text-muted)',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>
+                    #{item.number}
+                  </span>
+
+                  <span style={{ width: '1px', height: '14px', background: 'var(--border-panel)', flexShrink: 0 }} />
+
+                  {/* Title (Chinese) */}
+                  <span style={{
+                    fontSize: '0.875rem',
+                    fontWeight: isTranslated ? (isRead ? 400 : 500) : 400,
+                    color: isTranslated ? (isRead ? 'var(--text-muted)' : 'var(--text-main)') : 'var(--text-muted)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    flex: 1
+                  }}>
+                    {item.title}
+                  </span>
+                </div>
+
+                {/* Badge & Action */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+                  {isTranslated ? (
+                    <>
+                      {isRead && (
+                        <span style={{
+                          fontSize: '0.72rem', fontWeight: 600,
+                          padding: '2px 8px', borderRadius: '4px',
+                          background: 'rgba(16,185,129,0.08)', color: '#10b981'
+                        }}>
+                          ✓ Đã đọc
+                        </span>
+                      )}
+                      <span style={{
+                        fontSize: '0.72rem', fontWeight: 600,
+                        padding: '2px 8px', borderRadius: '4px',
+                        background: 'rgba(16,185,129,0.1)', color: 'var(--success)'
+                      }}>
+                        Đã dịch
+                      </span>
+                      <Link
+                        to={`/novel/${slug}/read/${matchedChapter.filename.replace('_VI.md', '')}`}
+                        className="btn btn-secondary"
+                        style={{ padding: '4px 10px', fontSize: '0.78rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                      >
+                        Đọc chương
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{
+                        fontSize: '0.72rem', fontWeight: 500,
+                        padding: '2px 8px', borderRadius: '4px',
+                        background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)'
+                      }}>
+                        Chưa dịch
+                      </span>
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => {
+                          if (window.confirm(`Bạn muốn dịch bắt đầu từ chương này: "${item.title}"?`)) {
+                            onTranslateFromChapter(item.url)
+                          }
+                        }}
+                        style={{
+                          padding: '4px 10px', fontSize: '0.78rem',
+                          background: 'rgba(59,130,246,0.2)', border: '1px solid rgba(59,130,246,0.4)',
+                          color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '4px'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.3)' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.2)' }}
+                      >
+                        <Play size={10} fill="currentColor" /> Dịch từ đây
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-              <button className="btn btn-danger" onClick={() => onRemove(i)} style={{ padding: '5px 8px', flexShrink: 0 }}>
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ))}
+            )
+          })}
+        </div>
+      )}
+
+      {/* Phân trang */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.8rem', marginTop: '1.25rem' }}>
+          <button className="btn btn-secondary" onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1} style={{ padding: '6px 10px', opacity: currentPage === 1 ? 0.4 : 1, display: 'flex', alignItems: 'center' }}>
+            <ChevronLeft size={16} />
+          </button>
+
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            Trang <strong>{currentPage}</strong> / <strong>{totalPages}</strong>
+          </span>
+
+          <button className="btn btn-secondary" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages} style={{ padding: '6px 10px', opacity: currentPage === totalPages ? 0.4 : 1, display: 'flex', alignItems: 'center' }}>
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+// ── Glossary Tab ──────────────────────────────────────────────────────────────
+
+function GlossaryTab({ glossary, saveGlossary }) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [newKey, setNewKey] = useState('')
+  const [newVal, setNewVal] = useState('')
+  const [editingKey, setEditingKey] = useState(null)
+  const [editKey, setEditKey] = useState('')
+  const [editVal, setEditVal] = useState('')
+  const itemsPerPage = 20
+
+  // Lọc danh sách theo từ khóa tìm kiếm (tìm cả key lẫn val)
+  const filtered = glossary.filter(item => 
+    item.key.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    item.val.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  // Phân trang
+  const totalPages = Math.ceil(filtered.length / itemsPerPage)
+  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+  // Reset trang về 1 khi bắt đầu tìm kiếm
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
+
+  // Xử lý thêm mới từ điển
+  const handleAdd = () => {
+    const k = newKey.trim()
+    const v = newVal.trim()
+    if (!k) return
+
+    // Validation trùng lặp từ gốc
+    const existing = glossary.find(item => item.key.toLowerCase() === k.toLowerCase())
+    if (existing) {
+      if (!window.confirm(`Hán tự "${k}" đã tồn tại với nghĩa "${existing.val}". Bạn có muốn ghi đè bằng nghĩa mới "${v}" không?`)) {
+        return
+      }
+      const updated = [{ key: k, val: v }, ...glossary.filter(item => item.key.toLowerCase() !== k.toLowerCase())]
+      saveGlossary(updated)
+    } else {
+      saveGlossary([{ key: k, val: v }, ...glossary])
+    }
+    setNewKey('')
+    setNewVal('')
+  }
+
+  // Xử lý xóa từ điển
+  const handleRemove = (keyToRemove) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa từ khóa "${keyToRemove}" khỏi từ điển?`)) {
+      const updated = glossary.filter(item => item.key !== keyToRemove)
+      saveGlossary(updated)
+    }
+  }
+
+  // Bắt đầu sửa trực tiếp (Inline Edit)
+  const startEdit = (item) => {
+    setEditingKey(item.key)
+    setEditKey(item.key)
+    setEditVal(item.val)
+  }
+
+  // Lưu sửa đổi
+  const handleSaveEdit = (originalKey) => {
+    const k = editKey.trim()
+    const v = editVal.trim()
+    if (!k) return
+
+    // Nếu đổi sang key khác và key đó trùng với từ khác
+    if (k.toLowerCase() !== originalKey.toLowerCase()) {
+      const existing = glossary.find(item => item.key.toLowerCase() === k.toLowerCase())
+      if (existing) {
+        alert(`Từ khóa Hán tự "${k}" đã tồn tại trong từ điển! Vui lòng chọn từ khóa khác.`);
+        return
+      }
+    }
+
+    const updated = glossary.map(item => 
+      item.key === originalKey ? { key: k, val: v } : item
+    )
+    saveGlossary(updated)
+    setEditingKey(null)
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      {/* Panel Thêm Mới */}
+      <div style={{
+        background: 'rgba(255,255,255,0.02)', padding: '1rem',
+        borderRadius: '10px', border: '1px solid var(--border-panel)'
+      }}>
+        <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          ✨ Thêm Từ Điển Mới
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <input type="text" placeholder="Hán tự (Ví dụ: 乔桑)" className="input-field"
+            value={newKey} onChange={e => setNewKey(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()} style={{ flex: '1 1 150px' }} />
+          <input type="text" placeholder="Tiếng Việt (Ví dụ: Kiều Tang)" className="input-field"
+            value={newVal} onChange={e => setNewVal(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()} style={{ flex: '1 1 150px' }} />
+          <button className="btn btn-primary" onClick={handleAdd} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '10px 16px' }}>
+            <Plus size={16} /> Thêm
+          </button>
+        </div>
+      </div>
+
+      {/* Toolbar Tìm kiếm & Thống kê */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+        <div style={{ position: 'relative', flex: '1 1 250px' }}>
+          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666', display: 'flex', alignItems: 'center' }}>
+            <Search size={16} />
+          </span>
+          <input type="text" placeholder="Tìm kiếm theo từ gốc hoặc nghĩa dịch..." className="input-field"
+            value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+            style={{ paddingLeft: '36px', width: '100%' }} />
+        </div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          Tìm thấy: <strong>{filtered.length}</strong> / <strong>{glossary.length}</strong> từ
+        </div>
+      </div>
+
+      {/* Danh sách entries */}
+      {filtered.length === 0 ? (
+        <div style={{
+          textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 0',
+          background: 'rgba(255,255,255,0.01)', borderRadius: '10px',
+          border: '1px dashed var(--border-panel)'
+        }}>
+          Không tìm thấy từ khóa nào phù hợp.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {paginated.map((item) => {
+            const isEditing = editingKey === item.key
+            return (
+              <div key={item.key} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '0.65rem 1rem', borderRadius: '8px',
+                background: isEditing ? 'rgba(233,69,96,0.04)' : 'rgba(255,255,255,0.03)',
+                border: isEditing ? '1px solid rgba(233,69,96,0.3)' : '1px solid var(--border-panel)',
+                gap: '1rem', transition: 'all 0.2s'
+              }}>
+                {isEditing ? (
+                  /* Form sửa trực tiếp inline */
+                  <div style={{ display: 'flex', gap: '0.5rem', flex: 1, flexWrap: 'wrap' }}>
+                    <input type="text" className="input-field" value={editKey}
+                      onChange={e => setEditKey(e.target.value)} style={{ flex: '1 1 120px', padding: '6px 10px', fontSize: '0.85rem' }} />
+                    <input type="text" className="input-field" value={editVal}
+                      onChange={e => setEditVal(e.target.value)} style={{ flex: '1 1 120px', padding: '6px 10px', fontSize: '0.85rem' }} />
+                  </div>
+                ) : (
+                  /* Hiển thị bình thường */
+                  <div style={{ display: 'flex', flex: 1, minWidth: 0, alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#f3f4f6', flex: '1 1 120px', wordBreak: 'break-all' }}>
+                      {item.key}
+                    </div>
+                    <div style={{ color: '#9ca3af', fontSize: '0.85rem', flex: '1 1 120px', wordBreak: 'break-all' }}>
+                      {item.val}
+                    </div>
+                  </div>
+                )}
+
+                {/* Các nút hành động */}
+                <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }}>
+                  {isEditing ? (
+                    <>
+                      <button className="btn btn-primary" onClick={() => handleSaveEdit(item.key)} style={{ padding: '6px 8px', background: '#10b981' }} title="Lưu">
+                        <Check size={14} />
+                      </button>
+                      <button className="btn btn-secondary" onClick={() => setEditingKey(null)} style={{ padding: '6px 8px' }} title="Hủy">
+                        <X size={14} />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button className="btn btn-secondary" onClick={() => startEdit(item)} style={{ padding: '6px 8px' }} title="Sửa">
+                        <Edit2 size={14} />
+                      </button>
+                      <button className="btn btn-danger" onClick={() => handleRemove(item.key)} style={{ padding: '6px 8px' }} title="Xóa">
+                        <Trash2 size={14} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Phân trang */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.8rem', marginTop: '1rem' }}>
+          <button className="btn btn-secondary" onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1} style={{ padding: '6px 10px', opacity: currentPage === 1 ? 0.4 : 1, display: 'flex', alignItems: 'center' }}>
+            <ChevronLeft size={16} />
+          </button>
+          
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            Trang <strong>{currentPage}</strong> / <strong>{totalPages}</strong>
+          </span>
+
+          <button className="btn btn-secondary" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages} style={{ padding: '6px 10px', opacity: currentPage === totalPages ? 0.4 : 1, display: 'flex', alignItems: 'center' }}>
+            <ChevronRight size={16} />
+          </button>
         </div>
       )}
     </div>

@@ -105,6 +105,25 @@ def update_novel_sync(slug: str, last_chapter: int, last_filename: str, total_sy
     save_sync_state(state)
     print(f"  💾 Sync state saved → last chapter: {last_chapter}, total: {total_synced}")
 
+def r2_get_glossary(slug: str) -> dict:
+    """Tải file glossary.json từ R2 về dưới dạng dict (dùng để gộp với local glossary)."""
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as tmp:
+        tmp_path = tmp.name
+    try:
+        r = run_safe([get_wrangler(), 'r2', 'object', 'get',
+                      f"{R2_BUCKET}/{slug}/glossary.json", f"--file={tmp_path}", '--remote'])
+        if r.returncode == 0:
+            with open(tmp_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return {}
+    except Exception as e:
+        print(f"    [R2-glossary-ERR] Không thể đọc glossary từ R2: {e}")
+        return {}
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
 # ── Wrangler ──────────────────────────────────────────────────────────────────
 
 def get_wrangler():
@@ -176,6 +195,41 @@ def get_title(fp: Path) -> str:
         pass
     return fp.stem.replace('_VI', '').replace('-', ' ')
 
+def chinese_to_arabic(cn_str: str) -> int:
+    cn_num = {
+        '零': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9,
+        '十': 10, '百': 100, '千': 1000, '廿': 20, '卅': 30
+    }
+    clean_str = ""
+    for char in cn_str:
+        if char in cn_num:
+            clean_str += char
+    if not clean_str:
+        return 0
+    val = 0
+    temp = 0
+    for char in clean_str:
+        num = cn_num[char]
+        if num == 10:
+            if temp == 0:
+                temp = 1
+            val += temp * 10
+            temp = 0
+        elif num == 100:
+            if temp == 0:
+                temp = 1
+            val += temp * 100
+            temp = 0
+        elif num == 1000:
+            if temp == 0:
+                temp = 1
+            val += temp * 1000
+            temp = 0
+        else:
+            temp = num
+    val += temp
+    return val
+
 def get_chapter_number(title: str, filename: str) -> int:
     """
     Extract chapter number — số frontend dùng để navigate.
@@ -186,10 +240,14 @@ def get_chapter_number(title: str, filename: str) -> int:
     3. Title có 'Chương N' và filename KHÔNG phải tiếng Trung thuần → lấy N
     4. Còn lại (author notes, lời tác giả) → 0
     """
-    # Case 1: 第N章... — chapter thật
+    # Case 1: 第N章... (Arabic) hoặc 第[Hán]章 (Chinese) — chapter thật
     m = re.match(r'^第(\d+)章', filename)
     if m:
         return int(m.group(1))
+
+    m_cn = re.match(r'^第([一二三四五六七八九十百千廿卅]+)章', filename)
+    if m_cn:
+        return chinese_to_arabic(m_cn.group(1))
 
     # Case 2: 01_chuong-1_... — numbered Vietnamese filename
     m = re.match(r'^(\d+)_', filename)
@@ -201,7 +259,7 @@ def get_chapter_number(title: str, filename: str) -> int:
     # Case 3: title có số chương, filename không phải tiếng Trung thuần
     mt = re.search(r'(?:第(\d+)章|[Cc]hapter\s*(\d+)|[Cc]hương\s*(\d+))', title)
     if mt:
-        # Filename bắt đầu bằng tiếng Trung (không phải 第N章) → author note split
+        # Filename bắt đầu bằng tiếng Trung (không phải 第N章 / 第[Hán]章) → author note split
         if re.match(r'^[一-鿿㐀-䶿]', filename):
             return 0
         return int(mt.group(1) or mt.group(2) or mt.group(3))
@@ -253,6 +311,20 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
     data  = json.load(open(nj, encoding='utf-8'))
     title = data.get('title', slug)
     print(f"\n📚 {title} ({slug})")
+
+    # ── Tải và đồng bộ glossary từ R2 để tránh ghi đè mất dữ liệu đã chỉnh sửa online ──
+    if not skip_r2 and not dry_run:
+        print("  🔄 Đang kiểm tra & đồng bộ glossary từ R2...")
+        remote_gloss = r2_get_glossary(slug)
+        if remote_gloss:
+            local_gloss = data.get('glossary', {})
+            # Gộp 2 glossary (ưu tiên các từ vừa sửa/thêm online, nhưng giữ lại các từ local có sẵn)
+            merged_gloss = {**local_gloss, **remote_gloss}
+            if merged_gloss != local_gloss:
+                data['glossary'] = merged_gloss
+                with open(nj, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+                print(f"  💾 Đã gộp glossary từ R2 (tổng cộng {len(merged_gloss)} terms)")
 
     # ── 1. Novel metadata → D1 ──────────────────────────────────────────
     novel_sql = (

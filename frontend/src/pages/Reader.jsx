@@ -41,6 +41,28 @@ export default function Reader() {
 
   // ───────────────────────────────────────────────────────────────────────────
 
+  const saveReadProgress = useCallback((novelSlug, chapId) => {
+    try {
+      // 1. Lưu Cookie
+      document.cookie = `last_read_novel=${novelSlug}; path=/; max-age=31536000; SameSite=Lax`;
+      document.cookie = `last_read_chapter_${novelSlug}=${encodeURIComponent(chapId)}; path=/; max-age=31536000; SameSite=Lax`;
+      
+      // 2. Lưu localStorage
+      localStorage.setItem('last_read_novel', novelSlug);
+      localStorage.setItem(`last_read_chapter_${novelSlug}`, chapId);
+      
+      // 3. Lưu mảng danh sách chương đã đọc
+      const readListKey = `read_chapters_${novelSlug}`;
+      const readList = JSON.parse(localStorage.getItem(readListKey) || '[]');
+      if (!readList.includes(chapId)) {
+        readList.push(chapId);
+        localStorage.setItem(readListKey, JSON.stringify(readList));
+      }
+    } catch (err) {
+      console.error('Error saving read progress:', err);
+    }
+  }, []);
+
   useEffect(() => {
     setLoading(true)
     api.get(`/novels/${slug}/chapters/${chapter}`)
@@ -50,13 +72,16 @@ export default function Reader() {
         window.scrollTo(0, 0)
         const mainContent = document.querySelector('.main-content')
         if (mainContent) mainContent.scrollTo(0, 0)
+        
+        // Lưu tiến trình đọc
+        saveReadProgress(slug, chapter)
       })
       .catch(err => {
         console.error(err)
         setContent('# Lỗi tải chương\nNội dung chưa sẵn sàng hoặc lỗi kết nối. Vui lòng thử lại sau.')
         setLoading(false)
       })
-  }, [slug, chapter])
+  }, [slug, chapter, saveReadProgress])
 
   useEffect(() => {
     api.get(`/novels/${slug}/chapters`).then(res => setChapters(res.data))

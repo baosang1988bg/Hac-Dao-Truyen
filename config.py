@@ -94,6 +94,12 @@ MAX_CONCURRENT_BATCHES = int(os.getenv("MAX_CONCURRENT_BATCHES", "3"))
 #   Groq limit: ~8000 chars | Gemini/DeepSeek: ~20000 chars
 BATCH_MAX_CHARS = int(os.getenv("BATCH_MAX_CHARS", "8000"))
 
+# ── Short Chapter Routing ─────────────────────────────────────────────────────
+# Ngưỡng ký tự của chương ngắn (dưới ngưỡng này sẽ dùng model rẻ hơn để tiết kiệm quota)
+SHORT_CHAPTER_THRESHOLD = int(os.getenv("SHORT_CHAPTER_THRESHOLD", "3000"))
+# Provider ưu tiên cho chương ngắn (mặc định là gemini)
+SHORT_CHAPTER_PROVIDER = os.getenv("SHORT_CHAPTER_PROVIDER", "gemini")
+
 # ── Translation defaults (dùng khi novel profile không override) ──────────────
 TARGET_LANGUAGE = "Vietnamese"
 DEFAULT_TRANSLATION_STYLE = (
@@ -118,6 +124,18 @@ SITE_SELECTORS = {
     "novel543.com": {
         "title": "h1",
         "content": "#content",
+        "prev": lambda soup: next((a for a in soup.find_all("a") if "上一" in a.get_text() or "Prev" in a.get_text()), None),
+        "next": lambda soup: next((a for a in soup.find_all("a") if "下一" in a.get_text() or "Next" in a.get_text()), None),
+    },
+    "ixdzs8.com": {
+        "title": "h1, .read-title, .title",
+        "content": "article, #content, .content, .read-content, .text-content, .post-content",
+        "prev": lambda soup: next((a for a in soup.find_all("a") if "上一" in a.get_text() or "Prev" in a.get_text()), None),
+        "next": lambda soup: next((a for a in soup.find_all("a") if "下一" in a.get_text() or "Next" in a.get_text()), None),
+    },
+    "ixdzs.com": {
+        "title": "h1, .read-title, .title",
+        "content": "article, #content, .content, .read-content, .text-content, .post-content",
         "prev": lambda soup: next((a for a in soup.find_all("a") if "上一" in a.get_text() or "Prev" in a.get_text()), None),
         "next": lambda soup: next((a for a in soup.find_all("a") if "下一" in a.get_text() or "Next" in a.get_text()), None),
     },

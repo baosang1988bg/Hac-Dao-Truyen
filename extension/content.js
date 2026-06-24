@@ -27,59 +27,19 @@
   // ── Gemini API (direct fetch — no background script needed) ───────────────
 
   async function geminiTranslate(text, mode = 'translate') {
-    const { apiKey, model } = await chrome.storage.sync.get(['apiKey', 'model']);
-    if (!apiKey) throw new Error('Chưa cài Gemini API Key. Click icon extension → nhập key → Save.');
-
-    const m = model || 'gemini-3-flash-preview';
-
-    let prompt;
-    if (mode === 'summarize') {
-      prompt = `Đây là nội dung từ một trang web tiểu thuyết Trung Quốc.
-Hãy viết tóm tắt bằng tiếng Việt, bao gồm:
-• Tên truyện (dịch/phiên âm sang tiếng Việt)
-• Thể loại chính
-• Tóm tắt nội dung 4-6 câu
-• Nhân vật chính
-• Lý do nên đọc
-
-Nội dung trang:
-${text.substring(0, 4000)}`;
-    } else {
-      prompt = `Dịch text tiếng Trung sau sang tiếng Việt tự nhiên, văn học.
-Quy tắc:
-- Tên nhân vật: phiên âm Việt (乔桑→Kiều Tang, 陈明→Trần Minh)
-- Địa danh: phiên âm Việt (杭港→Hàng Cảng, 浙江→Chiết Giang)
-- Thuật ngữ đặc thù: giữ tên Việt phổ biến (御兽师→Ngự Thú Sư)
-- KHÔNG để sót chữ Hán trong bản dịch
-- Chỉ trả về bản dịch, không giải thích
-
-Text cần dịch:
-${text}`;
-    }
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`;
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 3000 },
-      }),
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({ action: 'translate', text, mode }, response => {
+        if (chrome.runtime.lastError) {
+          reject(new Error("Lỗi kết nối extension background: " + chrome.runtime.lastError.message));
+          return;
+        }
+        if (response && response.success) {
+          resolve(response.result);
+        } else {
+          reject(new Error(response?.error || 'Lỗi không xác định khi dịch qua background.js'));
+        }
+      });
     });
-
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      const msg = err?.error?.message || `HTTP ${resp.status}`;
-      if (resp.status === 400) throw new Error('API Key không hợp lệ hoặc model không tồn tại.');
-      if (resp.status === 403) throw new Error('API Key bị từ chối. Kiểm tra lại key.');
-      if (resp.status === 429) throw new Error('Hết quota API. Vui lòng thử lại sau ít phút.');
-      throw new Error(msg);
-    }
-
-    const data = await resp.json();
-    const result = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!result) throw new Error('Gemini không trả về kết quả. Thử lại.');
-    return result;
   }
 
   // ── Translate Button ──────────────────────────────────────────────────────

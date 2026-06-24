@@ -103,9 +103,9 @@ build/
 # PROJECT DATA — TRÁNH COMMIT DỮ LIỆU TRUYỆN
 # ─────────────────────────────────────────────
 # Bỏ comment dòng dưới nếu bạn muốn exclude toàn bộ data truyện
-# novels/
-# logs/
-# discover_results/
+novels/
+logs/
+discover_results/
 
 # Bỏ comment nếu chỉ muốn exclude nội dung nhưng giữ folder structure
 # novels/**/*.txt

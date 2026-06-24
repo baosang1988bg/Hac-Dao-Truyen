@@ -7,7 +7,7 @@
     "test": "python -m pytest test_novel_manager.py -v --tb=short",
     "build:frontend": "cd frontend && npm install && npm run build",
     "deploy": "npm run build:frontend && wrangler deploy",
-    "preview": "npm run build:frontend && wrangler dev"
+    "preview": "npm run build:frontend && wrangler dev --remote"
   },
   "repository": {
     "type": "git",

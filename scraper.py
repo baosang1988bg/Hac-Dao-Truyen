@@ -115,12 +115,45 @@ class NovelScraper:
             from bs4 import BeautifulSoup
             soup_check = BeautifulSoup(html, "html.parser")
             content_check = soup_check.select_one(
-                ".txtnav, #contentbox, .contentbox, #content, .readcontent"
+                "article, .txtnav, #contentbox, .contentbox, #content, .readcontent"
             )
-            if not content_check:
-                print(f"[*] Content not found yet, waiting 4s and retrying...")
-                await asyncio.sleep(4)
-                html = await page.content()
+            title_check = soup_check.find("h1")
+            
+            # Check if we got blocked or empty content (e.g. www.novel543.com title)
+            is_blocked = False
+            if title_check and title_check.get_text(strip=True).lower() == "www.novel543.com":
+                is_blocked = True
+                
+            if not content_check or is_blocked:
+                print(f"[*] Content not found or blocked (title: {title_check.get_text(strip=True) if title_check else 'None'}), trying Jina Reader fallback...")
+                try:
+                    import urllib.request
+                    jina_url = f"https://r.jina.ai/{url}"
+                    req = urllib.request.Request(
+                        jina_url, 
+                        headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+                    )
+                    with urllib.request.urlopen(req, timeout=15) as resp:
+                        jina_md = resp.read().decode("utf-8")
+                        # Format Jina Markdown into a mock HTML structure that parser can read
+                        lines = jina_md.split("\n")
+                        title_val = ""
+                        for line in lines:
+                            if line.startswith("Title:"):
+                                title_val = line.replace("Title:", "").strip()
+                                break
+                        # Wrap content in a div with id="content" and title in h1
+                        content_body = jina_md
+                        mock_html = f"<html><body><h1>{title_val}</h1><div id='content'>{content_body}</div></body></html>"
+                        await page.close()
+                        return mock_html
+                except Exception as je:
+                    print(f"[!] Jina Reader fallback failed: {je}")
+                
+                if not content_check:
+                    print(f"[*] Content not found yet, waiting 4s and retrying...")
+                    await asyncio.sleep(4)
+                    html = await page.content()
 
             await page.close()
             return html

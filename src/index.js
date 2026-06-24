@@ -30,7 +30,7 @@ export default {
     // ── Static assets + SPA fallback ────────────────────────────────────
     const assetRes = await env.ASSETS.fetch(request);
     if (assetRes.status === 404) {
-      return env.ASSETS.fetch(new Request(new URL('/index.html', request.url).toString(), request));
+      return env.ASSETS.fetch(new Request(new URL('/index.html', request.url).toString(), { method: 'GET' }));
     }
     return assetRes;
   },
@@ -125,8 +125,23 @@ async function getNovel(env, slug) {
 
   if (!novel) return jsonResponse({ error: 'Novel not found' }, 404);
 
-  // Parse glossary từ JSON string
-  try { novel.glossary = JSON.parse(novel.glossary || '{}'); } catch { novel.glossary = {}; }
+  // Đọc glossary từ R2 thay vì cột D1 (do giới hạn kích thước row của D1)
+  try {
+    const glossaryObj = await env.CHAPTERS.get(`${slug}/glossary.json`);
+    if (glossaryObj) {
+      novel.glossary = await glossaryObj.json();
+    } else {
+      // Fallback đọc từ D1 nếu file R2 chưa tồn tại
+      novel.glossary = JSON.parse(novel.glossary || '{}');
+    }
+  } catch (err) {
+    console.error('Error fetching glossary from R2:', err);
+    try {
+      novel.glossary = JSON.parse(novel.glossary || '{}');
+    } catch {
+      novel.glossary = {};
+    }
+  }
 
   return jsonResponse(novel);
 }
@@ -191,11 +206,15 @@ async function updateGlossary(env, slug, request) {
   const body = await request.json();
   const glossary = body.glossary || {};
 
+  // 1. Lưu glossary dạng file JSON lên R2 (để lưu trữ không giới hạn kích thước)
+  await env.CHAPTERS.put(`${slug}/glossary.json`, JSON.stringify(glossary, null, 2));
+
+  // 2. Cập nhật D1 (cột glossary để '{}' để tránh SQLITE_TOOBIG, và update timestamp)
   await env.DB.prepare(`
     UPDATE novels SET glossary = ?, updated_at = ? WHERE slug = ?
-  `).bind(JSON.stringify(glossary), new Date().toISOString(), slug).run();
+  `).bind('{}', new Date().toISOString(), slug).run();
 
-  return jsonResponse({ status: 'success', message: 'Glossary updated' });
+  return jsonResponse({ status: 'success', message: 'Glossary updated and saved to R2' });
 }
 
 async function getHealth(env, slug) {

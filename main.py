@@ -61,6 +61,35 @@ def setup_logging(novel_slug: str = "general") -> tuple[logging.Logger, str]:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+import threading
+_novel_profile_lock = threading.Lock()
+
+def update_profile_glossary_safely(slug: str, new_terms: dict, logger=None) -> tuple[int, dict]:
+    """Cập nhật glossary vào novel.json một cách thread-safe."""
+    with _novel_profile_lock:
+        from novel_manager import load_novel
+        profile = load_novel(slug)
+        added = 0
+        for k, v in new_terms.items():
+            if k not in profile.glossary:
+                profile.glossary[k] = v
+                added += 1
+        if added > 0:
+            if logger:
+                logger.info(f"[*] Thread-safe auto-learned {added} new glossary term(s)")
+            profile.save()
+        return added, profile.glossary
+
+def update_profile_progress_safely(slug: str, chapter_url: str, chapter_number: int):
+    """Cập nhật tiến độ vào novel.json một cách thread-safe."""
+    with _novel_profile_lock:
+        from novel_manager import load_novel
+        profile = load_novel(slug)
+        if chapter_number > profile.last_chapter_number:
+            profile.last_translated_url = chapter_url
+            profile.last_chapter_number = chapter_number
+            profile.save()
+
 def safe_filename(name: str) -> str:
     return "".join(c for c in name if c.isalnum() or c in (" ", "-", "_")).strip()
 
@@ -127,7 +156,7 @@ def find_untranslated_raws(profile: NovelProfile) -> list[tuple[str, str]]:
     for raw_name in raw_files:
         raw_path = os.path.join(profile.raw_dir, raw_name)
         stem     = os.path.splitext(raw_name)[0]
-        out_path = os.path.join(profile.translated_dir, f"{stem}_VI.md")
+        out_path = os.path.join(profile.translated_dir, f"{safe_filename(stem)}_VI.md")
 
         # ── Trường hợp file gốc đã split ──────────────────────────────────
         if is_split_original(profile.raw_dir, stem):
@@ -265,6 +294,9 @@ def save_raw_parts(profile: NovelProfile, title: str, content: str) -> list[tupl
       - Trả về [(title, content)]
     """
     os.makedirs(profile.raw_dir, exist_ok=True)
+    
+    # Sanitize title to prevent directory traversal / file creation errors due to slashes
+    title = title.replace("/", "-").replace("\\", "-")
 
     if len(content) <= CHAPTER_SPLIT_THRESHOLD:
         # Dùng title trực tiếp (giữ ký tự Unicode) — nhất quán với tên file thực tế
@@ -417,8 +449,28 @@ async def process_chapter(
         previous_summary=previous_summary,
     )
 
+    # Translator output already has "# Chương ...: <VI title>" on line 1.
+    # Extract that VI title and rewrite heading with the correct numeric number.
+    # No extra API call needed – title is already translated by the model.
+    import re as _re
+    translated_lines = translated.splitlines(keepends=True)
+    vi_title_only = title  # fallback = raw title
+    body_lines = translated_lines
+
+    if translated_lines:
+        first = translated_lines[0].strip()
+        m = _re.match(r"^#\s*(.+)$", first, _re.IGNORECASE)
+        if m:
+            vi_title_only = m.group(1).strip()
+            body_lines = translated_lines[1:]  # drop old heading line
+    
+    # Clean double prefixes in title
+    import re as _re_single
+    vi_title_only = _re_single.sub(r"^(Chương\s+\d+|第[一二三四五六七八九十\d]+章)\s*[:：\-]*\s*", "", vi_title_only, flags=_re_single.IGNORECASE).strip()
+
+    clean_header = f"# Ch\u01b0\u01a1ng {chapter_number}: {vi_title_only}\n"
     with open(output_file, "w", encoding="utf-8") as f:
-        f.write(translated)
+        f.write(clean_header + "".join(body_lines))
 
     # Cập nhật tiến độ vào novel.json
     if chapter_url:
@@ -597,13 +649,82 @@ async def cmd_translate_async(args, progress_callback=None):
     # (tránh dịch lại chương cuối cùng)
     resume_from_next = bool(profile.last_translated_url and not args.url)
 
+    # Load catalog.json if exists
+    import json
+    catalog_path = os.path.join("novels", profile.slug, "catalog.json")
+    catalog = []
+    catalog_active = False
+    if os.path.exists(catalog_path):
+        try:
+            with open(catalog_path, "r", encoding="utf-8") as f:
+                catalog = json.load(f)
+            if catalog:
+                catalog_active = True
+                logger.info(f"[*] Loaded catalog from catalog.json: {len(catalog)} chapter(s)")
+        except Exception as e:
+            logger.error(f"[!] Error loading catalog.json: {e}")
+
+    current_idx = -1
+    if catalog_active:
+        if args.url:
+            for idx, item in enumerate(catalog):
+                if item["url"] == args.url:
+                    current_idx = idx
+                    current_url = args.url
+                    logger.info(f"[*] Found target URL in catalog at index {current_idx}: {current_url}")
+                    break
+            if current_idx == -1:
+                logger.warning(f"[!] Target URL {args.url} not found in catalog. Falling back to dynamic scraping mode.")
+                catalog_active = False
+                current_url = start_url
+        else:
+            if profile.last_translated_url:
+                for idx, item in enumerate(catalog):
+                    if item["url"] == profile.last_translated_url:
+                        current_idx = idx
+                        break
+                if current_idx != -1:
+                    current_idx += 1
+                    if current_idx < len(catalog):
+                        current_url = catalog[current_idx]["url"]
+                        logger.info(f"[*] Resuming from next catalog chapter at index {current_idx}: {current_url}")
+                    else:
+                        current_url = None
+                        logger.info("[*] Catalog index out of range (all chapters translated).")
+                    resume_from_next = False
+                else:
+                    if 0 <= profile.last_chapter_number < len(catalog):
+                        current_idx = profile.last_chapter_number
+                        current_url = catalog[current_idx]["url"]
+                        logger.info(f"[*] Map to catalog index {current_idx} using last_chapter_number={profile.last_chapter_number}")
+                    else:
+                        current_idx = 0
+                        current_url = catalog[0]["url"]
+                        logger.info(f"[*] Fallback to catalog index 0")
+                    resume_from_next = False
+            else:
+                current_idx = 0
+                current_url = catalog[0]["url"]
+                logger.info(f"[*] Starting from catalog index 0: {current_url}")
+                resume_from_next = False
+    else:
+        current_url = start_url
+
+    # Nếu chapters <= 0 -> dịch toàn bộ phần còn lại
+    if args.chapters <= 0:
+        if catalog_active:
+            args.chapters = max(1, len(catalog) - (current_idx if current_idx != -1 else 0))
+            logger.info(f"[*] Auto translate: translating all remaining {args.chapters} chapters from catalog.")
+        else:
+            args.chapters = 999999  # dịch cho tới khi hết link
+            logger.info("[*] Auto translate: translating all chapters until no next link is found.")
+
     logger.info(f"[*] Novel: {profile.title} ({profile.slug})")
-    logger.info(f"[*] Start URL: {start_url}")
+    logger.info(f"[*] Start URL: {current_url or start_url}")
     logger.info(f"[*] Chapters to translate: {args.chapters}")
-    report_progress(0, args.chapters, "running", f"Bắt đầu dịch {args.chapters} chương từ {start_url}")
+    report_progress(0, args.chapters, "running", f"Bắt đầu dịch {args.chapters} chương từ {current_url or start_url}")
 
     scraper = _get_scraper()
-    current_url = start_url
     chapter_count = 0      # số chương đã fetch
     translated_count = 0   # số chương gốc đã dịch xong (không đếm từng phần split)
     batch = []
@@ -623,6 +744,12 @@ async def cmd_translate_async(args, progress_callback=None):
 
     logger.info(f"[*] Batch config: max {BATCH_SIZE} chapters/batch, max {BATCH_MAX_CHARS} chars/batch")
     logger.info(f"[*] Concurrency limit: {MAX_CONCURRENT_BATCHES} parallel batches")
+
+    # Build url→catalog item map for fast chapter-number lookup (AR flow)
+    _url_to_catalog_item = {}
+    if catalog_active:
+        for _ci in catalog:
+            _url_to_catalog_item[_ci["url"]] = _ci
 
     async def process_batch_async(batch_copy, urls_copy, summary_copy, orig_chapter_count=None):
         nonlocal previous_summary, translated_count
@@ -709,8 +836,28 @@ async def cmd_translate_async(args, progress_callback=None):
                                 current_model=_rm, tokens_delta=_rt, cost_delta=_rc)
                 logger.info(f"  [{'✓' if '[Translation failed' not in chunk[:50] else '!'}] Retry result: {title}")
 
+            # ── Header: lấy chapter_number từ catalog (AR flow) + VI title từ chunk ──
+            _chunk_lines = chunk.splitlines(keepends=True)
+            _vi_title = title  # fallback
+            _body_lines = _chunk_lines
+            if _chunk_lines:
+                import re as _re2
+                _first = _chunk_lines[0].strip()
+                _hm = _re2.match(r"^#\s*(.+)$", _first, _re2.IGNORECASE)
+                if _hm:
+                    _vi_title = _hm.group(1).strip()
+                    _body_lines = _chunk_lines[1:]
+            
+            # Clean double prefixes in title
+            import re as _re3
+            _vi_title = _re3.sub(r"^(Chương\s+\d+|第[一二三四五六七八九十\d]+章)\s*[:：\-]*\s*", "", _vi_title, flags=_re3.IGNORECASE).strip()
+            
+            _chap_url = urls_copy[i] if i < len(urls_copy) else ""
+            _cat_item = _url_to_catalog_item.get(_chap_url)
+            _chap_num = _cat_item["number"] if _cat_item else 0
+            _clean_hdr = f"# Ch\u01b0\u01a1ng {_chap_num}: {_vi_title}\n" if _chap_num else f"# {_vi_title}\n"
             with open(out, "w", encoding="utf-8") as f:
-                f.write(chunk)
+                f.write(_clean_hdr + "".join(_body_lines))
             logger.info(f"[+] Saved: {out}")
 
             failed = "[Translation failed" in chunk[:100]
@@ -764,17 +911,19 @@ async def cmd_translate_async(args, progress_callback=None):
 
         # Auto-update glossary with newly extracted terms
         if new_glossary:
-            added = 0
-            for k, v in new_glossary.items():
-                if k not in profile.glossary:
-                    profile.glossary[k] = v
-                    added += 1
-            if added > 0:
-                logger.info(f"[*] Auto-learned {added} new glossary term(s)")
-                profile.save()
+            added, latest_glossary = update_profile_glossary_safely(profile.slug, new_glossary, logger)
+            profile.glossary = latest_glossary
 
         if urls_copy:
-            profile.update_progress(urls_copy[-1], profile.last_chapter_number + batch_len)
+            if catalog_active:
+                ch_num = profile.last_chapter_number
+                for idx, item in enumerate(catalog):
+                    if item["url"] == urls_copy[-1]:
+                        ch_num = item["number"]
+                        break
+                update_profile_progress_safely(profile.slug, urls_copy[-1], ch_num)
+            else:
+                update_profile_progress_safely(profile.slug, urls_copy[-1], profile.last_chapter_number + batch_len)
 
         previous_summary = summary
         # Update active_batches count after this batch completes
@@ -801,99 +950,202 @@ async def cmd_translate_async(args, progress_callback=None):
                         active_batches=len(background_tasks),
                         scraped_count=chapter_count)
 
-    while current_url and chapter_count < args.chapters:
-        # Check cancel request trước mỗi chương
-        if is_cancelled():
-            logger.info("[⏹] Dừng theo yêu cầu người dùng.")
-            report_progress(translated_count, args.chapters, "cancelled", "⏹ Đã dừng theo yêu cầu")
-            break
+    if catalog_active:
+        # ── Cào/Chuẩn bị tuần tự & Dịch song song động ──
+        logger.info(f"[*] Bắt đầu xử lý {args.chapters} chương từ catalog...")
+        
+        # Để tránh nghẽn mạng và quản lý tốt hơn, chúng ta chuẩn bị tuần tự (hoặc batch nhỏ)
+        # và đẩy ngay vào batch dịch. Vì crawler giờ có local cache nên việc chuẩn bị rất nhanh.
+        for i in range(args.chapters):
+            if is_cancelled():
+                logger.info("[⏹] Dừng theo yêu cầu người dùng.")
+                report_progress(translated_count, args.chapters, "cancelled", "⏹ Đã dừng theo yêu cầu")
+                break
+                
+            idx = current_idx + i
+            if idx >= len(catalog):
+                logger.info("[*] Catalog index out of range (reached end of catalog).")
+                break
+                
+            item = catalog[idx]
+            url = item["url"]
+            title_orig = item.get("original_title") or item.get("title") or f"Chương {item.get('number', idx)}"
+            
+            # 1. Đọc local raw trước
+            raw_file_name = f"{title_orig}.txt"
+            raw_path_check = os.path.join(profile.raw_dir, raw_file_name)
+            
+            has_local = False
+            title = title_orig
+            content = ""
+            
+            if os.path.exists(raw_path_check):
+                try:
+                    with open(raw_path_check, "r", encoding="utf-8") as f:
+                        content = f.read()
+                    has_local = True
+                except Exception as e:
+                    logger.error(f"[!] Lỗi đọc file raw local {raw_file_name}: {e}")
+            
+            # 2. Nếu không có local, tiến hành crawl
+            if not has_local:
+                logger.info(f"[*] Crawling: {url}")
+                report_progress(translated_count, args.chapters, "running",
+                                log_msg=f"[*] Đang tải: {title_orig}",
+                                crawling_chapter=title_orig)
+                html = await scraper.fetch_html(url)
+                if not html:
+                    logger.error(f"[!] Lỗi cào nội dung từ: {url}")
+                    report_progress(translated_count, args.chapters, "error", f"Lỗi: Không thể lấy nội dung chương {item['number']}")
+                    break
+                title, content, _, _ = scraper.parse_content(html, url)
+                
+            if not content or "Could not find" in content:
+                logger.error(f"[!] Lỗi phân tích nội dung chương tại {url}")
+                report_progress(translated_count, args.chapters, "error", f"Lỗi: Nội dung chương {item['number']} bị trống")
+                break
+                
+            source_tag = "[📖 Local]" if has_local else "[🌐 Crawled]"
+            logger.info(f"{source_tag} Sẵn sàng: {title}")
+            report_progress(translated_count, args.chapters, "running", f"Sẵn sàng: {title}",
+                            scraped_count=chapter_count,
+                            crawling_chapter=title)
+                            
+            # ── Auto-split chương lớn ────────────────────────────────────────────
+            work_items = save_raw_parts(profile, title, content)
+            is_split   = len(work_items) > 1
 
-        logger.info(f"[*] Fetching {chapter_count + 1}/{args.chapters}: {current_url}")
-        report_progress(translated_count, args.chapters, "running",
-                        crawling_chapter=f"Chương {chapter_count + 1}...")
+            if is_split:
+                num_parts = len(work_items)
+                logger.info(
+                    f"[✂] '{title}' quá lớn ({len(content):,} chars > {CHAPTER_SPLIT_THRESHOLD}) "
+                    f"→ split thành {num_parts} phần"
+                )
+                report_progress(translated_count, args.chapters, "running",
+                                f"✂ Split '{title}' thành {num_parts} phần",
+                                crawling_chapter=title)
 
-        html = await scraper.fetch_html(current_url)
-        if not html:
-            logger.error("[!] Failed to fetch HTML. Site might be blocking the script.")
-            report_progress(translated_count, args.chapters, "error", f"Lỗi: Không thể lấy nội dung từ {current_url}")
-            break
+            chapter_count += 1
 
-        title, content, _prev_url, next_url = scraper.parse_content(html, current_url)
+            for part_title, part_content in work_items:
+                # Flush batch trước nếu cần
+                if compute_batch_size(batch, part_content) == 0 and batch:
+                    total_chars = sum(len(c) for _, c in batch)
+                    logger.info(
+                        f"[*] Batch flush: {len(batch)} chapter(s), {total_chars} chars "
+                        f"(adding '{part_title}' would exceed limit)"
+                    )
+                    await flush_batch()
 
-        if not content or "Could not find" in content:
-            logger.error(f"[!] Could not parse content: {current_url}")
-            report_progress(translated_count, args.chapters, "error", f"Lỗi: Không thể phân tích nội dung tại {current_url}")
-            break
+                batch.append((part_title, part_content))
+                batch_urls.append(url)
 
-        logger.info(f"[*] Scraped: {title}")
-        report_progress(translated_count, args.chapters, "running", f"Đã lấy nội dung: {title}",
-                        scraped_count=chapter_count,
-                        crawling_chapter=title)
+                if len(batch) >= BATCH_SIZE:
+                    await flush_batch()
 
-        if resume_from_next:
-            resume_from_next = False
-            logger.info(f"[→] Resuming — skipping last translated chapter, moving to next.")
-            if next_url:
-                current_url = next_url
-                await asyncio.sleep(2)
-                continue
-            else:
-                logger.info("[*] No next chapter found after resume point.")
+            # Tăng batch_orig_count đúng 1 lần cho mỗi chương gốc (dù có split hay không)
+            batch_orig_count += 1
+
+            # Nếu đã split, đăng ký merge callback sau khi tất cả phần dịch xong
+            if is_split:
+                _pending_merges[title] = num_parts
+
+            # Flush khi đạt đúng BATCH_SIZE
+            if len(batch) >= BATCH_SIZE:
+                await flush_batch()
+    else:
+        # ── Cào tuần tự truyền thống ──
+        while current_url and chapter_count < args.chapters:
+            # Check cancel request trước mỗi chương
+            if is_cancelled():
+                logger.info("[⏹] Dừng theo yêu cầu người dùng.")
+                report_progress(translated_count, args.chapters, "cancelled", "⏹ Đã dừng theo yêu cầu")
                 break
 
-        # ── Auto-split chương lớn ────────────────────────────────────────────
-        # Nếu content > CHAPTER_SPLIT_THRESHOLD → lưu thành title-1, title-2,...
-        # và đưa từng phần vào batch riêng lẻ thay vì cả chương một lúc.
-        work_items = save_raw_parts(profile, title, content)
-        is_split   = len(work_items) > 1
-
-        if is_split:
-            num_parts = len(work_items)
-            logger.info(
-                f"[✂] '{title}' quá lớn ({len(content):,} chars > {CHAPTER_SPLIT_THRESHOLD}) "
-                f"→ split thành {num_parts} phần"
-            )
+            logger.info(f"[*] Fetching {chapter_count + 1}/{args.chapters}: {current_url}")
             report_progress(translated_count, args.chapters, "running",
-                            f"✂ Split '{title}' thành {num_parts} phần",
+                            crawling_chapter=f"Chương {chapter_count + 1}...")
+
+            html = await scraper.fetch_html(current_url)
+            if not html:
+                logger.error("[!] Failed to fetch HTML. Site might be blocking the script.")
+                report_progress(translated_count, args.chapters, "error", f"Lỗi: Không thể lấy nội dung từ {current_url}")
+                break
+
+            title, content, _prev_url, next_url = scraper.parse_content(html, current_url)
+
+            if not content or "Could not find" in content:
+                logger.error(f"[!] Could not parse content: {current_url}")
+                report_progress(translated_count, args.chapters, "error", f"Lỗi: Không thể phân tích nội dung tại {current_url}")
+                break
+
+            logger.info(f"[*] Scraped: {title}")
+            report_progress(translated_count, args.chapters, "running", f"Đã lấy nội dung: {title}",
+                            scraped_count=chapter_count,
                             crawling_chapter=title)
 
-        chapter_count += 1
+            if resume_from_next:
+                resume_from_next = False
+                logger.info(f"[→] Resuming — skipping last translated chapter, moving to next.")
+                if next_url:
+                    current_url = next_url
+                    await asyncio.sleep(2)
+                    continue
+                else:
+                    logger.info("[*] No next chapter found after resume point.")
+                    break
 
-        for part_title, part_content in work_items:
-            # Flush batch trước nếu cần
-            if compute_batch_size(batch, part_content) == 0 and batch:
-                total_chars = sum(len(c) for _, c in batch)
+            # ── Auto-split chương lớn ────────────────────────────────────────────
+            work_items = save_raw_parts(profile, title, content)
+            is_split   = len(work_items) > 1
+
+            if is_split:
+                num_parts = len(work_items)
                 logger.info(
-                    f"[*] Batch flush: {len(batch)} chapter(s), {total_chars} chars "
-                    f"(adding '{part_title}' would exceed limit)"
+                    f"[✂] '{title}' quá lớn ({len(content):,} chars > {CHAPTER_SPLIT_THRESHOLD}) "
+                    f"→ split thành {num_parts} phần"
                 )
-                await flush_batch()
+                report_progress(translated_count, args.chapters, "running",
+                                f"✂ Split '{title}' thành {num_parts} phần",
+                                crawling_chapter=title)
 
-            batch.append((part_title, part_content))
-            batch_urls.append(current_url)
+            chapter_count += 1
 
+            for part_title, part_content in work_items:
+                # Flush batch trước nếu cần
+                if compute_batch_size(batch, part_content) == 0 and batch:
+                    total_chars = sum(len(c) for _, c in batch)
+                    logger.info(
+                        f"[*] Batch flush: {len(batch)} chapter(s), {total_chars} chars "
+                        f"(adding '{part_title}' would exceed limit)"
+                    )
+                    await flush_batch()
+
+                batch.append((part_title, part_content))
+                batch_urls.append(current_url)
+
+                if len(batch) >= BATCH_SIZE:
+                    await flush_batch()
+
+            # Tăng batch_orig_count đúng 1 lần cho mỗi chương gốc (dù có split hay không)
+            batch_orig_count += 1
+
+            # Nếu đã split, đăng ký merge callback sau khi tất cả phần dịch xong
+            if is_split:
+                _pending_merges[title] = num_parts
+
+            # Flush khi đạt đúng BATCH_SIZE
             if len(batch) >= BATCH_SIZE:
                 await flush_batch()
 
-        # Tăng batch_orig_count đúng 1 lần cho mỗi chương gốc (dù có split hay không)
-        batch_orig_count += 1
-
-        # Nếu đã split, đăng ký merge callback sau khi tất cả phần dịch xong
-        if is_split:
-            _pending_merges[title] = num_parts
-
-        # Flush khi đạt đúng BATCH_SIZE
-        if len(batch) >= BATCH_SIZE:
-            await flush_batch()
-
-        if next_url and chapter_count < args.chapters:
-            logger.info(f"[→] Next chapter: {next_url}")
-            current_url = next_url
-            await asyncio.sleep(2)
-        else:
-            if not next_url and chapter_count < args.chapters:
-                logger.info("[*] No more chapters found.")
-            break
+            if next_url and chapter_count < args.chapters:
+                logger.info(f"[→] Next chapter: {next_url}")
+                current_url = next_url
+                await asyncio.sleep(2)
+            else:
+                if not next_url and chapter_count < args.chapters:
+                    logger.info("[*] No more chapters found.")
+                break
 
     # Process remaining in batch
     await flush_batch()
@@ -1014,7 +1266,7 @@ def cmd_retranslate(args):
         for raw_name in raw_files:
             raw_path = os.path.join(profile.raw_dir, raw_name)
             stem = os.path.splitext(raw_name)[0]
-            out_path = os.path.join(profile.translated_dir, f"{stem}_VI.md")
+            out_path = os.path.join(profile.translated_dir, f"{safe_filename(stem)}_VI.md")
             pending.append((raw_path, out_path))
     else:
         pending = find_untranslated_raws(profile)
