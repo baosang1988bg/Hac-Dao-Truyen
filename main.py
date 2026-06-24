@@ -134,19 +134,92 @@ def get_split_part_count(raw_dir: str, stem: str) -> int:
     return count
 
 
+def get_vietnamese_translated_path(profile: NovelProfile, stem: str, chap_num: int, part_num: int = None) -> str:
+    """Trả về đường dẫn file dịch tiếng Việt nếu đã tồn tại, ngược lại trả về mặc định."""
+    if chap_num > 0:
+        prefix = f"Chương {chap_num} "
+        suffix = f"-{part_num}_VI.md" if part_num is not None else "_VI.md"
+        if os.path.isdir(profile.translated_dir):
+            for f in os.listdir(profile.translated_dir):
+                if f.startswith(prefix) and f.endswith(suffix):
+                    return os.path.join(profile.translated_dir, f)
+    # Fallback mặc định
+    if part_num is not None:
+        return os.path.join(profile.translated_dir, f"{safe_filename(stem)}-{part_num}_VI.md")
+    return os.path.join(profile.translated_dir, f"{safe_filename(stem)}_VI.md")
+
+
+async def fetch_and_merge_paginated_chapter_async(scraper, url: str, logger) -> tuple[str, str, str | None, str | None] | None:
+    """Cào và tự động ghép các trang của chương nếu có phân trang (1/2), (2/2)..."""
+    html = await scraper.fetch_html(url)
+    if not html:
+        return None
+        
+    title, content, prev_url, next_url = scraper.parse_content(html, url)
+    if not content:
+        return title, content, prev_url, next_url
+        
+    # Check for pagination (e.g. "第...章 ... (1/2)")
+    import re as _re_page
+    m_page = _re_page.search(r'[\(\（]\s*1\s*/\s*(\d+)\s*[\)\）]', title)
+    if m_page:
+        total_pages = int(m_page.group(1))
+        current_page = 1
+        
+        def get_page_url(base_url: str, page_num: int) -> str:
+            import re
+            if re.search(r'_\d+_\d+\.html$', base_url):
+                return re.sub(r'_(\d+)\.html$', f'_{page_num}.html', base_url)
+            else:
+                return re.sub(r'\.html$', f'_{page_num}.html', base_url)
+                
+        # If next_url is None, generate it for page 2
+        current_url = next_url if next_url else get_page_url(url, 2)
+        
+        logger.info(f"[*] Phát hiện chương phân trang (1/{total_pages}), đang cào các trang tiếp theo...")
+        
+        while current_page < total_pages and current_url:
+            logger.info(f"[*] Crawling page {current_page + 1}/{total_pages}: {current_url}")
+            next_html = await scraper.fetch_html(current_url)
+            if not next_html:
+                logger.error(f"[!] Lỗi cào trang {current_page + 1} từ: {current_url}")
+                break
+            next_title, next_content, _, next_url = scraper.parse_content(next_html, current_url)
+            if next_content and "Could not find" not in next_content:
+                content += "\n\n" + next_content
+            current_page += 1
+            
+            # Construct next URL if missing but we need more pages
+            if not next_url and current_page < total_pages:
+                current_url = get_page_url(url, current_page + 1)
+            else:
+                current_url = next_url
+                
+    # Clean pagination suffix from title if present (e.g., "(1/2)")
+    clean_title = _re_page.sub(r'\s*[\(\（]\s*\d+\s*/\s*\d+\s*[\)\）]\s*$', '', title).strip()
+    return clean_title, content, prev_url, next_url
+
+
 def find_untranslated_raws(profile: NovelProfile) -> list[tuple[str, str]]:
     """
     Scan text_raw/ và trả về list các file chưa có bản dịch tốt.
     Trả về: list of (raw_filepath, expected_output_filepath)
     Bao gồm cả file chưa dịch lẫn file dịch bị lỗi (Translation failed).
-
-    Xử lý đặc biệt cho chương đã split:
-    - File gốc (stem.txt) được coi là "đã dịch" nếu stem_VI.md tồn tại
-      HOẶC tất cả phần split (stem-1_VI.md, stem-2_VI.md...) đều đã dịch xong
-    - File phần (stem-N.txt) được xử lý bình thường
     """
     if not os.path.isdir(profile.raw_dir):
         return []
+
+    # Load catalog mapping
+    catalog_map = {}
+    catalog_path = os.path.join("novels", profile.slug, "catalog.json")
+    if os.path.exists(catalog_path):
+        try:
+            with open(catalog_path, "r", encoding="utf-8") as f:
+                cat = json.load(f)
+                for item in cat:
+                    catalog_map[item.get("original_title", "")] = item
+        except Exception:
+            pass
 
     raw_files = sorted(
         f for f in os.listdir(profile.raw_dir) if f.endswith(".txt")
@@ -156,11 +229,24 @@ def find_untranslated_raws(profile: NovelProfile) -> list[tuple[str, str]]:
     for raw_name in raw_files:
         raw_path = os.path.join(profile.raw_dir, raw_name)
         stem     = os.path.splitext(raw_name)[0]
-        out_path = os.path.join(profile.translated_dir, f"{safe_filename(stem)}_VI.md")
+
+        # Lấy chapter number từ catalog
+        cat_item = catalog_map.get(stem)
+        chap_num = cat_item["number"] if cat_item else 0
+        if not chap_num:
+            try:
+                from api import extract_chapter_number_from_text
+                chap_num = extract_chapter_number_from_text(stem)
+            except Exception:
+                pass
+        if chap_num == 999999:
+            chap_num = 0
+
+        out_path = get_vietnamese_translated_path(profile, stem, chap_num)
 
         # ── Trường hợp file gốc đã split ──────────────────────────────────
         if is_split_original(profile.raw_dir, stem):
-            # Nếu đã có file merge (stem_VI.md) → coi là hoàn tất
+            # Nếu đã có file merge (stem_VI.md hoặc bản dịch tiếng Việt tương ứng) → coi là hoàn tất
             if is_already_translated(out_path) and not is_failed_translation(out_path):
                 continue
 
@@ -168,9 +254,9 @@ def find_untranslated_raws(profile: NovelProfile) -> list[tuple[str, str]]:
             num_parts = get_split_part_count(profile.raw_dir, stem)
             all_parts_done = all(
                 is_already_translated(
-                    os.path.join(profile.translated_dir, f"{stem}-{i}_VI.md")
+                    get_vietnamese_translated_path(profile, stem, chap_num, i)
                 ) and not is_failed_translation(
-                    os.path.join(profile.translated_dir, f"{stem}-{i}_VI.md")
+                    get_vietnamese_translated_path(profile, stem, chap_num, i)
                 )
                 for i in range(1, num_parts + 1)
             )
@@ -190,12 +276,22 @@ def find_untranslated_raws(profile: NovelProfile) -> list[tuple[str, str]]:
 
         # ── Trường hợp file phần (stem-N) ────────────────────────────────
         # Bỏ qua nếu không có _VI.md nhưng đây là phần của chapter đã merge
-        # (tức là file gốc đã có _VI.md rồi)
         import re as _re
         part_match = _re.match(r'^(.+)-(\d+)$', stem)
         if part_match:
             orig_stem = part_match.group(1)
-            orig_vi   = os.path.join(profile.translated_dir, f"{orig_stem}_VI.md")
+            orig_cat = catalog_map.get(orig_stem)
+            orig_chap_num = orig_cat["number"] if orig_cat else 0
+            if not orig_chap_num:
+                try:
+                    from api import extract_chapter_number_from_text
+                    orig_chap_num = extract_chapter_number_from_text(orig_stem)
+                except Exception:
+                    pass
+            if orig_chap_num == 999999:
+                orig_chap_num = 0
+
+            orig_vi = get_vietnamese_translated_path(profile, orig_stem, orig_chap_num)
             if is_already_translated(orig_vi) and not is_failed_translation(orig_vi):
                 # File gốc đã được merge → không cần dịch lại phần này nữa
                 continue
@@ -856,6 +952,17 @@ async def cmd_translate_async(args, progress_callback=None):
             _cat_item = _url_to_catalog_item.get(_chap_url)
             _chap_num = _cat_item["number"] if _cat_item else 0
             _clean_hdr = f"# Ch\u01b0\u01a1ng {_chap_num}: {_vi_title}\n" if _chap_num else f"# {_vi_title}\n"
+            
+            # Redefine out path to be Vietnamese filename instead of Chinese
+            _re_part = __import__('re')
+            part_match = _re_part.match(r'^(.+)-(\d+)$', title)
+            _file_stem = f"Chương {_chap_num} - {_vi_title}" if _chap_num else _vi_title
+            if part_match:
+                part_n = int(part_match.group(2))
+                out = os.path.join(profile.translated_dir, f"{safe_filename(_file_stem)}-{part_n}_VI.md")
+            else:
+                out = os.path.join(profile.translated_dir, f"{safe_filename(_file_stem)}_VI.md")
+
             with open(out, "w", encoding="utf-8") as f:
                 f.write(_clean_hdr + "".join(_body_lines))
             logger.info(f"[+] Saved: {out}")
@@ -993,12 +1100,12 @@ async def cmd_translate_async(args, progress_callback=None):
                 report_progress(translated_count, args.chapters, "running",
                                 log_msg=f"[*] Đang tải: {title_orig}",
                                 crawling_chapter=title_orig)
-                html = await scraper.fetch_html(url)
-                if not html:
+                res = await fetch_and_merge_paginated_chapter_async(scraper, url, logger)
+                if not res:
                     logger.error(f"[!] Lỗi cào nội dung từ: {url}")
                     report_progress(translated_count, args.chapters, "error", f"Lỗi: Không thể lấy nội dung chương {item['number']}")
                     break
-                title, content, _, _ = scraper.parse_content(html, url)
+                title, content, _, _ = res
                 
             if not content or "Could not find" in content:
                 logger.error(f"[!] Lỗi phân tích nội dung chương tại {url}")
@@ -1066,13 +1173,12 @@ async def cmd_translate_async(args, progress_callback=None):
             report_progress(translated_count, args.chapters, "running",
                             crawling_chapter=f"Chương {chapter_count + 1}...")
 
-            html = await scraper.fetch_html(current_url)
-            if not html:
-                logger.error("[!] Failed to fetch HTML. Site might be blocking the script.")
+            res = await fetch_and_merge_paginated_chapter_async(scraper, current_url, logger)
+            if not res:
+                logger.error(f"[!] Lỗi cào nội dung từ: {current_url}")
                 report_progress(translated_count, args.chapters, "error", f"Lỗi: Không thể lấy nội dung từ {current_url}")
                 break
-
-            title, content, _prev_url, next_url = scraper.parse_content(html, current_url)
+            title, content, _prev_url, next_url = res
 
             if not content or "Could not find" in content:
                 logger.error(f"[!] Could not parse content: {current_url}")

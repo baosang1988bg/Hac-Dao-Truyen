@@ -22,7 +22,7 @@ NOVEL/
 ├── fix_one_chapter.py    # Dịch lại đúng 1 chương cụ thể ⭐
 ├── fix_titles_v2.py      # Chuẩn hóa tiêu đề tất cả chương ⭐
 ├── fix_batch_mismatch.py # Fix chương batch mismatch
-├── fix_116.py            # Fix script mẫu (chỉnh tên chương)
+├── cleanup_splits.py     # Dọn file split thừa sau khi merge ⭐
 │
 ├── check_keys.py         # Kiểm tra & quản lý Gemini API keys ⭐
 ├── check_models.py       # Test Gemini model nào đang hoạt động
@@ -120,6 +120,15 @@ Phát hiện tiêu đề bất kỳ trong 15 dòng đầu của file, làm sạc
 python fix_batch_mismatch.py    # Chỉnh TO_FIX trong file trước khi chạy
 ```
 
+### cleanup_splits.py — dọn file split thừa ⭐
+```bash
+python cleanup_splits.py --novel <slug>         # Dọn 1 truyện
+python cleanup_splits.py --all                  # Dọn tất cả truyện
+python cleanup_splits.py --novel <slug> --dry-run  # Xem trước, không xóa
+```
+Xóa an toàn các file `-1_VI.md`, `-2_VI.md` và raw `.txt` tương ứng **sau khi** file merged đã tồn tại và hợp lệ (không có `[Translation failed]`).
+> Cũng có thể chạy từ **Tab Tính Năng** trong Web UI.
+
 ---
 
 ## ✂️ AUTO-SPLIT CHƯƠNG LỚN
@@ -206,6 +215,24 @@ python discover.py --like "mô tả"           # tương tự
 python discover.py --top 20 --save           # lưu ra Markdown
 python discover.py --search                  # tìm URL truyện cụ thể
 ```
+
+---
+
+## 🛠 TAB TÍNH NĂNG (Web UI — Admin)
+
+Tab **Tính Năng** (`⚡`) trong trang Novel Detail cung cấp các công cụ có thể chạy trực tiếp từ trình duyệt, kết quả hiển thị real-time trên terminal giả lập.
+
+| Tool | Script | Tác dụng |
+|---|---|---|
+| Sửa lỗi Missing/Failed | `fix_chapters.py` | Dịch lại chương thiếu/lỗi |
+| Sửa đứt đoạn | `fix_truncated.py` | Fix chương bị cắt ngang |
+| Chuẩn hóa tiêu đề | `fix_titles_v2.py` | Định dạng lại `# Chương N: Tên` |
+| Kiểm tra API Keys | `check_keys.py --show` | Xem trạng thái Gemini keys |
+| Merge chương split | `tool_merge_split_parts` (internal) | Gộp `-1_VI.md`, `-2_VI.md` → 1 file |
+| Dọn file Split thừa | `cleanup_splits.py` | Xóa file split sau merge |
+| Dịch lại 1 chương | `fix_one_chapter.py` | Nhập tiêu đề → dịch đơn lẻ |
+
+> **Lưu ý**: Cần đăng nhập admin (role=admin trong localStorage) để thấy tab này.
 
 ---
 
@@ -344,9 +371,10 @@ ollama run hunyuan-mt "Dịch: 他走向远方"
 4. Dịch thử:      python main.py translate --novel <slug> --chapters 4
 5. Kiểm tra lỗi:  python fix_chapters.py --novel <slug> --report
 6. Fix nếu cần:   python fix_truncated.py --novel <slug>
-7. Dịch tiếp:     python main.py translate --novel <slug> --chapters 50
-8. Đọc:           http://localhost:5173
-9. Xem logs:      http://localhost:5173/logs
+7. Merge split:   python cleanup_splits.py --novel <slug>   # nếu có chương split
+8. Dịch tiếp:     python main.py translate --novel <slug> --chapters 50
+9. Đọc:           http://localhost:5173
+10. Xem logs:     http://localhost:5173/logs
 ```
 
 ---
@@ -492,7 +520,8 @@ Cloudflare Dashboard → Workers & Pages → hac-dao-truyen
 # Mỗi ngày:
 1. Dịch local:    python3 main.py translate --novel xich-tam-tuan-thien --chapters 20
 2. Fix nếu cần:   python3 fix_chapters.py --novel xich-tam-tuan-thien
-3. Sync cloud:    python3 migrate_to_cloudflare.py --slug xich-tam-tuan-thien --smart-sync
-4. Deploy:        npm run deploy   (chỉ cần nếu có thay đổi code)
-5. Verify:        curl "https://hacdaotruyen.com/api/debug/chapter/xich-tam-tuan-thien/1580"
+3. Dọn split:     python3 cleanup_splits.py --novel xich-tam-tuan-thien
+4. Sync cloud:    python3 migrate_to_cloudflare.py --slug xich-tam-tuan-thien --smart-sync
+5. Deploy:        npm run deploy   (chỉ cần nếu có thay đổi code)
+6. Verify:        curl "https://hacdaotruyen.com/api/debug/chapter/xich-tam-tuan-thien/1580"
 ```

@@ -120,18 +120,35 @@ def parse_catalog_md(md_path: Path):
         
     sorted_raw = sorted(chapters_raw, key=sort_key)
     
-    # Cập nhật lại key "number" chuẩn từ 1 đến N sau khi đã sort đúng thứ tự cốt truyện
+    # Loại bỏ trùng lặp dựa trên parsed_number (nếu > 0) và url
+    seen_nums = set()
+    seen_urls = set()
+    unique_chapters = []
+    for item in sorted_raw:
+        num = item["parsed_number"]
+        url = item["url"]
+        if num > 0:
+            if num in seen_nums:
+                continue
+            seen_nums.add(num)
+        else:
+            if url in seen_urls:
+                continue
+            seen_urls.add(url)
+        unique_chapters.append(item)
+    
+    # Cập nhật lại key "number" chuẩn từ số chương gốc hoặc số thứ tự cốt truyện
     final_chapters = []
-    for i, item in enumerate(sorted_raw, 1):
-        # Build a simple indexed title for each chapter after sorting.
-        # The title now contains only the chapter number, preserving the original title in a separate field.
-        simple_title = f"Chương {i}"
+    for i, item in enumerate(unique_chapters, 1):
+        num = item["parsed_number"]
+        final_num = num if num > 0 else i
+        simple_title = f"Chương {final_num}"
         final_chapters.append({
-            "number": i,
+            "number": final_num,
             "title": simple_title,
             "original_title": item["title"],
             "url": item["url"],
-            "original_chapter_number": item["parsed_number"]
+            "original_chapter_number": num
         })
         
     return title, source_url, final_chapters

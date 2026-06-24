@@ -150,10 +150,23 @@ class NovelScraper:
                 except Exception as je:
                     print(f"[!] Jina Reader fallback failed: {je}")
                 
-                if not content_check:
-                    print(f"[*] Content not found yet, waiting 4s and retrying...")
-                    await asyncio.sleep(4)
-                    html = await page.content()
+                if is_blocked:
+                    await page.close()
+                    return None
+                
+                print(f"[*] Content not found yet, waiting 4s and retrying...")
+                await asyncio.sleep(4)
+                html = await page.content()
+                
+                # Double check content in retried html
+                soup_retry = BeautifulSoup(html, "html.parser")
+                content_retry = soup_retry.select_one(
+                    "article, .txtnav, #contentbox, .contentbox, #content, .readcontent"
+                )
+                if not content_retry:
+                    print(f"[!] Content still not found after retry.")
+                    await page.close()
+                    return None
 
             await page.close()
             return html

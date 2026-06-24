@@ -17,6 +17,9 @@ import json
 import argparse
 from datetime import datetime, timezone
 
+if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from dotenv import load_dotenv
 load_dotenv()
