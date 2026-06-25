@@ -119,9 +119,9 @@ class NovelScraper:
             )
             title_check = soup_check.find("h1")
             
-            # Check if we got blocked or empty content (e.g. www.novel543.com title)
+            # Force Jina fallback for known heavily-protected sites
             is_blocked = False
-            if title_check and title_check.get_text(strip=True).lower() == "www.novel543.com":
+            if "qidian.com" in url or "novel543.com" in url:
                 is_blocked = True
                 
             if not content_check or is_blocked:
@@ -150,7 +150,7 @@ class NovelScraper:
                 except Exception as je:
                     print(f"[!] Jina Reader fallback failed: {je}")
                 
-                if is_blocked:
+                if is_blocked or "qidian.com" in url or "novel543.com" in url:
                     await page.close()
                     return None
                 
