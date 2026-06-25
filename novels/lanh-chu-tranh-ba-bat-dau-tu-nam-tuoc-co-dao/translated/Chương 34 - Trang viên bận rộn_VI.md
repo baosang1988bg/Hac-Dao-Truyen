@@ -1,119 +1,173 @@
-# Chương 34: Trang viên bận rộn
+# Chương 34: Trang Viên Bận Rộn
 
-Sáng sớm hôm sau, những người đến nhà mới đã rất tự giác bắt tay vào công việc bận rộn. Có người dọn dẹp nhà cửa, có người sửa chữa những bức tường hư hỏng, có người đi quanh trước sau nhà, xem xét chỗ nào có vật liệu phù hợp để gia cố nhà cửa.
+Sáng ngày thứ hai, những người dân đến với mái nhà mới của mình đều tự giác lao động.
 
-Họ theo Đỗ An đến đây, bắt đầu cuộc sống mới, tự nhiên cũng có nhiều ảo mộng tốt đẹp. Không nói đến việc trở thành quý tộc giàu có, ít nhất cũng mong sống qua ngày no đủ, có sự phát triển tốt hơn ở quê hương.
+Người thì dọn dẹp nhà cửa, người thì sửa sang những bức tường đổ nát, người thì lượn lờ trước sau ngôi nhà, tìm kiếm vật liệu thích hợp để gia cố thêm.
 
-Đỗ An biết họ đang mong đợi điều gì, nhưng mọi việc phải từng bước một. Hắn hiện tại ngay cả diện tích đất canh tác có thể nắm giữ cũng chưa rõ, căn bản không thể hứa hẹn ban thưởng bao nhiêu đất đai cho những người này. Đây chính là một trong những việc Julian và Heine phải làm tiếp theo.
+Họ theo Đỗ An đến đây, bắt đầu một cuộc sống mới, dĩ nhiên trong lòng cũng đầy những ước vọng tốt đẹp.
 
-"Thưa Đại nhân!"
+Không cần phải trở thành quý tộc giàu sang, ít nhất cũng mong có được cuộc sống no đủ, phát triển tốt hơn quê hương cũ.
+
+Đỗ An biết họ đang mong chờ điều gì, nhưng mọi việc phải từng bước một.
+
+Hiện tại anh còn chưa rõ có thể canh tác được bao nhiêu diện tích đất, hoàn toàn không thể hứa hẹn với những người này sẽ ban thưởng bao nhiêu ruộng đất.
+
+Đây chính là một trong những việc mà Julian và Heine sắp tới phải làm.
+
+"Đại nhân!"
 
 Jack và John dâng lời chào buổi sáng.
 
-Đỗ An khẽ gật đầu, "Sau này các ngươi sáng sớm cứ theo Kaelon và Raymond mà luyện tập buổi sáng đi, không cần đứng đợi ở đây."
+Đỗ An khẽ gật đầu, "Từ giờ trở đi, buổi sáng các ngươi hãy theo Kaelon và Raymond tập luyện, không cần phải ở đây chờ đợi."
 
-Việc gác cổng không chỉ có mỗi họ, Kaelon cũng đã sắp xếp người luân phiên, dù sao thì họ cũng cần nghỉ ngơi.
+Việc gác cổng không chỉ có hai người họ, Kaelon cũng đã sắp xếp người thay phiên, dù sao họ cũng cần nghỉ ngơi.
 
-Sau khi dặn dò xong những việc này, Đỗ An ăn sáng. Mặc dù vừa đến Hắc Sâm Đảo, nhưng khẩu phần ăn của hắn không thay đổi nhiều, phô mai, bánh mì kèm một chút mật ong, như mọi khi.
+Sau khi dặn dò xong xuôi, Đỗ An ăn sáng.
+
+Dù mới đến Hắc Sâm Đảo, nhưng khẩu phần ăn của anh không thay đổi nhiều, phô mai, bánh mì ăn kèm chút mật ong, vẫn như mọi khi.
 
 "Chào buổi sáng, Đại nhân!"
 
-Ralph sau một đêm nghỉ ngơi tinh thần đã hồi phục khá nhiều, trông không còn ốm yếu nữa. Thêm vào đó, sau khi thấy con trai mình thuận lợi bắt tay vào công việc, tâm trạng hắn càng thêm vui vẻ, đối với Đỗ An cũng càng thêm kính trọng.
+Ralph, sau một đêm nghỉ ngơi, tinh thần đã hồi phục không ít, trông không còn ủ rũ như trước.
 
-"Trông ông có vẻ tinh thần hơn nhiều rồi, quản gia già," Đỗ An thuận miệng nói.
+Hơn nữa, nhìn thấy con trai đã bắt đầu công việc thuận lợi, tâm trạng ông càng thêm vui vẻ, đối với Đỗ An cũng càng thêm kính trọng.
 
-"Ngủ trên giường quả thật thoải mái hơn nhiều so với ngủ trên thuyền!"
+"Trông ông có vẻ tỉnh táo hơn nhiều rồi, lão quản gia." Đỗ An tùy tiện nói.
 
-Hắn cảm khái, "Đại nhân, sáng sớm tôi đã kiểm tra một vòng quanh sân, ở đây thiếu khá nhiều công trình, ví dụ như chuồng ngựa và trại chăn nuôi, tôi định xây trước một cái."
+"Ngủ trên giường thoải mái hơn nhiều so với trên thuyền!"
 
-Ba con ngựa của Đỗ An, Kaelon và Raymond hiện đang ở ngoài trời, mặc dù đã trải cỏ khô, nhưng cũng không cản được gió lạnh nửa đêm. Đây đều là những chiến mã thượng hạng, nếu mắc bệnh dẫn đến suy yếu năng lực, thì không đáng chút nào. Còn về trại chăn nuôi, cũng là điều cần thiết.
+Ông cảm thán, "Đại nhân, sáng sớm tôi đã đi kiểm tra quanh sân, nơi này còn thiếu khá nhiều công trình, ví dụ như chuồng ngựa và khu chăn nuôi, tôi định trước tiên sẽ xây một cái."
 
-Gà, vịt, ngỗng, heo, cừu, tất cả đều cần được chăn nuôi, việc dựa vào thu mua từ nông dân có chút không thực tế.
+Ba con ngựa của Đỗ An, Kaelon và Raymond hiện đang để ngoài trời, dù đã lót cỏ khô nhưng vẫn không thể chống chọi lại gió lạnh đêm khuya.
 
-"Chuyện này ông cứ tự liệu mà làm, nhưng sân rất nhỏ, ông hãy cố gắng xây những công trình này cách xa đây một chút, tôi không muốn ngửi mùi phân gia súc khi ăn đâu."
+Đây đều là những chiến mã thượng hạng, nếu bị bệnh mà suy yếu sức lực thì sẽ không còn đáng giá nữa.
 
-"Haha, đương nhiên rồi!"
+Còn về khu chăn nuôi, đó cũng là điều tất yếu.
 
-Ralph sau khi được cho phép, liền rời khỏi sân, bắt đầu làm quen với môi trường xung quanh, đồng thời tìm kiếm địa điểm thích hợp để xây dựng.
+Gà, vịt, ngan, lợn, cừu đều cần nuôi dưỡng, việc dựa vào thu thuế từ nông hộ có phần không thực tế.
 
-Đỗ An xé một miếng bánh mì, nhìn bóng lưng quản gia già rời đi, trong lòng lại nghĩ đến một chuyện khác.
+Huống hồ Đỗ An cũng đã tuyển dụng người chăn nuôi, nếu không tự mình nuôi một ít gia súc, chẳng phải là tuyển người vô ích sao?
+
+"Việc này ông cứ tùy ý xử lý, chỉ có điều sân này khá nhỏ, ông cố gắng xây dựng những công trình này cách xa nơi này một chút, ta không muốn vừa ăn cơm vừa ngửi mùi phân gia súc."
+
+"Ha ha, đó là đương nhiên!"
+
+Ralph nhận được sự cho phép liền bước ra khỏi sân, bắt đầu làm quen với môi trường xung quanh, đồng thời tìm kiếm địa điểm thích hợp để xây dựng.
+
+Đỗ An xé một miếng bánh mì, nhìn bóng lưng lão quản gia rời đi, trong lòng lại nghĩ đến một chuyện khác.
 
 "Chăn nuôi, có tính là một kỹ năng không?"
 
-Câu trả lời cho vấn đề này rất có thể là có, hắn cần tìm thời gian để thử xem sao.
+Câu trả lời cho vấn đề này rất có thể là có, anh cần tìm thời gian để thử nghiệm.
 
-Trong lúc hắn ăn cơm, Montport cũng đến chào hỏi. Đỗ An trò chuyện vài câu với hắn, liền để Julian, Heine cùng đối phương bắt đầu công việc.
+Trong lúc anh ăn cơm, Montport cũng tới chào hỏi.
 
-Xét đến tình hình hiện tại và Julian, Heine đều là người thường, không có mấy võ lực, Đỗ An bảo Raymond sắp xếp hai vệ binh đi theo, và dặn những người khác khi tuần tra cố gắng để ý một chút.
+Đỗ An trò chuyện với ông ta vài câu cho qua chuyện, rồi để Julian và Heine cùng ông ta bắt đầu công việc.
 
-Còn về mảng an ninh này, Kaelon và Raymond đã bàn bạc riêng và đã bẩm báo với Đỗ An. Địa bàn của Toái Lãng Bang và Thánh Thủ Hội nằm ở phía đông Toái Lãng Thành, trong đó một cái ở phía đông bắc, một cái ở chính đông hơi chếch về phía nam.
+Xem xét tình hình hiện tại và việc Julian, Heine đều là người bình thường, không có chút võ lực nào, Đỗ An sai Raymond sắp xếp hai vệ binh đi theo, đồng thời dặn dò những người khác khi tuần tra cố gắng để mắt tới.
 
-Vì vậy, hai người quyết định bố trí các điểm gác trên các sườn đồi cao ở hai hướng này để trinh sát tình hình bên đó. Nếu có dấu hiệu điều động nhân sự quy mô lớn, lính trinh sát sẽ lập tức phái người đến thông báo.
+Về phần an ninh, Kaelon và Raymond đã bí mật bàn bạc và báo cáo lại cho Đỗ An.
 
-Đỗ An tán thành cách sắp xếp này. Chỉ tiếc là số lượng vệ binh vẫn còn hơi ít.
+Địa bàn của Bang Toái Lãng và Hội Thánh Thủ nằm ở phía Đông của thành Toái Lãng, một cái ở hướng Đông Bắc, một cái ở hướng Đông hơi lệch Nam.
 
-Gác cổng, trinh sát, tuần tra, sau khi triển khai một loạt nhiệm vụ, số người có thể tham gia huấn luyện không nhiều, chỉ có thể luân phiên nhau. Đỗ An chuẩn bị đợi sau khi tình hình ổn định một chút, sẽ chọn một số người từ cư dân trên đảo để thành lập đội dân quân.
+Vì vậy, hai người quyết định bố trí các điểm chốt chặn trên các sườn đồi cao ở hai hướng này, dùng để trinh sát tình hình bên kia.
 
-Dù sao đi nữa, thực lực mới là lẽ phải. Nếu ba mươi người dưới trướng Đỗ An đều là chiến sĩ siêu phàm, hắn cũng không cần phải nghĩ cách né tránh xung đột trực diện với Toái Lãng Bang, Thánh Thủ Hội.
+Nếu có dấu hiệu điều động quân đội quy mô lớn, trinh sát viên sẽ lập tức phái người đến báo tin.
 
-Mặt trời vừa lên, Đỗ An sau khi ăn sáng cũng bắt đầu một ngày bận rộn của mình. Hôm nay nhiệm vụ chính của hắn không phải là tu luyện, mà là vác cuốc lên, bắt đầu lao động trồng trọt.
+Đỗ An tán thành cách sắp xếp này.
 
-Vừa hay bên ngoài sân, Montport có một mảnh vườn rau, trên đó trồng khá nhiều loại rau củ. Theo những gì Đỗ An nhìn thấy, liền có bắp cải, mầm bí đỏ, mầm củ cải, hành lá, v.v.
+Chỉ tiếc là số lượng vệ binh vẫn còn quá ít.
 
-Có vẻ như chủng loại rau củ của Hắc Sâm Đảo khá phong phú.
+Gác cổng, trinh sát, tuần tra, sau khi triển khai nhiệm vụ, số người có thể tham gia huấn luyện không nhiều, chỉ có thể thay phiên nhau.
 
-Nhổ cỏ, xới đất, tưới nước bón phân, cho dù không có lời giải thích của Heine tối qua, Đỗ An cũng biết những bước này. Chỉ là một lãnh chúa vung cuốc làm những việc này, vẫn khiến Marla và những người đang chuẩn bị bữa trưa nhìn mà ngây người.
+Đỗ An dự định chờ tình hình ổn định hơn một chút, sẽ chọn một số người trong số dân cư trên đảo để thành lập đội dân quân.
 
-Cô cảm thấy nam tước vẫn luôn giành việc vốn thuộc về cô, xào nấu, hầm canh thì thôi đi, sao bây giờ lại còn chạy vào vườn rau nữa?
+Đến lúc đó sẽ chọn một vài người trong số vệ binh ra phụ trách dẫn đội, để phần lớn người có thể tập trung huấn luyện.
 
-"Đại nhân…"
+Dù sao thì, thực lực mới là đạo lý cứng rắn nhất.
 
-Marla đến bên Đỗ An, giọng nói cực kỳ nhỏ, sợ người khác nghe thấy.
+Nếu ba mươi người dưới tay Đỗ An đều là chiến sĩ siêu phàm, anh cũng không cần phải suy nghĩ cách tránh né xung đột trực diện với Bang Toái Lãng và Hội Thánh Thủ nữa.
+
+Mặt trời vừa nhú lên, Đỗ An sau khi ăn sáng cũng bắt đầu ngày làm việc bận rộn của mình.
+
+Hôm nay nhiệm vụ chính của anh không phải là tu luyện, mà là vác cuốc lên và bắt đầu lao động chân tay.
+
+Đúng lúc bên ngoài viện có một mảnh vườn của Montport, trồng không ít rau.
+
+Theo như Đỗ An thấy, có bắp cải, bí ngô non, mầm cải thảo, tỏi tây, v.v.
+
+Có vẻ như các loại rau củ ở Hắc Sâm Đảo khá phong phú.
+
+Nhổ cỏ, làm đất, tưới nước bón phân, dù không có lời giải thích của Heine tối qua, Đỗ An cũng biết các bước này.
+
+Thế nhưng, một lãnh chúa vung cuốc làm những việc này, vẫn khiến cho Marla và những người chuẩn bị bữa trưa nhìn đến ngây người.
+
+Cô cảm thấy nam tước cứ như đang cướp đi công việc vốn thuộc về mình, nấu nướng, hầm canh thì thôi, sao giờ còn chạy ra cả vườn rau?
+
+"Đại nhân..."
+
+Marla đi đến bên Đỗ An, giọng nói hạ thấp, sợ người khác nghe thấy.
 
 "Ừm, sao vậy?"
 
-Marla nhìn sang hai bên, vừa thấy rất nhiều dân chúng theo lãnh chúa đến, thậm chí còn có một số cư dân trên đảo cũng đang kinh ngạc nhìn về phía này, mặt cô không khỏi đỏ bừng lên.
+Marla liếc nhìn xung quanh, vừa thấy không ít dân cư theo lãnh chúa tới, thậm chí còn có cả cư dân trên đảo đang ngạc nhiên nhìn về phía này, mặt cô không khỏi đỏ lên.
 
 "Đại nhân, đây không phải là nơi ngài nên đến!"
 
-Cô cuối cùng cũng không nhịn được mà nói thẳng: "Ngài xào nấu, hầm canh người ngoài không thấy thì còn đỡ, bây giờ ban ngày ban mặt lại vung cuốc xuống ruộng làm việc, làm mất thân phận của ngài!"
+Cô rốt cuộc nhịn không được nói thẳng, "Ngài nấu nướng, hầm canh người ngoài không nhìn thấy thì thôi, giờ lại ban ngày ban mặt vung cuốc ra đồng làm việc, mất hết thân phận rồi!"
 
-"Ngài đâu phải không có người hầu, nếu chuyện này mà đồn ra ngoài, người ngoài sẽ không biết nhìn ngài thế nào nữa!"
+"Ngài không phải là không có người hầu, nếu chuyện này truyền ra ngoài, người ngoài sẽ không biết nhìn nhận ngài thế nào nữa!"
 
-Đỗ An liếc nhìn, đúng là có không ít người đang nhìn hắn, dường như trên ruộng bậc thang không xa cũng có người chú ý đến cảnh này. Nhưng hắn lại chẳng hề để tâm, chiếc cuốc trong tay vẫn vung lên vững vàng và mạnh mẽ.
+Đỗ An quét mắt nhìn, quả nhiên có không ít người đang nhìn anh, ở phía xa trên ruộng bậc thang dường như cũng có người chú ý đến cảnh này.
 
-"Marla, có một số chuyện cô không hiểu. Lãnh chúa chỉ khi nào hòa mình vào dân chúng, mới có thể hiểu rõ hơn về nơi đây, hiểu rõ người và vật của Hắc Sâm Đảo."
+Nhưng anh lại không hề để tâm, tay cầm cuốc vẫn vung lên vững vàng và mạnh mẽ.
 
-"Cô xem tôi đang nhổ cỏ, nhưng thực ra, tôi đang đào xới mức độ kiểm soát của mình đối với lãnh địa."
+"Marla, có những chuyện con không hiểu. Lãnh chúa chỉ khi hòa mình vào dân chúng, mới có thể hiểu rõ hơn về nơi này, hiểu rõ người và vật trên Hắc Sâm Đảo."
 
-Marla nhìn chằm chằm vào mấy cọng cỏ bị nhổ đi, thứ này sao lại liên hệ với mức độ kiểm soát được? Cô không hiểu.
+"Con xem ta đào cỏ, nhưng thực chất, ta đang đào lấy sự kiểm soát đối với lãnh địa của mình."
 
-Lời lãnh chúa nói thẳng thắn, dân chúng dù không đọc nhiều sách cũng có thể hiểu được. Nhưng cảnh tượng này vẫn mang lại sức ảnh hưởng rất lớn. Trong lúc kinh ngạc, họ cũng nhao nhao hưởng ứng, bắt đầu bận rộn.
+Marla chăm chú nhìn mấy nhành cỏ bị nhổ bỏ, thứ này sao lại liên kết với sự kiểm soát được nhỉ?
 
-Dù sao đi nữa, họ cần cải thiện điều kiện sống của mình.
+Cô không hiểu.
 
-"Được thôi, Nam tước, ngài đúng." Marla chỉ đành bất lực từ bỏ việc khuyên nhủ.
+Đỗ An đứng thẳng dậy, nhìn quanh những dân cư, lớn giọng nói, "Các ngươi dùng đôi tay của mình để cải thiện cuộc sống, ta cũng muốn dùng đôi tay của mình để quản lý tốt Hắc Sâm Đảo, từng người từng người một đừng đứng ngây ra đó, mau bắt tay vào việc đi, vì một cuộc sống tốt đẹp hơn!"
 
-Mặc dù việc duy trì tôn nghiêm của chủ nhân, nhắc nhở chủ nhân những điều cần chú ý là trách nhiệm của gia nô, nhưng cô cảm thấy, nam tước không thể đối xử bằng lẽ thường. Sau này bất kể nam tước làm gì, cô cứ nhìn là được.
+Lời nói của lãnh chúa rất thẳng thắn, dân chúng dù không đọc nhiều sách cũng có thể hiểu được.
+
+Thế nhưng, cảnh tượng này vẫn có sức ảnh hưởng rất lớn.
+
+Trong lúc kinh ngạc, họ cũng nhao nhao hưởng ứng, bắt tay vào việc.
+
+Dù sao thì, họ cần phải cải thiện điều kiện sống của mình.
+
+"Được rồi, Nam tước, ngài nói đúng." Marla đành bất lực từ bỏ việc khuyên can.
+
+Tuy việc bảo vệ tôn nghiêm của chủ nhân, nhắc nhở chủ nhân những điều cần chú ý là trách nhiệm của gia nô, nhưng cô cảm thấy, nam tước không thể đối xử bằng lẽ thường.
+
+Sau này, dù nam tước có làm gì, cô chỉ cần nhìn là được.
 
 "Molly, lại đây, giúp ta nhổ hai giỏ bắp cải."
 
 "Vâng ạ~"
 
-Đỗ An tiếp tục công việc của mình, bóng dáng hắn bận rộn trong vườn rau. Có người tưởng rằng lãnh chúa sẽ không kiên trì được lâu, nhưng không ngờ lãnh chúa một hơi làm việc hơn một tiếng đồng hồ.
+Đỗ An tiếp tục công việc lao động của mình, bóng dáng anh bận rộn trong vườn rau.
+
+Có người cho rằng lãnh chúa sẽ không kiên trì được bao lâu, lại không ngờ lãnh chúa lại làm liền một mạch hơn một tiếng đồng hồ.
+
+Những dân cư vốn đang ngạc nhiên, nhìn Đỗ An với vẻ mặt nghiêm túc, không những trong lòng dâng lên sự kính phục, bản thân cũng có thêm chút động lực.
 
 Mặt trời dần lên cao, trán Đỗ An cũng lấm tấm mồ hôi.
 
-【Ngài nhổ cỏ cho cây trồng, độ thuần thục Trồng trọt cơ bản +1】
+【Ngươi cho cây trồng nhổ cỏ, độ thành thục cơ bản trồng trọt +1】
 
-【Ngài xới đất cho cây trồng, độ thuần thục Trồng trọt cơ bản +1】
+【Ngươi cho cây trồng làm đất, độ thành thục cơ bản trồng trọt +1】
 
-【Ngài tưới nước bón phân cho cây trồng, độ thuần thục Trồng trọt cơ bản +1】
+【Ngươi cho cây trồng tưới nước bón phân, độ thành thục cơ bản +1】
 
 Cuối cùng, sau hơn nửa buổi sáng.
 
-【Độ thuần thục Trồng trọt cơ bản đột phá, Nhập môn (0/200)】
+【Độ thành thục cơ bản trồng trọt đột phá, nhập môn (0/200)】
 
 【Điểm thuộc tính +0.1】
 
-Đỗ An dừng công việc, nở một nụ cười mãn nguyện, cuối cùng cũng đột phá rồi.
+Đỗ An dừng tay, lộ ra nụ cười hài lòng, cuối cùng cũng đã đột phá.
