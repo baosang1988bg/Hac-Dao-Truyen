@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from config import USER_AGENT, HEADLESS, SITE_SELECTORS
 
 # Các site dùng encoding GBK/GB2312 thay vì UTF-8
-GBK_DOMAINS = {"69shuba.com", "69shu.com", "readnovel.com"}
+GBK_DOMAINS = {"69shuba.com", "69shuba.tw", "69shuba", "69shu.com", "readnovel.com"}
 
 
 class NovelScraper:
@@ -65,10 +65,12 @@ class NovelScraper:
         """Khởi tạo Playwright browser và context một lần để dùng chung."""
         if self._playwright is None:
             self._playwright = await async_playwright().start()
-            self._browser = await self._playwright.chromium.launch(headless=self.headless)
-            # Windows Chrome UA — mạo danh tốt hơn Mac UA
+            self._browser = await self._playwright.chromium.launch(
+                headless=False,
+                args=["--disable-blink-features=AutomationControlled"]
+            )
+            # Windows Chrome UA — let Playwright use its default UA to avoid mismatch
             self._context = await self._browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
                 extra_http_headers={
                     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.5",
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -108,14 +110,25 @@ class NovelScraper:
         print(f"[*] Navigating to {url}...")
         try:
             await page.goto(url, wait_until="load", timeout=60000)
-            await asyncio.sleep(2)
+            
+            if "69shuba" in url:
+                print("[*] Detected 69shuba, waiting 10s for Turnstile challenge...")
+                await page.wait_for_timeout(10000)
+                # If redirected due to Turnstile check, go to the target URL again (cookie is now set)
+                if "read" in url and "read" not in page.url:
+                    print(f"[*] Redirected to {page.url}. Re-navigating to chapter URL: {url}...")
+                    await page.goto(url, wait_until="load", timeout=45000)
+                    await page.wait_for_timeout(5000)
+            else:
+                await asyncio.sleep(2)
+                
             html = await page.content()
 
             # Sanity check: nếu trang chưa có content (security page / captcha)
             from bs4 import BeautifulSoup
             soup_check = BeautifulSoup(html, "html.parser")
             content_check = soup_check.select_one(
-                "article, .txtnav, #contentbox, .contentbox, #content, .readcontent"
+                "article, .txtnav, #contentbox, .contentbox, #content, .readcontent, #nr, .nr_nr"
             )
             title_check = soup_check.find("h1")
             

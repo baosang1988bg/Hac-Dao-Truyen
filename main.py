@@ -1180,8 +1180,18 @@ async def cmd_translate_async(args, progress_callback=None):
                 break
             title, content, _prev_url, next_url = res
 
-            if not content or "Could not find" in content:
-                logger.error(f"[!] Could not parse content: {current_url}")
+            content_lower = content.lower() if content else ""
+            is_block_page = (
+                "cloudflare" in content_lower or
+                "security check" in content_lower or
+                "attention required" in content_lower or
+                "captcha" in content_lower or
+                "checking your browser" in content_lower
+            )
+            is_empty_title = not title or title.strip() == "" or title == "Untitled Chapter"
+
+            if not content or len(content.strip()) < 200 or "Could not find" in content or is_block_page or is_empty_title:
+                logger.error(f"[!] Could not parse content (error/block page/empty title): {current_url} | Title: {title} | Content Len: {len(content) if content else 0}")
                 report_progress(translated_count, args.chapters, "error", f"Lỗi: Không thể phân tích nội dung tại {current_url}")
                 break
 

@@ -13,6 +13,9 @@ import os
 import re
 import json
 import argparse
+import sys
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 from pathlib import Path
 
 NOVELS_DIR = Path("novels")

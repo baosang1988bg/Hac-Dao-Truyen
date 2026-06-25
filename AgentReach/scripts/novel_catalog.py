@@ -7,6 +7,8 @@ import json
 import os
 import re
 import sys
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 import urllib.request
 import urllib.parse
 from datetime import datetime

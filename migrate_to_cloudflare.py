@@ -166,9 +166,10 @@ def r2_put(local: Path, key: str, dry_run=False) -> bool:
     if dry_run:
         return True
     r = run_safe([get_wrangler(), 'r2', 'object', 'put',
-                  f"{R2_BUCKET}/{key}", f"--file={local}", '--remote'])
+                  f"{R2_BUCKET}/{key}", '--file', str(local.resolve()), '--remote'])
     if r.returncode != 0:
-        print(f"    [R2-ERR] {key[:60]}: {r.stderr[-120:].strip()}")
+        err_msg = r.stderr.strip() or r.stdout.strip()
+        print(f"    [R2-ERR] {key[:60]}: Code={r.returncode}, Err={err_msg}")
         return False
     return True
 

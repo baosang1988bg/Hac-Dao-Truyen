@@ -144,9 +144,9 @@ SITE_SELECTORS = {
     #   title: h1 hoặc .title69 / .booktitle
     #   content: #contentbox hoặc .txtnav / .contentbox
     #   nav: link có text 下一章 / 上一章
-    "69shuba.com": {
+    "69shuba": {
         "title": "h1, .title69, .booktitle, .readtitle",
-        "content": "#contentbox, .contentbox, #content, .txtnav, .readcontent",
+        "content": "#contentbox, .contentbox, #content, .txtnav, .readcontent, #nr, .nr_nr",
         # Use get_text() not .string — catches links with nested <span> tags
         "prev": lambda soup: next(
             (a for a in soup.find_all("a") if "上一章" in a.get_text() or "上一" in a.get_text()), None
