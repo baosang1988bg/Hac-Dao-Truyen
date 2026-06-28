@@ -898,12 +898,12 @@ class NovelTranslator:
                 except _DailyQuotaExhausted as e:
                     print(f"  [!] Gemini unavailable: {e}")
                     if self._provider == "gemini":
-                        return f"[Translation failed]\nError: {e}", ""
+                        return f"[Translation failed]\nError: {e}", "", {}
                     print("  [→] Falling back...")
                 except Exception as e:
                     print(f"  [!] Gemini failed: {e}")
                     if self._provider == "gemini":
-                        return f"[Translation failed]\nError: {e}", ""
+                        return f"[Translation failed]\nError: {e}", "", {}
                     print("  [→] Falling back...")
                     
             elif p == "deepseek" and self._deepseek:
@@ -915,7 +915,7 @@ class NovelTranslator:
                 except Exception as e:
                     print(f"  [!] DeepSeek failed: {e}")
                     if self._provider == "deepseek":
-                        return f"[Translation failed]\nError: {e}", ""
+                        return f"[Translation failed]\nError: {e}", "", {}
                     print("  [→] Falling back...")
                     
             elif p == "groq" and self._groq:
@@ -926,7 +926,7 @@ class NovelTranslator:
                 except Exception as e:
                     print(f"  [!] Groq failed: {e}")
                     if self._provider == "groq":
-                        return f"[Translation failed]\nError: {e}", ""
+                        return f"[Translation failed]\nError: {e}", "", {}
                     print("  [→] Falling back...")
                     
             # elif p == "ollama" and self._ollama:
@@ -942,7 +942,7 @@ class NovelTranslator:
             #         print("  [→] Falling back...")
 
         if raw is None:
-            return "[Translation failed]\nError: No backend available", ""
+            return "[Translation failed]\nError: No backend available", "", {}
 
         translated, summary = parse_response(raw)
         

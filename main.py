@@ -19,6 +19,7 @@ Commands:
 import asyncio
 import argparse
 import os
+import json
 import logging
 from datetime import datetime
 
@@ -217,9 +218,10 @@ def find_untranslated_raws(profile: NovelProfile) -> list[tuple[str, str]]:
             with open(catalog_path, "r", encoding="utf-8") as f:
                 cat = json.load(f)
                 for item in cat:
-                    catalog_map[item.get("original_title", "")] = item
-        except Exception:
-            pass
+                    orig_t = item.get("original_title") or item.get("title") or ""
+                    catalog_map[orig_t] = item
+        except Exception as e:
+            print("CATALOG LOAD ERROR:", e)
 
     raw_files = sorted(
         f for f in os.listdir(profile.raw_dir) if f.endswith(".txt")
