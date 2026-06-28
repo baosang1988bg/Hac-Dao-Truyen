@@ -1,4 +1,4 @@
-# Chương Một Trăm Bốn Mươi Bốn: Tai Họa Sớm Tối
+# Chương 144: Tai Họa Sớm Tối
 
 Dưới chân Hoa Thiên Sơn lập tức vang lên một tràng kinh hoảng kêu la, nhìn thi thể không đầu của Lư Viễn Lục rơi vào rừng núi, đại trận trên núi bắt đầu rung chuyển. Đám người này lúc này mới nảy sinh ý hối hận, có kẻ khóc lóc, có kẻ kêu la, lại có người quỳ xuống dập đầu.
 
