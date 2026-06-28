@@ -1,85 +1,81 @@
-# Chương 142: Cầu Lục
+# Chương 141 Cầu Lục
 
-“Thì ra là đến cầu lục!”
+"Thì ra là đến cầu lục!"
 
-Lục Giang Tiên khẽ dừng lại, thần thức bay vút ra ngoài, bao trùm lên toàn bộ Lý gia. Hiện tại phạm vi thần thức của hắn đã tăng lên rất nhiều, ngay cả Sơn Việt và nhà họ Lư xung quanh cũng nhìn thấy rõ ràng.
+Lục Giang Tiên khẽ khựng lại, thần thức bay vút ra, bao trùm toàn bộ Lý gia. Giờ đây, phạm vi thần thức của hắn đã tăng lên đáng kể, ngay cả Sơn Việt và nhà họ Lư ở xung quanh cũng đều nhìn rõ mồn một.
 
-Tế tự là một việc lớn đối với dân chúng bốn trấn. Ngay từ trước khi Lý gia trỗi dậy, bốn trấn đã có truyền thống tế tự, chỉ là thời gian mỗi nơi mỗi khác.
+Tế tự là một sự kiện trọng đại đối với người dân tứ trấn. Ngay cả khi Lý gia chưa quật khởi, tứ trấn đã có truyền thống tế tự, chỉ là thời gian khác nhau.
 
-Người dân các trấn tự mang đến hoa quả, dựng cột gỗ trong sân, treo những chiếc đèn trời bằng giấy, chờ đợi giờ tế tự.
+Người dân các trấn đều mang theo hoa quả, dựng cột gỗ trong sân, treo đèn trời bằng giấy, chờ đợi giờ tế lễ.
 
-Dưới chân Lê Kinh Sơn thì người đông như trẩy hội, dân chúng đều rướn cổ lên xem. Con nai lớn cấp Luyện Khí bị xích sắt trói chặt, quỳ trên bệ đá xanh, trên người lấm tấm máu, trông khá đáng sợ.
+Dưới chân núi Lê Kinh thì người người chen chúc, dân trấn đều rướn cổ nhìn xem. Con hươu lớn cấp độ Luyện Khí kia bị xích sắt trói chặt, quỳ trên đài tròn bằng đá xanh, thân thể loang lổ vết máu, trông khá đáng sợ.
 
-“Đây chính là yêu nai đó!”
+"Đây chính là con hươu yêu đó!"
 
-“Trông dữ thật!”
+"Thật đáng sợ!"
 
-Miệng nói vậy, nhưng cư dân bốn trấn chẳng mấy sợ hãi. Linh mạch núi Đại Lê đã phục hồi gần bốn mươi năm, yêu vật cấp Thai Tức xông vào trấn vô số kể, ít nhiều cũng đã thấy vài lần. Dân các trấn đã quen với cảnh yêu vật bị trấn áp, nên cũng chẳng sợ.
+Miệng nói vậy, nhưng cư dân tứ trấn lại không quá sợ hãi. Linh mạch núi Đại Lê đã phục hồi gần bốn mươi năm, yêu vật cấp Thai Tức xông vào trấn nhiều không kể xiết, ít nhiều cũng đã gặp vài lần. Người dân các trấn đã quen với việc yêu vật bị trấn áp, nên cũng không sợ.
 
-Bệ đá được mài nhẵn bóng đến soi gương, xung quanh khắc đầy hoa văn nhỏ li ti. Cặp sừng nai khổng lồ như san hô bị chém đứt, kẹp chặt vào cổ con nai. Lý Thông Nhai một tay đè lên nó, khiến nó không thể động đậy.
+Đài tròn được mài nhẵn bóng loáng như gương, xung quanh khắc đầy hoa văn nhỏ. Chiếc sừng hươu khổng lồ như san hô bị cắt đứt được kẹp vào cổ con hươu lớn, Lý Thông Nhai một tay ấn giữ, khiến nó không thể nhúc nhích.
 
-Phía trên là vài pho tượng gỗ, tượng bùn tượng trưng. Phía sau Lý Thông Nhai là các đệ tử đời Huyền Cảnh của Lý gia. Lý Huyền Tuyên đứng sau Lý Thông Nhai một bước, Lý Huyền Phong và Lý Huyền Lĩnh đứng ở bậc thềm dưới của bệ đá.
+Phía trên là vài pho tượng gỗ, tượng đất mang tính biểu tượng. Đằng sau Lý Thông Nhai là các đệ tử bối Huyền Cảnh của Lý gia. Lý Huyền Tuyên đi sau Lý Thông Nhai một bước, còn Lý Huyền Phong và Lý Huyền Lĩnh thì đứng ở bậc thang dưới của đài tròn.
 
-“Lấy máu tế lễ, thờ thần cầu phúc.”
+"Lấy máu tế cúng, phụng sự thần linh ban phúc."
 
-Đọc xong lời tế, dân chúng xung quanh lập tức quỳ rạp xuống một mảng. Trên đường phố và cầu đá đều là những bóng người phủ phục, ai nấy đều thành kính nhắm mắt, cả thị trấn yên tĩnh đến đáng sợ.
+Sau khi đọc xong lời cầu nguyện tế tự, người dân xung quanh lập tức quỳ rạp xuống. Trên đường phố và cầu đá đều là đám đông cúi lạy, mỗi người đều thành kính nhắm mắt, cả trấn nhỏ yên tĩnh đến đáng sợ.
 
-“Đây chính là tế tự của Lý gia…”
+"Đây chính là lễ tế của Lý gia..."
 
-Vạn Thiên Thù không chỉ một lần chứng kiến tế tự, nhưng mỗi lần đều cảm thấy vạn cảm xôn xao. Hắn cung kính khom mình dưới đài, mùi hương khói nồng đậm cuộn trào trong mũi, bầu không khí trang nghiêm làm hắn cứng đờ tay chân, thầm nghĩ trong lòng:
+Vạn Thiên Thù không chỉ một lần chứng kiến lễ tế, nhưng lần nào cũng không khỏi cảm khái vạn phần. Hắn cung kính cúi người dưới đài, mùi hương hỏa nồng đậm không ngừng xông vào mũi, không khí trang nghiêm khiến tứ chi hắn cứng đờ, trong lòng thầm nghĩ:
 
-“Nào giống một gia tộc tu tiên mới nổi lên bốn mươi năm, rõ ràng là một thế gia tu tiên đã truyền thừa hơn bốn trăm năm!”
+"Đây nào giống một gia tộc tu tiên mới quật khởi chưa đầy bốn mươi năm, mà cứ như một thế gia tu tiên đã truyền thừa hơn bốn trăm năm vậy!"
 
-Năm đó Vạn Thiên Thù ở Vạn gia cũng từng tham gia một số nghi thức do gia tộc truyền lại, nhưng không thể nào so sánh với sự trang nghiêm túc mục của Lý gia. Lại nghĩ đến sự quản lý nghiêm khắc của Lý gia đối với đệ tử trong tộc, Vạn Thiên Thù khẽ thở dài, tự nhủ:
+Thuở đó Vạn Thiên Thù ở Vạn gia cũng từng tham gia một số nghi thức truyền thừa của tộc, nhưng không thể nào so sánh được với vẻ trang nghiêm túc mục của Lý gia. Nhìn lại cách Lý gia quản lý nghiêm khắc các đệ tử trong tộc, Vạn Thiên Thù khẽ thở dài, thầm nói:
 
-“Lý gia bốn mươi năm trỗi dậy nhanh chóng, chẳng phải vô lý…”
+"Tốc độ quật khởi của Lý gia trong bốn mươi năm qua, quả nhiên không phải là không có lý do..."
 
-Trên đài, con dao tế trong tay Lý Huyền Tuyên đã đâm thẳng vào não con nai lớn ở trung tâm bệ đá. Yêu vật rên lên một tiếng bi thương, nhưng bị Lý Thông Nhai ghì chặt trên bệ đá không thể động đậy, lập tức chết đi.
+Trên đài, tế đao trong tay Lý Huyền Tuyên đã thẳng thừng đâm xuyên vào não con hươu lớn ở trung tâm đài tròn. Yêu vật bi ai kêu lên một tiếng, nhưng bị Lý Thông Nhai ấn chặt trên đài tròn không thể động đậy, lập tức bỏ mạng.
 
-Dưới sự dẫn dắt của thần thức Lục Giang Tiên, từng luồng tinh khí trên người con nai lớn tụ lại, cùng với hồn phách hình nai đang tan biến ngưng tụ thành một luồng, phun ra theo vết thương do dao tế cứa ra, như một cột khói nguyên khí.
+Dưới sự dẫn dắt của thần thức Lục Giang Tiên, từng luồng tinh khí trên thân con hươu lớn hội tụ lại, cùng với linh hồn hình hươu bay lượn ngưng tụ mà ra, theo vết thương do tế đao tạo thành phun trào, tựa như một làn khói sói kết tụ từ nguyên khí.
 
-Khói hơi bốc lên vài giây, tan thành vô số điểm sáng màu xám khó thấy bằng mắt thường, chảy về phía Lê Kinh Sơn.
+Khói bốc lên vài nhịp thở, tản ra thành vô số điểm sáng màu tro khó nhìn thấy bằng mắt thường, chảy về phía núi Lê Kính.
 
-Trên mặt kính lập tức thần quang lấp lánh, một vòng sáng vô hình vô tướng lan tỏa ra. Mọi người phía dưới cảm thấy thân thể nhẹ bẫng. Lục Giang Tiên bấm ra một đạo tro lục, liếc nhìn vài lần, rồi ném về phía Lý Huyền Phong.
+Trên mặt gương lập tức thần quang lấp lánh, một vòng sáng vô hình vô tướng khuếch tán đến. Mọi người phía dưới thân thể nhẹ bẫng, Lục Giang Tiên nặn ra một đạo tro lục, quét nhìn vài lượt, rồi ném về phía Lý Huyền Phong.
 
-Đạo tro lục xoay một vòng, bay vào Thăng Dương Phủ của hắn. Trước mắt Lục Giang Tiên lập tức hoa lên, hiện ra mấy hàng chữ lớn.
+Tro lục lượn một vòng, bay về Thăng Dương Phủ của hắn. Trước mắt Lục Giang Tiên chợt hoa lên, hiện ra mấy hàng chữ lớn.
 
-Trên cùng là nét bút màu đỏ thẫm phác họa, nhìn qua một luồng sát khí hung hãn tràn mặt.
+Hàng trên cùng được phác họa bằng nét bút màu đỏ sẫm, trông như một luồng khí hung sát ập thẳng vào mặt.
 
-“Lực quán thiên quân.”
+"Lực quán thiên quân."
 
-Đạo lục khí này giống với của Lý Hạng Bình năm đó, có thể nâng tố chất thân thể của người thụ lục lên một mức cực cao, huyết khí như khói, sức mạnh ngàn quân, gần giống yêu vật.
+Đạo lục khí này giống với Lý Hạng Bình năm xưa, có thể nâng cao thể chất của người thụ lục lên một trình độ cực cao, huyết khí như khói, lực quán thiên quân, gần giống với yêu vật.
 
-Hàng thứ hai là nét bút màu lam nhạt, tiết lộ một tia khí nhẹ nhàng thanh thoát.
+Hàng thứ hai là nét bút màu xanh nhạt, toát lên một vẻ thanh linh.
 
-“Truy vân trục nguyệt.”
+"Truy vân trục nguyệt."
 
-Đạo lục khí này ban cho người thụ lục thiên phú lái mây cưỡi gió, có thể với tốc độ gấp nhiều lần cưỡi gió bay lên, cũng khá thực dụng.
+Đạo lục khí này thì ban cho người thụ lục thiên phú cưỡi mây đạp gió, có thể cưỡi gió bay lên với tốc độ gấp mấy lần, cũng khá thực dụng.
 
-Cuối cùng là “Diên niên trường mệnh” – ban cho người thụ lục bốn mươi năm tuổi thọ. Lục Giang Tiên bỏ qua trước tiên, dù sao con đường tu tiên hiểm ác, Lý Huyền Phong chưa chắc đã dùng hết tuổi thọ của mình. Nếu sống còn không nổi, thì diên niên trường mệnh cũng vô dụng.
+Đạo cuối cùng "Diên niên trường mệnh" là ban cho người thụ lục thêm bốn mươi năm tuổi thọ.
 
-Do dự một hồi giữa “Lực quán thiên quân” và “Truy vân trục nguyệt”, Lục Giang Tiên không quyết định được, khẽ búng tay, điểm sáng này liền chìm vào linh thức của Lý Huyền Phong.
+Sau khi phân vân giữa "Lực quán thiên quân" và "Truy vân trục nguyệt" một lúc, Lục Giang Tiên vẫn chưa quyết định được, hắn khẽ búng ngón tay, điểm sáng này liền chìm vào Linh thức của Lý Huyền Phong.
 
-“Để hắn tự chọn… Dân bốn trấn đông hơn nhiều, hương khói khí này không chỉ ngưng tụ được một đạo tro lục, còn dư lại một phần nhỏ.”
+"Cứ để hắn tự chọn... À mà, cư dân tứ trấn đã tăng lên nhiều, luồng hương hỏa khí này không chỉ ngưng tụ được một đạo tro lục, mà còn dư lại một phần nhỏ."
 
-Suy nghĩ vài giây, Lục Giang Tiên chợt nhớ ra từ khi Pháp Giám được sửa chữa, có một bí thuật chưa từng dùng qua. Nay hương khói lục khí dư ra, nhưng lại không đủ để ngưng tụ thêm một viên tro lục, thì vừa hay có thể dùng được.
+Suy nghĩ vài nhịp thở, Lục Giang Tiên chợt nhớ ra từ khi giám thân được phục hồi, có một bí thuật vẫn chưa từng được sử dụng. Giờ đây luồng hương hỏa lục khí này dư ra, nhưng lại không đủ để ngưng tụ thêm một tro lục nữa, thì vừa vặn có thể dùng đến.
 
-Năm đó Lý Hạng Bình giết một lão tu sĩ Luyện Khí, từ trên người hắn lấy được một khối ngọc bội. Khối ngọc bội đó đã giúp Pháp Giám sửa chữa khả năng ngưng tụ lục đan. Chính là kết hợp lượng lục khí dư thừa này với Thái Âm Nguyệt Hoa để ngưng tụ thành lục đan.
+Năm xưa Lý Hạng Bình từng giết một lão tu sĩ Luyện Khí, từ trên người lão ta lấy được một miếng ngọc bội. Miếng ngọc bội đó đã giúp giám thân phục hồi khả năng ngưng tụ lục đan, tức là kết hợp luồng lục khí dư thừa này với Thái Âm Nguyệt Hoa để ngưng tụ thành lục đan.
 
-Mỗi một đại cảnh giới của tu sĩ chỉ có thể phục dụng một viên, có thể phá vỡ bình cảnh, tinh tiến tu vi.
+Uống viên đan dược này còn sẽ bí mật để lại một đạo lục ấn trong thần hồn chi sở ở Thăng Dương Phủ, tăng tốc độ thổ nạp linh khí của chủ thể. Đến khi chủ thể chết đi, nó sẽ tận lực chuyển hóa tinh khí thành lục khí phản hồi giám thân.
 
-Phục dụng viên đan dược này còn có thể bí mật lưu lại một đạo lục ấn trong Thăng Dương Phủ, nơi thần hồn cư ngụ, tăng tốc độ thổ nạp linh khí của ký chủ. Đến khi ký chủ chết đi, sẽ tận dụng hết tinh khí của họ, chuyển hóa thành lục khí phản hồi lại Pháp Giám.
+Lục đan tuy hiệu quả không bằng Huyền Châu Phù Châu, nhưng cũng có thể lấy được hai ba phần mười tu vi của nó. Chỉ là năm xưa Lý gia còn yếu, bí pháp này mãi không được dùng, đến tận hôm nay mới có thể phát huy tác dụng.
 
-Tuy hiệu suất của lục đan không bằng Huyền Châu Phù Chủng, nhưng cũng lấy được hai ba phần mười tu vi. Chỉ là năm đó Lý gia còn yếu, bí pháp này chậm chạp chưa dùng đến, đến hôm nay mới có thể phát huy tác dụng.
+"Lục đan này tốt nhất nên ngưng tụ thêm vài viên, có thể đẩy nhanh đáng kể tốc độ tăng cường pháp lực. Nếu có thể lưu thông ra thị trường, cho tu sĩ Trúc Cơ thậm chí tu sĩ Tử Phủ uống, đợi đến khi họ chết đi rồi thu hồi lại... há chẳng phải tuyệt vời sao!"
 
-“Loại lục đan này tốt nhất có thể ngưng tụ thêm vài viên, có thể đại đại tăng tốc độ tăng pháp lực. Nếu có thể lưu thông ra thị trường, cho tu sĩ Trúc Cơ, thậm chí Tử Phủ phục dụng, đợi đến khi họ chết đi lại thu hồi về… chẳng phải tuyệt vời hay sao!”
+Hắn vui vẻ nghĩ ngợi một lúc, rồi chợt đổi ý, trong lòng Lục Giang Tiên lại dấy lên lo lắng, lẩm bẩm:
 
-Nghĩ ngợi vui vẻ một hồi, nhưng nghĩ lại, Lục Giang Tiên trong lòng lại có lo ngại, lẩm bẩm:
+"Chỉ là không biết lục đan này có bị người khác nhận ra không, khiến một số kẻ thù tìm đến tận cửa, khi đó phiền phức sẽ lớn lắm... Thôi vậy, cứ dùng cho mấy đứa trẻ Lý gia này trước đã."
 
-“Chỉ là không biết lục đan này có bị người ta nhận ra không, để mấy kẻ thù tìm đến cửa, lúc đó phiền phức lớn… Thôi bỏ đi, trước hết dùng cho mấy đứa nhỏ Lý gia này.”
+Bí pháp khởi động, trong chớp mắt, ánh sáng trên gương lấp lánh, ánh trăng như dòng suối phun trào, lượn lờ bao quanh trên đài đá, ngưng tụ lại như khói như sương, hóa thành ba viên đan dược sáng lấp lánh. Trên mỗi viên đan dược vẽ đầy những đường nét bí ẩn, uốn lượn, trông vô cùng đẹp mắt.
 
-Bí pháp vận chuyển, chốc lát trên mặt kính ánh sáng lấp lánh, hào quang như trăng phun trào, xoay quanh trên bệ đá, như khói như sương ngưng tụ lại, tụ thành ba viên đan dược sáng long lanh, trên đó vẽ đầy những đường nét thần bí uốn lượn, trông khá đẹp mắt.
-
-Ngưng tụ xong lục đan, Lục Giang Tiên lại rơi trở về trong gương, nghiên cứu vu thuật tiếp.
-
-(Hết chương)
+Sau khi ngưng tụ xong lục đan, Lục Giang Tiên lại quay về trong gương, tiếp tục nghiên cứu vu thuật.

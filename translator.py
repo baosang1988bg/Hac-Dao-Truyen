@@ -51,6 +51,11 @@ if GEMINI_MODEL not in GEMINI_MODEL_POOL:
 
 def build_prompt(title, content, glossary, translation_style, previous_summary=""):
     style = translation_style.strip() or DEFAULT_TRANSLATION_STYLE
+    
+    # Lọc glossary động để giảm thiểu token thừa và tăng tốc độ xử lý cho model local
+    if glossary:
+        glossary = {k: v for k, v in glossary.items() if k in content or k in title}
+        
     glossary_block = (
         "\n".join(f"  - {k} → {v}" for k, v in glossary.items())
         if glossary else "(No glossary — transliterate Chinese names phonetically into Vietnamese if needed)"
@@ -69,6 +74,8 @@ def build_prompt(title, content, glossary, translation_style, previous_summary="
 5. **Pronouns**: Choose contextually appropriate pronouns — 'hắn/y' for male characters, 'nàng/cô' for female, 'ta/tôi' for first person, 'ngươi/anh/em/mày' for second person based on relationship and tone.
 6. **Dialogue**: Make conversations feel alive and natural. Avoid overly formal phrasing in casual exchanges.
 7. **Do NOT add commentary, translator notes, or summaries inside the chapter content itself.**
+8. **DO NOT change or hallucinate the chapter number in the title.** If the original title says "第二十四" or "Chương 24", the translation MUST keep it as "Chương 24". Do NOT output random numbers like "Chương 1118".
+9. **TRANSLATE COMPLETELY**: Do not skip paragraphs, do not summarize, do not omit any words. The translation must match the source content line by line without any missing text.
 
 --- TRANSLATION STYLE ---
 {style}
@@ -108,6 +115,12 @@ def parse_response(raw: str) -> tuple[str, str]:
 
 def build_batch_prompt(chapters: list[tuple[str, str]], glossary, translation_style, previous_summary=""):
     style = translation_style.strip() or DEFAULT_TRANSLATION_STYLE
+    
+    # Lọc glossary động cho toàn bộ batch
+    if glossary:
+        full_text = " ".join(t + " " + c for t, c in chapters)
+        glossary = {k: v for k, v in glossary.items() if k in full_text}
+        
     glossary_block = (
         "\n".join(f"  - {k} → {v}" for k, v in glossary.items())
         if glossary else "(No glossary — transliterate Chinese names phonetically into Vietnamese if needed)"
@@ -132,6 +145,8 @@ def build_batch_prompt(chapters: list[tuple[str, str]], glossary, translation_st
 5. **Pronouns**: Choose contextually appropriate pronouns.
 6. **Dialogue**: Make conversations feel alive and natural.
 7. **Do NOT add commentary, translator notes, or summaries inside the chapter content itself.**
+8. **DO NOT change or hallucinate the chapter number in the title.** If the original title says "第二十四" or "Chương 24", the translation MUST keep it as "Chương 24". Do NOT output random numbers like "Chương 1118".
+9. **TRANSLATE COMPLETELY**: Do not skip paragraphs, do not summarize, do not omit any words. The translation must match the source content line by line without any missing text.
 
 --- TRANSLATION STYLE ---
 {style}
@@ -914,17 +929,17 @@ class NovelTranslator:
                         return f"[Translation failed]\nError: {e}", ""
                     print("  [→] Falling back...")
                     
-            elif p == "ollama" and self._ollama:
-                try:
-                    raw = self._call_ollama(prompt, max_retries)
-                    _used_model = self._ollama._model if self._ollama else 'ollama'
-                    print(f"  [✓] Ollama success")
-                    break
-                except Exception as e:
-                    print(f"  [!] Ollama failed: {e}")
-                    if self._provider == "ollama":
-                        return f"[Translation failed]\nError: {e}", ""
-                    print("  [→] Falling back...")
+            # elif p == "ollama" and self._ollama:
+            #     try:
+            #         raw = self._call_ollama(prompt, max_retries)
+            #         _used_model = self._ollama._model if self._ollama else 'ollama'
+            #         print(f"  [✓] Ollama success")
+            #         break
+            #     except Exception as e:
+            #         print(f"  [!] Ollama failed: {e}")
+            #         if self._provider == "ollama":
+            #             return f"[Translation failed]\nError: {e}", ""
+            #         print("  [→] Falling back...")
 
         if raw is None:
             return "[Translation failed]\nError: No backend available", ""
@@ -958,8 +973,8 @@ class NovelTranslator:
                     cleaned = self._call_gemini(cleanup_prompt, max_retries=2)
                 elif self._deepseek:
                     cleaned = self._call_deepseek(cleanup_prompt, max_retries=2)
-                elif self._ollama:
-                    cleaned = self._call_ollama(cleanup_prompt, max_retries=2)
+                # elif self._ollama:
+                #     cleaned = self._call_ollama(cleanup_prompt, max_retries=2)
                 else:
                     cleaned = translated
                 if not has_chinese_chars(cleaned):
@@ -1044,17 +1059,17 @@ class NovelTranslator:
                         return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
                     print("  [→] Falling back...")
                     
-            elif p == "ollama" and self._ollama:
-                try:
-                    raw = self._call_ollama(prompt, max_retries)
-                    _batch_model = self._ollama._model if self._ollama else "ollama"
-                    print(f"  [✓] Ollama success")
-                    break
-                except Exception as e:
-                    print(f"  [!] Ollama failed: {e}")
-                    if self._provider == "ollama":
-                        return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
-                    print("  [→] Falling back...")
+            # elif p == "ollama" and self._ollama:
+            #     try:
+            #         raw = self._call_ollama(prompt, max_retries)
+            #         _batch_model = self._ollama._model if self._ollama else "ollama"
+            #         print(f"  [✓] Ollama success")
+            #         break
+            #     except Exception as e:
+            #         print(f"  [!] Ollama failed: {e}")
+            #         if self._provider == "ollama":
+            #             return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
+            #         print("  [→] Falling back...")
 
 
 
@@ -1078,8 +1093,8 @@ class NovelTranslator:
                         cleaned = self._call_gemini(cleanup_prompt, max_retries=2)
                     elif self._deepseek:
                         cleaned = self._call_deepseek(cleanup_prompt, max_retries=2)
-                    elif self._ollama:
-                        cleaned = self._call_ollama(cleanup_prompt, max_retries=2)
+                    # elif self._ollama:
+                    #     cleaned = self._call_ollama(cleanup_prompt, max_retries=2)
                     else:
                         cleaned = translated
                     if not has_chinese_chars(cleaned):

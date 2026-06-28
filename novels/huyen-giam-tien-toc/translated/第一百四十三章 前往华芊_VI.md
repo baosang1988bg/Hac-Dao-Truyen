@@ -1,115 +1,113 @@
-# Chương 144: Tiến Về Hoa Thiên
+# Chương 143: Đến Hoa Thiên
 
-Lư Uyển Dung hối hả bước vào phòng, lấy một tấm lụa trên án, nha hoàn bên cạnh vội vàng mài mực. Nàng cầm bút chấm mực, viết như bay.
+Lư Uyển Dung vội vàng bước vào nhà, lấy một mảnh vải lụa trên án thư. Nha hoàn bên cạnh vội mài mực, nàng cầm bút chấm chấm rồi viết lia lịa.
 
-“Nghe tin Cao Tổ qua đời, thiếp vô cùng lo sợ, trong nhà mất đi chỗ dựa, e rằng khó lòng giữ được hai núi Hoa Thiên và Thao Vân.
+"Nghe tin cao tổ tiên thế, Dung vô cùng hoảng sợ và lo lắng. Trong nhà mất đi chỗ dựa, e rằng khó giữ được hai ngọn núi Hoa Thiên và Thao Vân. Kính xin tộc huynh dẫn cả tộc hướng đông, đi về phía Khuẩn Lâm Nguyên hoặc quận thành, dâng hai ngọn núi cho Lý gia.
 
-“Nếu do dự lưỡng lự, trong khoảnh khắc đại họa sẽ giáng xuống, hối hận cũng muộn!”
+"Nếu chần chừ do dự, tai họa lớn sẽ ập đến trong sớm tối, hối hận cũng đã muộn!"
 
-Tay cầm bút khựng lại, Lư Uyển Dung nhìn những giọt nước mắt trên gã nha hoàn theo hầu về, giọng run run nói:
+Cây bút trong tay khựng lại, Lư Uyển Dung nhìn vết lệ trên mặt nha hoàn hồi môn bên cạnh, run giọng nói:
 
-“Hai nhà hiện còn có quan hệ thông gia, nếu huynh trưởng ta biết nói lời hòa hảo, dâng cả hai ngọn núi lên, may ra còn giữ được thể diện, bảo toàn gia nghiệp. Nhưng nếu giữa hai nhà đổ máu, đó là chuyện diệt tộc…”
+"Hai nhà giờ đây vẫn còn thân thích thông gia, tộc huynh của ta nếu có thể nói lời hay ý đẹp, dâng hết hai ngọn núi lên, nói không chừng vẫn có thể giữ được thể diện, bảo toàn cơ nghiệp. Nếu hai nhà đổ máu, thì đó là chuyện cả tộc bị diệt vong..."
 
-Đặt bút xuống, cuộn nhanh bức thư, Lư Uyển Dung bước nhanh ra sân, chợt đâm sầm vào một người, khiến nàng loạng choạng, không nói nên lời.
+Đặt bút xuống, nhanh chóng cuộn bức thư lại, Lư Uyển Dung bước nhanh ra khỏi sân, nhưng bất ngờ va phải một người, khiến nàng lảo đảo, không nói nên lời.
 
-Người đó mặc một chiếc áo trắng, búi tóc, đứng lặng trong sân. Trên người đeo ngọc bội kêu leng keng trong gió, mày mắt sáng sủa, ôn hòa nhìn nàng, xem ra đã đứng trước sân từ lâu.
+Người đó mặc một bộ bạch y, búi tóc, lặng lẽ đứng trong sân. Ngọc bội trên người leng keng trong gió, lông mày và ánh mắt sáng sủa, ôn hòa nhìn nàng, xem ra đã đứng trước sân rất lâu rồi.
 
-“Phu quân.”
+"Phu quân."
 
-Lư Uyển Dung khẽ gọi, giọng nghẹn ngào. Lý Huyền Lĩnh ừ một tiếng, đưa tay ra, giọng trầm:
+Lư Uyển Dung khẽ gọi một tiếng nghẹn ngào, Lý Huyền Lĩnh "ừm" một tiếng đáp lại, vươn tay ra, khẽ nói:
 
-“Đưa cho ta xem.”
+"Đưa đây cho ta xem."
 
-Lư Uyển Dung trao bức thư, quỳ thụp xuống đất, nức nở:
+Lư Uyển Dung giao bức thư, "phịch" một tiếng quỳ xuống đất, nghẹn ngào nói:
 
-“Phu quân! Xin hãy cho Lư gia một đường sống! Mấy vị huynh đệ của thiếp đều là kẻ ham chơi hưởng lạc, cả nhà dời vào quận cũng chẳng làm nên trò trống gì, thực sự không thể uy hiếp được ai, xin hãy buông tha cho họ…”
+"Phu quân! Xin hãy cho nhà họ Lư một con đường sống! Những tộc huynh tộc đệ của thiếp đều là những kẻ ham chơi hưởng lạc, cả nhà đi đến quận thành cũng không thể làm nên chuyện gì, thật sự không thể tạo thành mối đe dọa nào, hãy tha cho họ một lần đi..."
 
-Lý Huyền Lĩnh đọc xong bức thư, khẽ thở dài, ôn tồn nói:
+Lý Huyền Lĩnh đọc xong bức thư, lúc này mới khẽ thở dài, ôn hòa nói:
 
-“Nàng nói xem, Lư gia đã muốn chiếm núi Hoa Thiên, còn đòi hỏi hồ Vọng Nguyệt, đòi cả Linh Đạo, muốn nhà họ Lý đi chỗ khác. Đến nước này, nàng còn nói đến đường sống sao?”
+Giao bức thư trở lại tay Lư Uyển Dung, Lý Huyền Lĩnh nắm tay nàng, tiếp tục nói:
 
-Đưa thư lại cho Lư Uyển Dung, Lý Huyền Lĩnh nắm tay nàng, tiếp lời:
+"Huống hồ với tính cách của tộc huynh nàng, nàng chỉ cho hắn đường sống hắn cũng không biết đi, còn sẽ đâm thẳng vào đường chết, thì nói gì đến việc cho một con đường sống?"
 
-“Huống chi, với tính cách của huynh trưởng nàng, dù nàng có chỉ đường sống cho hắn, hắn cũng chẳng biết đi, còn cứ lao đầu vào chỗ chết, nói gì đến đường sống đây?”
+Lư Uyển Dung bật khóc nức nở, khẽ nói:
 
-Lư Uyển Dung bật khóc, nhẹ nhàng nói:
+"Người nhà họ Lư kiêu ngạo xa hoa thành tính, không biết kiềm chế, ức hiếp nam nữ, ngang ngược bá đạo, Uyển Dung đã sớm tuyệt vọng với họ. Nhưng thiếp xuất thân từ nhà họ Lư, dù sao cũng là một dấu ấn không thể xóa nhòa, sao có thể khoanh tay đứng nhìn đây."
 
-“Người Lư gia kiêu xa thành tính, không biết thu liễm, ức hiếp dân lành, hoành hành ngang ngược. Thiếp sớm đã tuyệt vọng với họ. Nhưng thiếp xuất thân từ Lư gia, dù sao cũng là vết tích không thể xóa nhòa, làm sao có thể ngồi yên không màng?”
+Nói xong đã nước mắt đầm đìa, Lư Uyển Dung khẽ nói:
 
-Nói xong đã nước mắt đầm đìa, Lư Uyển Dung thì thầm:
+"Thiếp muốn... thiếp muốn, nếu hai nhà trở thành huyết thù, cả tộc bị đồ sát, sau này con cái của chúng ta sẽ phải tự xoay sở thế nào! Phu quân cũng phải nghĩ cho tương lai..."
 
-“Thiếp nghĩ… thiếp nghĩ, nếu hai nhà thành kẻ thù máu, cả tộc bị diệt, thì con cái chúng ta sau này biết tự xử trí thế nào! Phu quân cũng phải nghĩ cho tương lai…”
+Lý Huyền Lĩnh nghe vậy khẽ khựng lại, nhìn nàng hai cái, lúc này mới nói:
 
-Lý Huyền Lĩnh nghe vậy khựng lại, nhìn nàng một lát, mới nói:
+"Chuyện này ta có chừng mực, nàng cứ yên tâm đi."
 
-“Việc này ta có chừng mực, nàng cứ yên tâm.”
+Nhìn Lý Huyền Lĩnh vội vàng rời khỏi sân, Lư Uyển Dung lau nước mắt, đặt bức thư trong tay lên mặt bàn, nha hoàn bên cạnh vội vàng nói:
 
-Nhìn Lý Huyền Lĩnh vội vã rời khỏi sân, Lư Uyển Dung lau nước mắt, đặt bức thư lên bàn. Nha hoàn bên cạnh vội hỏi:
+"Phu nhân, bức thư này còn phải gửi đi không ạ?"
 
-“Phu nhân, bức thư này còn gửi không?”
+"Không cần nữa."
 
-“Không cần nữa.”
+Lư Uyển Dung đau buồn lắc đầu, khẽ nói:
 
-Lư Uyển Dung đau đớn lắc đầu, giọng trầm:
+"Sức người sức vật làm sao nhanh bằng tu sĩ Luyện Khí bay được, bức thư này đã không còn cần thiết phải gửi đi nữa, cũng để tộc đệ của ta ở lại trước, không cần quay về nữa."
 
-“Người và súc vật sao có thể nhanh bằng tu sĩ Luyện Khí bay lượn. Bức thư này không cần gửi nữa. Hãy bảo người huynh đệ của ta ở lại trước, không cần về.”
+————
 
----
+Lý Huyền Lĩnh rời khỏi sân vội vàng lên núi, đi một đoạn trên bậc đá, thấy Lý Huyền Phong và Lý Thông Nhai đứng trước sân, không biết đang bàn luận chuyện gì.
 
-Lý Huyền Lĩnh ra khỏi sân liền vội vàng lên núi. Bước trên bậc đá một đoạn, thấy Lý Huyền Phong và Lý Thông Nhai đang đứng trước sân, không biết đang bàn luận gì.
-
-“Phong ca, không phải huynh vào quận chế tạo pháp khí sao?”
+"Huyền Phong, huynh không phải đã đến quận thành để chế tạo pháp khí rồi sao?"
 
 Lý Huyền Lĩnh nghi hoặc hỏi một câu, thấy Lý Huyền Phong khẽ lắc đầu, cười nói:
 
-“Ta đi ngang qua địa giới Lư gia, thấy trên núi dưới núi toàn một màu trắng, e rằng Lư Tư Tự đã mất, nghĩ đây là cơ hội tốt nên quay về trước.”
+"Ta đi ngang qua địa phận nhà họ Lư, thấy trên núi dưới núi một màu bạch y, e rằng Lư Tư Tự đã qua đời, cảm thấy là cơ hội tốt nên đã quay về trước."
 
-Lý Huyền Lĩnh nghe xong dở khóc dở cười, lắc đầu nói:
+Lý Huyền Lĩnh lập tức dở khóc dở cười, lắc đầu nói:
 
-“Đúng là sợ người khác không biết! Lư Viễn Lục này rốt cuộc nghĩ gì vậy! Lư gia phái người đến báo tin cho Uyển Dung, ta cũng nhận được tin, vội vàng lên đây báo cáo với phụ thân.”
+"Thật là sợ người khác không biết! Lư Viễn Lục này rốt cuộc là nghĩ gì thế! Nhà họ Lư phái người đến thông báo cho Uyển Dung, bên ta cũng đã nhận được tin tức, vội vàng lên đây bẩm báo phụ thân."
 
-Lý Thông Nhai nghe vậy gật đầu nhẹ, giọng trầm:
+Lý Thông Nhai nghe vậy khẽ gật đầu, khẽ nói:
 
-“Thừa dịp nhà họ Úc chưa kịp phản ứng, hãy nhanh chóng giải quyết Lư gia. Chờ đến khi Úc gia nhúng tay, sẽ sinh thêm chuyện. Huyền Tuyên đã xuống chỉnh đốn lính tộc, chúng ta đi trước một bước.”
+"Tranh thủ lúc Úc gia chưa kịp phản ứng, nhanh chóng giải quyết nhà họ Lư. Đợi đến khi Úc gia nhúng tay vào thì sẽ nảy sinh thêm rắc rối. Huyền Tuyên đã xuống dưới chỉnh đốn tộc binh, chúng ta đi trước một bước đi."
 
-Lý Huyền Phong và Lý Huyền Lĩnh khẽ đáp lời. Lý Huyền Lĩnh xuống núi tìm Lý Huyền Tuyên, còn Lý Huyền Phong và Lý Thông Nhai, hai tu sĩ Luyện Khí, cưỡi gió bay lên, hướng về núi Hoa Thiên.
+Lý Huyền Phong và Lý Huyền Lĩnh khẽ đáp lời. Lý Huyền Lĩnh xuống núi tìm Lý Huyền Tuyên, còn Lý Huyền Phong và Lý Thông Nhai hai vị tu sĩ Luyện Khí thì cưỡi gió bay lên, đi về phía Hoa Thiên Sơn.
 
-Mới bay được một dặm, Lý Huyền Phong do dự một chút, lên tiếng:
+Vừa bay được khoảng một dặm, Lý Huyền Phong chần chừ một thoáng, mở miệng nói:
 
-“Lư gia trên dưới, cả đích lẫn thứ, có hơn hai nghìn người, thông gia liên lụy đến vạn người. Nếu xử lý không tốt, thực sự là chuyện phiền phức!”
+"Trên dưới nhà họ Lư, cả đích hệ và thứ hệ có hơn hai nghìn người, thân thích thông gia còn liên quan đến cả vạn người. Nếu xử lý không tốt, thì lại là một chuyện phiền phức!"
 
-Lý Thông Nhai cũng đang trầm tư, nghe vậy gật đầu:
+Lý Thông Nhai cũng đang trầm tư, nghe vậy gật đầu nói:
 
-“Đúng là việc khó. Đây là lần đầu tiên Lý gia thôn tính tộc khác, phải làm gương cho con cháu đời sau. Nếu vội vàng giết sạch, một là lãng phí huyết mạch linh khiếu này, hai là dù sao cũng là thông gia, truyền ra ngoài khó nghe, khiến các gia tộc xung quanh không hài lòng.”
+"Quả là chuyện khó. Đây là lần đầu tiên Lý gia ta sáp nhập tộc khác, là để làm gương cho con cháu đời sau.
 
-“Việc Lư gia này, vừa phải làm thể diện tốt đẹp, vừa phải không để lại hậu họa, thực sự làm người ta khó xử.”
+"Chuyện nhà họ Lư này, vừa phải làm cho thể diện đẹp đẽ, vừa phải làm cho không có hậu họa, thật khiến người ta khó xử."
 
-Hai người bay một lúc, núi Hoa Thiên đã hiện ra trước mắt. Phía dưới là những túp lều lác đác, đều treo băng trắng lụa trắng. Trên núi lại vẳng ra tiếng yến tiệc ca nhạc, thật mỉa mai.
+Hai người bay một lúc, Hoa Thiên Sơn đã hiện ra trước mắt. Bên dưới đầy những ngôi nhà nhỏ rải rác, đều treo vải trắng lụa trắng, trên núi thì lại là một cảnh tiệc rượu vui chơi, khá là châm biếm.
 
-Núi Thao Vân của Lư gia có thế dốc đứng, ẩm ướt và nhiều muỗi. Từ khi có được núi Hoa Thiên, Lư gia dời cả nhà đến, nay phần lớn nhân khẩu đều ở dưới chân núi Hoa Thiên.
+Thao Vân Sơn của nhà họ Lư địa thế hiểm trở, độ ẩm cao và nhiều muỗi bọ. Từ khi có được Hoa Thiên Sơn này, nhà họ Lư liền dời cả gia tộc đến, hiện nay phần lớn dân số đều ở dưới chân Hoa Thiên Sơn.
 
-Trận pháp trên núi Hoa Thiên khá tầm thường. Lý Thông Nhai đợi đến khi phía bên kia núi xuất hiện những đốm lửa lấm tấm, biết là Lý Huyền Tuyên đã dẫn binh đến, mới rút kiếm chém vào trận pháp trên núi.
+Trận pháp trên Hoa Thiên Sơn khá bình thường. Lý Thông Nhai đợi đến khi đầu núi bên kia xuất hiện những đốm lửa lấp lánh, biết là Lý Huyền Tuyên đã dẫn binh đến, lúc này mới rút kiếm chém vào trận pháp trên núi.
 
-“Choang!”
+"Loảng xoảng!"
 
-Trận pháp trên núi Hoa Thiên lập tức bay lên, sáng rực bao phủ lấy ngọn núi. Tiệc rượu bên dưới liền hỗn loạn, mọi người đều ngước lên nhìn, chỉ nghe một tiếng quát lớn:
+Trận pháp trên Hoa Thiên Sơn lập tức bay lên, sáng rực bao phủ lấy Hoa Thiên Sơn. Yến tiệc phía dưới lập tức hỗn loạn, mọi người đều ngẩng đầu nhìn lên, chỉ nghe một tiếng hét lớn:
 
-“Kẻ nào dám xâm phạm Lư gia!”
+"Kẻ nào dám phạm nhà họ Lư ta!"
 
-Lư Viễn Lục cưỡi gió bay lên, hai má hồng hào, có vẻ đã uống rượu. Thấy Lý Thông Nhai, hắn vừa kinh vừa nộ, mắng lớn:
+Lư Viễn Lục cưỡi gió bay lên, hai má ửng hồng, trông như đã uống rượu. Thấy Lý Thông Nhai vừa kinh vừa giận, lớn tiếng mắng:
 
-“Lý gia đã thành thông gia với Lư gia, sao lại còn đánh chủ ý lên núi Hoa Thiên của ta!”
+"Lý gia đã kết thông gia với nhà họ Lư, sao lại còn đến đánh chủ ý Hoa Thiên Sơn của ta!"
 
-Lý Thông Nhai cười lạnh, tay không ngừng động, giọng lạnh tanh:
+Lý Thông Nhai lạnh lùng cười, động tác trên tay không ngừng lại, lạnh giọng nói:
 
-“Lư Tư Tự vừa mới qua đời, kẻ bất hiếu như ngươi lại còn ca hát yến ẩm trên núi, còn mặt mũi nào nói đến thông gia? Thực lực Lư gia hiện giờ đã không giữ nổi hai ngọn núi. Nếu ngươi biết điều, tự mình mở trận pháp này ra, còn có thể giữ lại mạng sống.”
+"Lư Tư Tự vừa mới tiên thế, ngươi, kẻ bất hiếu này, lại dám ca múa tiệc tùng trên núi, lại còn có mặt mũi nói gì đến thông gia. Thực lực hiện giờ của nhà họ Lư đã không thể bảo vệ được hai ngọn núi, nếu ngươi thức thời, tự mình mở trận pháp này, vẫn còn có thể giữ lại một mạng cho ngươi."
 
-“Thật là ngông cuồng!”
+"Thật quá ngông cuồng!"
 
-Lư Viễn Lục nghe vậy đại nộ, tức đến đỏ mắt, rút kiếm nghênh đón. Lý Thông Nhai một kiếm đẩy lùi hắn, trong vài hơi thở đã qua lại mười mấy hiệp, đánh cho Lư Viễn Lục biến sắc, sinh lòng thoái ý.
+Lư Viễn Lục nghe vậy đại nộ, tức đến mức hai mắt đỏ bừng, rút kiếm liền xông lên. Lý Thông Nhai một kiếm bức lui hắn, trong vài hơi thở đã giao đấu mười mấy hiệp, đánh cho Lư Viễn Lục sắc mặt hơi biến, nảy sinh ý định thoái lui.
 
-“Kiếm pháp hay đấy!”
+"Kiếm pháp khá đấy!"
 
-Lư Viễn Lục tuy kiêu ngạo tự đại, nhưng trong tay cũng có chút bản lĩnh, ngang ngửa Úc Mộ Kiếm, nhưng tu vi lại kém quá xa, nhất thời liên tiếp bại lui, miệng vẫn còn cứng.
+Lư Viễn Lục tuy kiêu ngạo tự đại, trong tay cũng có chút công phu, không thua kém Úc Mộ Kiếm kia là bao, nhưng tu vi lại kém quá xa, nhất thời liên tục bại lui, nhưng vẫn còn cứng miệng.
 
-Lý Thông Nhai im lặng không nói, chỉ qua lại mấy chục chiêu đã đánh bay kiếm trong tay hắn, cưỡi gió áp sát. Lư Viễn Lục lúc này mới biến sắc mặt, còn muốn nói gì đó, trước mắt đã thấy hào quang trắng lóa, bị Lý Thông Nhai một kiếm chém đứt đầu.
+Lý Thông Nhai im lặng không nói, chỉ qua mấy chục chiêu đã hất văng kiếm trong tay hắn, cưỡi gió xông lên. Lư Viễn Lục lập tức sắc mặt đại biến, còn muốn nói gì đó, trước mắt đã trắng xóa một vùng, bị Lý Thông Nhai một kiếm chém bay đầu.

@@ -562,7 +562,7 @@ async def process_chapter(
     
     # Clean double prefixes in title
     import re as _re_single
-    vi_title_only = _re_single.sub(r"^(Chương\s+\d+|第[一二三四五六七八九十\d]+章)\s*[:：\-]*\s*", "", vi_title_only, flags=_re_single.IGNORECASE).strip()
+    vi_title_only = _re_single.sub(r"^(Chương\s+[\w\s\d]+|第[一二三四五六七八九十\d\s]+章)\s*[:：\-]*\s*", "", vi_title_only, flags=_re_single.IGNORECASE).strip()
 
     clean_header = f"# Ch\u01b0\u01a1ng {chapter_number}: {vi_title_only}\n"
     with open(output_file, "w", encoding="utf-8") as f:
@@ -903,6 +903,7 @@ async def cmd_translate_async(args, progress_callback=None):
         for i, (title, content) in enumerate(batch_copy):
             out = get_output_path(profile, title)
             chunk = translated_chapters[i] if i < len(translated_chapters) else None
+            _model_used = _m
 
             # Nếu chunk là None (thiếu/bị cắt) → retry riêng lẻ bằng translate_chapter
             if chunk is None:
@@ -920,6 +921,7 @@ async def cmd_translate_async(args, progress_callback=None):
                     max_retries=3,
                 )
                 _rm = _ru.get("model", "unknown")
+                _model_used = _rm
                 _rt = _ru.get("total_tokens", 0)
                 _rc = _ru.get("cost_usd", 0.0)
                 session_usage["total_tokens"]  += _rt
@@ -946,7 +948,7 @@ async def cmd_translate_async(args, progress_callback=None):
             
             # Clean double prefixes in title
             import re as _re3
-            _vi_title = _re3.sub(r"^(Chương\s+\d+|第[一二三四五六七八九十\d]+章)\s*[:：\-]*\s*", "", _vi_title, flags=_re3.IGNORECASE).strip()
+            _vi_title = _re3.sub(r"^(Chương\s+[\w\s\d]+|第[一二三四五六七八九十\d\s]+章)\s*[:：\-]*\s*", "", _vi_title, flags=_re3.IGNORECASE).strip()
             
             _chap_url = urls_copy[i] if i < len(urls_copy) else ""
             _cat_item = _url_to_catalog_item.get(_chap_url)
@@ -964,7 +966,7 @@ async def cmd_translate_async(args, progress_callback=None):
                 out = os.path.join(profile.translated_dir, f"{safe_filename(_file_stem)}_VI.md")
 
             with open(out, "w", encoding="utf-8") as f:
-                f.write(_clean_hdr + "".join(_body_lines))
+                f.write(_clean_hdr + "".join(_body_lines) + f"\n\n*(Bản dịch được thực hiện bởi model: {_model_used})*\n")
             logger.info(f"[+] Saved: {out}")
 
             failed = "[Translation failed" in chunk[:100]
@@ -1425,7 +1427,7 @@ def cmd_retranslate(args):
         # Dùng tên file (bỏ .txt) làm title tạm
         title = os.path.splitext(raw_name)[0]
 
-        translated, summary, _ = translator.translate_chapter(
+        translated, summary, _usage = translator.translate_chapter(
             title=title,
             content=content,
             glossary=profile.glossary,
@@ -1442,8 +1444,9 @@ def cmd_retranslate(args):
             failed += 1
             continue
 
+        _model_used = _usage.get("model", "unknown") if isinstance(_usage, dict) else "unknown"
         with open(out_path, "w", encoding="utf-8") as f:
-            f.write(translated)
+            f.write(translated + f"\n\n*(Bản dịch được thực hiện bởi model: {_model_used})*\n")
 
         previous_summary = summary
         success += 1

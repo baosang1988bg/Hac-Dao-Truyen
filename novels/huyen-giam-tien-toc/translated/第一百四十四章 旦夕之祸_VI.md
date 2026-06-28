@@ -1,115 +1,119 @@
-# Chương 145: Họa Trong Sớm Tối
+# Chương Một Trăm Bốn Mươi Bốn: Tai Họa Sớm Tối
 
-Không bao lâu, đại trận trên núi Hoa Thiên ầm ầm sụp đổ, Lý Thông Nhai cưỡi gió đáp xuống núi, phía dưới đã quỳ lạy một mảng người, một người đàn ông trung niên rụt rè cúi đầu, liên thanh nói:
+Dưới chân Hoa Thiên Sơn lập tức vang lên một tràng kinh hoảng kêu la, nhìn thi thể không đầu của Lư Viễn Lục rơi vào rừng núi, đại trận trên núi bắt đầu rung chuyển. Đám người này lúc này mới nảy sinh ý hối hận, có kẻ khóc lóc, có kẻ kêu la, lại có người quỳ xuống dập đầu.
 
-“Lư An Vũ, gia chủ Lư gia, ra mắt Lão tổ Lý gia!”
+Chẳng mấy chốc, đại trận trên Hoa Thiên Sơn ầm ầm sụp đổ. Lý Thông Nhai cưỡi gió đáp xuống đỉnh núi, phía dưới đã quỳ rạp một đám người. Một nam nhân trung niên rụt rè cúi đầu, liên tục nói:
 
-Lư An Vũ cùng một đám người Lư gia lúc này mới hiểu được cái gì là họa trong sớm tối mà Lư Tư Tự trước khi chết cứ lẩm bẩm, Lư Tư Tự sáng sớm mới hạ táng, tai họa nửa đêm đã đến trước mặt, khiến người ta không khỏi ngậm ngùi.
+"Gia chủ nhà họ Lư, Lư An Vũ, bái kiến Lý gia lão tổ!"
 
-Lý Thông Nhai nhìn dáng vẻ của hắn, liền thấy hắn mặt mày ủ rũ ngẩng đầu lên, kêu lên:
+Lư An Vũ cùng đám người nhà họ Lư lúc này mới hiểu "tai họa sớm tối" mà Lư Tư Tự không ngừng lẩm bẩm trước khi chết rốt cuộc là có ý gì. Lư Tư Tự sáng sớm mới hạ táng, tai họa đã ập đến ngay trong đêm, khiến người ta không khỏi thở dài.
 
-“Còn xin Lão tổ tha cho chúng tôi một mạng, Lư gia chúng tôi lập tức giải tán, hai ngọn núi Hoa Thiên và Thao Vân cũng thuộc về Lý gia, đệ tử trong tộc mặc cho Lão tổ sai bảo, không dám có hai lòng…”
+Lý Thông Nhai nhìn dáng vẻ của hắn, liền thấy hắn với vẻ mặt đưa đám ngẩng đầu lên, kêu lên:
 
-“Mau mời đứng dậy!”
+"Kính xin lão tổ tha cho chúng con một mạng, nhà họ Lư chúng con sẽ giải tán ngay lập tức, hai ngọn Hoa Thiên và Điều Vân cũng xin thuộc về Lý gia, đệ tử trong tộc tùy ý lão tổ sai bảo, không dám có hai lòng..."
 
-Lý Thông Nhai lại rất khách khí, vẻ mặt đầy tiếc nuối mà nói:
+"Mau mau đứng dậy!"
 
-“Tôi khá kính nể tiền bối Tư Tự, cũng thấy Lư Viễn Lục này làm quá đáng, mới ra tay trừng trị người này, gia chủ chớ trách tôi.”
+Lý Thông Nhai lại rất khách khí, với vẻ mặt tiếc nuối nói:
 
-“Kẻ hèn này đâu dám!”
+"Tại hạ rất kính trọng tiền bối Tư Tự, cũng vì thấy Lư Viễn Lục này làm việc quá đáng, nên mới ra tay trừng phạt kẻ này. Gia chủ đừng trách ta."
 
-Lư An Vũ kêu lên một tiếng, Lý Thông Nhai cũng không đợi hắn mở miệng, ôn tồn nói:
+"Tiểu nhân đâu dám!"
 
-“Hiện tại Lư gia không có tu sĩ Luyện Khí, ở Vọng Nguyệt Hồ này quả thực không đứng vững được, gia chủ đã nghĩ ra biện pháp gì chưa?”
+Lư An Vũ kêu lên một tiếng, Lý Thông Nhai không đợi hắn mở lời, ôn tồn nói:
 
-Người trung niên kia ngẩn ra, cuối cùng cũng hiểu ý, vừa mừng vừa buồn, vội vàng mở miệng nói:
+"Hiện tại nhà họ Lư không còn tu sĩ Luyện Khí, ở Vọng Nguyệt Hồ này quả thật không thể đứng vững. Gia chủ đã nghĩ ra cách giải quyết chưa?"
 
-“Chúng tôi mặc cho Lão tổ sai bảo!”
+Nam nhân trung niên kia ngẩn người, cuối cùng cũng hiểu ra, vừa mừng vừa tủi, vội vàng mở lời nói:
 
-Lý Thông Nhai gật đầu, hướng về phía một đám chi hệ Lư gia phía dưới nói:
+"Chúng con xin tùy ý lão tổ sai bảo!"
 
-“Lư Lý hai nhà dù sao cũng từng giao hảo, tôi cũng khá kính nể nhân phẩm tiền bối Tư Tự, liền cho các vị hai sự lựa chọn.”
+Lý Thông Nhai gật đầu, nhìn xuống đám người thuộc dòng dõi trực hệ nhà họ Lư nói:
 
-“Thứ nhất, là nội phụ vào bốn trấn của Lý gia chúng tôi, nam đinh nhập gia, nữ tử cải giá, không được giữ họ Lư, từ đời đời kiếp kiếp không khác gì người trấn Lý gia, vẫn có thể làm kẻ phú ông, an hưởng tuổi già.”
+"Lư Lý hai nhà dù sao cũng từng có giao hảo, tại hạ cũng rất kính trọng phẩm cách của tiền bối Tư Tự, nên sẽ cho chư vị hai lựa chọn."
 
-“Thứ hai, nếu các vị còn có ý định trùng kiến Lư gia, chúng tôi cũng không muốn đuổi tận giết tuyệt, liền thả cho các ngươi một con đường sống, tiễn các ngươi ra khỏi cảnh giới, các ngươi lại tự đi tìm kiếm cơ duyên.”
+"Thứ nhất, là sáp nhập vào bốn trấn của Lý gia ta. Nam đinh sẽ ở rể, nữ tử sẽ tái giá, không được giữ họ Lư. Từ nay về sau đời đời kiếp kiếp không khác gì người dân Lý gia trấn, vẫn không mất đi thân phận phú gia ông, an hưởng tuổi già."
 
-Lý Thông Nhai vừa dứt lời, Lý Huyền Phong đã hiểu ý, thần sắc lãnh đạm bước ra, cười nói:
+"Thứ hai, nếu chư vị vẫn còn ý muốn xây dựng lại nhà họ Lư, chúng ta cũng không muốn tận diệt, sẽ cho các ngươi một con đường sống, tiễn các ngươi rời khỏi địa giới, các ngươi hãy tự mình đi tìm cơ duyên khác."
 
-“Ai muốn trùng kiến Lư gia, thì có thể theo ta xuống núi.”
+Lý Thông Nhai vừa dứt lời, Lý Huyền Phong đã hiểu ý, với vẻ mặt hờ hững bước ra, cười nói:
 
-Cả trường liền im phăng phắc, ai nấy đều cúi đầu, không dám nhúc nhích, hồi lâu mới có một nữ tử bước ra, phẫn nộ đứng trước mặt Lý Huyền Phong, Lý Huyền Phong liếc nhìn bốn phía một lượt, dẫn người này xuống núi.
+"Kẻ nào muốn xây dựng lại nhà họ Lư, thì có thể theo ta xuống núi."
 
-Thấy binh mã vây núi lần lượt nhường ra một con đường, lúc này mới dần có người dám đi theo, người của Lư gia trên núi trong nháy mắt giảm đi một nửa, lấy mấy tên tu sĩ Thai Tức làm đầu, xám xịt đi xuống núi, Lý Thông Nhai lạnh lùng cười thầm trong lòng, nhìn Lư An Vũ cười nói:
+Cả hội trường lập tức im phăng phắc, ai nấy đều cúi đầu, không dám nhúc nhích. Mãi lâu sau mới có một nữ tử bước ra, giận dữ đứng trước mặt Lý Huyền Phong. Lý Huyền Phong liếc nhìn xung quanh, rồi dẫn người này xuống núi.
 
-“Gia chủ không theo bọn họ xuống núi sao?”
+Thấy binh mã vây quanh núi lần lượt nhường ra một con đường, lúc này mới dần dần có người dám đi theo. Người nhà họ Lư phía trên núi lập tức vơi đi một nửa nhỏ, lấy mấy tu sĩ Cảnh giới Thai Tức kia làm chủ, lủi thủi đi xuống núi. Lý Thông Nhai trong lòng cười lạnh một tiếng, nhìn Lư An Vũ cười nói:
 
-Lư An Vũ nghe vậy ngẩng đầu cười khổ nói:
+"Gia chủ không đi xuống núi cùng bọn họ sao?"
 
-“Chúng tôi thân không có linh khiếu, rời núi cũng chỉ làm nô bộc cho những tu sĩ kia, có ý nghĩa gì! Chi bằng quy thuận Lý gia, ít ra còn có thể làm một phú ông, không đến nỗi cuối đời phiêu bạt, chết ở xó xỉnh nào đó.”
+Lư An Vũ nghe vậy ngẩng đầu lên cười khổ nói:
 
-Chắp tay, Lư An Vũ nở một nụ cười lấy lòng, thấp giọng nói:
+"Chúng con thân không có Linh khiếu, rời khỏi núi cũng chỉ là làm nô bộc cho những tu sĩ khác, có ý nghĩa gì chứ! Chi bằng quy thuận Lý gia, dù sao cũng còn có thể làm một phú gia ông, không đến nỗi tuổi già bôn ba, chết ở xó xỉnh nào đó."
 
-“Lư gia còn có vài đạo truyền thừa! Tôi liền đi lấy cho tiền bối.”
+Chắp tay, Lư An Vũ cười lấy lòng, nói nhỏ:
 
-Nói xong tự nhiên bước chân muốn đi, Lý Thông Nhai liếc hắn từ trên xuống dưới, lạnh giọng nói:
+"Nhà họ Lư vẫn còn mấy đạo truyền thừa! Con xin đi lấy về cho tiền bối ngay."
 
-“Đứng lại!”
+Nói xong, hắn tự nhiên cất bước muốn đi. Lý Thông Nhai liếc nhìn hắn từ trên xuống dưới, lạnh giọng nói:
 
-Lư An Vũ ngẩn ra, phịch một tiếng quỳ rạp xuống đất, không dám nói gì.
+"Đứng lại!"
 
-Lý Thông Nhai tuy thấy đám người Lư gia đều là một đám bất tài, nhưng lại rất cẩn thận, sợ người này chỉ là giả vờ hèn hạ, thực tế là muốn chạy đi hủy truyền thừa, liền hướng về phía Lý Thu Dương đang đứng cảnh giác bên cạnh khẽ nói:
+Lư An Vũ ngây người, "phịch" một tiếng quỳ xuống đất, không dám nói gì.
 
-“Ngươi đi theo xem.”
+Lý Thông Nhai tuy thấy đám người nhà họ Lư đều là những kẻ vô dụng, nhưng lại rất cẩn trọng, sợ kẻ này chỉ là giả vờ yếu thế, thực chất là muốn đi phá hủy truyền thừa, liền nói nhỏ với Lý Thu Dương đang đứng cảnh giác bên cạnh:
 
-Lý Thu Dương hiểu ý gật đầu, kéo Lư An Vũ kia đi vài bước, cảnh cáo:
+"Ngươi đi theo xem sao."
 
-“Ngoan ngoãn đi sau lưng ta, đừng có đánh chủ ý quái gở!”
+Lý Thu Dương hiểu ý gật đầu, kéo Lư An Vũ đi mấy bước, cảnh cáo nói:
 
-Không bao lâu, Lý Thu Dương liền mang ba viên ngọc giản ra khỏi viện, phía sau là Lư An Vũ với vẻ mặt đầy nịnh nọt, Lý Thu Dương cung kính nói:
+"Thành thật đi theo ta, đừng có giở trò gì!"
 
-“Tộc thúc, trong động phủ núi Hoa Thiên này có một linh tuyền, nồng độ linh khí khá cao, cao hơn động phủ Mi Xích Phong một thành, quả là một nơi tốt.”
+Chẳng mấy chốc, Lý Thu Dương đã mang theo ba miếng ngọc giản ra khỏi sân, phía sau là Lư An Vũ với vẻ mặt lấy lòng. Lý Thu Dương cung kính nói:
 
-Lý Thông Nhai gật đầu, nhận lấy ba viên ngọc giản trong tay hắn, thần thức dò vào trong, khen:
+"Tộc thúc, trong động phủ Hoa Thiên Sơn này có một Linh tuyền, nồng độ linh khí khá cao, thậm chí cao hơn động phủ Mi Xích Phong một thành, quả là một nơi tốt."
 
-“Không tồi.”
+Lý Thông Nhai gật đầu, nhận lấy ba miếng ngọc giản trong tay hắn, thần thức thăm dò vào trong, khen ngợi nói:
 
-“Cái động tuyền triệt khí này thành tựu Luyện Khí sinh cơ dồi dào, khí lực dài lâu, Lư Tư Tự nhất quyết phải có núi Hoa Thiên, thì ra là nhắm vào linh tuyền trong núi, khó trách Lư Tư Tự tự mình dùng Luyện Khí hàng thông thường, Lư Viễn Lục đã dùng tới *Động Tuyền Triệt Linh Quyết* rồi.”
+"Không tệ."
 
-Cũng coi như giải đáp được một nghi hoặc trong lòng, Lý Thông Nhai phất tay, lập tức có tộc binh áp giải đám người Lư gia này trở về bốn trấn, Lý Huyền Tuyên thì cùng Lý Thông Nhai vào động phủ trong núi Lư gia, đi xem linh tuyền kia.
+Ba miếng ngọc giản này đều là pháp quyết Luyện Khí, có hai miếng là pháp quyết Luyện Khí loại hàng chợ cấp một, không trùng lặp với pháp quyết của gia tộc. Lý Thông Nhai đương nhiên thu lại.
 
-———
+"Luyện Khí thành tựu nhờ Động Tuyền Triệt Khí này sinh cơ dồi dào, khí lực dồi dào, kéo dài. Lư Tư Tự nhất định phải có Hoa Thiên Sơn, thì ra là vì Linh tuyền trong núi. Chẳng trách Lư Tư Tự tự mình dùng pháp quyết Luyện Khí loại hàng chợ, còn Lư Viễn Lục đã dùng đến "Động Quán Chế Linh Kê" rồi."
 
-Lý Huyền Phong dẫn một đám người Lư gia muốn trùng kiến Lư gia xuống núi, ánh mắt hờ hững quét một lượt, thoáng thấy chút sắc thái thù hận, cười khẩy một tiếng, dẫn đám người này đi một hồi, trước mắt chui ra một đám người.
+Cũng coi như đã giải được một nỗi băn khoăn trong lòng, Lý Thông Nhai phất tay, lập tức có tộc binh áp giải đám người nhà họ Lư này trở về bốn trấn. Lý Huyền Tuyên thì cùng Lý Thông Nhai tiến vào động phủ trong núi của nhà họ Lư để kiểm tra Linh tuyền kia.
 
-“Phong ca, đều ở đây hết rồi chứ?”
+————
 
-Lý Huyền Lĩnh trên người khoác giáp, tay cầm thanh phong, sau lưng là tộc binh với ánh đao lạnh lẽo chớp lóe, khiến người ta nhìn mà tim đập thình thịch, nhưng hắn lại cười hì hỏi.
+Lý Huyền Phong dẫn theo đám người nhà họ Lư muốn xây dựng lại gia tộc xuống núi. Ánh mắt hắn lướt qua, ít nhiều cũng thấy được vài tia hận thù. Hắn cười khẩy một tiếng đầy mỉa mai, dẫn đám người này đi một đoạn, trước mắt bỗng xuất hiện một đám người.
 
-“Đều ở đây hết rồi, trên đường ta cẩn thận theo dõi, không để lọt một tên nào.”
+"Phong ca nhi, đều ở đây rồi chứ?"
 
-Đám người phía sau lập tức biến sắc, có người cố tỏ ra bình tĩnh mở miệng nói:
+Lý Huyền Lĩnh khoác áo giáp trên người, tay cầm Thanh Phong. Những mũi hàn phong trong tay tộc binh phía sau hắn chớp động liên hồi, khiến người ta nhìn mà kinh hồn bạt vía, thế nhưng hắn lại mỉm cười hỏi.
 
-“Lão tổ nhà ngươi đã nói tống tiễn ra khỏi cảnh giới! Ngươi đừng có tự tiện hành động, khiến trưởng bối nhà ngươi mất chữ tín!”
+"Đều ở đây cả rồi, trên đường ta đã cẩn thận canh chừng, không để lọt một ai."
 
-Lý Huyền Phong khinh thường cười một tiếng, đám người lúc này mới phát hiện chung quanh đã bị binh mã Lý gia bao vây kín, Lý Huyền Phong liếc hắn một cái, cười nói:
+Đám người phía sau lập tức biến sắc, có kẻ cố giữ bình tĩnh mở miệng nói:
 
-“Chỗ này sớm đã ra khỏi địa giới Lý gia, sao lại không coi là tống tiễn ra khỏi cảnh giới được? Các ngươi trên đường gặp phải cường đạo, thương vong nhiều, chạy tán loạn không rõ tung tích, cho nên không thể trùng kiến Lư gia thôi.”
+"Lão tổ tông nhà ngươi đã nói sẽ tiễn chúng ta rời khỏi địa giới! Ngươi đừng tự ý làm càn, làm mất uy tín của trưởng bối nhà ngươi!"
 
-“Ngươi… ngươi…!”
+Lý Huyền Phong cười khẩy một tiếng. Mọi người lúc này mới phát hiện xung quanh đã bị binh mã Lý gia bao vây. Lý Huyền Phong liếc nhìn hắn một cái, cười nói:
 
-Chung quanh tộc binh im lặng ùa lên, lập tức tiếng khóc lóc và tiếng cầu xin vang lên một mảng, đao binh loáng thoáng ánh sáng lạnh vẩy lên đầy đất những bông máu, một đám người như lúa bị cắt, ngã rạp xuống một mảng.
+"Nơi này sớm đã ra khỏi địa giới Lý gia rồi, sao lại không tính là tiễn rời khỏi địa giới chứ? Các ngươi trên đường gặp phải cường đạo thương vong rất nhiều, tứ tán chạy trốn không rõ tung tích, cho nên không thể xây dựng lại nhà họ Lư mà thôi."
 
-Lý Huyền Phong giương cung, lần lượt bắn chết mấy tên tu sĩ Thai Tức còn ngoan cố chống cự, Lý Huyền Lĩnh nhìn đám người này đều ngã xuống hết, tự mình tiến lên kiểm tra từng tên một, xong xuôi mới khẽ nói:
+"Ngươi... ngươi...!"
 
-“Những tộc binh này đều là những người trung thành không hai được chọn lọc kỹ càng, chuyện ở đây sẽ không có bất kỳ lời đồn nào, như vậy là đôi bên đều tốt đẹp rồi!”
+Tộc binh bốn phía im lặng xông lên, lập tức tiếng khóc lóc và tiếng cầu xin vang lên khắp nơi. Đao kiếm lạnh lẽo lóe sáng bắn tung tóe những đóa máu đỏ tươi khắp mặt đất, một đám người ngã xuống như lúa bị cắt.
 
-“Không tồi.”
+Lý Huyền Phong giương cung, lần lượt bắn chết mấy tu sĩ Cảnh giới Thai Tức vẫn còn ngoan cố chống cự. Lý Huyền Lĩnh nhìn thấy đám người này đều đã ngã xuống, tự mình tiến lên kiểm tra từng người một, lúc này mới khẽ nói:
 
-Lý Huyền Phong đặt cây cung trong tay sau lưng, tộc binh phía dưới đã bắt đầu đào hố chôn xác, hắn trầm tư vài giây, mở miệng nói:
+"Những tộc binh này đều là những người trung thành không hai lòng được tinh chọn kỹ lưỡng, chuyện ở đây sẽ không lưu truyền ra ngoài, như vậy coi như vẹn cả đôi đường!"
 
-“Chỉ là còn phải đề phòng trong đám người đầu hàng kia có kẻ thông minh ôm lòng dạ khác, về đến trấn phải giám sát thật tốt, không để xảy ra biến loạn gì.”
+"Không tệ."
 
-“Những việc này cứ giao cho Tuyên ca là được.”
+Lý Huyền Phong đeo cung trong tay ra sau lưng, tộc binh phía dưới đã bắt đầu đào hố chôn vùi thi thể. Hắn suy nghĩ mấy nhịp thở, mở lời nói:
 
-Lý Huyền Lĩnh mỉm cười nhẹ nhõm, chuyện lần này về có thể bàn giao với Lư Uyển Dung, khiến hắn thoải mái không ít, hai anh em nhìn nhau cười, dẫn binh vào trong rừng.
+"Chỉ là vẫn phải đề phòng trong số những kẻ quy phục kia liệu có còn người thông minh ôm lòng bất chính hay không, trở về trấn phải giám sát kỹ lưỡng, không để gây ra bất kỳ biến động nào."
+
+"Những việc này giao cho Huyền ca là được."
+
+Lý Huyền Lĩnh khẽ cười, lần này trở về có thể giao phó cho Lư Uyển Dung, ngược lại khiến hắn nhẹ nhõm không ít. Hai huynh đệ nhìn nhau cười một tiếng, rồi dẫn binh đi vào rừng.

@@ -1,75 +1,183 @@
-# Chương 45: Báo cáo chính vụ
+# Chương 45: Báo Cáo Chính Vụ
 
-Bảy ngày tuy ngắn, nhưng đối với Đỗ An mà nói lại là một khoảng thời gian đệm khá dài.
+Bảy ngày tuy ngắn, nhưng đối với Đỗ An lại là một khoảng thời gian đệm khá dài.
 
-Trong khoảng thời gian này, dưới sự dẫn dắt của Montport, Julian cùng với Ralph và Heine đã thuận lợi làm rõ tình trạng tổng quát của Toái Lãng Thành. Đêm ngày thứ ba, vị cố vấn tổng vụ này mang theo số liệu đã được chỉnh lý, cùng cha con Ralph tiến vào thư phòng của Đỗ An.
+Trong thời gian này, Julian dưới sự dẫn dắt của Montport, cùng với Ralph và Heine, đã thuận lợi làm rõ tình hình chung của Toái Lãng Thành.
 
-Sau khi nghe xong báo cáo, Đỗ An đã có cái nhìn chi tiết hơn về Toái Lãng Thành. "Thành" này trên thực tế có thể chia làm năm khu vực, trong đó Montport quản lý khu vực có hơn ba ngàn dân, vốn dùng để che mắt những kẻ đến thu thuế mấy năm trước. Khu vực này sở hữu hơn năm ngàn mẫu đất canh tác, phần lớn là ruộng nước, phần còn lại trồng lúa mạch, lúa mì và rau củ.
+Đến tối ngày thứ ba, vị cố vấn tổng vụ này đã mang theo số liệu đã được sắp xếp, cùng cha con Ralph vào thư phòng của Đỗ An.
 
-"Đại nhân, mặc dù Hắc Sâm Đảo có không ít mối đe dọa bên ngoài, nhưng phải nói rằng chủng loại cây trồng ở đây khá phong phú, thậm chí có chút hỗn tạp."
+Sau khi nghe xong báo cáo của họ, Đỗ An đã có cái nhìn chi tiết hơn về Toái Lãng Thành.
 
-Đỗ An đặt bản thống kê điều tra xuống, ngẩng đầu lên hỏi: "Sao lại nói vậy?"
+Cái "thành" này trên thực tế có thể chia thành năm khu vực, trong đó Montport quản lý một khu vực với hơn ba ngàn dân, dùng để qua mặt những người đến thu thuế trong mấy năm qua.
 
-Julian giải thích: "Ngoài lanh ra, nghe nói tại vịnh Toái Lãng của Hội Thánh Thủ có nuôi tằm, còn mấy khu vực do Bang Toái Lãng kiểm soát thì trồng cả bông vải."
+Khu vực này có hơn năm ngàn mẫu đất canh tác, phần lớn là ruộng nước, số còn lại trồng lúa mạch, lúa mì và rau củ.
 
-"Ý cậu là, nơi này có thể sản xuất vải bông, thậm chí là lụa?" Đỗ An vô cùng ngạc nhiên. Tằm tang và bông vải ở vương quốc Prouque tuy có, nhưng không mấy phổ biến. Vải vóc phần lớn vẫn là vải lanh và vải len.
+Ngoài ra, nơi đây còn trồng cây lanh, là nguyên liệu chính để sản xuất vải vóc.
 
-"Vâng, nghe nói đây là kỹ thuật do Ma pháp sư Daniels mang tới."
+“Thưa ngài, mặc dù Hắc Sâm Đảo có không ít mối đe dọa từ bên ngoài, nhưng phải thừa nhận rằng các loại cây trồng ở đây khá phong phú, thậm chí có phần tạp nham.”
 
-Đỗ An bừng tỉnh, chàng không khỏi nhớ tới chiếc áo bào trắng trên người đối phương, chất liệu đó quả thực không giống vải lanh hay đồ dệt từ len. Không ngờ hòn đảo hoang này lại có một nền tảng thủ công nghiệp nhất định. Xét thấy khí hậu nơi đây ẩm ướt, thích hợp cho nhiều loại cây trồng, có lẽ một ngày nào đó khi Đỗ An mở rộng khu vực hoạt động, chàng sẽ có cơ hội phát triển ngành dệt may.
+Đỗ An đặt bản ghi chép thống kê điều tra xuống, ngẩng đầu lên, “Nói rõ hơn xem nào?”
 
-Đỗ An dời mắt trở lại trên giấy, lại thấy một thông tin khiến chàng kinh ngạc: "Vịnh Toái Lãng còn sản xuất muối?"
+Julian giải thích: “Ngoài cây lanh ra, nghe nói Vịnh Toái Lãng của Thánh Thủ Hội đã trồng dâu nuôi tằm, và mấy khu vực do Toái Lãng Bang kiểm soát còn trồng một ít bông vải.”
 
-Julian gật đầu: "Đây là thông tin Montport bổ sung, mặc dù tôi không thể đến tận vịnh Toái Lãng để xác thực, nhưng toàn bộ muối trên đảo đều xuất phát từ đó, chắc là không sai."
+“Nghĩa là, nơi đây có thể sản xuất vải bông, thậm chí cả lụa tơ tằm sao?” Đỗ An vô cùng ngạc nhiên.
 
-"Được rồi, cậu nói đúng, tài nguyên ở đây thật sự rất phong phú." Hắc Sâm Đảo bốn bề là biển, theo lý mà nói thì ngành muối nên phát triển tốt. Những lãnh chúa đến đây những năm trước chắc hẳn cũng nhận ra điều này. Tuy nhiên, sản xuất được muối là một chuyện, có bán được hay không lại là chuyện khác.
+Dâu tằm, bông vải tuy có ở vương quốc Prouque, nhưng không phổ biến rộng rãi.
 
-Nhưng Đỗ An không định bán muối, Hắc Sâm Đảo có thể sản xuất muối ít nhất là đủ để tự cung tự cấp, không cần phải đi nhập hàng từ bên ngoài. Nghĩ tới đây, chàng không khỏi nhíu mày, lần đàm phán này đã bỏ sót ngành muối của Hội Thánh Thủ.
+Vải vóc chủ yếu vẫn là vải lanh và vải len.
 
-"Ngày mai cậu bảo Montport suy nghĩ kỹ lại xem, trên đảo còn những ngành công nghiệp quan trọng nào khác." Đỗ An dặn dò: "Nhớ bảo hắn suy nghĩ cho kỹ!"
+“Vâng, nghe nói đây là kỹ thuật do Pháp sư Daniels mang đến.”
 
-Julian nhận ra ý trách móc trong giọng điệu của lãnh chúa, liền đáp: "Vâng, tôi đã rõ!"
+Đỗ An chợt hiểu ra, anh không khỏi nhớ đến chiếc áo choàng trắng mà đối phương mặc, chất liệu đó quả thực không giống vải lanh hay len.
 
-Đỗ An tiếp tục xem báo cáo họ đệ trình, trên đó còn ghi lại số lượng người có kỹ năng trên đảo, ví dụ như thợ rèn, thợ may, thợ mộc, thợ nề, v.v. Số lượng không nhiều, tính chuyên nghiệp chắc chắn không bằng những thợ thủ công Đỗ An đã chiêu mộ, nhưng được cái là có sẵn.
+Không ngờ hòn đảo cô lập này lại có một nền tảng thủ công nghiệp nhất định.
 
-"Chúng ta còn rất nhiều công trình cần mở rộng, nếu cần nhân lực thì các người cứ việc chiêu mộ, tiền công thì tùy theo giá thị trường trên đảo mà các người tự quyết định."
+Xét thấy khí hậu nơi đây ẩm ướt, thích hợp cho nhiều loại cây trồng phát triển, có lẽ một ngày nào đó khi Đỗ An mở rộng khu vực hoạt động, sẽ có cơ hội phát triển hơn nữa ngành dệt may.
 
-Julian và Ralph gật đầu. Việc mở rộng lãnh chúa phủ đã tạo ra nhiều cơ hội kiếm tiền cho người dân, ngay cả mức giá bình thường cũng có người tham gia.
+Dĩ nhiên, bây giờ nghĩ đến những điều này vẫn còn quá sớm.
 
-Khi những hiệp sĩ, nam tước đến Hắc Sâm Đảo khai phá, họ đã mang theo cả những người dân tự do. Những người này đến đây, lãnh chúa thời đó chắc chắn sẽ phân chia đất đai, thân phận của họ vẫn là dân tự do. Thế nhưng hiện tại, gần chín phần đều là nông nô, đã mất đi đất đai.
+Đỗ An lại đưa mắt nhìn xuống tờ giấy, và thấy một thông tin khác khiến anh kinh ngạc:
 
-Nếu khu vực do Hội Thánh Thủ và Bang Toái Lãng kiểm soát toàn là nông nô thì Đỗ An còn có thể hiểu được một chút.
+“Vịnh Toái Lãng còn sản xuất muối?”
 
-Julian giải thích: "Montport nói rằng, mấy năm nay người của Bang Toái Lãng và Hội Thánh Thủ thường xuyên tới gây rối, giẫm đạp mạ non, phá hoại ruộng đất, cộng thêm đôi khi khí hậu không tốt dẫn đến thu hoạch thấp, nhiều người không đủ ăn nên chỉ còn cách bán đất để đổi lấy lương thực từ chỗ hắn."
+Julian gật đầu, “Đây là thông tin bổ sung của Montport, tuy tôi không thể tự mình đến Vịnh Toái Lãng để xác minh, nhưng tất cả muối trên đảo đều đến từ đó, chắc không sai được.”
 
-Nói đoạn, anh đưa ra một xấp khế ước dày từ trong túi. "Đây đều là khế ước bán đất, Montport bảo tôi chuyển giao cho ngài."
+“Được rồi, cậu nói không sai, tài nguyên ở đây quả thực rất phong phú.”
 
-Đỗ An xem qua khế ước. Trên đó viết rằng, lãnh dân bán đất cho lãnh chúa mới để đổi lấy lương thực. Cho nên, trước khi có lãnh chúa mới, họ thuộc về nông nô của vương quốc; sau khi lãnh chúa mới tới, họ liền trở thành nông nô của lãnh chúa mới. Tóm lại, chẳng liên quan gì đến quan chính vụ Montport, hắn chỉ là người quản lý thay mà thôi.
+Hắc Sâm Đảo bốn bề là biển, theo lý mà nói, ngành muối ở đây hẳn phải phát triển.
 
-Đỗ An thậm chí nghi ngờ, có phải Montport đã cấu kết với Hội Thánh Thủ và Bang Toái Lãng, cố tình để người ta giẫm đạp ruộng đất, ép buộc những người dân tự do thuở trước phải bán đất hóa thành nông nô hay không. Những món nợ cũ này, Đỗ An hiện tại không có thời gian và sức lực để truy cứu.
+Các lãnh chúa đến đây những năm trước có lẽ cũng nhận ra điều này.
 
-Hai ngày nay Heine đã kiểm tra tình hình sinh trưởng của cây trồng trên ruộng và cũng đã báo cáo: "Đại nhân, tôi đoán sản lượng lương thực trên Hắc Sâm Đảo mấy năm nay hẳn là không tệ, tuyệt đối không đến mức như ngài nói là không đóng nổi thuế.
+Tuy nhiên, có thể sản xuất muối là một chuyện, còn có bán được thuận lợi hay không lại là chuyện khác.
 
-Đỗ An nhướng mày, tên này thật sự rất giàu. Chàng cười hỏi: "Montport nộp những thứ này cho ta, có biểu hiện tức giận không?"
+Ngành muối ở vương quốc Prouque về cơ bản đều do các lãnh chúa cấp cao như Bá tước kiểm soát, những người khác dù muốn kinh doanh muối cũng cần có sự bảo hộ của lãnh chúa cấp cao, nếu không rất dễ nảy sinh rắc rối.
 
-"Điều đó thì không!" Julian được Đỗ An dặn dò phải chú ý lời nói hành động của Montport nên anh đặc biệt quan tâm. "Hắn có vẻ rất trung thành với ngài, ngoài giữ lại một ít để tự dùng, số còn lại đều nộp hết cho ngài."
+Nhưng Đỗ An không định bán muối, Hắc Sâm Đảo có thể sản xuất muối, ít nhất là có thể tự cung tự cấp, không cần phải nhập hàng từ bên ngoài.
 
-Mặc dù Đỗ An không thể bới móc được lỗi gì từ cách làm này của đối phương, nhưng chàng vẫn cảm thấy nghi ngờ về việc Montport "biết đại cuộc" như vậy. Dù sao mấy năm nay Montport đã coi sản vật của hơn ba ngàn người là tài sản riêng, bây giờ đột nhiên nộp hết ra, trong lòng thật sự không chút suy nghĩ sao?
+Nghĩ đến đây, anh không khỏi nhíu mày, trong cuộc đàm phán lần này đã bỏ sót ngành muối của Thánh Thủ Hội.
 
-"Có lẽ là vì kiêng kỵ vũ lực của ta thôi." Đỗ An nghĩ thầm, đặt tờ giấy trong tay xuống, nhìn về phía Julian và Heine. "Hai người mấy ngày nay đã đi qua không ít nơi, mức sống của lãnh dân ở đây thế nào?"
+“Ngày mai cậu bảo Montport nghĩ kỹ xem, trên đảo còn có ngành nghề quan trọng nào khác không.”
 
-Với tư cách là lãnh chúa, muốn làm lớn làm mạnh, sở hữu một cơ sở dân số tốt là điều tất yếu. Julian im lặng một hồi rồi lắc đầu: "Tệ hơn nhiều so với lãnh dân ở trang viên Hồ Thanh."
+Đỗ An dặn dò: “Nhớ bảo hắn nghĩ cho rõ ràng!”
 
-"Nói chi tiết xem." Đỗ An mấy ngày trước khi đi đàm phán cũng đã gặp một vài người, trông họ vẫn có chút tinh thần. Nhưng sau khi nghe báo cáo chi tiết của ba người, chàng đoán những kẻ đến xem náo nhiệt hôm đó về cơ bản đều thuộc nhóm có cuộc sống tương đối dễ thở, còn phần lớn những người còn lại đều sống cảnh không đủ ăn, mặc không đủ ấm.
+Julian nghe ra ý trách móc trong giọng điệu của lãnh chúa, “Vâng, tôi hiểu rồi!”
 
-Lý do khiến mức sống ở đây tệ như vậy, chủ yếu là do trị an hỗn loạn và thuế khóa cao. Trị an hỗn loạn thể hiện ở nhiều phương diện, ví dụ như người các khu vực không ưa nhau, thượng nguồn ngăn dòng nước không cho hạ nguồn tưới tiêu, những tranh chấp lộn xộn, v.v.
+Đỗ An tiếp tục xem xét báo cáo mà họ nộp, trên đó còn ghi chép số lượng người có kỹ năng trên đảo, ví dụ như thợ rèn, thợ may, thợ mộc, thợ nề, v.v.
 
-Còn về thuế khóa... Sản lượng nông nô làm ra một năm, năm phần nộp lên, phần còn lại còn phải để dành giống. Tính ra, một gia đình sáu người, mỗi người mỗi ngày tiêu thụ chưa đầy bảy lạng lương thực. Nhưng trong tình cảnh như vậy, mỗi hộ mỗi tháng còn phải cử một người đi lao dịch năm sáu ngày, còn phải nộp thuế nhân khẩu...
+Số lượng không nhiều, tính chuyên nghiệp chắc chắn cũng không bằng những thợ thủ công mà Đỗ An đã chiêu mộ, nhưng điều quan trọng là có.
 
-"Montport có bao nhiêu đất?" Đỗ An đột nhiên hỏi.
+“Chúng ta còn nhiều công trình cần mở rộng, nếu cần nhân lực thì các cậu cứ việc chiêu mộ, thù lao cứ dựa vào giá thị trường trên đảo mà các cậu định liệu.”
 
-Julian trả lời: "Có hơn sáu trăm mẫu." Anh hỏi như muốn xin ý kiến: "Đại nhân, phần đất này ngài có định thu hồi không?"
+Julian và Ralph gật đầu.
 
-"Tất nhiên!" Người khác mỗi hộ có hơn mười mẫu đất đã là tốt lắm rồi, tên Montport này lại có tới sáu trăm mẫu! Hơn nữa mấy năm nay lương thực mọc trên đất của hắn không những không phải nộp, thậm chí còn có lao động miễn phí giúp hắn trồng.
+Việc mở rộng phủ lãnh chúa đã tạo ra cơ hội kiếm tiền cho không ít người, dù là mức lương bình thường cũng có người tham gia.
 
-"Tìm một cái cớ, thu hồi đất của hắn..." Chàng khựng lại một chút, cân nhắc việc Montport vẫn còn hữu dụng nên đổi giọng: "Để lại cho hắn ba mươi mẫu, vì thân phận của hắn là quan chức, tạm thời thu thuế ruộng theo tỷ lệ một phần mười."
+Đỗ An khẽ nhíu mày, “Ngoài những người có nghề này ra, những người còn lại sao toàn là nông nô, hơn nữa còn có không ít nô lệ?”
+
+Điều này khiến anh khá khó hiểu.
+
+Những kỵ sĩ, nam tước đến Hắc Sâm Đảo khai hoang ban đầu đã mang theo dân tự do.
+
+Những người này đến, lãnh chúa đương thời chắc chắn sẽ phân phối đất đai, thân phận của họ vẫn là dân tự do.
+
+Thế nhưng bây giờ, gần chín phần mười đều là nông nô, đã mất đi đất đai.
+
+Nếu các khu vực do Thánh Thủ Hội, Toái Lãng Bang kiểm soát toàn là nông nô, Đỗ An còn có thể hiểu một chút.
+
+Nhưng đây là nơi do Montport kiểm soát, chẳng lẽ tên này cũng bóc lột?
+
+Julian giải thích: “Montport nói, những năm qua người của Toái Lãng Bang và Thánh Thủ Hội thường xuyên đến đây gây sự, giẫm nát mạ non, phá hoại ruộng đồng, cộng thêm đôi khi khí hậu không tốt dẫn đến mất mùa, nhiều người không đủ ăn, đành bán đất để đổi lấy lương thực từ hắn.”
+
+Nói đến đây, hắn lấy ra một chồng khế ước dày cộp trong bọc.
+
+“Đây đều là khế ước bán đất, Montport bảo tôi chuyển giao cho ngài.”
+
+Đỗ An lật xem các khế ước.
+
+Trên đó ghi rõ, dân chúng đã bán đất cho tân lãnh chúa để đổi lấy lương thực.
+
+Vì vậy, trước khi có tân lãnh chúa, họ là nông nô của vương quốc; sau khi tân lãnh chúa đến, họ trở thành nông nô của tân lãnh chúa.
+
+Tóm lại, không liên quan gì đến quan chính vụ Montport, hắn chỉ là người đại diện quản lý mà thôi.
+
+Nhưng trong những năm tân lãnh chúa vắng mặt, ai có thể nói rằng những nông nô này không thuộc về Montport?
+
+Đỗ An thậm chí còn nghi ngờ, liệu Montport có cấu kết với Thánh Thủ Hội, Toái Lãng Bang, cố ý sai người giẫm nát ruộng đồng, ép buộc những dân tự do ban đầu phải bán đất và trở thành nông nô.
+
+Những món nợ cũ rích này, Đỗ An hiện tại không có thời gian và sức lực để truy cứu.
+
+Bây giờ những nông nô và đất đai này đều thuộc về Đỗ An, anh chính là đại địa chủ, tiện lợi cho việc điều hành sau này.
+
+Heine hai ngày nay đã kiểm tra tình hình sinh trưởng của cây trồng trên ruộng, cũng đã báo cáo:
+
+“Thưa ngài, tôi đoán sản lượng lương thực của Hắc Sâm Đảo những năm qua hẳn là không tệ, tuyệt đối không đến mức không nộp nổi thuế như ngài đã nói trước đây. Vậy nên tôi đoán, phần lớn lương thực, vải lanh và các sản phẩm khác có thể đã vào kho của Montport!”
+
+Ralph gật đầu, hắn hai ngày nay đang kiểm kê số lương thực mà đối phương nộp lên, hắn cũng nói thêm:
+
+“Mặc dù Montport nói mỗi năm đều phải nộp không ít cái gọi là phí bảo kê cho Thánh Thủ Hội, Toái Lãng Bang, nhưng qua tình hình kiểm tra của tôi hai ngày nay, kho của hắn dự trữ ít nhất bảy tám vạn cân lương thực, còn lúa mạch, lúa mì thì tính riêng.”
+
+Đỗ An nhướng mày, tên này quả thực rất giàu có.
+
+Anh cười hỏi: “Montport nộp những thứ này cho ta, không tỏ ra tức giận sao?”
+
+“Điều đó thì không ạ!”
+
+Julian được Đỗ An dặn dò phải chú ý đến lời nói và hành động của Montport, nên hắn đặc biệt quan tâm.
+
+“Hắn dường như rất trung thành với ngài, ngoài việc giữ lại một ít để tự dùng, số còn lại đều giao hết cho ngài.”
+
+Mặc dù Đỗ An không thể tìm ra lỗi gì từ hành động của đối phương, nhưng anh vẫn nghi ngờ về sự “biết nhìn đại cục” của Montport.
+
+Dù sao thì những năm qua Montport đã coi sản phẩm của hơn ba ngàn người là tài sản riêng của mình, bây giờ đột nhiên lấy ra nộp hết, trong lòng hắn thực sự không có chút ý nghĩ nào sao?
+
+Xem xét phong cách hành xử trước đây của tên này, cũng không giống một vị thánh nhân nào.
+
+“Có lẽ là do ngại vũ lực của mình chăng.”
+
+Đỗ An nghĩ vậy, đặt tờ giấy trong tay xuống, nhìn Julian và Heine.
+
+“Mấy ngày nay các cậu đã đi qua không ít nơi, mức sống của lãnh dân ở đây thế nào?”
+
+Với tư cách là lãnh chúa, muốn làm lớn mạnh, có một nền tảng dân số tốt là điều cần thiết.
+
+Julian im lặng một lát, sau đó lắc đầu, “Kém hơn rất nhiều so với lãnh dân ở trang viên Hồ Thanh.”
+
+“Nói rõ hơn xem.”
+
+Đỗ An mấy ngày trước khi đi hội đàm cũng đã gặp một vài người, họ trông cũng có vẻ khá tinh thần.
+
+Tuy nhiên, sau khi nghe báo cáo chi tiết của ba người, anh đoán rằng những người đến xem náo nhiệt hôm đó về cơ bản đều thuộc những người có cuộc sống tương đối khá giả hơn, còn phần lớn những người còn lại sống trong cảnh đói ăn, thiếu mặc.
+
+Cũng may Hắc Sâm Đảo có khí hậu ấm áp, nếu không mỗi năm số người chết vì đói, vì rét không biết là bao nhiêu.
+
+Sở dĩ mức sống của người dân ở đây kém như vậy, chủ yếu là do hai nguyên nhân: an ninh hỗn loạn và thuế má cao.
+
+An ninh hỗn loạn biểu hiện ở nhiều khía cạnh, ví dụ như người dân các khu vực không ưa nhau, thượng nguồn chặn dòng nước không cho hạ nguồn tưới tiêu, các tranh chấp lộn xộn, v.v.
+
+Còn về thuế má…
+
+Sản lượng mà nông nô làm ra trong một năm, năm phần mười phải nộp, số còn lại còn phải để dành làm giống.
+
+Tính ra, một gia đình sáu người, mỗi người mỗi ngày tiêu thụ chưa đến bảy lạng lương thực.
+
+Thế nhưng trong hoàn cảnh như vậy, mỗi hộ mỗi tháng còn phải cử một người đi lao dịch năm sáu ngày, lại còn phải đóng thuế thân…
+
+Hắc Sâm Đảo có được dân số như ngày nay cũng là điều hiếm có.
+
+“Montport có bao nhiêu đất?” Đỗ An đột nhiên hỏi.
+
+Julian trả lời: “Có hơn sáu trăm mẫu.”
+
+Hắn thăm dò hỏi: “Thưa ngài, phần đất này ngài có muốn thu hồi lại không?”
+
+“Đương nhiên!”
+
+Những người khác mỗi hộ có mười mấy mẫu đất đã là tốt lắm rồi, Montport này lại có tận sáu trăm mẫu!
+
+Hơn nữa những năm qua, lương thực trồng trên đất của hắn không những không phải nộp, thậm chí còn có lao động miễn phí giúp hắn trồng trọt.
+
+Đỗ An chưa đến, tên này nghiễm nhiên là một địa chủ, hơn nữa còn là một đại địa chủ.
+
+“Tìm một lý do, thu hồi đất của hắn…”
+
+Anh dừng lại một chút, xét thấy Montport vẫn còn hữu dụng, lại đổi lời: “Để lại cho hắn ba mươi mẫu, vì thân phận của hắn là quan chức, tạm thời cứ tính thuế đất một phần mười.”

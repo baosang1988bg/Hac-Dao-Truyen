@@ -52,7 +52,7 @@ OLLAMA_ENABLED  = os.getenv("OLLAMA_ENABLED", "false").lower() == "true"
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL    = os.getenv("OLLAMA_MODEL", "hunyuan-mt")
 # Timeout riêng cho local model (giây) — local chậm hơn API cloud
-OLLAMA_TIMEOUT  = int(os.getenv("OLLAMA_TIMEOUT", "120"))
+OLLAMA_TIMEOUT  = int(os.getenv("OLLAMA_TIMEOUT", "600"))
 
 # Provider ưu tiên: "gemini" | "deepseek" | "ollama" | "groq" | "auto"
 # "auto" = Gemini → DeepSeek → Ollama (local) theo thứ tự
@@ -60,7 +60,7 @@ OLLAMA_TIMEOUT  = int(os.getenv("OLLAMA_TIMEOUT", "120"))
 TRANSLATION_PROVIDER = os.getenv("TRANSLATION_PROVIDER", "auto")
 
 # Thứ tự fallback khi dùng provider="auto" (cách nhau bằng dấu phẩy)
-FALLBACK_ORDER = os.getenv("FALLBACK_ORDER", "gemini,deepseek,ollama").split(",")
+FALLBACK_ORDER = os.getenv("FALLBACK_ORDER", "gemini,deepseek").split(",")
 FALLBACK_ORDER = [p.strip() for p in FALLBACK_ORDER if p.strip()]
 
 # ── Rate limiting ─────────────────────────────────────────────────────────────
@@ -86,6 +86,10 @@ else:
 #   - Dịch đa luồng giúp vượt qua nút thắt cổ chai của việc chờ API
 #   - Khuyên dùng: 3-5 đối với API free tier
 MAX_CONCURRENT_BATCHES = int(os.getenv("MAX_CONCURRENT_BATCHES", "3"))
+# Ollama chỉ xử lý 1 request tại một thời điểm → tự động giới hạn concurrency = 1
+if TRANSLATION_PROVIDER == "ollama" or (TRANSLATION_PROVIDER == "auto" and FALLBACK_ORDER and FALLBACK_ORDER[0] == "ollama"):
+    MAX_CONCURRENT_BATCHES = 1
+    print("[*] Tự động đặt MAX_CONCURRENT_BATCHES = 1 vì Ollama không hỗ trợ song song.")
 
 # BATCH_MAX_CHARS: tổng ký tự tối đa của tất cả content trong 1 batch
 #   Nếu thêm chương mới vào batch mà vượt ngưỡng này → tự động flush batch trước,
