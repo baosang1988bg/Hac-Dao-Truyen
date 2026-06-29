@@ -1,4 +1,4 @@
-# Chương 195: 
+# Chương 195: Tiết lộ tin tức
 
 Mưa lất phất giăng mờ khắp chốn, trong xe giá đặc biệt yên tĩnh. Lý Thông Nhai vuốt râu, khẽ nói:
 

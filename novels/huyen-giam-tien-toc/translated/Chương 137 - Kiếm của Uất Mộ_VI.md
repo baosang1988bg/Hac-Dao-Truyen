@@ -1,4 +1,4 @@
-# Chương 137: 
+# Chương 137: Kiếm của Uất Mộ
 
 Lời này vừa thốt ra, phía dưới lập tức dậy sóng, các gia tộc sắc mặt khác nhau, xì xào bàn tán. Lý Thông Nhai cũng khẽ gật đầu, cuối cùng cũng hiểu Úc gia lấy đâu ra sự tự tin mà bá đạo đến vậy, thầm nghĩ trong lòng:
 

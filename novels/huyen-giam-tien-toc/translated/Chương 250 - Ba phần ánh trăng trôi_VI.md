@@ -1,4 +1,4 @@
-# Chương 250: 
+# Chương 250: Ba phần ánh trăng trôi
 
 Trên không Hoa Thiên Sơn, gió mây biến ảo, kiếm bạt nỗ trương, nhưng trên châu giữa hồ lại sóng yên biển lặng. Một tu sĩ áo xám lướt gió bay qua, đeo kiếm ngang hông, vẻ mặt đăm chiêu. Hắn ấn kiếm lướt đi trên không, áo bào phần phật, nheo mắt nhìn cảnh tượng trên không Hoa Thiên Sơn, hồi tưởng:
 

@@ -1,4 +1,4 @@
-# Chương 136: 
+# Chương 136: Khu Rừng Bí Ẩn
 
 Máu tươi chảy tràn trên cấm đoạn đại trận một hồi, phía dưới châu giữa hồ bị trận pháp bao phủ đã thành một vùng đất cháy. Khi ánh sáng pháp thuật tiêu tan hết, mới thấy một người đàn ông trung niên rụt rè đang ôm đầu nằm co ro, nhắm mắt run rẩy.
 

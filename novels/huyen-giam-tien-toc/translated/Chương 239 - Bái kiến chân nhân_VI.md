@@ -1,4 +1,4 @@
-# Chương 239: 
+# Chương 239: Bái kiến chân nhân
 
 Điền Hữu Đạo nghe xong lời đó, chỉ lạnh lùng nhìn hắn. Điền Trọng Thanh sững sờ một lát, lập tức hiểu ra, tay không còn run, nước mắt cũng thôi rơi, chỉ chậm rãi quỳ lạy, khẽ nói với giọng buồn bã:
 

@@ -1,4 +1,4 @@
-# Chương 196: 
+# Chương 196: Phản gián
 
 Lý Uyên Tu bước nhanh vào trung đường, Lý Uyên Giao theo sát phía sau. Anh thấy mấy vị tộc thúc đang sốt ruột chờ sẵn trong sảnh, vẻ mặt hoảng hốt, cử chỉ câu nệ, nhao nhao thì thầm: "Thiếu gia chủ... con ta lỗ mãng, xin ngài cho nó về nhà..." "Đúng vậy!
 

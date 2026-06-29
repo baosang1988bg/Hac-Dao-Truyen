@@ -564,7 +564,7 @@ async def process_chapter(
     
     # Clean double prefixes in title
     import re as _re_single
-    vi_title_only = _re_single.sub(r"^(Chương\s+[\w\s\d]+|第[一二三四五六七八九十\d\s]+章)\s*[:：\-]*\s*", "", vi_title_only, flags=_re_single.IGNORECASE).strip()
+    vi_title_only = _re_single.sub(r"^(Chương\s+[\w\d]+|第[一二三四五六七八九十\d\s]+章)\s*[:：\-]*\s*", "", vi_title_only, flags=_re_single.IGNORECASE).strip()
 
     clean_header = f"# Ch\u01b0\u01a1ng {chapter_number}: {vi_title_only}\n"
     with open(output_file, "w", encoding="utf-8") as f:
@@ -950,7 +950,7 @@ async def cmd_translate_async(args, progress_callback=None):
             
             # Clean double prefixes in title
             import re as _re3
-            _vi_title = _re3.sub(r"^(Chương\s+[\w\s\d]+|第[一二三四五六七八九十\d\s]+章)\s*[:：\-]*\s*", "", _vi_title, flags=_re3.IGNORECASE).strip()
+            _vi_title = _re3.sub(r"^(Chương\s+[\w\d]+|第[一二三四五六七八九十\d\s]+章)\s*[:：\-]*\s*", "", _vi_title, flags=_re3.IGNORECASE).strip()
             
             _chap_url = urls_copy[i] if i < len(urls_copy) else ""
             _cat_item = _url_to_catalog_item.get(_chap_url)

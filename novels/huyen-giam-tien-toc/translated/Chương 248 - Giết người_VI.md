@@ -1,4 +1,4 @@
-# Chương 248: 
+# Chương 248: Giết người
 
 "Thế thì còn gì bằng!"
 
