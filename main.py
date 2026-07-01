@@ -431,26 +431,53 @@ def merge_translated_parts(profile: NovelProfile, original_title: str, num_parts
     Sau khi dịch xong tất cả phần, ghép lại thành 1 file output duy nhất.
     VD: stem-1_VI.md + stem-2_VI.md → stem_VI.md
 
-    Dùng tên file trực tiếp (không qua safe_filename) để đảm bảo khớp
-    với tên file thực tế trên disk — tránh mismatch với ký tự Unicode.
-
+    Hỗ trợ tìm kiếm file tiếng Việt (Chương {chap_num} - {vi_title}-{part_num}_VI.md)
+    bằng cách tra cứu catalog.
     Returns True nếu ghép thành công.
     """
-    # Dùng stem trực tiếp — không safe_filename để tránh mismatch
-    # Vì save_raw_parts lưu file bằng safe_filename(title) nhưng
-    # translated files được lưu bằng tên gốc (chứa ký tự Chinese)
-    final_out = os.path.join(profile.translated_dir, f"{original_title}_VI.md")
+    import re
+    import json
 
-    # Kiểm tra tất cả phần đã dịch xong chưa
-    parts_content = []
+    # 1. Tra cứu chapter number trong catalog
+    chap_num = None
+    try:
+        catalog_path = os.path.join("novels", profile.slug, "catalog.json")
+        if os.path.exists(catalog_path):
+            with open(catalog_path, "r", encoding="utf-8") as f:
+                catalog = json.load(f)
+            for item in catalog:
+                if item.get("title") == original_title or item.get("original_title") == original_title:
+                    chap_num = item.get("number")
+                    break
+    except Exception:
+        pass
+
+    # 2. Tìm kiếm đường dẫn các file phần dịch
+    parts_paths = []
     for i in range(1, num_parts + 1):
-        # Tìm file phần: thử cả dạng "stem-i_VI.md" trực tiếp
-        part_stem = f"{original_title}-{i}"
-        part_path = os.path.join(profile.translated_dir, f"{part_stem}_VI.md")
-        if not os.path.exists(part_path) or os.path.getsize(part_path) == 0:
-            return False  # Chưa đủ phần
+        found_path = None
+        if chap_num is not None:
+            if os.path.isdir(profile.translated_dir):
+                for f in os.listdir(profile.translated_dir):
+                    if f.lower().startswith(f"chương {chap_num} "):
+                        if re.search(rf"-{i}_vi\.md$", f, re.IGNORECASE):
+                            found_path = os.path.join(profile.translated_dir, f)
+                            break
+        if not found_path:
+            part_stem = f"{original_title}-{i}"
+            part_path = os.path.join(profile.translated_dir, f"{part_stem}_VI.md")
+            if os.path.exists(part_path):
+                found_path = part_path
+
+        if not found_path or os.path.getsize(found_path) == 0:
+            return False  # Chưa đủ phần hoặc file trống
+        parts_paths.append(found_path)
+
+    # 3. Đọc nội dung các phần
+    parts_content = []
+    for p_path in parts_paths:
         try:
-            with open(part_path, "r", encoding="utf-8") as f:
+            with open(p_path, "r", encoding="utf-8") as f:
                 part_text = f.read().strip()
             if "[Translation failed" in part_text[:100]:
                 return False  # Có phần lỗi
@@ -461,13 +488,23 @@ def merge_translated_parts(profile: NovelProfile, original_title: str, num_parts
     if not parts_content:
         return False
 
-    # Ghép: bỏ header trùng từ phần 2 trở đi, nối bằng \n\n
+    # 4. Trích xuất tiêu đề tiếng Việt sạch từ phần 1
+    vi_title = ""
+    first_line = parts_content[0].splitlines()[0].strip() if parts_content[0] else ""
+    if first_line.startswith("#"):
+        header_title = first_line.lstrip("#").strip()
+        vi_title = re.sub(r"^(Chương\s+\d+|第[一二三四五六七八九十\d\s]+章)\s*[:：\-]*\s*", "", header_title, flags=re.IGNORECASE).strip()
+
+    if not vi_title:
+        vi_title = original_title
+
+    # 5. Ghép nội dung
     merged_parts = []
     for idx, text in enumerate(parts_content):
         if idx == 0:
             merged_parts.append(text)
         else:
-            lines = text.split('\n')
+            lines = text.splitlines()
             start = 0
             while start < len(lines) and lines[start].strip().startswith('#'):
                 start += 1
@@ -475,8 +512,21 @@ def merge_translated_parts(profile: NovelProfile, original_title: str, num_parts
 
     final_text = '\n\n'.join(p for p in merged_parts if p)
 
+    # 6. Xác định đường dẫn file đầu ra
+    if chap_num is not None:
+        final_out = os.path.join(profile.translated_dir, f"Chương {chap_num} - {safe_filename(vi_title)}_VI.md")
+    else:
+        final_out = os.path.join(profile.translated_dir, f"{safe_filename(vi_title)}_VI.md")
+
     with open(final_out, "w", encoding="utf-8") as f:
-        f.write(final_text)
+        f.write(final_text + "\n")
+
+    # 7. Xóa các file phần tạm
+    for p_path in parts_paths:
+        try:
+            os.remove(p_path)
+        except Exception:
+            pass
 
     return True
 
