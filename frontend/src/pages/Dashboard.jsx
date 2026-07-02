@@ -62,6 +62,7 @@ export default function Dashboard() {
           padding: '1.5rem',
           marginBottom: '2rem',
           display: 'flex',
+          flexWrap: 'wrap',
           justifyContent: 'space-between',
           alignItems: 'center',
           gap: '16px',
@@ -85,7 +86,7 @@ export default function Dashboard() {
           <Link
             to={`/novel/${lastNovelInfo.slug}/read/${lastNovelInfo.chapter}`}
             className="btn btn-primary"
-            style={{ padding: '10px 20px', borderRadius: '12px', fontSize: '0.9rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            style={{ padding: '10px 20px', borderRadius: '12px', fontSize: '0.9rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', minHeight: '44px', flexShrink: 0 }}
           >
             Đọc tiếp &rarr;
           </Link>

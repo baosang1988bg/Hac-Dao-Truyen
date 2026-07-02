@@ -261,10 +261,65 @@ a:hover {
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid var(--border-panel);
 }
-.novel-card:hover {
-  transform: translateY(-5px);
-  border-color: rgba(59, 130, 246, 0.25);
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.1);
+
+/* Hover chỉ trên thiết bị có chuột; thiết bị cảm ứng dùng :active để phản hồi chạm */
+@media (hover: hover) {
+  .novel-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(59, 130, 246, 0.25);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.1);
+  }
+}
+.novel-card:active {
+  transform: scale(0.99);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Nút chọn phương thức đăng nhập (LoginPage) */
+.btn-login-option {
+  background: rgba(255, 255, 255, 0.05);
+  transition: background 0.2s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: hover) {
+  .btn-login-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+.btn-login-option:active {
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(0.985);
+}
+
+/* Tab bar (NovelDetail): cuộn ngang trên màn hình hẹp, ẩn scrollbar */
+.tab-bar {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.tab-bar::-webkit-scrollbar {
+  display: none;
+}
+.tab-bar button {
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-height: 44px;
+}
+
+/* Dòng chương trong danh sách: touch target >= 44px + hover chỉ khi có chuột */
+.chapter-row {
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: hover) {
+  .chapter-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+.chapter-row:active {
+  background: rgba(255, 255, 255, 0.09);
 }
 
 @media (max-width: 900px) {

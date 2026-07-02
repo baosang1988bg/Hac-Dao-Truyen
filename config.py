@@ -68,6 +68,12 @@ FALLBACK_ORDER = [p.strip() for p in FALLBACK_ORDER if p.strip()]
 # Set = 0 để tắt delay (nếu dùng paid tier)
 REQUEST_DELAY_SECONDS = float(os.getenv("REQUEST_DELAY_SECONDS", "4"))
 
+# ── Scrape delay ──────────────────────────────────────────────────────────────
+# Thời gian nghỉ (giây) giữa 2 lần fetch chương liên tiếp khi crawl tuần tự
+# — tránh bị site chặn vì request quá dày. Set = 0 để tắt delay.
+# Delay được BỎ QUA cho chương cuối cùng của vòng lặp (không cần chờ thừa).
+SCRAPE_DELAY_SECONDS = float(os.getenv("SCRAPE_DELAY_SECONDS", "2"))
+
 # ── Batch translation ──────────────────────────────────────────────────────────
 # BATCH_SIZE: số chương tối đa gửi cùng 1 lần cho AI (1–10)
 #   - Cao hơn = nhanh hơn, tốn ít API call hơn, nhưng dễ vượt token limit

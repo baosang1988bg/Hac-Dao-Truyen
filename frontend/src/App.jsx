@@ -6,6 +6,7 @@ import NovelDetail from './pages/NovelDetail'
 import Reader from './pages/Reader'
 import Logs from './pages/Logs'
 import LoginPage from './pages/LoginPage'
+import api from './api'
 import './index.css'
 
 function NavLink({ to, icon, label, adminOnly }) {
@@ -46,6 +47,14 @@ function App() {
   const location = useLocation()
   const navigate = useNavigate()
 
+  // Nếu là admin nhưng không còn token (đã hết hạn / bị xóa) → hạ quyền, quay về đăng nhập
+  useEffect(() => {
+    if (localStorage.getItem('userRole') === 'admin' && !localStorage.getItem('authToken')) {
+      localStorage.removeItem('userRole')
+      setRole(null)
+    }
+  }, [])
+
   useEffect(() => {
     if (!role) return // Chưa đăng nhập thì không redirect
 
@@ -71,6 +80,10 @@ function App() {
   }
 
   const handleLogout = () => {
+    if (role === 'admin' && localStorage.getItem('authToken')) {
+      api.post('/auth/logout').catch(() => {})
+    }
+    localStorage.removeItem('authToken')
     localStorage.removeItem('userRole')
     setRole(null)
   }

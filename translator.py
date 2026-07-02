@@ -3,6 +3,10 @@ translator.py
 -------------
 Dịch nội dung chương tiểu thuyết sang tiếng Việt.
 
+File này là FACADE: giữ nguyên public API (NovelTranslator, build_prompt,
+estimate_tokens...) — code backend cụ thể (Gemini/DeepSeek/Groq/Ollama)
+đã được tách vào package providers/.
+
 Thứ tự ưu tiên (TRANSLATION_PROVIDER=auto):
   1. Gemini — thử tất cả key trong pool
   2. Groq   — fallback nếu tất cả Gemini key đều bị 429
@@ -14,48 +18,37 @@ Rate limit tự xử lý:
 
 import re
 import time
-import os
-import itertools
+import functools
 from config import (
-    GOOGLE_API_KEYS, GEMINI_MODEL,
-    GROQ_API_KEY, GROQ_MODEL,
-    DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_BASE_URL,
-    OLLAMA_ENABLED, OLLAMA_BASE_URL, OLLAMA_MODEL, OLLAMA_TIMEOUT,
+    GOOGLE_API_KEYS,
+    GROQ_MODEL,
+    DEEPSEEK_MODEL,
+    OLLAMA_ENABLED, OLLAMA_MODEL,
     TRANSLATION_PROVIDER, FALLBACK_ORDER,
     REQUEST_DELAY_SECONDS,
     TARGET_LANGUAGE, DEFAULT_TRANSLATION_STYLE,
     SHORT_CHAPTER_THRESHOLD, SHORT_CHAPTER_PROVIDER,
 )
 
-# Model fallback list: rotate khi model bị daily quota
-# Đọc từ .env GEMINI_FALLBACK_MODELS, hoặc dùng list mặc định
-_raw_fallbacks = os.getenv("GEMINI_FALLBACK_MODELS", "")
-GEMINI_MODEL_POOL: list[str] = (
-    [m.strip() for m in _raw_fallbacks.split(",") if m.strip()]
-    if _raw_fallbacks
-    else [
-        GEMINI_MODEL,
-        "gemini-2.5-flash",
-        "gemini-2.5-flash-lite",
-        "gemini-flash-lite-latest",
-        "gemini-2.0-flash",
-        "gemini-3.1-flash-lite-preview",
-    ]
+# ── Backends (đã tách sang package providers/) ────────────────────────────────
+# Re-export để code cũ (`from translator import GeminiBackend`...) vẫn chạy.
+from providers import (
+    GeminiBackend, DeepSeekBackend, GroqBackend, OllamaBackend,
+    GEMINI_MODEL_POOL, _DailyQuotaExhausted,
+    _KEY_STATUS_FILE, _QUOTA_RESET_HOURS, _RATE_LIMIT_SKIP_HOURS,
+    _load_key_status, _save_key_status, _now_iso, _hours_since,
 )
-# Đảm bảo GEMINI_MODEL luôn ở đầu pool
-if GEMINI_MODEL not in GEMINI_MODEL_POOL:
-    GEMINI_MODEL_POOL.insert(0, GEMINI_MODEL)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def build_prompt(title, content, glossary, translation_style, previous_summary=""):
     style = translation_style.strip() or DEFAULT_TRANSLATION_STYLE
-    
+
     # Lọc glossary động để giảm thiểu token thừa và tăng tốc độ xử lý cho model local
     if glossary:
         glossary = {k: v for k, v in glossary.items() if k in content or k in title}
-        
+
     glossary_block = (
         "\n".join(f"  - {k} → {v}" for k, v in glossary.items())
         if glossary else "(No glossary — transliterate Chinese names phonetically into Vietnamese if needed)"
@@ -115,12 +108,12 @@ def parse_response(raw: str) -> tuple[str, str]:
 
 def build_batch_prompt(chapters: list[tuple[str, str]], glossary, translation_style, previous_summary=""):
     style = translation_style.strip() or DEFAULT_TRANSLATION_STYLE
-    
+
     # Lọc glossary động cho toàn bộ batch
     if glossary:
         full_text = " ".join(t + " " + c for t, c in chapters)
         glossary = {k: v for k, v in glossary.items() if k in full_text}
-        
+
     glossary_block = (
         "\n".join(f"  - {k} → {v}" for k, v in glossary.items())
         if glossary else "(No glossary — transliterate Chinese names phonetically into Vietnamese if needed)"
@@ -134,7 +127,7 @@ def build_batch_prompt(chapters: list[tuple[str, str]], glossary, translation_st
     chapters_text = ""
     for idx, (title, content) in enumerate(chapters):
         chapters_text += f"\n\n=== CHAPTER {idx} ===\n--- CHAPTER TITLE ---\n{title}\n--- CHAPTER CONTENT ---\n{content}\n"
-        
+
     return f"""You are an expert literary translator specializing in Chinese web novels (网文). Your task is to produce a high-quality Vietnamese translation that reads like it was originally written in Vietnamese — not a translation.
 
 **CRITICAL RULES — MUST FOLLOW:**
@@ -185,7 +178,7 @@ def parse_batch_response(raw: str, num_chapters: int) -> tuple[list[str], str, d
     """Parse batch response into list of chapter texts, a single summary, and new glossary terms."""
     summary = ""
     new_glossary = {}
-    
+
     if "%%GLOSSARY%%" in raw:
         parts = raw.split("%%GLOSSARY%%", 1)
         raw = parts[0]
@@ -205,7 +198,7 @@ def parse_batch_response(raw: str, num_chapters: int) -> tuple[list[str], str, d
         parts = raw.split("%%SUMMARY%%", 1)
         raw = parts[0]
         summary = parts[1].strip()
-        
+
     chapters = []
     # Split by === CHAPTER X ===
     import re
@@ -239,15 +232,28 @@ def parse_batch_response(raw: str, num_chapters: int) -> tuple[list[str], str, d
     return validated, summary, new_glossary
 
 
+# Regex chữ Hán — compile 1 lần, dùng lại cho estimate/cleanup (tránh recompile)
+_CHINESE_CHARS_RE = re.compile(r'[一-鿿㐀-䶿]')
+_CHINESE_ANY_RE   = re.compile(r'[一-鿿㐀-䶿]')
+
+
+@functools.lru_cache(maxsize=1024)
+def _estimate_tokens_cached(text: str) -> int:
+    """Tính token estimate 1 lần cho mỗi content string (cache bằng lru_cache)."""
+    chinese_chars = len(_CHINESE_CHARS_RE.findall(text))
+    other_chars   = len(text) - chinese_chars
+    return int(chinese_chars * 1.5 + other_chars * 0.3)
+
+
 def estimate_tokens(text: str) -> int:
     """
     Ước tính số token từ text (không cần tokenizer thật).
     Chinese: ~1.5 token/char | Latin/Vietnamese: ~0.3 token/char
     Đủ chính xác để ước tính chi phí và tránh vượt context limit.
+    Kết quả được cache theo content string — tránh chạy lại regex khi
+    cùng 1 nội dung được ước tính nhiều lần (batch + retry).
     """
-    chinese_chars = len(re.findall(r'[一-鿿㐀-䶿]', text))
-    other_chars   = len(text) - chinese_chars
-    return int(chinese_chars * 1.5 + other_chars * 0.3)
+    return _estimate_tokens_cached(text)
 
 
 # Bảng giá USD/1M tokens (input, output) — cập nhật 2025
@@ -269,17 +275,22 @@ def estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
 
 def has_chinese_chars(text: str) -> bool:
     """Kiểm tra xem text có còn chứa chữ Hán không."""
-    return bool(re.search(r'[\u4e00-\u9fff\u3400-\u4dbf]', text))
+    return bool(_CHINESE_ANY_RE.search(text))
+
+
+def count_chinese_chars(text: str) -> int:
+    """Đếm số chữ Hán trong text (1 lần quét regex duy nhất)."""
+    return len(_CHINESE_ANY_RE.findall(text))
 
 
 def build_cleanup_prompt(text: str) -> str:
     """Prompt để Gemini dọn sạch chữ Hán còn sót trong bản dịch."""
-    return f"""The following Vietnamese text still contains some Chinese characters (汉字) that were not translated. 
+    return f"""The following Vietnamese text still contains some Chinese characters (汉字) that were not translated.
 Your task: Replace every Chinese character/word with appropriate Vietnamese transliteration or translation.
 
 Rules:
 - Chinese names → phonetic Vietnamese (e.g., 乔桑 → Kiều Tang, 秦守 → Tần Thủ, 方思思 → Phương Tư Tư)
-- Chinese place names → phonetic Vietnamese (e.g., 杭港 → Hàng Cảng, 浙江 → Chiết Giang)  
+- Chinese place names → phonetic Vietnamese (e.g., 杭港 → Hàng Cảng, 浙江 → Chiết Giang)
 - Chinese terms → meaningful Vietnamese (e.g., 御兽师 → Ngự Thú Sư, 同桌 → bạn cùng bàn)
 - Keep ALL existing Vietnamese text exactly as is
 - Output ONLY the corrected text, nothing else
@@ -304,371 +315,6 @@ def is_quota_error(err: str) -> bool:
 def is_daily_quota_error(err: str) -> bool:
     """Phân biệt lỗi hết quota ngày (không retry được) vs hết quota phút (chờ là xong)."""
     return "PerDay" in err or "per_day" in err.lower() or "daily" in err.lower()
-
-
-# ── Gemini backend ────────────────────────────────────────────────────────────
-
-# ── Key status persistence ────────────────────────────────────────────────────
-
-import json as _json
-from datetime import datetime as _dt, timezone as _tz
-
-_KEY_STATUS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "key_status.json")
-_QUOTA_RESET_HOURS    = 24  # Gemini free tier quota resets every 24h
-_RATE_LIMIT_SKIP_HOURS = 1  # Bỏ qua key bị per-minute rate limit trong 1h
-
-
-def _load_key_status() -> dict:
-    """Load key status từ file. Tạo mới nếu chưa có."""
-    if os.path.exists(_KEY_STATUS_FILE):
-        try:
-            with open(_KEY_STATUS_FILE, "r", encoding="utf-8") as f:
-                return _json.load(f)
-        except Exception:
-            pass
-    return {}
-
-
-def _save_key_status(status: dict):
-    """Lưu key status xuống file."""
-    try:
-        with open(_KEY_STATUS_FILE, "w", encoding="utf-8") as f:
-            _json.dump(status, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        print(f"  [!] Không thể lưu key_status.json: {e}")
-
-
-def _now_iso() -> str:
-    return _dt.now(_tz.utc).isoformat()
-
-
-def _hours_since(iso_ts: str) -> float:
-    """Tính số giờ đã qua kể từ timestamp ISO."""
-    try:
-        t = _dt.fromisoformat(iso_ts)
-        if t.tzinfo is None:
-            t = t.replace(tzinfo=_tz.utc)
-        return (_dt.now(_tz.utc) - t).total_seconds() / 3600
-    except Exception:
-        return 999.0
-
-
-# ── GeminiBackend ─────────────────────────────────────────────────────────────
-
-class GeminiBackend:
-    """
-    Gemini backend với key health tracking:
-      - working       : key đang hoạt động tốt
-      - quota_exceeded: hết quota ngày, tự recover sau QUOTA_RESET_HOURS
-      - invalid       : key sai/bị thu hồi, không thử lại tự động
-    Trạng thái được lưu vào key_status.json và persist giữa các session.
-    """
-
-    # Phân loại lỗi theo HTTP status / message
-    _INVALID_PATTERNS  = ("400", "401", "403", "API_KEY_INVALID", "invalid api key",
-                          "api key not valid", "permission denied")
-    _QUOTA_PATTERNS    = ("429", "quota", "RESOURCE_EXHAUSTED", "rate_limit", "rateLimitExceeded")
-
-    def __init__(self):
-        if not GOOGLE_API_KEYS:
-            raise ValueError("Thiếu GOOGLE_API_KEY — lấy miễn phí: https://aistudio.google.com/app/apikey")
-        from google import genai
-        self._genai = genai
-        self._all_keys      = list(GOOGLE_API_KEYS)
-        self._key_status    = _load_key_status()   # dict: key → {status, since, note}
-        self._exhausted_models: set[str] = set()
-        self._client        = None
-        self._current_key   = None
-        self._current_model = GEMINI_MODEL_POOL[0]
-
-        # Chạy auto-recovery: key quota_exceeded đã qua 24h → reset về working
-        self._maybe_recover_keys()
-
-        # Chọn key đầu tiên khả dụng
-        first = self._first_working_key()
-        if first is None:
-            raise ValueError(
-                f"Không có Gemini key nào khả dụng.\n"
-                f"  Key status: {self._status_summary()}\n"
-                f"  Kiểm tra: python check_keys.py"
-            )
-        self._apply_key(first)
-        print(f"  [Gemini] model={self._current_model} — "
-              f"{self._count_working()}/{len(self._all_keys)} key(s) working")
-
-    # ── Key status helpers ────────────────────────────────────────────────────
-
-    def _get_status(self, key: str) -> str:
-        return self._key_status.get(key, {}).get("status", "working")
-
-    def _set_status(self, key: str, status: str, note: str = ""):
-        self._key_status[key] = {
-            "status": status,
-            "since":  _now_iso(),
-            "note":   note,
-            "suffix": f"...{key[-6:]}",
-        }
-        _save_key_status(self._key_status)
-
-    def _maybe_recover_keys(self):
-        """Keys bị quota_exceeded (24h) hoặc rate_limited (1h) → reset về working."""
-        recovered = 0
-        for key, info in self._key_status.items():
-            st    = info.get("status", "working")
-            hours = _hours_since(info.get("since", ""))
-            if st == "quota_exceeded" and hours >= _QUOTA_RESET_HOURS:
-                self._key_status[key]["status"] = "working"
-                self._key_status[key]["note"] = f"auto-recovered (quota) after {hours:.1f}h"
-                recovered += 1
-            elif st == "rate_limited" and hours >= _RATE_LIMIT_SKIP_HOURS:
-                self._key_status[key]["status"] = "working"
-                self._key_status[key]["note"] = f"auto-recovered (rate-limit) after {hours:.1f}h"
-                recovered += 1
-        if recovered:
-            _save_key_status(self._key_status)
-            print(f"  [Gemini] Auto-recovered {recovered} key(s)")
-
-    def _first_working_key(self) -> str | None:
-        """Trả về key đầu tiên đang working — bỏ qua rate_limited và quota_exceeded."""
-        # Ưu tiên 1: key working hoàn toàn
-        for key in self._all_keys:
-            if self._get_status(key) == "working":
-                return key
-        # Fallback: rate_limited đã hết 1h (đã recover ở _maybe_recover_keys)
-        return None
-
-    def _count_working(self) -> int:
-        return sum(1 for k in self._all_keys if self._get_status(k) == "working")
-
-    def _status_summary(self) -> str:
-        counts = {}
-        for k in self._all_keys:
-            s = self._get_status(k)
-            counts[s] = counts.get(s, 0) + 1
-        return ", ".join(f"{v} {k}" for k, v in counts.items())
-
-    def _classify_error(self, err: str) -> str:
-        """Phân loại lỗi: 'invalid' | 'quota' | 'other'"""
-        err_lower = err.lower()
-        if any(p.lower() in err_lower for p in self._INVALID_PATTERNS):
-            return "invalid"
-        if any(p.lower() in err_lower for p in self._QUOTA_PATTERNS):
-            return "quota"
-        return "other"
-
-    # ── Key rotation ──────────────────────────────────────────────────────────
-
-    def _apply_key(self, key: str):
-        self._client      = self._genai.Client(api_key=key)
-        self._current_key = key
-        print(f"  [Gemini] Using key ...{key[-6:]}")
-
-    def next_available_key(self, error_type: str = "quota") -> bool:
-        """
-        Đánh dấu key hiện tại là lỗi và rotate sang key tiếp theo.
-        error_type: 'quota' | 'invalid' | 'rate_limited'
-        """
-        if error_type == "rate_limited":
-            status = "rate_limited"
-            note   = f"per-minute rate limited — skip for {_RATE_LIMIT_SKIP_HOURS}h"
-        elif error_type == "quota":
-            status = "quota_exceeded"
-            note   = "daily quota hit"
-        else:
-            status = "invalid"
-            note   = "API key invalid/revoked"
-        self._set_status(self._current_key, status, note)
-        print(f"  [Gemini] Key ...{self._current_key[-6:]} → {status}")
-        print(f"  [Key status] {self._status_summary()}")
-
-        next_key = self._first_working_key()
-        if next_key:
-            self._apply_key(next_key)
-            return True
-        print(f"  [Gemini] No working keys left for model {self._current_model}.")
-        return False
-
-    def next_available_model(self) -> bool:
-        """
-        Rotate sang model mới khi cả pool key đều hết quota cho model hiện tại.
-        Reset quota_exceeded keys (chúng có quota riêng cho mỗi model).
-        """
-        self._exhausted_models.add(self._current_model)
-        for model in GEMINI_MODEL_POOL:
-            if model not in self._exhausted_models:
-                print(f"  [Gemini] Model {self._current_model} exhausted → switching to {model}")
-                self._current_model = model
-                # Reset quota_exceeded và rate_limited keys cho model mới
-                for key in self._all_keys:
-                    st = self._get_status(key)
-                    if st in ("quota_exceeded", "rate_limited"):
-                        self._key_status[key]["status"] = "working"
-                        self._key_status[key]["note"] = f"reset for new model {model}"
-                _save_key_status(self._key_status)
-                first = self._first_working_key()
-                if first:
-                    self._apply_key(first)
-                return True
-        print(f"  [Gemini] All {len(GEMINI_MODEL_POOL)} model(s) exhausted.")
-        return False
-
-    def all_exhausted(self) -> bool:
-        """True khi không còn key nào khả dụng ngay lúc này cho bất kỳ model nào."""
-        models_left  = len(GEMINI_MODEL_POOL) - len(self._exhausted_models)
-        working_keys = self._count_working()
-        return models_left == 0 or (models_left == 1 and working_keys == 0)
-
-    def available_key_count(self) -> int:
-        """Số key khả dụng ngay lúc này (working, không bị rate_limited hay quota)."""
-        return self._count_working()
-
-    def all_keys_exhausted(self) -> bool:
-        return self.all_exhausted()
-
-    def call(self, prompt: str) -> str:
-        response = self._client.models.generate_content(
-            model=self._current_model,
-            contents=prompt,
-            config={
-                # Explicitly request max output tokens to avoid default 8192 cap
-                # Gemini 2.5 Flash supports up to 65536 output tokens
-                "max_output_tokens": 65536,
-                "temperature": 0.7,
-            },
-        )
-        return response.text
-
-    @property
-    def name(self) -> str:
-        return f"Gemini/{self._current_model}"
-
-
-# ── Groq backend ──────────────────────────────────────────────────────────────
-
-class GroqBackend:
-    def __init__(self):
-        if not GROQ_API_KEY:
-            raise ValueError("Thiếu GROQ_API_KEY — lấy miễn phí: https://console.groq.com")
-        from groq import Groq
-        self._client = Groq(api_key=GROQ_API_KEY)
-
-    def call(self, prompt: str) -> str:
-        resp = self._client.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-            max_tokens=8192,
-        )
-        return resp.choices[0].message.content
-
-    @property
-    def name(self) -> str:
-        return f"Groq/{GROQ_MODEL}"
-
-
-# ── DeepSeek backend ──────────────────────────────────────────────────────────
-
-class DeepSeekBackend:
-    """
-    DeepSeek API — dùng OpenAI-compatible endpoint.
-    Model mặc định: deepseek-chat (DeepSeek-V3).
-    Tài liệu: https://platform.deepseek.com/api-docs
-    """
-    def __init__(self):
-        if not DEEPSEEK_API_KEY:
-            raise ValueError("Thiếu DEEPSEEK_API_KEY — lấy key tại: https://platform.deepseek.com")
-        from openai import OpenAI
-        self._client = OpenAI(
-            api_key=DEEPSEEK_API_KEY,
-            base_url=DEEPSEEK_BASE_URL,
-        )
-        self._model = DEEPSEEK_MODEL
-
-    def call(self, prompt: str) -> str:
-        resp = self._client.chat.completions.create(
-            model=self._model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-            max_tokens=8192,
-        )
-        return resp.choices[0].message.content
-
-    @property
-    def name(self) -> str:
-        return f"DeepSeek/{self._model}"
-
-
-# ── Ollama backend (local self-host) ──────────────────────────────────────────
-
-class OllamaBackend:
-    """
-    Ollama local backend — chạy model trên GPU của máy, không tốn API cost.
-    Dùng OpenAI-compatible API của Ollama (v0.1.24+).
-
-    Setup:
-      1. Cài Ollama: https://ollama.com/download
-      2. ollama pull hunyuan-mt       (hoặc tạo từ GGUF — xem use.md)
-      3. Set OLLAMA_ENABLED=true trong .env
-
-    Khuyên dùng với RTX 4060 8GB:
-      - hunyuan-mt Q4_K_M: ~4.5GB VRAM, tốt cho dịch Chinese→Vietnamese
-      - Tốc độ: ~25-35 tokens/giây (~40-60s/chương)
-    """
-
-    def __init__(self):
-        if not OLLAMA_ENABLED:
-            raise ValueError("Ollama chưa được bật — set OLLAMA_ENABLED=true trong .env")
-        # Ollama dùng OpenAI-compatible API, không cần thư viện riêng
-        from openai import OpenAI
-        self._client = OpenAI(
-            api_key="ollama",           # placeholder, Ollama không cần auth
-            base_url=f"{OLLAMA_BASE_URL.rstrip('/')}/v1",
-        )
-        self._model   = OLLAMA_MODEL
-        self._timeout = OLLAMA_TIMEOUT
-        # Kiểm tra Ollama có đang chạy không
-        self._check_connection()
-
-    def _check_connection(self):
-        """Ping Ollama server để xác nhận đang chạy và model đã được pull."""
-        import urllib.request
-        try:
-            url = f"{OLLAMA_BASE_URL.rstrip('/')}/api/tags"
-            with urllib.request.urlopen(url, timeout=5) as resp:
-                import json
-                data = json.loads(resp.read())
-                models = [m["name"].split(":")[0] for m in data.get("models", [])]
-                model_base = self._model.split(":")[0]
-                if model_base not in models:
-                    available = ", ".join(models) if models else "(chưa có model nào)"
-                    raise ValueError(
-                        f"Model '{self._model}' chưa được pull trong Ollama.\n"
-                        f"  Models hiện có: {available}\n"
-                        f"  Chạy: ollama pull {self._model}"
-                    )
-                print(f"  [Ollama] model={self._model} — server OK")
-        except ValueError:
-            raise
-        except Exception as e:
-            raise ValueError(
-                f"Không thể kết nối Ollama tại {OLLAMA_BASE_URL}.\n"
-                f"  Hãy chắc chắn Ollama đang chạy: ollama serve\n"
-                f"  Lỗi: {e}"
-            )
-
-    def call(self, prompt: str) -> str:
-        resp = self._client.chat.completions.create(
-            model=self._model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,        # thấp hơn cloud vì model nhỏ hơn
-            max_tokens=4096,
-            timeout=self._timeout,
-        )
-        return resp.choices[0].message.content
-
-    @property
-    def name(self) -> str:
-        return f"Ollama/{self._model}"
 
 
 # ── Main Translator ───────────────────────────────────────────────────────────
@@ -887,7 +533,7 @@ class NovelTranslator:
                 active_chain = [SHORT_CHAPTER_PROVIDER] + [p for p in active_chain if p != SHORT_CHAPTER_PROVIDER]
             else:
                 active_chain = [SHORT_CHAPTER_PROVIDER] + active_chain
-        
+
         for p in active_chain:
             if p == "gemini" and self._gemini:
                 try:
@@ -905,7 +551,7 @@ class NovelTranslator:
                     if self._provider == "gemini":
                         return f"[Translation failed]\nError: {e}", "", {}
                     print("  [→] Falling back...")
-                    
+
             elif p == "deepseek" and self._deepseek:
                 try:
                     raw = self._call_deepseek(prompt, max_retries)
@@ -917,7 +563,7 @@ class NovelTranslator:
                     if self._provider == "deepseek":
                         return f"[Translation failed]\nError: {e}", "", {}
                     print("  [→] Falling back...")
-                    
+
             elif p == "groq" and self._groq:
                 try:
                     raw = self._call_groq(prompt, max_retries)
@@ -928,7 +574,7 @@ class NovelTranslator:
                     if self._provider == "groq":
                         return f"[Translation failed]\nError: {e}", "", {}
                     print("  [→] Falling back...")
-                    
+
             # elif p == "ollama" and self._ollama:
             #     try:
             #         raw = self._call_ollama(prompt, max_retries)
@@ -945,7 +591,7 @@ class NovelTranslator:
             return "[Translation failed]\nError: No backend available", "", {}
 
         translated, summary = parse_response(raw)
-        
+
         # ── Bước 3.5: Sửa lỗi dính chữ (stuck paragraphs) ──
         translated = self._fix_stuck_paragraphs(translated)
 
@@ -964,8 +610,8 @@ class NovelTranslator:
         print(f'  [💰] {_used_model}: ~{in_tok}→{out_tok} tokens, {cost_str}')
 
         # ── Bước 4: Cleanup pass — dọn sạch chữ Hán còn sót ──
-        if has_chinese_chars(translated):
-            chinese_count = len(re.findall(r'[\u4e00-\u9fff\u3400-\u4dbf]', translated))
+        chinese_count = count_chinese_chars(translated)
+        if chinese_count:
             print(f"  [⚠] Found {chinese_count} Chinese chars in output. Running cleanup pass...")
             cleanup_prompt = build_cleanup_prompt(translated)
             try:
@@ -977,11 +623,11 @@ class NovelTranslator:
                 #     cleaned = self._call_ollama(cleanup_prompt, max_retries=2)
                 else:
                     cleaned = translated
-                if not has_chinese_chars(cleaned):
+                remaining = count_chinese_chars(cleaned)
+                if not remaining:
                     print("  [✓] Cleanup successful — no more Chinese chars")
                     translated = cleaned
                 else:
-                    remaining = len(re.findall(r'[\u4e00-\u9fff\u3400-\u4dbf]', cleaned))
                     print(f"  [⚠] Cleanup reduced to {remaining} chars (some may be intentional in quotes)")
                     translated = cleaned
             except Exception as e:
@@ -1017,7 +663,7 @@ class NovelTranslator:
                 active_chain = [SHORT_CHAPTER_PROVIDER] + [p for p in active_chain if p != SHORT_CHAPTER_PROVIDER]
             else:
                 active_chain = [SHORT_CHAPTER_PROVIDER] + active_chain
-        
+
         for p in active_chain:
             if p == "gemini" and self._gemini:
                 try:
@@ -1035,7 +681,7 @@ class NovelTranslator:
                     if self._provider == "gemini":
                         return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
                     print("  [→] Falling back...")
-                    
+
             elif p == "deepseek" and self._deepseek:
                 try:
                     raw = self._call_deepseek(prompt, max_retries)
@@ -1047,7 +693,7 @@ class NovelTranslator:
                     if self._provider == "deepseek":
                         return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
                     print("  [→] Falling back...")
-                    
+
             elif p == "groq" and self._groq:
                 try:
                     raw = self._call_groq(prompt, max_retries)
@@ -1058,7 +704,7 @@ class NovelTranslator:
                     if self._provider == "groq":
                         return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
                     print("  [→] Falling back...")
-                    
+
             # elif p == "ollama" and self._ollama:
             #     try:
             #         raw = self._call_ollama(prompt, max_retries)
@@ -1084,8 +730,11 @@ class NovelTranslator:
         # Cleanup pass
         cleaned_chapters = []
         for translated in translated_chapters:
-            if translated and has_chinese_chars(translated):
-                chinese_count = len(re.findall(r'[\u4e00-\u9fff\u3400-\u4dbf]', translated))
+            if translated:
+                chinese_count = count_chinese_chars(translated)
+            else:
+                chinese_count = 0
+            if chinese_count:
                 print(f"  [⚠] Found {chinese_count} Chinese chars. Running cleanup pass...")
                 cleanup_prompt = build_cleanup_prompt(translated)
                 try:
@@ -1130,44 +779,39 @@ class NovelTranslator:
         """
         if not text:
             return text
-            
+
         lines = text.split('\n')
         fixed_lines = []
-        
+
         for line in lines:
             stripped = line.strip()
             # Bỏ qua tiêu đề hoặc dòng ngắn
             if not stripped or line.startswith('#') or len(stripped) < 300:
                 fixed_lines.append(line)
                 continue
-            
+
             # Tách thành các câu (giữ lại dấu câu)
             parts = re.split(r'([.!?…])\s+', stripped)
-            
+
             new_block = ""
             current_segment = ""
-            
+
             # Duyệt qua các cặp (nội dung câu, dấu câu)
             for i in range(0, len(parts) - 1, 2):
                 sentence = parts[i] + parts[i+1]
                 current_segment += sentence + " "
-                
+
                 # Nếu đoạn hiện tại đã đủ dài (> 250 ký tự), thực hiện ngắt
                 if len(current_segment) > 250:
                     new_block += current_segment.strip() + "\n\n"
                     current_segment = ""
-            
+
             # Thêm phần còn lại
             new_block += current_segment.strip()
             fixed_lines.append(new_block.strip())
-            
+
         return '\n\n'.join([l for l in fixed_lines if l.strip()])
 
-
-
-class _DailyQuotaExhausted(Exception):
-    """Raised khi tất cả Gemini key đã hết daily quota."""
-    pass
 
 if __name__ == "__main__":
     t = NovelTranslator()

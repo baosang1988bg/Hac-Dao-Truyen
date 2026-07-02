@@ -1,3 +1,4 @@
+import sys as _sys, os as _os; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))  # cho phép import module ở root
 """Dịch các chapter còn thiếu bản dịch trong novel demo-51265."""
 import os, time, glob
 from dotenv import load_dotenv

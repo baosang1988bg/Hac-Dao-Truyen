@@ -1,30 +1,43 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Shield, User, Key, ArrowRight, BookOpen } from 'lucide-react'
+import { User, Key, ArrowRight, BookOpen, AlertCircle } from 'lucide-react'
+import api from '../api'
 
 export default function LoginPage({ onLogin }) {
   const [password, setPassword] = useState('')
   const [isAdminMode, setIsAdminMode] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  const handleLogin = (role) => {
-    if (role === 'admin') {
-      // Password đơn giản cho admin, bạn có thể đổi ở đây
-      if (password === 'pongsa3105') {
-        onLogin('admin')
-        navigate('/')
-      } else {
-        alert('Sai mật khẩu quản trị!')
-      }
-    } else {
-      onLogin('guest')
+  const handleGuestLogin = () => {
+    onLogin('guest')
+    navigate('/')
+  }
+
+  const handleAdminLogin = async () => {
+    if (loading) return
+    if (!password.trim()) {
+      setError('Vui lòng nhập mật khẩu quản trị')
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      const res = await api.post('/auth/login', { password })
+      localStorage.setItem('authToken', res.data.token)
+      onLogin('admin')
       navigate('/')
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Sai mật khẩu quản trị')
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <div className="login-container" style={{
-      height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'radial-gradient(circle at top right, #1e293b, #0f172a)',
       padding: '20px'
     }}>
@@ -51,16 +64,14 @@ export default function LoginPage({ onLogin }) {
           {!isAdminMode ? (
             <>
               <button
-                onClick={() => handleLogin('guest')}
+                onClick={handleGuestLogin}
                 className="btn-login-option"
                 style={{
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.1)',
                   padding: '1rem', borderRadius: '12px', color: 'white', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s',
-                  textAlign: 'left'
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  textAlign: 'left', minHeight: '44px'
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
               >
                 <div style={{ background: 'rgba(16,185,129,0.2)', padding: '8px', borderRadius: '8px' }}>
                   <User size={20} color="#10b981" />
@@ -73,10 +84,11 @@ export default function LoginPage({ onLogin }) {
               </button>
 
               <button
-                onClick={() => setIsAdminMode(true)}
+                onClick={() => { setIsAdminMode(true); setError('') }}
                 style={{
                   background: 'none', border: 'none', color: 'var(--accent)',
-                  fontSize: '0.85rem', cursor: 'pointer', marginTop: '0.5rem'
+                  fontSize: '0.85rem', cursor: 'pointer', marginTop: '0.5rem',
+                  minHeight: '44px'
                 }}
               >
                 Đăng nhập quản trị viên
@@ -90,26 +102,41 @@ export default function LoginPage({ onLogin }) {
                   type="password"
                   placeholder="Mật khẩu Admin"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleLogin('admin')}
+                  onChange={e => { setPassword(e.target.value); if (error) setError('') }}
+                  onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
                   autoFocus
                   style={{
                     width: '100%', padding: '0.8rem 1rem 0.8rem 2.5rem', borderRadius: '10px',
-                    background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)',
-                    color: 'white', outline: 'none'
+                    background: 'rgba(0,0,0,0.2)',
+                    border: error ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                    color: 'white', outline: 'none', fontSize: '1rem'
                   }}
                 />
               </div>
+
+              {error && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
+                  color: '#fca5a5', fontSize: '0.82rem', fontWeight: 500,
+                  padding: '0.6rem 0.8rem', borderRadius: '10px', textAlign: 'left'
+                }}>
+                  <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                  {error}
+                </div>
+              )}
+
               <button
-                onClick={() => handleLogin('admin')}
+                onClick={handleAdminLogin}
+                disabled={loading}
                 className="btn btn-primary"
-                style={{ width: '100%', padding: '0.8rem', justifyContent: 'center' }}
+                style={{ width: '100%', padding: '0.8rem', justifyContent: 'center', minHeight: '44px', opacity: loading ? 0.7 : 1 }}
               >
-                Xác nhận Admin
+                {loading ? 'Đang xác thực...' : 'Xác nhận Admin'}
               </button>
               <button
-                onClick={() => setIsAdminMode(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer' }}
+                onClick={() => { setIsAdminMode(false); setError(''); setPassword('') }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer', minHeight: '44px' }}
               >
                 Quay lại
               </button>

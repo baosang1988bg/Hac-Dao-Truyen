@@ -156,11 +156,11 @@ export default function NovelDetail() {
       </div>
 
       {/* Main layout */}
-      <div className="novel-detail-grid" style={{ 
-        display: 'grid', 
-        gridTemplateColumns: isAdmin ? '300px 1fr' : '1fr', 
-        gap: '1.5rem', 
-        alignItems: 'start' 
+      <div className="novel-detail-grid" style={{
+        display: 'grid',
+        gridTemplateColumns: isAdmin ? 'minmax(260px, 300px) 1fr' : '1fr',
+        gap: '1.5rem',
+        alignItems: 'start'
       }}>
 
         {/* ── Left sidebar (Admin only) ── */}
@@ -190,7 +190,7 @@ export default function NovelDetail() {
         {/* ── Right content: tabs ── */}
         <div className="glass-panel" style={{ overflow: 'hidden' }}>
           {/* Tab bar */}
-          <div style={{ display: 'flex', borderBottom: '1px solid var(--border-panel)', padding: '0 1.5rem' }}>
+          <div className="tab-bar" style={{ display: 'flex', borderBottom: '1px solid var(--border-panel)', padding: '0 1rem' }}>
             {[
               { id: TABS.CHAPTERS, label: `Chương (${chapters.length})`, icon: <BookOpen size={15} /> },
               ...(catalog.length > 0 ? [
@@ -915,7 +915,7 @@ function AuthorNotesSection({ chapters, slug, getChapNum }) {
                 key={chap.filename}
                 to={`/novel/${slug}/read/${num ? num : encodeURIComponent(chap.filename)}`}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '10px',
+                  display: 'flex', alignItems: 'center', gap: '10px', minHeight: '44px',
                   padding: '0.5rem 0.85rem', margin: '0 4px', borderRadius: '7px',
                   color: 'var(--text-main)',
                   textDecoration: 'none', transition: 'background 0.12s',
@@ -1152,7 +1152,7 @@ function ChaptersTab({ chapters, slug }) {
                 key={chap.filename}
                 to={`/novel/${slug}/read/${encodeURIComponent(chap.filename)}`}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '10px',
+                  display: 'flex', alignItems: 'center', gap: '10px', minHeight: '44px',
                   padding: '0.55rem 0.75rem', borderRadius: '8px',
                   color: 'var(--text-main)',
                   textDecoration: 'none', transition: 'background 0.12s',
@@ -1193,6 +1193,7 @@ function ChaptersTab({ chapters, slug }) {
             return (
               <Link
                 key={chap.filename}
+                className="chapter-row"
                 to={`/novel/${slug}/read/${num ? num : encodeURIComponent(chap.filename)}`}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '10px',
@@ -1201,8 +1202,6 @@ function ChaptersTab({ chapters, slug }) {
                   textDecoration: 'none', transition: 'background 0.12s',
                   opacity: isRead ? 0.65 : 1,
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 {/* Chapter number badge */}
                 <span style={{
@@ -1688,7 +1687,11 @@ function HealthTab({ healthData, loading, onRefresh, slug }) {
     setCleaning(true)
     setCleanResult(null)
     try {
-      const res = await fetch(`/api/novels/${slug}/cleanup-split-parts`, { method: 'POST' })
+      const token = localStorage.getItem('authToken')
+      const res = await fetch(`/api/novels/${slug}/cleanup-split-parts`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       const data = await res.json()
       setCleanResult(data)
       onRefresh()  // refresh health sau cleanup
@@ -1928,7 +1931,10 @@ function ToolsTab({ slug }) {
     setRunningTool(toolId)
     try {
       const params = toolId === 'fix_one' ? `?chapter_title=${encodeURIComponent(chapterTitle)}` : ''
-      const response = await fetch(`/api/novels/${slug}/tools/${toolId}${params}`)
+      const token = localStorage.getItem('authToken')
+      const response = await fetch(`/api/novels/${slug}/tools/${toolId}${params}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!response.ok) {
         setLogs(prev => prev + `\n✗ Lỗi HTTP ${response.status}\n`)
         setRunningTool(null)

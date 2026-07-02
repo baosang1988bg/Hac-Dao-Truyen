@@ -1,3 +1,4 @@
+import sys as _sys, os as _os; _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))  # cho phép import module ở root
 """
 fix_one_chapter.py
 ------------------
@@ -11,6 +12,8 @@ from dotenv import load_dotenv
 from novel_manager import load_novel
 from translator import NovelTranslator
 from datetime import datetime
+# Dùng bản canonical của split_chapter_content từ chapter_utils (tránh duplicate với main.py)
+from chapter_utils import split_chapter_content
 
 load_dotenv()
 
@@ -42,32 +45,6 @@ def _save_session_stats(slug: str, chapters_done: int, session_usage: dict, star
             _json.dump(stats, f, ensure_ascii=False, indent=2)
     except Exception as e:
         print(f"[!] Không lưu được stats file: {e}")
-
-def split_chapter_content(content: str, threshold: int = 4500) -> list[str]:
-    """Chia nhỏ nội dung chương nếu quá dài."""
-    if len(content) <= threshold:
-        return [content]
-    
-    parts = []
-    # Thử chia theo đoạn văn trước
-    paragraphs = content.split('\n')
-    current_part = []
-    current_len = 0
-    
-    for p in paragraphs:
-        p_len = len(p) + 1
-        if current_len + p_len > threshold and current_part:
-            parts.append('\n'.join(current_part))
-            current_part = [p]
-            current_len = p_len
-        else:
-            current_part.append(p)
-            current_len += p_len
-            
-    if current_part:
-        parts.append('\n'.join(current_part))
-        
-    return parts
 
 def main():
     parser = argparse.ArgumentParser(description="🔧 Dịch lại 1 chương cụ thể")
