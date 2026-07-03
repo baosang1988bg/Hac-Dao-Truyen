@@ -987,7 +987,9 @@ async def run_catalog_flow(ctx: TranslationContext):
 
         item = ctx.catalog[idx]
         url = item["url"]
-        title_orig = item.get("original_title") or item.get("title") or f"Chương {item.get('number', idx)}"
+        chap_num = item.get("number")
+        title_base = item.get("original_title") or item.get("title") or f"Chương {chap_num if chap_num is not None else idx}"
+        title_orig = f"Chương {chap_num} - {title_base}" if chap_num is not None else title_base
 
         # 1. Đọc local raw trước
         raw_file_name = f"{title_orig}.txt"

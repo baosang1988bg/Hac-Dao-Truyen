@@ -1,103 +1,103 @@
-# Chương 229: Bái kiến Phệ La Nha
+# Chương 229: Bái Kiến Phệ La Nha
 
-Theo chân Lý Thông Nhai đi về phía Tây, rừng rậm càng lúc càng rậm rạp, những ngôi làng hiện ra với vẻ xám xịt, rách nát. Trên con đường đất đầy rẫy những hài cốt bị vứt bỏ, những người còn sống đói đến mức da bọc xương, bò lổm ngổm trên mặt đất, nhặt những bộ xương trắng hếu bỏ vào nồi vỡ để nấu, ninh đến mức nát nhừ thành một bát canh xám xịt.
+Theo Lý Thông Nhai đi mãi về phía tây, rừng rậm càng thêm dày đặc, những ngôi làng xám xịt, đổ nát. Trên đường đất đầy rẫy hài cốt bị vứt bỏ, những người sống sót đói đến mức da bọc xương, bò lết trên mặt đất, nhặt những khúc xương trắng hếu cho vào nồi vỡ mà luộc, luộc đến nát vụn thành một nồi canh màu xám tro.
 
-Lý Thông Nhai lặng lẽ nhìn cảnh tượng này. Từ sự ca múa thanh bình, vạn vật đổi mới ở Lê Kính trấn, đến sự nghèo nàn xơ xác ở Đông Sơn Việt, những cánh cửa sơn son thiếp vàng, rồi đến những hài cốt khắp nơi và cảnh sói dữ ăn thịt người ở đất Sơn Việt.
+Lý Thông Nhai lặng lẽ quan sát, từ cảnh ca múa tưng bừng, vạn nhà đổi mới ở Lê Kính trấn, đến cảnh nhà nhà nghèo khó, cửa son thêu hoa ở Đông Sơn Việt, rồi đến vùng đất Sơn Việt nơi xương cốt chất đống, dã thú ăn thịt người.
 
-Đi về phía Tây vài chục dặm, bóng người mới dần đông đúc hơn, nhưng cũng vẫn là bộ dạng tiêu điều ấy. Cuối cùng, ông nhìn thấy một ngọn núi đen ngòm, trên đỉnh núi có dựng một ngôi miếu trông khá ra dáng.
+Đi về phía tây mấy chục dặm, dân cư mới dần dần đông đúc hơn, nhưng cũng vẫn là bộ dạng tiêu điều ấy. Cuối cùng, hắn nhìn thấy một ngọn núi đen sẫm, trên đỉnh núi có một ngôi miếu được xây dựng khá tươm tất.
 
-Lý Thông Nhai đáp xuống trước núi. Nơi này dùng những cọc gỗ cắm đầy những cái đầu người đen sì. Ngay khi ông vừa đặt chân xuống, những cái đầu ấy đồng loạt mở đôi mắt trắng dã nhìn ông. Có vài cái đầu miệng vẫn còn nguyên vẹn gào khóc lên:
+Lý Thông Nhai đáp xuống trước núi, nơi đây cắm đầy những chiếc cọc gỗ buộc những cái đầu đen sì. Vừa mới đặt chân xuống, tất cả những cái đầu đó cùng lúc mở đôi mắt trắng dã nhìn hắn. Có vài cái đầu còn tương đối nguyên vẹn miệng mếu máo khóc thét, gọi:
 
-"Sinh nhân! Sinh nhân!"
+“Sinh nhân! Sinh nhân!”
 
-Lý Thông Nhai lặng lẽ chờ đợi một lát, từ trên núi đi xuống một người Sơn Việt mặc y phục giản dị, tóc tai xõa xượi, hai mắt trắng dã, tu vi Luyện Khí tầng sáu. Hắn nheo mắt nhìn Lý Thông Nhai, thái độ còn khá khách khí, chắp tay nói: "Tiền bối, xin mời theo tôi lên núi."
+Lý Thông Nhai lặng lẽ đợi một lúc, một người Sơn Việt mặc áo bào đơn sơ, tóc xõa, đôi mắt trắng dã bước xuống. Hắn có tu vi Luyện Khí tầng sáu, nheo mắt nhìn Lý Thông Nhai, thái độ vẫn còn khách khí, chắp tay nói: “Tiền bối mời theo ta lên núi.”
 
 Lý Thông Nhai cười lắc đầu, đáp:
 
-"Chú thuật của chủ nhân nhà ngươi thật quá quỷ dị, ta không dám lên núi, hay là bảo hắn xuống đây đi."
+“Chú thuật của chủ nhân nhà ngươi quả thực quá quỷ dị, ta không dám lên núi, chi bằng mời hắn xuống đây thì hơn.”
 
-Người Sơn Việt mắt xám trắng kia nhếch mép, rút một cái đầu trên cọc xuống rồi quay đầu đi lên núi. Đám đầu lâu còn lại nhắm mắt lại, âm u như những vật chết.
+Người Sơn Việt mắt trắng dã kia nhếch miệng cười, từ trên cọc rút ra một cái đầu, quay đầu lên núi. Một đám đầu còn lại nhắm mắt, u ám như vật chết.
 
-Lý Thông Nhai đợi vài nhịp thở, từ trên núi hạ xuống một kẻ mặc hoa phục, bên hông đeo Túi Trữ Vật. Ăn mặc kiểu tu tiên giả, nhưng khuôn mặt lại là người Sơn Việt, tay cầm một chiếc hồ lô đen kịt. Hắn nhìn Lý Thông Nhai một cái rồi kinh ngạc thốt lên: "Lý Thông Nhai? Ngươi đã Trúc Cơ rồi?"
+Lý Thông Nhai đợi vài hơi thở, trên núi có một người mặc hoa phục, bên hông đeo Túi Trữ Vật bước xuống. Y phục là của người tu tiên, nhưng khuôn mặt lại mang dáng vẻ của người Sơn Việt, trong tay cầm một cái hồ lô đen kịt. Y nhìn Lý Thông Nhai một cái, kinh ngạc nói: “Lý Thông Nhai?
 
-"Bái kiến Phệ La Nha tiền bối!"
+“Bái kiến Phệ La Nha tiền bối!”
 
-Người này chính là tu sĩ Trúc Cơ tộc Sơn Việt năm xưa khi Vu Sơn phân liệt, dưới áp lực của nhà họ Tiêu đã phải cắt đất Đông Sơn Việt cho Lý gia. Thấy Lý Thông Nhai Trúc Cơ thành công, hắn lập tức khách khí hơn hẳn, lên tiếng:
+Người này chính là vị Trúc Cơ tu sĩ Sơn Việt năm xưa khi Vu Sơn phân liệt, dưới áp lực của nhà họ Tiêu đã phải cắt đất Đông Sơn Việt cho Lý gia. Thấy Lý Thông Nhai Trúc Cơ thành công, thái độ lập tức khách khí hơn rất nhiều, mở miệng nói:
 
-"Quả không hổ danh là thế gia Kiếm Tiên, mới mấy năm mà nói Trúc Cơ là Trúc Cơ, thật khiến ta ngưỡng mộ không thôi."
+“Quả không hổ danh là thế gia Kiếm Tiên, mới mấy năm mà nói Trúc Cơ là Trúc Cơ, thật khiến ta phải ngưỡng mộ.”
 
-Dù miệng nói thế, Phệ La Nha vẫn rõ ràng canh cánh chuyện năm xưa, sắc mặt không mấy dễ chịu, nhưng vì nể nang bối cảnh và thực lực của Lý Thông Nhai nên không dám phát tác, thậm chí còn phải gượng ép nặn ra một nụ cười.
+Nói thì là vậy, nhưng Phệ La Nha rõ ràng vẫn còn canh cánh chuyện năm xưa, sắc mặt không được tốt lắm, nhưng vì ngại thân thế và thực lực của Lý Thông Nhai nên không dám phát tác, thậm chí còn phải nặn ra nụ cười.
 
-"Tiền bối quá khen."
+“Tiền bối quá khen rồi.”
 
-Lý Thông Nhai chắp tay, đáp: "Đã lâu không gặp, chuyện năm xưa có nhiều chỗ đắc tội, thật khiến Thông Nhai hổ thẹn, tiền bối không so đo, Lý gia vô cùng cảm kích."
+Lý Thông Nhai chắp tay, đáp: “Nhiều năm không gặp, chuyện năm xưa có nhiều điều đắc tội, thật khiến Thông Nhai hổ thẹn, nhưng tiền bối không tính toán, Lý gia vô cùng cảm kích.”
 
-"Ha ha."
+“Ha ha.”
 
-Phệ La Nha cười gượng một tiếng. Lý Thông Nhai lại nói thêm vài câu khách sáo khiến hắn thấy dễ chịu hơn, vẫn giữ thái độ khách khí: "Không biết Thông Nhai huynh tới đây có việc gì?"
+Phệ La Nha cười khan một tiếng. Lý Thông Nhai lại nói thêm vài câu xã giao khiến sắc mặt hắn dễ coi hơn nhiều, vẫn khách khí hỏi: “Không biết Thông Nhai huynh đến đây vì mục đích gì?”
 
-Lý Thông Nhai khẽ gật đầu, đáp: "Hai nhà sống sát vách nhau, quan hệ lẽ ra nên hòa hảo, nhưng vì chuyện tích tụ nhiều năm mà không qua lại, Thông Nhai thấy rất tiếc nuối. Tiền bối thực lực cao cường, Lý Thông Nhai lại vô cùng kính trọng, nên vẫn luôn nghĩ tới việc làm dịu quan hệ."
+Lý Thông Nhai khẽ gật đầu, đáp: “Hai nhà láng giềng gần nhau, quan hệ vốn dĩ nên tốt đẹp hơn, nhưng vì chuyện tích lũy nhiều năm mà không qua lại, Thông Nhai thật sự lấy làm tiếc. Tiền bối thực lực cao cường, Lý Thông Nhai lại vô cùng kính trọng, luôn muốn hòa hoãn mối quan hệ.”
 
-"Đâu có, đâu có."
+“Đâu có đâu có.”
 
-Phệ La Nha nhướng mày, sắc mặt dễ coi hơn hẳn. Liền nghe Lý Thông Nhai nói tiếp: "Thông Nhai có một người bạn cần một loại bảo dược để thu thập dược tính, dùng trọng kim cầu mua mà vẫn không tìm được vật vừa ý.
+Phệ La Nha nhướng mày, thần sắc dễ coi hơn nhiều, liền thấy Lý Thông Nhai lại nói: “Thông Nhai có một người bạn, cần một Bảo dược để thu thập dược tính, dùng trọng kim cầu mua, nhưng mãi vẫn không tìm được vật ưng ý.
 
-Phệ La Nha cười ha hả, tự cho là đã hiểu ý đồ của Lý Thông Nhai, cười nói:
+Phệ La Nha ha ha cười lớn, tự cho là đã hiểu ý đồ của Lý Thông Nhai, cười nói:
 
-"Ta thấy Thông Nhai huynh là nhắm vào số tiền treo thưởng đó, định làm trung gian hưởng chênh lệch chứ gì."
+“Ta thấy Thông Nhai huynh là nhắm vào khoản trọng kim treo thưởng kia, có ý định qua tay trung gian, kiếm một khoản phải không?”
 
-Lý Thông Nhai mỉm cười, gật đầu đáp:
+Lý Thông Nhai khẽ mỉm cười, gật đầu đáp:
 
-"Tiền bối tuệ nhãn, đúng là như vậy. Dù sao cũng là con đường cùng kiếm tiền, núi Đại Lê và Khuẩn Lâm Nguyên có rất nhiều bảo dược, Thông Nhai tìm tiền bối chứ không tìm người khác, chẳng phải là đang tỏ ý tốt với tiền bối sao?"
+“Tiền bối tuệ nhãn, chính là như vậy. Dù sao cũng là con đường cùng nhau kiếm tiền, Bảo dược trên núi Đại Lê và Khuẩn Lâm Nguyên rất nhiều. Thông Nhai tìm tiền bối chứ không tìm người khác, chẳng phải cũng là muốn bày tỏ thiện ý với tiền bối sao?”
 
-Phệ La Nha suy nghĩ một hồi, thấy Lý Thông Nhai nói quả có lý, bản thân hắn cũng đang có vài miếng bảo dược tồn kho không dùng đến. Lý Thông Nhai lại nói: "Đây là việc làm ăn lâu dài, không phải ngày một ngày hai.
+Phệ La Nha suy nghĩ một chút, lời Lý Thông Nhai nói quả thật có lý. Bản thân hắn cũng có vài Bảo dược tích trữ mà không dùng đến. Lý Thông Nhai lại nói: “Đây là mối làm ăn lâu dài, không phải chuyện một sớm một chiều.
 
-Phệ La Nha cười lớn, đáp:
+Phệ La Nha ha ha cười lớn, đáp:
 
-"Thông Nhai huynh đã nói vậy, Phệ La Nha ta còn lý do gì để từ chối chứ?"
+“Thông Nhai huynh đã nói như vậy, Phệ La Nha nào còn lý do gì để từ chối chứ?”
 
-Kể từ lần ép lui Phệ La Nha, Lý Thông Nhai đã sớm nhìn ra kẻ này chỉ biết ngày đêm tu luyện trên Vu Sơn, chưa từng lăn lộn trong thế tục, là một kẻ ngoài cứng trong mềm, dễ bị lay động. Sau khi bị liên minh nhà họ Tiêu và nhà họ Phí dọa cho một phen, trong lòng hắn thực ra sợ Lý Thông Nhai vô cùng.
+Lý Thông Nhai từ lần trước bức lui Phệ La Nha đã sớm nhìn ra người này suốt ngày tu luyện trên Vu Sơn, không hề lăn lộn trong thế tục, là kẻ ngoài mạnh trong yếu, tai mềm. Sau khi bị nhà họ Tiêu và nhà họ Phí liên thủ dọa một trận, trong lòng hắn thực ra đã sợ Lý Thông Nhai đến cực điểm.
 
-Bằng một màn hư hư thực thực, đảo lộn trắng đen, Lý Thông Nhai đã biến một việc buộc phải nhờ vả thành một con đường hợp tác cùng có lợi và hòa hoãn quan hệ.
+“Người này toàn thân là chú thuật, lại là người Sơn Việt, mười phần thì chín phần là không biết giá cả của Bảo dược. Chẳng qua dù sao cũng là một Trúc Cơ tu sĩ, cũng không tiện lừa hắn.
 
-"Kẻ này toàn thân đầy chú thuật, lại là người Sơn Việt, mười phần thì chín phần là chẳng biết giá cả bảo dược. Nhưng dẫu sao cũng là tu sĩ Trúc Cơ, không tiện lừa gạt hắn quá đáng.
+Phệ La Nha làm việc nhanh nhẹn, đã lấy ra năm sáu cái hộp gỗ, lần lượt trưng ra cho Lý Thông Nhai xem. Lý Thông Nhai cầm lấy xem xét, từng cái đều tỏa ra khí tức nồng đậm, nhìn qua thì lấp lánh sắc màu.
 
-Phệ La Nha làm việc nhanh nhẹn, đã lấy ra năm sáu chiếc hộp gỗ, lần lượt bày ra cho Lý Thông Nhai xem. Lý Thông Nhai lấy một cái xem thử, khí tức tỏa ra ngào ngạt, trông ánh sắc lấp lánh.
+Phệ La Nha lập tức hơi lúng túng, thấp giọng nói: “Nói ra sợ huynh đệ chê cười, cái này… cái thứ này ta cũng không biết, cho nên vẫn không dám dùng, cất giữ ở đây đã mấy năm rồi, nhìn thấy dược lực sắp sửa thất thoát. Nếu Thông Nhai huynh không đến, ta ở vùng này cũng không có sinh nhân đáng tin cậy.
 
-Phệ La Nha lập tức hơi lúng túng, hạ giọng: "Nói ra sợ huynh đệ chê cười, cái này... cái này ta cũng không biết là gì, nên cứ để đây bao nhiêu năm nay. Nhìn dược lực sắp tan biến hết, Thông Nhai huynh mà không đến, ở vùng này ta cũng chẳng có sinh nhân nào đáng tin cậy.
+Lý Thông Nhai chắp tay, cười nói: “Huynh đệ đã thành thật như vậy, ta cũng không nói lời sáo rỗng. Quả này về phẩm tướng thì phù hợp yêu cầu của người đó, chỉ là trọng lượng hơi nhỏ một chút, nhưng cũng tạm chấp nhận được.”
 
-Lý Thông Nhai chắp tay, cười nói: "Huynh đệ đã thành thật như vậy, ta cũng không nói lời sáo rỗng. Quả này về phẩm tướng thì phù hợp với yêu cầu của người kia, chỉ là hơi nhỏ một chút, nhưng cũng tạm ổn."
+Phệ La Nha gật đầu, cắn răng nói:
 
-Phệ La Nha gật đầu, nghiến răng nói:
+“Thông Nhai huynh xem, quả này có đáng giá một trăm Linh thạch không?”
 
-"Thông Nhai huynh xem, quả này đáng giá một trăm linh thạch không?"
+“Một trăm Linh thạch?!”
 
-"Một trăm linh thạch?!"
+Lý Thông Nhai bật cười thành tiếng. Dù hắn không hiểu biết nhiều về thứ này, nhưng cũng biết Bảo dược tuyệt đối không phải là thứ có thể mua được với một trăm Linh thạch. Hắn thẳng thắn đáp:
 
-Lý Thông Nhai bật cười, dù ông không rành về loại này nhưng cũng biết bảo dược tuyệt đối không thể mua được với giá một trăm linh thạch, liền thẳng thắn đáp:
+“Ta trước hết đưa cho huynh đệ hai trăm Linh thạch, vật này ta mang đi. Nếu có được giá của vật này, sẽ bù thêm hoặc trả lại tùy theo giá trị thực, rồi sẽ gửi đến cho huynh đệ!”
 
-"Ta đưa trước cho huynh đệ hai trăm linh thạch, vật này ta lấy đi. Nếu sau này biết được giá chính xác, dư thì trả lại, thiếu thì ta lại mang tới cho huynh đệ!"
+“Hai trăm Linh thạch!”
 
-"Hai trăm linh thạch!"
+Phệ La Nha lập tức chấn động. Lý Thông Nhai lại nói chuyện thành thật như vậy, lập tức khiến hắn có cái nhìn mới về Lý Thông Nhai, tin tưởng hơn rất nhiều. Lý Thông Nhai thì cười tủm tỉm thầm nghĩ:
 
-Phệ La Nha chấn động, Lý Thông Nhai lại nói chuyện thành thật như vậy, khiến hắn có cái nhìn mới về ông, tin tưởng hơn hẳn. Lý Thông Nhai lại cười tủm tỉm thầm nghĩ:
+“Còn về việc khi nào hỏi được giá, khi nào trả lại khi nào bù thêm, chẳng phải là một mình ta nói sao? Phệ La Nha đúng là một người thành thật!”
 
-"Còn chuyện khi nào biết giá, khi nào trả, khi nào bù, chẳng phải do một mình ta quyết định sao? Phệ La Nha đúng là một kẻ thật thà!"
+Phệ La Nha liên tục gật đầu. Lý Thông Nhai đếm ra hai trăm Linh thạch, nhìn hắn vui vẻ nhận lấy, lúc này mới lấy ra chiếc hộp ngọc thu được từ phế tích chợ Vọng Nguyệt Hồ để đựng quả Linh quả tỏa ánh sáng rực rỡ kia.
 
-Phệ La Nha gật đầu lia lịa, Lý Thông Nhai đếm ra hai trăm linh thạch, nhìn hắn hớn hở nhận lấy, lúc này mới lấy chiếc hộp ngọc thu được từ phế tích chợ Vọng Nguyệt Hồ ra để đựng trái linh quả tỏa ánh sắc rực rỡ kia.
+Phệ La Nha lưu luyến nhìn một cái, nhưng đột nhiên giật mình kinh hãi. Hắn vốn có nghiên cứu sâu rộng về trận pháp và Chú thuật, hiểu biết về sự tinh xảo của những hoa văn trên hộp ngọc còn hơn cả Lý Thông Nhai. Hắn trợn tròn mắt, liên tục nhìn chằm chằm vào hộp ngọc.
 
-Phệ La Nha luyến tiếc nhìn một cái, nhưng đột nhiên kinh hãi tột độ. Hắn có nghiên cứu sâu về trận pháp và chú thuật, hiểu rõ sự tinh diệu của những đường vân trên hộp ngọc hơn Lý Thông Nhai nhiều. Hai mắt hắn trợn trừng, cứ dán chặt vào chiếc hộp ngọc.
+Lý Thông Nhai tinh nhạy đến mức nào, trong lòng như điện xẹt xoay chuyển, thản nhiên nói:
 
-Lý Thông Nhai nhạy bén cỡ nào, trong lòng suy tính như chớp, thản nhiên nói:
+“Chiếc hộp ngọc này là do người bạn đó của ta tặng, dùng để giúp hắn thu thập Bảo dược.”
 
-"Hộp ngọc này là do người bạn kia tặng, dùng để giúp hắn thu thập bảo dược."
+Phệ La Nha càng nhìn càng thấy sự thần diệu trong đó, lẩm bẩm nói:
 
-Phệ La Nha càng nhìn càng thấy sự huyền diệu bên trong, lẩm bẩm:
+“Cái này e rằng để chứa Bảo dược Tử Phủ cũng còn thừa sức… Huynh đệ ngươi người bạn này…”
 
-"Cái này e là đựng bảo dược Tử Phủ còn dư sức... Huynh đệ, người bạn này của huynh..."
+Lý Thông Nhai ha ha cười lớn, đáp:
 
-Lý Thông Nhai cười ha hả, đáp:
+“Là Chân nhân Tử Phủ được Kiếm Tiên giới thiệu đó!”
 
-"Chính là Tử Phủ chân nhân do Kiếm Tiên dẫn tiến!"
+---
 
-*(Bản dịch được thực hiện bởi model: gemini-flash-lite-latest)*
+*(Bản dịch được thực hiện bởi model: gemini-2.5-flash)*
