@@ -149,6 +149,46 @@ async def fetch_and_merge_paginated_chapter_async(scraper, url: str, logger) -> 
     return clean_title, content, prev_url, next_url
 
 
+def validate_raw_content(content: str, title: str, logger):
+    """Kiểm tra tự động để phát hiện các dấu hiệu bất thường của text thô (mất thoại, quá ngắn)."""
+    if not content:
+        return
+
+    # 1. Kiểm tra độ dài chương
+    raw_len = len(content.strip())
+    if raw_len < 1000:
+        logger.warning(f"  [⚠️ WARNING] Chương '{title}' có độ dài cực ngắn ({raw_len:,} ký tự chữ Hán)!")
+
+    # 2. Kiểm tra mất thoại
+    import re as _re_check
+    lines = content.splitlines()
+    missing_dialogues = []
+    for idx, line in enumerate(lines):
+        line = line.strip()
+        # Nếu dòng kết thúc bằng động từ chỉ thoại + dấu hai chấm
+        if _re_check.search(r'(?:道|说|笑|哭|喊|叫|喝|啐|问|应|答)[\s：:]*$', line):
+            next_idx = idx + 1
+            while next_idx < len(lines) and not _check_line_empty(lines[next_idx]):
+                next_idx += 1
+            if next_idx < len(lines):
+                next_line = lines[next_idx].strip()
+                # Nếu dòng tiếp theo không bắt đầu bằng ngoặc kép/gạch đầu dòng và không có ngoặc kép
+                if not next_line.startswith(('“', '"', '「', '—', '-')) and '“' not in next_line and '「' not in next_line:
+                    missing_dialogues.append((idx + 1, line, next_line))
+            else:
+                missing_dialogues.append((idx + 1, line, "[Hết chương]"))
+
+    if missing_dialogues:
+        logger.warning(f"  [⚠️ WARNING] Phát hiện nghi ngờ bị MẤT THOẠI ở chương '{title}'!")
+        for idx, l, nl in missing_dialogues[:3]:
+            logger.warning(f"    → Dòng {idx}: '{l}' | Dòng tiếp theo: '{nl[:40]}...'")
+        if len(missing_dialogues) > 3:
+            logger.warning(f"    → và {len(missing_dialogues) - 3} cảnh báo tương tự khác.")
+
+def _check_line_empty(line: str) -> bool:
+    return bool(line.strip())
+
+
 # ── Raw save / split / merge ──────────────────────────────────────────────────
 
 def save_raw_parts(profile: NovelProfile, title: str, content: str) -> list[tuple[str, str]]:
@@ -1025,6 +1065,8 @@ async def run_catalog_flow(ctx: TranslationContext):
             ctx.report_progress(ctx.translated_count, args.chapters, "error", f"Lỗi: Nội dung chương {item['number']} bị trống")
             break
 
+        validate_raw_content(content, title, logger)
+
         source_tag = "[📖 Local]" if has_local else "[🌐 Crawled]"
         logger.info(f"{source_tag} Sẵn sàng: {title}")
         ctx.report_progress(ctx.translated_count, args.chapters, "running", f"Sẵn sàng: {title}",
@@ -1075,6 +1117,8 @@ async def run_sequential_flow(ctx: TranslationContext):
             logger.error(f"[!] Could not parse content (error/block page/empty title): {ctx.current_url} | Title: {title} | Content Len: {len(content) if content else 0}")
             ctx.report_progress(ctx.translated_count, args.chapters, "error", f"Lỗi: Không thể phân tích nội dung tại {ctx.current_url}")
             break
+
+        validate_raw_content(content, title, logger)
 
         logger.info(f"[*] Scraped: {title}")
         ctx.report_progress(ctx.translated_count, args.chapters, "running", f"Đã lấy nội dung: {title}",
