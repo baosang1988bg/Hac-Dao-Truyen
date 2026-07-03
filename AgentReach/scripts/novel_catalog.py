@@ -448,6 +448,15 @@ def search_duckduckgo(novel_name):
                     "key": novel_key
                 })
                 
+        # Prioritize 69shuba and novel543 first, then ixdzs, qidian, etc.
+        priority_map = {
+            "69shuba": 1,
+            "novel543": 2,
+            "ixdzs": 3,
+            "qidian": 4,
+            "truyendich": 5
+        }
+        candidates.sort(key=lambda x: priority_map.get(x["source"], 99))
         return candidates
     except Exception as e:
         print(f"Error during search: {e}")
