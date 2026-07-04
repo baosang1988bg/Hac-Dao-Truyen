@@ -151,6 +151,26 @@ def get_translation_status(slug: str):
     return task
 
 
+@router.get("/api/translate/active")
+def get_active_translations():
+    """
+    Trạng thái gọn của TẤT CẢ phiên dịch đang chạy — cho admin dashboard
+    poll 1 endpoint thay vì N endpoint theo từng slug.
+    """
+    result = {}
+    with TASKS_LOCK:
+        for slug, task in translation_tasks.items():
+            if task.get("status") in ("running", "cancelling"):
+                result[slug] = {
+                    "status":          task.get("status"),
+                    "current":         task.get("current", 0),
+                    "total":           task.get("total", 0),
+                    "current_chapter": task.get("current_chapter", ""),
+                    "current_model":   task.get("current_model", ""),
+                }
+    return result
+
+
 @router.post("/api/novels/{slug}/translate/stop", dependencies=[Depends(require_admin)])
 def stop_translation(slug: str):
     """Dừng quá trình dịch đang chạy (graceful stop sau batch hiện tại). (admin)"""

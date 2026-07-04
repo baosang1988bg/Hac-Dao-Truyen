@@ -331,3 +331,698 @@ a:hover {
 .chapters-recent-strip::-webkit-scrollbar {
   display: none;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   V2 RESTRUCTURE — mobile-first
+   Các section: nút icon, bìa truyện, thẻ truyện, header, bottom tab bar,
+   guest layout, trang chủ, trang truyện, tủ truyện, admin layout.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Icon button (touch target ≥44px trên mobile) ── */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s;
+}
+@media (hover: hover) {
+  .icon-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--text-main); }
+}
+.icon-btn:active { background: rgba(255, 255, 255, 0.12); }
+
+/* ── NovelCover: bìa truyện tỉ lệ 2/3, gradient fallback ── */
+.novel-cover {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #1e293b;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+.novel-cover--sm { width: 72px; border-radius: 8px; }
+.novel-cover--md { width: 100%; }
+.novel-cover--lg { width: 100%; border-radius: 14px; }
+
+.novel-cover__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.novel-cover__art {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+/* Điểm sáng radial nhẹ phía trên bìa */
+.novel-cover__highlight {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 12%, rgba(255, 255, 255, 0.22) 0%, transparent 55%);
+  pointer-events: none;
+}
+/* Vạch accent mảnh trên cùng */
+.novel-cover__topline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent-gradient);
+  opacity: 0.9;
+}
+/* Chữ cái đầu lớn, mờ, làm nền trang trí */
+.novel-cover__letter {
+  position: absolute;
+  top: 4%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Outfit', sans-serif;
+  font-size: 4.2em;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.2);
+  line-height: 1;
+  user-select: none;
+}
+.novel-cover--sm .novel-cover__letter { font-size: 2.4em; }
+/* Tên truyện canh giữa 1/3 dưới, clamp 3 dòng */
+.novel-cover__title {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 10%;
+  text-align: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.novel-cover--sm .novel-cover__title { font-size: 0.62rem; -webkit-line-clamp: 3; }
+.novel-cover--lg .novel-cover__title { font-size: 1rem; }
+
+/* Badge góc trên trái: FULL / MỚI */
+.novel-cover__badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  color: #fff;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.novel-cover__badge.is-full { background: var(--success); }
+.novel-cover__badge.is-new { background: var(--accent); }
+
+/* Dải thể loại đáy bìa — chỉ size lg */
+.novel-cover__genre {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 5px 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 2;
+}
+
+/* ── NovelCard v2: bìa + tên + meta, cả thẻ là Link ── */
+.novel-card-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-main);
+  text-decoration: none;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 12px;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.novel-card-v2__title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-main);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.novel-card-v2__meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+@media (hover: hover) {
+  .novel-card-v2:hover { transform: translateY(-4px); }
+  .novel-card-v2:hover .novel-card-v2__title { color: var(--accent); }
+}
+.novel-card-v2:active { transform: scale(0.97); }
+
+/* ── SiteHeader (guest) ── */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-panel);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.site-header__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 1rem;
+  height: 52px;
+}
+.site-header__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main);
+  text-decoration: none;
+  min-height: 44px;
+}
+.site-header__logo:hover { color: var(--text-main); }
+.site-header__nav {
+  display: none; /* mobile: chỉ có logo, điều hướng nằm ở bottom tab bar */
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+.site-header__navlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  min-height: 44px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+.site-header__navlink.active {
+  color: var(--accent);
+  background: rgba(59, 130, 246, 0.1);
+  font-weight: 600;
+}
+@media (hover: hover) {
+  .site-header__navlink:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.06); }
+}
+.site-header__right { display: none; margin-left: auto; }
+@media (min-width: 769px) {
+  .site-header__inner { height: 60px; padding: 0 1.5rem; }
+  .site-header__nav { display: flex; }
+  .site-header__right { display: flex; align-items: center; gap: 8px; }
+}
+
+/* ── BottomTabBar (mobile only) ── */
+.bottom-tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 110;
+  display: flex;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border-panel);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (min-width: 769px) {
+  .bottom-tab-bar { display: none; }
+}
+.tab-item {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 56px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.68rem;
+  font-weight: 500;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab-item.active { color: var(--accent); font-weight: 700; }
+/* Vạch chỉ báo 3px phía trên tab đang active */
+.tab-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 22%;
+  right: 22%;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--accent);
+}
+.tab-item:active { background: rgba(255, 255, 255, 0.05); }
+
+/* ── GuestLayout ── */
+.guest-main {
+  min-height: calc(100dvh - 52px);
+}
+@media (max-width: 768px) {
+  /* chừa chỗ cho bottom tab bar */
+  .guest-main.has-tab-bar {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ── HomePage ── */
+.home-section { margin-bottom: 2.25rem; }
+.home-section__title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Hero "Đọc tiếp" */
+.hero-continue {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 2rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.25);
+  flex-wrap: wrap;
+}
+.hero-continue__info { flex: 1; min-width: 0; }
+.hero-continue__eyebrow {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.18);
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+.hero-continue__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.hero-continue__chapter {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hero-continue__btn { width: 100%; min-height: 48px; }
+@media (min-width: 600px) {
+  .hero-continue { padding: 1.25rem 1.5rem; }
+  .hero-continue__btn { width: auto; flex-shrink: 0; }
+}
+
+/* Featured novel: bìa lg trái + thông tin phải */
+.featured-novel {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+.featured-novel__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+@media (min-width: 600px) {
+  .featured-novel { grid-template-columns: 170px 1fr; gap: 1.5rem; padding: 1.5rem; }
+}
+
+/* Hàng cuộn ngang snap — 2.4 thẻ hiện trên mobile */
+.section-row-scroll {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 6px;
+}
+.section-row-scroll::-webkit-scrollbar { display: none; }
+.section-row-scroll > * {
+  scroll-snap-align: start;
+  flex: 0 0 calc((100% - 1.5rem) / 2.4);
+  min-width: 0;
+}
+@media (min-width: 600px) {
+  .section-row-scroll > * { flex: 0 0 150px; }
+}
+@media (min-width: 1000px) {
+  .section-row-scroll > * { flex: 0 0 165px; }
+}
+
+/* Hàng "Mới lên chương" */
+.update-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  min-height: 44px;
+  border-radius: 12px;
+  color: var(--text-main);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+@media (hover: hover) {
+  .update-row:hover { background: rgba(255, 255, 255, 0.05); }
+}
+.update-row:active { background: rgba(255, 255, 255, 0.08); }
+.update-row__body { flex: 1; min-width: 0; }
+.update-row__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-main);
+}
+.update-row__chapter {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+.update-row__ago {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Dải thống kê 3 cột */
+.stats-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+.stats-strip__item {
+  text-align: center;
+  padding: 1rem 0.5rem;
+}
+.stats-strip__value {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+.stats-strip__label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── NovelPage (guest) ── */
+.novel-hero {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+@media (min-width: 600px) {
+  .novel-hero { grid-template-columns: 190px 1fr; gap: 1.5rem; }
+}
+.novel-hero__title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 4px;
+}
+@media (min-width: 600px) {
+  .novel-hero__title { font-size: 1.8rem; }
+}
+.novel-hero__sub {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.novel-hero__badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.novel-hero__badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--accent);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+/* Thanh hành động: Đọc từ đầu / Đọc tiếp */
+.novel-action-bar {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.novel-action-bar .btn { flex: 1 1 160px; min-height: 48px; }
+
+/* Dòng chương trong danh sách guest */
+.chapter-list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  color: var(--text-main);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+}
+@media (hover: hover) {
+  .chapter-list-row:hover { background: rgba(255, 255, 255, 0.06); }
+}
+.chapter-list-row:active { background: rgba(255, 255, 255, 0.09); }
+
+/* ── LibraryPage ── */
+.library-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+}
+.library-card__body { flex: 1; min-width: 0; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ADMIN LAYOUT — sidebar trái (desktop) / drawer (mobile), topbar sticky
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.admin-shell {
+  display: flex;
+  min-height: 100dvh;
+}
+
+/* Sidebar: desktop sticky, mobile off-canvas drawer */
+.admin-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: #0b1120;
+  border-right: 1px solid var(--border-panel);
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0.75rem;
+  gap: 2px;
+}
+.admin-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 18px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--text-main);
+  text-decoration: none;
+}
+.admin-sidebar__link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s;
+}
+.admin-sidebar__link.active {
+  color: var(--accent);
+  background: rgba(59, 130, 246, 0.1);
+  font-weight: 600;
+}
+@media (hover: hover) {
+  .admin-sidebar__link:hover { background: rgba(255, 255, 255, 0.06); color: var(--text-main); }
+}
+.admin-sidebar__divider {
+  height: 1px;
+  background: var(--border-panel);
+  margin: 10px 6px;
+}
+
+@media (min-width: 900px) {
+  .admin-sidebar {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+  }
+  .admin-topbar__hamburger { display: none; }
+}
+@media (max-width: 899px) {
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 210;
+    transform: translateX(-105%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+    padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+  }
+  .admin-sidebar.is-open { transform: translateX(0); }
+}
+
+/* Overlay khi mở drawer trên mobile */
+.admin-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 205;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* Topbar 56px sticky */
+.admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 1rem;
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-panel);
+}
+.admin-topbar__badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* Vùng nội dung admin */
+.admin-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.admin-main {
+  flex: 1;
+  padding: 1.25rem 1rem 3rem;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+@media (min-width: 900px) {
+  .admin-main { padding: 1.5rem 2rem 3rem; }
+}
+
+/* Hàng truyện trong AdminNovels */
+.admin-novel-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.75rem 1rem;
+  min-height: 56px;
+  border-radius: 12px;
+  border: 1px solid var(--border-panel);
+  background: var(--bg-panel);
+  color: var(--text-main);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s, background 0.15s;
+}
+@media (hover: hover) {
+  .admin-novel-row:hover {
+    border-color: rgba(59, 130, 246, 0.35);
+    background: rgba(59, 130, 246, 0.05);
+  }
+}
+.admin-novel-row:active { background: rgba(59, 130, 246, 0.08); }
+

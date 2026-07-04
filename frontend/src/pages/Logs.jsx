@@ -6,28 +6,7 @@ import {
   FileText, Filter, Database,
 } from 'lucide-react'
 import api from '../api'
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function fmtDuration(sec) {
-  if (!sec || sec < 1) return '—'
-  if (sec < 60) return `${sec}s`
-  const m = Math.floor(sec / 60), s = sec % 60
-  if (m < 60) return `${m}m ${s}s`
-  const h = Math.floor(m / 60), rm = m % 60
-  return `${h}h ${rm}m`
-}
-
-function fmtDate(str) {
-  if (!str) return '—'
-  return str.replace('T', ' ').slice(0, 16)
-}
-
-function fmtTokens(n) {
-  if (!n || n === 0) return '—'
-  if (n >= 1000000) return `${(n / 1000000).toFixed(2)}M`
-  if (n >= 1000)    return `${(n / 1000).toFixed(1)}K`
-  return String(n)
-}
+import { fmtDuration, fmtDate, fmtTokens } from '../utils/format'
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Logs() {
@@ -118,8 +97,8 @@ export default function Logs() {
     <div className="container animate-fade-in">
       {/* Header */}
       <div style={{ marginBottom: '1.75rem' }}>
-        <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
-          <ArrowLeft size={15} /> Thư viện
+        <Link to="/admin" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+          <ArrowLeft size={15} /> Tổng quan
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>

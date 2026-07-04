@@ -173,3 +173,4 @@ temp/
 .wrangler
 .dev.vars*
 !.dev.vars.example
+frontend/verify_render.mjs

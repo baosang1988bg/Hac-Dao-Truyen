@@ -1,19 +1,19 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { User, Key, ArrowRight, BookOpen, AlertCircle } from 'lucide-react'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { Key, BookOpen, AlertCircle, ArrowLeft } from 'lucide-react'
 import api from '../api'
 
-export default function LoginPage({ onLogin }) {
+/**
+ * Trang đăng nhập quản trị (standalone).
+ * Guest KHÔNG cần đăng nhập — toàn bộ trang đọc truyện đều public.
+ * Đăng nhập thành công → quay lại trang đích (state.from) hoặc /admin.
+ */
+export default function LoginPage() {
   const [password, setPassword] = useState('')
-  const [isAdminMode, setIsAdminMode] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-
-  const handleGuestLogin = () => {
-    onLogin('guest')
-    navigate('/')
-  }
+  const location = useLocation()
 
   const handleAdminLogin = async () => {
     if (loading) return
@@ -26,8 +26,8 @@ export default function LoginPage({ onLogin }) {
     try {
       const res = await api.post('/auth/login', { password })
       localStorage.setItem('authToken', res.data.token)
-      onLogin('admin')
-      navigate('/')
+      localStorage.setItem('userRole', 'admin')
+      navigate(location.state?.from?.pathname || '/admin', { replace: true })
     } catch (err) {
       setError(err.response?.data?.detail || 'Sai mật khẩu quản trị')
     } finally {
@@ -57,94 +57,61 @@ export default function LoginPage({ onLogin }) {
           Hắc Đạo<span style={{ color: 'var(--accent)' }}>Truyện</span>
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>
-          Chào mừng bạn quay trở lại
+          Khu vực dành cho quản trị viên
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {!isAdminMode ? (
-            <>
-              <button
-                onClick={handleGuestLogin}
-                className="btn-login-option"
-                style={{
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  padding: '1rem', borderRadius: '12px', color: 'white', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                  textAlign: 'left', minHeight: '44px'
-                }}
-              >
-                <div style={{ background: 'rgba(16,185,129,0.2)', padding: '8px', borderRadius: '8px' }}>
-                  <User size={20} color="#10b981" />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>Vào đọc truyện</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Quyền hạn Độc giả (Guest)</div>
-                </div>
-                <ArrowRight size={18} color="rgba(255,255,255,0.3)" />
-              </button>
+        <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ position: 'relative' }}>
+            <Key size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <input
+              type="password"
+              placeholder="Mật khẩu Admin"
+              value={password}
+              onChange={e => { setPassword(e.target.value); if (error) setError('') }}
+              onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
+              autoFocus
+              style={{
+                width: '100%', padding: '0.8rem 1rem 0.8rem 2.5rem', borderRadius: '10px',
+                background: 'rgba(0,0,0,0.2)',
+                border: error ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                color: 'white', outline: 'none', fontSize: '1rem'
+              }}
+            />
+          </div>
 
-              <button
-                onClick={() => { setIsAdminMode(true); setError('') }}
-                style={{
-                  background: 'none', border: 'none', color: 'var(--accent)',
-                  fontSize: '0.85rem', cursor: 'pointer', marginTop: '0.5rem',
-                  minHeight: '44px'
-                }}
-              >
-                Đăng nhập quản trị viên
-              </button>
-            </>
-          ) : (
-            <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ position: 'relative' }}>
-                <Key size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input
-                  type="password"
-                  placeholder="Mật khẩu Admin"
-                  value={password}
-                  onChange={e => { setPassword(e.target.value); if (error) setError('') }}
-                  onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
-                  autoFocus
-                  style={{
-                    width: '100%', padding: '0.8rem 1rem 0.8rem 2.5rem', borderRadius: '10px',
-                    background: 'rgba(0,0,0,0.2)',
-                    border: error ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
-                    color: 'white', outline: 'none', fontSize: '1rem'
-                  }}
-                />
-              </div>
-
-              {error && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
-                  color: '#fca5a5', fontSize: '0.82rem', fontWeight: 500,
-                  padding: '0.6rem 0.8rem', borderRadius: '10px', textAlign: 'left'
-                }}>
-                  <AlertCircle size={15} style={{ flexShrink: 0 }} />
-                  {error}
-                </div>
-              )}
-
-              <button
-                onClick={handleAdminLogin}
-                disabled={loading}
-                className="btn btn-primary"
-                style={{ width: '100%', padding: '0.8rem', justifyContent: 'center', minHeight: '44px', opacity: loading ? 0.7 : 1 }}
-              >
-                {loading ? 'Đang xác thực...' : 'Xác nhận Admin'}
-              </button>
-              <button
-                onClick={() => { setIsAdminMode(false); setError(''); setPassword('') }}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer', minHeight: '44px' }}
-              >
-                Quay lại
-              </button>
+          {error && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
+              color: '#fca5a5', fontSize: '0.82rem', fontWeight: 500,
+              padding: '0.6rem 0.8rem', borderRadius: '10px', textAlign: 'left'
+            }}>
+              <AlertCircle size={15} style={{ flexShrink: 0 }} />
+              {error}
             </div>
           )}
+
+          <button
+            onClick={handleAdminLogin}
+            disabled={loading}
+            className="btn btn-primary"
+            style={{ width: '100%', padding: '0.8rem', justifyContent: 'center', minHeight: '44px', opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? 'Đang xác thực...' : 'Đăng nhập'}
+          </button>
+
+          <Link
+            to="/"
+            style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+              color: 'var(--text-muted)', fontSize: '0.85rem', minHeight: '44px',
+            }}
+          >
+            <ArrowLeft size={15} /> Về trang chủ đọc truyện
+          </Link>
         </div>
 
-        <div style={{ marginTop: '2.5rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.2)' }}>
+        <div style={{ marginTop: '2rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.2)' }}>
           Hệ thống dịch thuật Hắc Đạo Truyện v2.0
         </div>
       </div>

@@ -531,31 +531,35 @@ export default function Reader() {
         </div>
       )}
 
-      {/* FABs */}
-      <div style={{
-        position: 'fixed',
-        bottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))',
-        right: 'calc(1.5rem + env(safe-area-inset-right, 0px))',
-        display: 'flex', flexDirection: 'column', gap: '1rem', zIndex: 90
-      }}>
-        {showScrollTop && (
-          <button onClick={scrollToTop} className="fab"><ChevronUp size={24} /></button>
-        )}
-        <button onClick={() => setShowSettings(true)} className="fab" style={{ background: 'var(--accent)', color: 'white', border: 'none' }}>
-          <Settings size={24} />
+      {/* FAB cuộn lên đầu — góc dưới TRÁI, nhỏ gọn, không che tap-zone phải.
+          (Nút Cài đặt đã có sẵn ở cả 2 thanh điều hướng nên không cần FAB riêng.) */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fab"
+          aria-label="Cuộn lên đầu trang"
+          style={{
+            position: 'fixed',
+            bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))',
+            left: 'calc(1rem + env(safe-area-inset-left, 0px))',
+            zIndex: 90,
+          }}
+        >
+          <ChevronUp size={20} />
         </button>
-      </div>
+      )}
 
       <style>{`
         @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .reader-root { cursor: default; }
         .fab {
-          width: 58px; height: 58px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+          width: 44px; height: 44px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);
           background: rgba(30,41,59,0.85); backdrop-filter: blur(12px); color: rgba(255,255,255,0.8);
           cursor: pointer; display: flex; align-items: center; justify-content: center;
           transition: all 0.2s; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+          opacity: 0.7;
         }
-        .fab:active { transform: scale(0.92); }
+        .fab:active { transform: scale(0.92); opacity: 1; }
         .ctrl-btn {
           width: 48px; height: 48px; border-radius: 12px; border: none;
           background: rgba(255,255,255,0.15); color: white; cursor: pointer;

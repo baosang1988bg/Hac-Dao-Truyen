@@ -5,19 +5,91 @@ Endpoint quản lý truyện: danh sách, chi tiết, catalog, glossary.
 """
 
 import os
+import re
 import json
 from typing import Dict
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from pydantic import BaseModel
 
 from novel_manager import load_novel
-from auth import require_admin
+from auth import require_admin, _is_valid as _is_valid_token
 from security_utils import validate_slug, safe_novel_dir
 
 router = APIRouter()
 
 NOVELS_DIR = "novels"
+
+# Các field công khai của novel.json — KHÔNG trả glossary (nặng hàng trăm KB)
+# và KHÔNG trả source_url/last_translated_url (lộ nguồn crawl) cho guest.
+_PUBLIC_FIELDS = (
+    "slug", "title", "original_title", "author", "genre", "notes",
+    "total_chapters", "cover_url", "translation_style",
+)
+
+_SPLIT_PART_RE = re.compile(r'^(.+)-(\d+)_VI\.md$')
+
+
+def _is_admin_request(authorization: str) -> bool:
+    """Kiểm tra header Authorization có phải token admin hợp lệ (không raise)."""
+    if not authorization.startswith("Bearer "):
+        return False
+    return _is_valid_token(authorization[len("Bearer "):].strip())
+
+
+def _public_view(data: dict) -> dict:
+    """Lọc novel.json về whitelist field công khai."""
+    return {k: data.get(k) for k in _PUBLIC_FIELDS if k in data}
+
+
+def _translated_stats(slug: str) -> dict:
+    """
+    Thống kê thư mục translated/ của 1 truyện (1 lần listdir):
+    - chapter_count: số chương đã dịch (lọc file phần split khi bản merge đã tồn tại)
+    - last_translated_at: mtime file mới nhất (epoch, None nếu chưa có)
+    - latest_chapter_title: tiêu đề (dòng '# ...') của file mới nhất
+    """
+    trans_dir = os.path.join(NOVELS_DIR, slug, "translated")
+    if not os.path.isdir(trans_dir):
+        return {"chapter_count": 0, "last_translated_at": None, "latest_chapter_title": None}
+
+    all_md = set(f for f in os.listdir(trans_dir) if f.endswith("_VI.md"))
+    filtered = []
+    for f in all_md:
+        m = _SPLIT_PART_RE.match(f)
+        if m and f"{m.group(1)}_VI.md" in all_md:
+            continue  # phần split đã có bản merge → bỏ
+        filtered.append(f)
+
+    if not filtered:
+        return {"chapter_count": 0, "last_translated_at": None, "latest_chapter_title": None}
+
+    newest, newest_mtime = None, 0.0
+    for f in filtered:
+        try:
+            mt = os.path.getmtime(os.path.join(trans_dir, f))
+        except OSError:
+            continue
+        if mt > newest_mtime:
+            newest, newest_mtime = f, mt
+
+    latest_title = None
+    if newest:
+        latest_title = newest.replace("_VI.md", "")
+        try:
+            with open(os.path.join(trans_dir, newest), encoding="utf-8") as fh:
+                for line in fh.readlines()[:10]:
+                    if line.startswith("# "):
+                        latest_title = line[2:].strip()
+                        break
+        except Exception:
+            pass
+
+    return {
+        "chapter_count": len(filtered),
+        "last_translated_at": newest_mtime or None,
+        "latest_chapter_title": latest_title,
+    }
 
 
 class GlossaryUpdateRequest(BaseModel):
@@ -26,36 +98,57 @@ class GlossaryUpdateRequest(BaseModel):
 
 @router.get("/api/novels")
 def list_novels():
-    """Lấy danh sách các truyện hiện có."""
+    """
+    Danh sách truyện (public, gọn nhẹ):
+    chỉ field whitelist + số liệu thật (chapter_count, last_translated_at,
+    latest_chapter_title, glossary_count). KHÔNG trả glossary/source_url.
+    """
     if not os.path.exists(NOVELS_DIR):
         return []
 
     novels = []
-    for slug in os.listdir(NOVELS_DIR):
-        if os.path.isdir(os.path.join(NOVELS_DIR, slug)):
-            json_path = os.path.join(NOVELS_DIR, slug, "novel.json")
-            if os.path.exists(json_path):
-                with open(json_path, "r", encoding="utf-8") as f:
-                    try:
-                        data = json.load(f)
-                        novels.append(data)
-                    except json.JSONDecodeError:
-                        pass
+    for slug in sorted(os.listdir(NOVELS_DIR)):
+        json_path = os.path.join(NOVELS_DIR, slug, "novel.json")
+        if not os.path.isfile(json_path):
+            continue
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except json.JSONDecodeError:
+            continue
+        item = _public_view(data)
+        item["slug"] = item.get("slug") or slug
+        item["glossary_count"] = len(data.get("glossary", {}) or {})
+        item.update(_translated_stats(slug))
+        novels.append(item)
     return novels
 
 
 @router.get("/api/novels/{slug}")
-def get_novel(slug: str):
-    """Lấy chi tiết truyện (gồm cả glossary)."""
+def get_novel(slug: str, authorization: str = Header(default="")):
+    """
+    Chi tiết truyện.
+    Guest: chỉ field công khai + thống kê. Admin (Bearer hợp lệ): full novel.json
+    (gồm glossary — cần cho trang quản trị).
+    """
     validate_slug(slug)
-    try:
-        profile = load_novel(slug)
-        # Read the raw dict because load_novel returns NovelProfile object
-        json_path = os.path.join(NOVELS_DIR, slug, "novel.json")
-        with open(json_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError:
+    json_path = os.path.join(NOVELS_DIR, slug, "novel.json")
+    if not os.path.isfile(json_path):
         raise HTTPException(status_code=404, detail="Novel not found")
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if _is_admin_request(authorization):
+        data.setdefault("slug", slug)
+        data.update(_translated_stats(slug))
+        data["glossary_count"] = len(data.get("glossary", {}) or {})
+        return data
+
+    item = _public_view(data)
+    item["slug"] = item.get("slug") or slug
+    item["glossary_count"] = len(data.get("glossary", {}) or {})
+    item.update(_translated_stats(slug))
+    return item
 
 
 @router.post("/api/novels/{slug}/glossary", dependencies=[Depends(require_admin)])
