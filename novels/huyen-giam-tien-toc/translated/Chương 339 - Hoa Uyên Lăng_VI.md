@@ -1,48 +1,48 @@
 # Chương 339: Hoa Uyên Lăng
 
-Lý Uyên Giao cầm Pháp Giám ngắm nghía một hồi, suy đoán không ra, chỉ biết người này là hậu duệ Kim Đan, sau lưng là một pháp bảo, cắn răng một cái, giao Pháp Giám vào tay Lý Thanh Hồng, khẽ nói:
+Lý Uyên Giao cầm Pháp Giám ngắm nghía một hồi, suy đoán không ra, chỉ cho rằng người này là hậu duệ Kim Đan, sau lưng có một món pháp bảo. Hắn cắn răng, giao Pháp Giám vào tay Lý Thanh Hồng, khẽ nói:
 
-"Ta xuống xem thử, muội cầm pháp giám quan sát, nếu xảy ra chuyện gì, lập tức phát động Thái Âm Huyền Quang."
+"Để ta xuống xem thử, muội cầm Giám quan sát, nếu có chuyện gì xảy ra, lập tức phát động Thái Âm Huyền Quang."
 
 "Được."
 
-Lý Thanh Hồng đeo thương ra sau lưng, nhận lấy Pháp Giám, tay chạm vào liền cảm thấy mát lạnh, trên Pháp Giám ánh trắng lưu chuyển, vô cùng kỳ dị.
+Lý Thanh Hồng đeo thương ra sau lưng, nhận lấy Pháp Giám, vừa chạm tay vào liền cảm thấy mát lạnh. Trên Pháp Giám ánh bạc lưu chuyển, vô cùng thần dị.
 
-"Pháp giám tốt."
+"Giám tốt quá."
 
-Nàng lẩm bẩm một câu, ôm Pháp Giám trong tay, chỉ thấy toàn thân mát mẻ, tai thính mắt sáng, cây thương sau lưng thỉnh thoảng phát ra ánh sáng trắng vội vàng thu lại hào quang, im hơi lặng tiếng.
+Nàng lẩm bẩm một câu, nâng Pháp Giám trong tay, chỉ thấy toàn thân mát mẻ, tai thính mắt sáng. Cây thương sau lưng thỉnh thoảng phát ra ánh sáng trắng vội vàng thu liễm hào quang, im hơi lặng tiếng.
 
-Bên này Lý Uyên Giao xuống núi, trong điện Lý Uyên Bình đang cùng Vương Tầm nói chuyện rất vui vẻ, Lý Uyên Giao vừa bước tới trước sân, liền nghe một tiếng cười sang sảng:
+Bên này, Lý Uyên Giao xuống đến chân núi. Trong điện, Lý Uyên Bình đang cùng Vương Tầm nói chuyện rất vui vẻ. Lý Uyên Giao vừa bước đến trước sân, liền nghe một tiếng cười sang sảng:
 
-"Uyên Bình huynh nói đùa rồi, nhà ta Vương thị chỉ dừng lại ở quận Dĩnh Hoa, thế tục cũng chưa đến hai mươi vạn, những người còn lại đắc đạo liền vào động thiên nhà ta, không vướng bụi trần, tự nhiên cũng chẳng có liên can gì."
+"Huynh Uyên Bình nói quá rồi. Nhà họ Vương ta chỉ dừng lại ở quận Dĩnh Hoa, phàm tục cũng chẳng quá hai mươi vạn. Những người khác có được đạo liền vào động thiên của nhà ta, không vướng bụi trần, tự nhiên cũng chẳng có liên lụy gì."
 
-"Gia chủ nhà ta dù sao cũng là một trong ba vị Kim Đan, nội bộ Thích Giáo cũng đấu đá không ngừng, các phe phái nịnh bợ còn không kịp, tự nhiên không dám đến dây vào, mấy trăm năm cứ thế trôi qua."
+"Gia chủ nhà ta dù sao cũng là một trong Tam Kim, Thích Giáo bên trong cũng đấu đá không ngừng, các phe phái nịnh bợ còn không kịp, tự nhiên không dám đến dây vào, mấy trăm năm cứ thế mà qua."
 
-Lý Uyên Giao nhẹ nhàng gõ cửa, đẩy cửa bước vào, Vương Tầm ngước mắt nhìn, ánh mắt lập tức dán chặt vào thanh kiếm xanh bên hông hắn, nhìn chằm chằm không rời được, Lý Uyên Bình mỉm cười giới thiệu:
+Lý Uyên Giao nhẹ nhàng gõ cửa, đẩy vào. Vương Tầm ngước mắt nhìn, ánh mắt lập tức dừng lại trên thanh Thanh Phong ở thắt lưng hắn, nhìn chằm chằm không rời. Lý Uyên Bình mỉm cười giới thiệu:
 
-"Tiền bối, đây là đại ca của ta, Lý Uyên Giao."
+"Tiền bối, đây là huynh trưởng của ta, Lý Uyên Giao."
 
-"Gặp qua đạo hữu!"
+"Gặp qua Đạo hữu!"
 
-Hai người khách sáo chào hỏi, Vương Tầm nhìn hắn một lượt, liền cười nói:
+Hai người khách sáo chào hỏi. Vương Tầm nhìn hắn một lượt, rồi cười nói:
 
-"Lệnh huynh quả là khí tượng tốt."
+"Lệnh huynh quả thật có khí tượng tốt."
 
-Lý Uyên Giao khách sáo vài câu, ngồi xuống hỏi thăm:
+Lý Uyên Giao khách sáo một câu, ngồi xuống hỏi:
 
-"Ý đồ của tiền bối ta đã biết, trong linh kiếm nhà ta còn có một đạo kiếm ý do trưởng bối lưu lại, phong ấn nhiều năm chưa từng động dụng, các hạ nếu muốn mượn kiếm để hoàn thành đạo đồ, là lấy thanh kiếm này hay là lấy đạo kiếm ý này? Không biết có làm tổn hại đạo kiếm ý này không?"
+"Ý đồ của tiền bối ta đã biết. Trong thanh linh kiếm này của nhà ta còn có một đạo kiếm ý do trưởng bối lưu lại, phong ấn nhiều năm chưa từng động dụng. Các hạ nếu muốn mượn kiếm để thành toàn đạo đồ, là muốn lấy thanh kiếm này hay lấy đạo kiếm ý này?
 
-Lý Uyên Giao đã tính toán trước, một câu liền nói ra yếu hại.
+Lý Uyên Giao đã có tính toán từ trước, một lời nói trúng yếu hại.
 
 "Đạo hữu..."
 
 Vương Tầm cười khổ, đáp:
 
-"Pháp khí Trúc Cơ nhà ta Vương thị không ít, thậm chí phần lớn đều là kiếm khí, ta xa xôi tìm đến thanh kiếm này, tự nhiên là xem trọng đạo kiếm ý trong đó."
+"Pháp khí Trúc Cơ nhà họ Vương ta không ít, thậm chí phần lớn là kiếm khí. Ta từ xa đến tìm thanh kiếm này, tự nhiên là muốn xem đạo kiếm ý bên trong."
 
-"Còn về việc có tổn hại đạo kiếm ý này hay không..."
+"Còn về việc có làm tổn hại kiếm ý hay không..."
 
-Vương Tầm ngừng lại, trầm tư một chốc, đáp:
+Vương Tầm dừng lại, suy nghĩ một chốc, đáp:
 
 "Còn phải lấy kiếm ra xem mới biết."
 
@@ -50,81 +50,81 @@ Lý Uyên Giao khẽ gật đầu, tháo thanh kiếm bên hông xuống, rút k
 
 "Mời đạo hữu xem qua."
 
-Thiếu niên này mừng rỡ, cẩn thận nhận lấy, nhìn vào lưỡi kiếm xanh trắng, phía trên có hai chữ triện 【Thanh Xích】 khá đẹp mắt, Vương Tầm không nhịn được khen ngợi:
+Thiếu niên này mừng rỡ, cẩn thận nhận lấy, nhìn vào lưỡi kiếm xanh trắng, trên đó có hai chữ triện [Thanh Xích] rất đẹp. Vương Tầm không nhịn được khen ngợi:
 
-"Dài bốn thước năm tấc, dùng bảy thước đồng Thanh Minh luyện thành, vật liệu tuy bình thường, thủ pháp còn coi như xuất sắc, lại được kiếm ý ôn dưỡng nhiều năm, có thể xưng là phẩm tốt."
+"Dài bốn thước năm tấc, dùng bảy thước đồng Thanh Minh luyện thành. Nguyên liệu tuy bình thường, nhưng thủ pháp còn coi là xuất sắc, lại được kiếm ý ôn dưỡng nhiều năm, xứng đáng là phẩm tốt."
 
-"Bên trong phong ấn kiếm ý trong trẻo như nước, sáng ngời như trăng, nuôi dưỡng đủ mười năm, thanh kiếm này nếu tế ra... tu sĩ nhập đạo bình thường đều không chịu nổi một kiếm."
+"Kiếm ý phong ấn bên trong trong sáng như nước, sáng sủa như trăng, đủ nuôi dưỡng mười năm. Thanh kiếm này nếu tế ra... tu sĩ nhập đạo bình thường cũng không chịu nổi một kiếm."
 
-Hai anh em Lý Uyên Giao chăm chú lắng nghe, Vương Tầm đáp:
+Lý Uyên Giao huynh đệ chăm chú lắng nghe. Vương Tầm đáp:
 
-"Ta chỉ lấy một tia, theo tạo nghệ kiếm đạo của ta, nhiều nhất khiến đạo kiếm ý này giảm đi hai phần."
+"Ta chỉ lấy một tia, dựa theo tạo nghệ kiếm đạo của ta, nhiều nhất cũng chỉ làm kiếm ý yếu đi hai phần."
 
-Hắn cười ngượng ngùng, vội vàng nói tiếp:
+Hắn cười gượng một tiếng, vội vàng nói tiếp:
 
-"Ta tuyệt sẽ không để quý tộc chịu tổn thất vô ích, có thể dùng ngoại vật bên mình để bồi thường!"
+"Ta tuyệt đối không để quý tộc chịu thiệt thòi vô ích, có thể dùng vật ngoài thân để bồi thường!"
 
-Hai anh em liếc nhìn nhau, Lý Uyên Giao đáp:
+Hai huynh đệ nhìn nhau, Lý Uyên Giao đáp:
 
-"Không biết theo tiêu chuẩn dưới Tử Phủ Kim Đan Giang Nam, đạo kiếm ý này còn lại uy lực thế nào?"
+"Không biết theo tiêu chuẩn của Tử Phủ Kim Đan đạo Giang Nam, đạo kiếm ý này còn lại uy lực thế nào?"
 
 "Ừm."
 
-Vương Tầm trầm tư một chốc, đáp:
+Vương Tầm suy nghĩ một chốc, đáp:
 
-"Đạo kiếm ý này nồng đậm, dù ta rút đi một tia, thanh kiếm này một khi tế ra, Trúc Cơ sơ kỳ cũng chết, Trúc Cơ trung kỳ may ra thoát được một mạng, Trúc Cơ hậu kỳ bất ngờ không kịp phòng bị cũng phải chịu thiệt lớn."
+"Kiếm ý này nồng đậm, dù ta rút đi một tia, một khi thanh kiếm này tế ra, Trúc Cơ sơ kỳ cũng phải chết, Trúc Cơ trung kỳ may ra thoát được một mạng, Trúc Cơ hậu kỳ nếu không kịp phòng bị cũng phải chịu thiệt lớn."
 
-Vương Tầm vừa dứt lời, thấy hai anh em có vẻ do dự, liền nói tiếp:
+Vương Tầm vừa dứt lời, thấy hai huynh đệ có vẻ do dự, liền nói tiếp:
 
-"Nhà ta tu đạo phải ít vướng duyên thế, không thể thiếu nợ nhân tình, cũng không thể ra tay cho mấy vị, phù lục pháp khí các thứ sát nhân vật cũng không được, bồi thường chút linh vật bảo dược hay đan dược thì có thể."
+"Đạo tu của nhà ta phải ít vướng tục duyên, không thể thiếu nợ nhân tình, cũng không thể ra tay vì mấy vị, phù lục pháp khí các loại sát vật cũng không được. Bồi thường chút linh vật bảo dược hay đan dược thì có thể."
 
-"Đạo hữu cứ dùng thanh kiếm này hoàn thành đạo đồ đi!"
+"Đạo hữu cứ dùng thanh kiếm này thành toàn đạo đồ đi!"
 
-Vương Tầm đã nói đến nước này, nhà mình lại đắc tội không nổi hắn, Lý Uyên Giao đành phải phất tay, đáp lời, Vương Tầm lập tức mừng rỡ nhưng cũng không hấp tấp, trịnh trọng nói:
+Vương Tầm đã nói đến nước này, nhà mình lại không đắc tội nổi hắn, Lý Uyên Giao chỉ đành phất tay đáp ứng một câu. Vương Tầm lập tức mừng ra mặt, nhưng cũng không hấp tấp, trịnh trọng nói:
 
-"Hai vị muốn bồi thường gì? Đừng nói mấy lời khách sáo, vậy sẽ hại ta mất!"
+"Hai vị muốn bồi thường gì? Đừng nói mấy lời khách sáo, vậy sẽ hại ta đó!"
 
-Hắn nhìn chằm chằm hai người, cẩn thận lắm, sợ lấy kiếm khí rồi hai người lại đòi hỏi quá đáng, xem ra hai người không đưa ra điều kiện gì thì hắn sẽ không lấy.
+Hắn nhìn chằm chằm hai người, rất cẩn thận, sợ lấy kiếm khí xong hai người lại mở miệng sư tử, xem ra hai người không đưa ra điều kiện gì thì hắn sẽ không lấy.
 
-"Còn dung hai anh em chúng ta bàn bạc một chút."
+"Còn để huynh đệ chúng ta bàn bạc một chút."
 
-"Điều này đương nhiên."
+"Đương nhiên."
 
-Lý Uyên Giao đáp lời, Vương Tầm gật đầu ngắm nghía thanh kiếm, hai anh em lui ra ngoài, dừng bước trước điện, Lý Uyên Bình cùng đại ca Lý Uyên Giao đồng thời mở miệng:
+Lý Uyên Giao đáp lời, Vương Tầm gật đầu ngắm nghía thanh kiếm. Hai huynh đệ lui ra ngoài, dừng bước trước điện. Lý Uyên Bình và huynh trưởng Lý Uyên Giao đồng thanh nói:
 
 "Toại Nguyên Đan!"
 
 "Linh căn!"
 
-Cả hai đều sững sờ, sau đó khóc dở mếu dở, Lý Uyên Bình nghĩ đến việc đổi Toại Nguyên Đan cho đại ca và trưởng tỷ để đột phá Trúc Cơ, còn Lý Uyên Giao lại nghĩ đến việc cầu xin một gốc thiên địa linh căn như Xà Giao bảo thụ, để xoay chuyển cảnh khốn quẫn gia tộc thường niên thua lỗ...
+Cả hai đều sững sờ, rồi khóc dở mếu dở. Lý Uyên Bình nghĩ đến việc đổi Toại Nguyên Đan cho huynh trưởng và trưởng tỷ để đột phá Trúc Cơ, còn Lý Uyên Giao lại nghĩ đến việc cầu một gốc thiên địa linh căn như Xà Giao Bảo Thụ, để xoay chuyển cảnh khốn quẫn thâm hụt hàng năm của gia tộc...
 
-Hai anh em một người giữ nhà nghĩ đến đại ca, một người tu hành nghĩ đến gia tộc, đều mỉm cười hiểu ý, Lý Uyên Bình vội nói:
+Một người giữ nhà nghĩ đến huynh trưởng, một người tu hành nghĩ đến gia tộc, cả hai đều mỉm cười hiểu ý. Lý Uyên Bình vội nói:
 
-"Chuyện trong nhà ta tính toán chi li rồi cũng có thể qua được, đại ca và trưởng tỷ đột phá mới là trọng yếu nhất! Tuy Toại Nguyên Đan chỉ tăng nửa phần xác suất Trúc Cơ, nhưng cũng là hiếm có, huống chi Vương thị là hậu duệ Kim Đan, trong tay nói không chừng còn có đan dược lợi hại hơn..."
+"Chuyện trong nhà ta tằn tiện một chút cũng có thể vượt qua. Huynh trưởng và trưởng tỷ đột phá mới là trọng trung chi trọng! Tuy Toại Nguyên Đan chỉ tăng thêm nửa thành xác suất Trúc Cơ, nhưng cũng khó có được.
 
-Lý Uyên Giao trầm tư một chốc, do dự nói:
+Lý Uyên Giao suy nghĩ một chốc, do dự nói:
 
-"Ta cũng thấy đồ vật trong tay Vương Tầm tiền bối đều không phải tầm thường... Toại Nguyên Đan tuy quý giá, nhưng dùng nhân tình của Vương thị để đổi thì quá lãng phí, nếu trong tay hắn có thiên địa linh căn, tuyệt không phải vật tầm thường, có thể nuôi nhà ta trăm ngàn năm không suy..."
+"Ta cũng thấy vật trong tay tiền bối Vương Tầm đều không tầm thường... Toại Nguyên Đan tuy quý giá, nhưng dùng nhân tình của Vương thị để đổi lại thì quá lãng phí. Trong tay hắn nếu có thiên địa linh căn, tuyệt đối không phải vật tầm thường, có thể nuôi nhà ta trăm ngàn năm không suy..."
 
-Dù sao Vương Tầm hứa hẹn là linh vật và bảo dược, hai người thấy linh vật không ít, nhưng căn bản chưa thấy bảo dược nào, tự nhiên sẽ không đi đổi bảo dược, tốt nhất chính là thiên địa linh căn, chỉ cần có một gốc, liền có thể kết ra linh vật không ngừng.
+Dù sao Vương Tầm hứa hẹn là linh vật và bảo dược. Hai người thấy linh vật không ít, nhưng căn bản chưa thấy bảo dược nào, tự nhiên sẽ không đi đổi bảo dược gì. Tốt nhất vẫn là thiên địa linh căn, chỉ cần có một gốc, liền có thể không ngừng kết ra linh vật.
 
-Hai anh em bàn bạc một hồi, liền gặp khó khăn, Lý Uyên Bình cười nói:
+Hai huynh đệ bàn bạc một hồi, liền lâm vào khó khăn. Lý Uyên Bình cười nói:
 
-"Nay có cơ hội như vậy trước mắt, ngược lại khiến người ta do dự."
+"Bây giờ có cơ hội như vậy trước mắt, ngược lại khiến người ta do dự."
 
-Lý Uyên Giao suy nghĩ một lát, đáp:
+Lý Uyên Giao trầm ngâm một lát, đáp:
 
-"Chi bằng như vậy, cứ hỏi tiền bối trước, may ra có đan dược Trúc Cơ hơn Toại Nguyên Đan, may ra trong tay không có thiên địa linh căn, hai bên so sánh, rồi chọn lựa."
+"Chi bằng thế này, cứ hỏi tiền bối trước đã. Có lẽ có đan dược Trúc Cơ hơn hẳn Toại Nguyên Đan, hoặc không có thiên địa linh căn trong tay. So sánh hai bên, rồi chọn một."
 
-"Được!"
+"Tốt!"
 
 Hai người vào sân, uyển chuyển nói với Vương Tầm, liền thấy thiếu niên này như trút được gánh nặng, gật đầu:
 
-"Linh căn... ta quả có một gốc, vốn là ta ngẫu nhiên có được trong động thiên."
+"Linh căn... ta quả thực có một gốc, vốn là ta ngẫu nhiên có được trong động thiên."
 
-Hắn xoa nhẹ túi trữ vật bên hông, lấy ra một hạt giống màu đỏ vàng, hình hạnh nhân, nhẹ giọng nói:
+Hắn xoa nhẹ túi trữ vật bên hông, lấy ra một hạt giống to bằng hạt hạnh nhân màu đỏ vàng, khẽ nói:
 
-"Vật này tên là: 【Hoa Uyên Lăng】, ngàn năm trước là bảo vật trấn tông của thượng tông Uyên Lăng ở Giang Bắc, sau linh cơ suy yếu, ở Giang Bắc không sống nổi, chỉ có trong động thiên nhà ta còn vài gốc."
+"Vật này tên là: [Hoa Uyên Lăng]. Ngàn năm trước là bảo vật trấn tông của thượng tông Uyên Lăng ở Giang Bắc. Sau này linh cơ suy yếu, ở Giang Bắc không sống nổi, chỉ còn mấy gốc trong động thiên nhà ta."
 
 (Hết chương)
 

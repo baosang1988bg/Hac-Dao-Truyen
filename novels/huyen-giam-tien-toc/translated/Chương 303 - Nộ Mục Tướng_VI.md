@@ -1,101 +1,103 @@
 # Chương 303: Nộ Mục Tướng
 
-Những mảng da thịt nhảy nhót đã ngưng tụ thành đầu của Pháp Tuệ, theo sự nhập thể dần dần của Phẫn Nộ Ma Ha, khuôn mặt hắn ngày càng tuấn tú, màu vàng kim trong mắt ngày càng đậm. Khuôn mặt tuấn tú đó trở nên mịn màng trơn nhẵn, đôi mắt vàng sẫm nhìn chằm chằm vào mắt Lý Thông Nhai, giận dữ nói:
+Lý Thông Nhai tay trái cầm kiếm, mũi kiếm nghiêng chỉ xuống đất. Vũng nước trên nền gạch phản chiếu ánh sáng xanh trắng. Những mảnh da thịt trắng bệch trên gạch đá và ngói vỡ tự động cuộn về phía trung tâm.
 
-"Tị hiềm!"
+Những mảnh da thịt bật lên đã ngưng tụ thành cái đầu của Pháp Tuệ. Cùng với sự nhập thân dần dần của Phẫn Nộ Ma Ha, khuôn mặt y càng lúc càng tuấn tú, ánh vàng trong mắt càng lúc càng đậm. Gương mặt tuấn tú trở nên mịn màng, đôi mắt vàng sẫm nhìn chằm chằm vào mắt Lý Thông Nhai, y giận dữ nói:
 
-"Ngươi đang tị hiềm, ngươi mắc nợ cha và anh, nên tôn trọng anh trai đã khuất, đề bạt con cháu mồ côi, nhưng cái giá lại bắt ta phải gánh chịu, Lý Thông Nhai! Ta vô tội biết chừng nào!"
+“Tránh hiềm nghi!”
 
-"Câm mồm!!"
+“Ngươi đang tránh hiềm nghi, ngươi nợ phụ huynh huynh trưởng, nên ngươi tôn sùng huynh trưởng đã khuất, đề bạt con cháu, nhưng cái giá lại bắt ta gánh chịu, Lý Thông Nhai! Ta vô tội biết bao!”
 
-Giọng Lý Thông Nhai nổ vang như sấm sét, môi hắn tái nhợt, khẽ run rẩy. Thanh trường kiếm trong tay phát ra tiếng rít chói tai, như giao ngâm long gào, khiến tiếng côn trùng chim chóc trong cả ngọn Biên Nhạn Sơn đều ngưng bặt, trời đất tĩnh lặng.
+“Câm miệng!!”
 
-"Ong──"
+Giọng Lý Thông Nhai vang lên như sấm sét. Môi ông tái nhợt, khẽ run rẩy. Thanh trường kiếm trong tay phát ra tiếng rít chói tai, như tiếng giao ngâm rồng gầm, khiến tiếng côn trùng chim chóc trong toàn bộ Biên Nhạn Sơn đều ngừng bặt, đất trời tĩnh lặng.
 
-Kiếm quang xanh trắng phun trào, trong suốt lấp lánh. Hàng trăm ngàn kiếm khí từ Thanh Xích Kiếm mà Lý Thông Nhai vung lên bay vút, như thác nước đổ ập xuống đầu. Thân bùn nặn hình nộm phút chốc hóa thành tro bụi, cả ngọn núi rung chuyển không ngừng, phát ra tiếng "bùng bùng".
+“Ong──”
 
-"Rầm rầm..."
+Kiếm quang xanh trắng phun trào, trong suốt như pha lê. Hàng trăm hàng ngàn kiếm khí từ Thanh Xích kiếm trong tay Lý Thông Nhai vút lên, như thác nước đổ ập xuống. Cái bù nhìn đất sét kia lập tức hóa thành tro bụi, cả ngọn núi rung chuyển không ngừng, phát ra tiếng động ầm ầm.
 
-Kiếm mang xanh trắng chói lọi lóe lên tròn năm hơi thở, kiếm khí tung hoành, đánh cho phế tích ngàn lỗ chỗ. Nước mưa trên toàn bộ đài cao chảy ngược, hóa thành hơi nước màu trắng nhạt lãng đãng, mịt mờ, tựa chốn bồng lai.
+“Rầm rầm…”
 
-"Hahahahahahaha!"
+Kiếm mang xanh trắng chói mắt lóe lên đủ năm hơi thở. Kiếm khí tung hoành, đánh nát phế tích thành ngàn lỗ. Nước mưa trên toàn bộ đài cao chảy ngược, hóa thành hơi nước màu trắng nhạt mờ ảo, như chốn tiên cảnh.
 
-Mưa quá dữ dội, trong cái hố lớn ở trung tâm nhanh chóng đọng lại vũng nước màu xám. Trên cái đầu trắng bệch chi chít những vết thương đỏ tươi như miệng trẻ con, lộ ra bộ xương màu vàng sẫm bên trong.
+“Hahahahahahaha!”
 
-"Chẳng qua chỉ là công dã tràng mà thôi, Nộ Mục Tứ Ma Đế Sát Tướng của bản tôn đang từ Thái Hư trở về. Ngươi lúc nãy mới có thể chém nát bản tôn, bây giờ chỉ có thể thấy xương, chốc lát nữa, ngay cả da thịt của ta cũng không tổn thương được nữa!"
+Mưa quá dữ dội, một vũng nước xám nhanh chóng đọng lại trong hố lớn ở trung tâm. Trên cái đầu trắng bệch chi chít những vết thương đỏ tươi như miệng trẻ con, lộ ra bộ xương vàng sẫm bên trong.
 
-Hai cánh tay của Pháp Tuệ đã mọc lại, một mình chống đỡ vai và đầu, dò dẫm bước hai bước trên đất, trông khá kinh dị. Vết thương trên mặt nhanh chóng lành lại, hắn quay đầu lại cười.
+“Chẳng qua chỉ là công dã tràng mà thôi. Nộ Mục Tứ Ma Đế Sát Tướng của bản tôn đang từ Thái Hư trở về. Ngươi vừa rồi mới có thể chém nát bản tôn, bây giờ chỉ có thể thấy xương, lát nữa thôi, ngay cả da thịt của ta ngươi cũng không thể làm tổn thương được!”
 
-"Phụ thân, người nói có phải không?"
+Hai cánh tay của Pháp Tuệ đã mọc lại, cô độc chống đỡ vai và đầu. Y thử đi vài bước trên mặt đất, trông khá rợn người. Các vết thương trên mặt y nhanh chóng lành lại, y quay đầu lại cười.
 
-Lý Thông Nhai chỉ im lặng nhìn hắn, thanh trường kiếm trong tay bùng lên từng đạo pháp quang, trong mắt tràn đầy phẫn nộ. Pháp Tuệ thấy hắn bị pháp thuật của mình ảnh hưởng thần trí, nhưng vẫn không có ý định bỏ chạy, cười giận dữ, hai mắt lại trào nước mắt, nghiến răng nói:
+“Phụ thân, người nói có phải không?”
 
-"Ngươi muốn ta trông nom hậu bối, ta liền từ bỏ tu luyện xuống núi trông nom. Ngươi muốn ta trấn giữ khoáng mạch, ta liền từ bỏ tiên sơn đến nơi cằn cỗi đó trấn giữ. Khó khăn lắm mới đạt Luyện Khí, liền phải áp tải linh vật. Cuối cùng ngươi còn muốn ta đi chết!"
+Lý Thông Nhai chỉ im lặng nhìn y, thanh trường kiếm trong tay bùng lên từng đạo pháp quang, trong mắt tràn đầy sự phẫn nộ. Pháp Tuệ thấy ông bị pháp thuật của mình ảnh hưởng thần trí, nhưng vẫn không có ý định bỏ chạy, y trợn mắt cười, hai mắt lại trào ra nước mắt, nghiến răng nói:
 
-"Mẫu thân tu luyện nhiều năm, ngươi một phần tư liệu cũng không chịu cho thêm, tất cả đều cho Lý Huyền Phong và thế hệ Uyên Thanh. Mấy lần đan dược duy nhất nàng dùng vẫn là do ta và họ Liễu dâng lên. Đến lúc hấp hối, ngươi lại chỉ nói một câu: Thôi đi..."
+“Người muốn ta trông nom hậu bối, ta liền bỏ tu luyện xuống núi trông nom. Người muốn ta trấn giữ khoáng mạch, ta liền bỏ Tiên sơn đến nơi nghèo nàn đó trấn giữ. Khó khăn lắm mới Luyện Khí thành công, liền phải áp tải linh vật, cuối cùng người còn muốn ta đi chết!”
 
-Khuôn mặt Pháp Tuệ đã biến thành dáng vẻ của Lý Huyền Lĩnh, giọng nói cũng y hệt, trừng mắt nhìn, nhìn chằm chằm khiến Lý Thông Nhai khẽ dời ánh mắt. Lão nhân có chút mơ hồ, thanh trường kiếm trong tay lúc sáng lúc tối, ánh mắt vốn sắc bén trở nên yếu ớt, vẫn không nói một lời.
+“Mẫu thân tu luyện nhiều năm, người không chịu cho thêm một chút tư liệu nào, tất cả đều cho Lý Huyền Phong và thế hệ Uyên Thanh. Vài lần đan dược duy nhất bà dùng vẫn là do ta và họ Liễu dâng lên. Đến lúc hấp hối, người chỉ buông một câu: Thôi đi…”
 
-Pháp Tuệ thấy hắn im bặt, rút hai chân từ dưới đất lên, nhặt lên hai cây côn đồng đầy hoa văn, đường hoàng tiến lên một bước, bổ thẳng vào đầu Lý Thông Nhai.
+Khuôn mặt Pháp Tuệ đã biến thành dáng vẻ của Lý Huyền Lĩnh, giọng nói cũng y hệt. Y trợn mắt nhìn, khiến Lý Thông Nhai khẽ dời ánh mắt. Lão nhân có chút hoảng hốt, thanh trường kiếm trong tay lúc sáng lúc tối, ánh mắt vốn sắc bén trở nên yếu ớt, vẫn không nói một lời.
 
-"Choang..."
+Pháp Tuệ thấy ông không nói một tiếng nào, liền rút hai chân từ dưới đất lên, nhặt lấy hai cây côn đồng đầy hoa văn, đường hoàng tiến lên một bước, bổ thẳng vào đầu Lý Thông Nhai.
 
-Trên cây đoản côn màu vàng sẫm hoa văn phức tạp, từng đạo kim quang sáng lên. Kiếm quang xanh trắng va chạm với nó, kích lên từng đợt tia lửa. Ánh sáng ngũ sắc sau đầu Pháp Tuệ lưu chuyển, càng lúc càng đậm đặc.
+“Keng…”
 
-"Hừ..."
+Trên cây đoản côn màu vàng sẫm có hoa văn phức tạp, từng đạo kim quang sáng lên. Kiếm quang xanh trắng va chạm với nó, bắn ra từng trận hỏa tinh. Ánh sáng ngũ sắc sau đầu Pháp Tuệ lưu chuyển, càng lúc càng đậm đặc.
 
-Màu vàng kim trong mắt Pháp Tuệ càng lúc càng đậm, ngũ quan trên mặt không ngừng biến đổi, từ Lý Huyền Lĩnh biến thành đại hán râu quai nón, rồi từ đại hán râu quai nón biến thành trẻ con ngây thơ, phụ nữ trung niên, nha đầu tóc vàng. Chín khuôn mặt không ngừng luân chuyển.
+“Hừ…”
 
-Bốn phía lại tràn ngập kim quang, đặc quánh như từng dải lụa dài, quấn quanh thân thể Pháp Tuệ. Tiếng tụng kinh "ong ong" cũng vang vọng, trang nghiêm, cuồn cuộn hùng vĩ.
+Ánh vàng trong mắt Pháp Tuệ càng lúc càng đậm đặc, ngũ quan trên mặt không ngừng biến đổi, từ Lý Huyền Lĩnh biến thành đại hán râu ria, rồi từ đại hán râu ria biến thành trẻ con ngây thơ, phụ nữ trung niên, nha đầu tóc vàng.
 
-"Hừ!"
+Xung quanh một lần nữa tràn ngập kim quang, đậm đặc như những dải lụa dài, quấn quanh thân thể Pháp Tuệ. Tiếng thiền âm ù ù cũng vang vọng, trang nghiêm túc mục, mênh mông cuồn cuộn.
 
-Khắp người Pháp Tuệ chi chít những đường vân vàng kim, làn da màu đồng phản chiếu nước mưa giữa trời đất. Khuôn mặt không ngừng biến đổi giữa chín khuôn mặt, tất cả đều trong trạng thái giận dữ. Đoản côn trong tay lóe kim quang, bổ thẳng vào đầu Lý Thông Nhai.
+“Hừ!”
 
-Thích Tu Pháp Sư bản thân mạnh hơn Trúc Cơ một bậc, huống hồ Pháp Tuệ lại là Ma Ha chuyển thế, nay thức tỉnh Sân Nộ Chi Tướng, toàn thân khí thế đã sánh ngang Liên Mẫn. Đoản côn trong tay đập vào Thanh Xích Kiếm, phát ra tiếng ma sát chói tai.
+Thân Pháp Tuệ chi chít những đường vân vàng, làn da màu đồng phản chiếu nước mưa giữa trời đất. Khuôn mặt y không ngừng biến đổi giữa chín diện mạo, tất cả đều mang vẻ sân nộ. Cây đoản côn trong tay lấp lánh kim quang, bổ thẳng xuống đầu Lý Thông Nhai.
 
-"Cũng thật đúng lúc, nuốt ngươi rồi sẽ trở về vị trí Ma Ha!"
+Thích Tu Pháp Sư bản thân đã mạnh hơn Trúc Cơ một bậc, huống hồ Pháp Tuệ lại là Ma Ha chuyển thế, giờ đây đã thức tỉnh Sân Nộ Chi Tướng, khí thế toàn thân đã sánh ngang Liên Mẫn. Đoản côn trong tay y đập vào Thanh Xích kiếm, phát ra tiếng ma sát chói tai.
 
-Phẫn Nộ Ma Ha sợ Lý Thông Nhai chạy mất, giẫm mạnh xuống đất một cái, trong chớp mắt rút ngắn khoảng cách, mang theo một luồng tàn ảnh vàng sẫm. Cánh tay vàng kim như tượng đồng vung ra, năm ngón tay chộp lấy Lý Thông Nhai.
+“Cũng đúng lúc lắm, ăn ngươi xong ta sẽ trở lại ngôi vị Ma Ha!”
 
-Lý Thông Nhai tự nhiên vung Thanh Xích Kiếm ra đỡ, tay trong ống tay áo niệm quyết thi pháp, Tiên cơ Hạo Hãn Hải trong cơ thể cuồn cuộn không ngừng. Nước mưa ngưng tụ, giao xà màu xanh phía sau hắn đổ xô lên, xông tới cắn xé hắn.
+Phẫn Nộ Ma Ha sợ Lý Thông Nhai bỏ chạy, liền giậm mạnh xuống đất, trong chớp mắt đã rút ngắn khoảng cách, kéo theo một vệt tàn ảnh vàng sẫm. Cánh tay vàng như tượng đồng vung ra, năm ngón tay chộp lấy Lý Thông Nhai.
 
-"Kẽo kẹt kẽo kẹt..."
+Lý Thông Nhai đương nhiên vung Thanh Xích kiếm ra đỡ. Tay trong tay áo bấm quyết thi pháp, Tiên cơ Hạo Hãn Hải trong cơ thể cuộn trào không ngừng. Nước mưa ngưng tụ, những con giao xà màu xanh phía sau ông ào ạt lao lên, vồ lấy cắn xé.
 
-Phẫn Nộ Ma Ha năm ngón tay khép lại, đỡ lấy pháp kiếm của Lý Thông Nhai, phát ra tiếng ma sát chói tai "kẽo kẹt kẽo kẹt". Thanh Xích Kiếm là pháp kiếm cực phẩm Trúc Cơ, thân kiếm lập tức tỏa sáng rực rỡ, khá chói mắt.
+“Kẹt kẹt…”
 
-"Kinh Long Vương."
+Phẫn Nộ Ma Ha khép năm ngón tay lại, đỡ lấy pháp kiếm của Lý Thông Nhai, phát ra tiếng ma sát chói tai "kẹt kẹt". Thanh Xích kiếm là pháp kiếm cực phẩm Trúc Cơ, thân kiếm lập tức đại phóng quang mang, khá chói mắt.
 
-Phẫn Nộ Ma Ha sống chín đời, kiến thức rộng rãi, một tiếng liền gọi ra cổ danh của Hạo Hãn Hải, cười ha ha, đôi mắt vàng sẫm nhìn chằm chằm Lý Thông Nhai, miệng phun Phạm âm:
+“Kinh Long Vương.”
 
-"Kiếm pháp vẫn coi được, nhưng tiên thuật lại kém quá xa rồi!"
+Phẫn Nộ Ma Ha đã sống Cửu Thế, kiến thức rộng rãi, lập tức gọi ra tên cổ của Hạo Hãn Hải. Y hehe cười một tiếng, đôi mắt vàng sẫm nhìn chằm chằm vào Lý Thông Nhai, miệng phun ra tiếng Phạn:
 
-Lý gia quật khởi chưa đầy sáu mươi năm, hoàn toàn dựa vào kiếm pháp chống đỡ thể diện, làm gì có thuật pháp tinh diệu nào. Chỉ thấy Phẫn Nộ Ma Ha nới lỏng kiếm, lật tay xé nát những con giao xà trên người. Dải lụa vàng kim trên người nhảy vọt lên như rắn, quấn lấy người Lý Thông Nhai.
+“Kiếm pháp thì còn tạm được, nhưng tiên thuật thì kém quá nhiều!”
 
-"Bang, bang bang, bang..."
+Lý gia quật khởi chưa đầy sáu mươi năm, hoàn toàn dựa vào kiếm pháp để giữ thể diện, làm gì có thuật pháp tinh diệu nào. Chỉ thấy Phẫn Nộ Ma Ha buông kiếm, lật tay xé nát những con giao xà trên người. Dải lụa màu vàng kim trên người y nhảy lên như rắn, quấn lấy Lý Thông Nhai.
 
-Trong vài hơi thở, Phẫn Nộ Ma Ha đã vung ra trăm quyền. Lý Thông Nhai cầm kiếm chống đỡ, muốn kéo giãn khoảng cách, nhưng dải lụa vàng kim kia lại đã quấn chặt lấy hai chân hắn, siết chặt hắn lại.
+“Bốp, bốp bốp, bốp…”
 
-"Phụt."
+Trong vài hơi thở, Phẫn Nộ Ma Ha đã vung ra trăm quyền. Lý Thông Nhai cầm kiếm chống đỡ, muốn kéo giãn khoảng cách, nhưng dải lụa vàng kia đã quấn chặt lấy hai chân ông, trói cứng không buông.
 
-Lý Thông Nhai cứng rắn chịu đựng trăm quyền của Liên Mẫn, các mạch máu lớn nhỏ trên da thịt đều nổ tung, bị đánh cho ngũ tạng nát bươm, miệng phun máu tươi, toàn thân đỏ máu, mềm nhũn rũ xuống.
+“Phụt.”
 
-"Mệnh số đã định! Ta tức thì về vị!"
+Lý Thông Nhai cứng rắn chịu đựng trăm quyền của Liên Mẫn, các mạch máu lớn nhỏ trên da đồng loạt nổ tung, bị đánh cho ngũ tạng nứt toác, miệng phun máu tươi, toàn thân đỏ rực, mềm nhũn rũ xuống.
 
-Phẫn Nộ Ma Ha cười lớn một tiếng, toàn thân kim quang đại phóng, một quyền đâm vào bụng Lý Thông Nhai. Hai mắt sáng rực một mảng. Hắn đỡ Lý Thông Nhai, cách ba tấc khoảng cách thở hổn hển.
+“Mệnh số đã định! Ta tức khắc trở về ngôi vị!”
 
-"Hahahahahahahahaha."
+Phẫn Nộ Ma Ha cười lớn một tiếng, toàn thân kim quang đại phóng, một quyền xuyên vào bụng Lý Thông Nhai. Hai mắt y sáng rực. Y đỡ Lý Thông Nhai, cách ba tấc khoảng cách hít thở hổn hển. Từng đạo Phù lục vàng kim trong lòng bàn tay lần lượt sáng lên, chút trắng còn sót lại trong mắt cũng biến mất hoàn toàn, hóa thành một màu vàng sẫm.
 
-"Khụ khụ... ha ha ha ha... ha ha ha."
+“Hahahahahahahahahahaha.”
 
-Tiếng cười lớn của Phẫn Nộ Ma Ha vang vọng giữa trời đất. Lý Thông Nhai trước mặt ho khan hai tiếng, khuôn mặt đầy máu lộ ra một tia cười, thân thể co quắp lại, cũng yếu ớt cười.
+“Khụ khụ… hahahaha… hahaha.”
 
-Phẫn Nộ Ma Ha ngẩn người một chút, nụ cười tuấn mỹ đông cứng trên mặt, kinh hãi và lửa giận từ trong lòng hắn phun trào ra. Hắn chậm rãi ngẩng đầu, nhìn về phía xa xa.
+Tiếng cười lớn của Phẫn Nộ Ma Ha vang vọng khắp đất trời. Lý Thông Nhai trước mặt ho khan hai tiếng, trên khuôn mặt đầy máu hiện lên một nụ cười yếu ớt, thân thể co quắp, cũng cười yếu ớt theo.
 
-Mưa lớn như trút, giữa trời đất tối tăm không ánh sáng, nhưng vũng nước trên mặt đất lại phản chiếu ra từng đạo từng đạo ánh sáng rực rỡ từ từ hiện lên trên bầu trời.
+Phẫn Nộ Ma Ha ngây người ra, nụ cười tuấn tú đông cứng trên mặt. Kinh hãi và lửa giận trào ra từ trong lòng y. Y chậm rãi ngẩng đầu, nhìn về phía xa.
 
-"Một, hai, ba... bảy, tám, chín."
+Mưa lớn như trút nước, trời đất tối tăm không ánh sáng. Nhưng những vũng nước mưa trên mặt đất lại phản chiếu từng đạo cầu vồng từ từ hiện lên trên bầu trời.
 
-(Hết chương này)
+“Một, hai, ba… bảy, tám, chín.”
+
+(Hết chương)
 
 *(Bản dịch được thực hiện bởi model: gemini-2.5-flash)*

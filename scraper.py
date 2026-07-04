@@ -132,12 +132,12 @@ class NovelScraper:
             )
             title_check = soup_check.find("h1")
             
-            # Force Jina fallback for known heavily-protected sites
+            # Only enforce content_check for chapter pages (which contain '/txt/', 'read', 'chapter', etc.)
+            is_chapter_page = any(k in url for k in ["/txt/", "read", "chapter"])
             is_blocked = False
             if "qidian.com" in url or "novel543.com" in url:
                 is_blocked = True
-                
-            if not content_check or is_blocked:
+            if (is_chapter_page and not content_check) or is_blocked:
                 print(f"[*] Content not found or blocked (title: {title_check.get_text(strip=True) if title_check else 'None'}), trying Jina Reader fallback...")
                 try:
                     import urllib.request

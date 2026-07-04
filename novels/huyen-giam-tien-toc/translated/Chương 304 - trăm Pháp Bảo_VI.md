@@ -1,95 +1,95 @@
-# Chương 304: trăm: Pháp Bảo
+# Chương 304: Trăm: Pháp Bảo
 
-“Tí tách.”
+"Tí tách."
 
-Ánh cầu vồng của Tử Phủ bốc lên giữa màn mưa, từng vị Chân nhân nọ đều tay cầm pháp khí, ánh mắt khác nhau nhìn hắn, hoặc bình tĩnh, hoặc thương hại, hoặc phức tạp, nhưng thần thông lại liên kết chặt chẽ, không một kẽ hở.
+Ánh sáng ngũ sắc của Tử Phủ bốc lên giữa màn mưa, từng vị Chân nhân đều cầm pháp khí của mình, với vẻ mặt khác nhau nhìn hắn, hoặc bình tĩnh, hoặc thương hại, hoặc phức tạp, nhưng thần thông lại liên kết chặt chẽ với nhau, không một kẽ hở.
 
-“Chín vị Chân nhân…”
+"Chín vị Chân nhân..."
 
-Phẫn Nộ Ma Ha trợn đôi mắt vàng, thầm thúc giục kim tính, nhưng lại phát hiện giữa Thái Hư đã sớm liên kết, bố trí đại trận, đề phòng hắn độn vào Thái Hư mà chạy trốn, trong lòng không khỏi vừa kinh vừa giận.
+Phẫn Nộ Ma Ha trừng đôi mắt vàng, thầm thúc giục kim tính, nhưng lại phát hiện giữa Thái Hư đã liên kết chặt chẽ, từ sớm đã bố trí đại trận, đề phòng hắn độn vào Thái Hư bỏ trốn, trong lòng không khỏi vừa kinh vừa giận.
 
-“Các ngươi… các ngươi… tính kế ta?”
+"Các ngươi... các ngươi... mưu tính ta?"
 
-Khuôn mặt tuấn mỹ của Phẫn Nộ Ma Ha vặn vẹo, thân thể nóng rực “xì xì”, hơi nước mờ ảo bốc lên từ người hắn, đường nét lưng eo rõ ràng, đôi mắt vàng sẫm nhìn chằm chằm vào các Tử Phủ, giận quá hóa cười, gằn giọng nói:
+Khuôn mặt tuấn tú của Phẫn Nộ Ma Ha vặn vẹo, cơ thể hắn nóng bừng lên xì xì, hơi nước lượn lờ bốc lên từ người hắn, đường nét lưng eo rõ ràng, đôi mắt vàng sẫm nhìn chằm chằm vào các vị Tử Phủ, giận đến cực điểm bật cười, gằn giọng nói:
 
-“Hay… hay cho một màn 'chim sẻ rình sau', e rằng đã bắt đầu mưu tính từ lâu rồi… Thảo nào… Thảo nào!”
+"Hay... hay lắm, chim sẻ rình ve sầu, e rằng đã sớm bắt đầu tính toán rồi... Hèn gì... Hèn gì!"
 
-Chín đạo cầu vồng luân chuyển, hiện ra những hình thái khác nhau, nhưng đều kiên quyết, chặn đứng cả thiên địa, không một chút nhượng bộ.
+Chín đạo ánh sáng ngũ sắc luân chuyển, hiện ra những hình thái khác nhau, nhưng đều kiên quyết, phong tỏa chặt chẽ giữa trời đất, không một chút nhượng bộ.
 
-“Thanh Trì Tông… Kim Vũ Tông… Trường Tiêu Môn… Tử Yên Môn… Đường Kim Môn… Được! Được! Đều đến cả rồi!”
+"Thanh Trì Tông... Kim Vũ Tông... Trường Tiêu Môn... Tử Yên Môn... Đường Kim Môn... Tốt! Tốt! Đều đến cả!"
 
-Phẫn Nộ Ma Ha điên cuồng gầm lên, rừng cây dưới chân đổ rạp, dã thú phủ phục, uy áp nồng đậm tràn ngập, khí thế trên người không ngừng tăng vọt.
+Phẫn Nộ Ma Ha gào thét như điên dại, cây cối trong rừng núi dưới chân đổ rạp, dã thú phủ phục, uy áp nồng đậm lan tỏa, khí thế trên người không ngừng tăng vọt.
 
-Phẫn Nộ Ma Ha đối đầu với các Tử Phủ, còn Lý Thông Nhai thì quỳ rạp trên đất, uy áp từ phía trên khiến hắn không thể thẳng lưng, chỉ có thể nằm bò, cẩn thận di chuyển, vết thương ở bụng không ngừng tuôn máu tươi, tí tách rơi xuống giữa màn mưa.
+Phẫn Nộ Ma Ha đối đầu với các vị Tử Phủ, còn Lý Thông Nhai thì quỳ rạp trên đất, uy áp phía trên khiến y không thể thẳng lưng, chỉ có thể phủ phục, cẩn thận di chuyển, vết thương ở bụng không ngừng tuôn máu, tí tách rơi xuống giữa màn mưa.
 
-“Khụ…”
+"Xì..."
 
-Lý Thông Nhai hít sâu một hơi, dùng chút pháp lực còn sót lại bấm quyết ngưng tụ một màng nước, bịt kín cái lỗ lớn ở bụng, khó nhọc quỳ xuống, chống kiếm Thanh Xích xuống đất, dịch chuyển vài bước trên mặt đất, hướng về phía thi thể của Lý Huyền Lĩnh.
+Lý Thông Nhai hít một hơi thật sâu, dùng chút pháp lực còn lại niệm chú ngưng tụ một màng nước, bịt kín cái lỗ lớn ở bụng, khó khăn quỳ rạp xuống, dùng Thanh Xích kiếm chống đỡ, lê vài bước trên mặt đất, di chuyển về phía thi thể của Lý Huyền Lĩnh.
 
-“Lĩnh nhi.”
+"Lĩnh nhi."
 
-Sau trận đại chiến vừa rồi, thi thể Lý Huyền Lĩnh đã tan nát, chỉ còn lại một cái đầu nằm nguyên tại chỗ, đôi mắt vẫn mở trừng trừng nhìn, Lý Thông Nhai cuộn tròn người, ôm lấy đầu của con trai cả.
+Sau trận đại chiến vừa rồi, thi thể Lý Huyền Lĩnh đã tan nát, chỉ còn lại một cái đầu nằm trơ trọi tại chỗ, đôi mắt vẫn mở. Lý Thông Nhai cuộn mình lại, ôm lấy đầu của trưởng tử.
 
-Bàn tay đầy máu sờ xuống thắt lưng, Lý Thông Nhai mới phát hiện trong trận chiến vừa rồi Túi Trữ Vật đã biến mất. Cả đời hắn tiết kiệm, đến giờ dùng cũng chỉ là Túi Trữ Vật bình thường nhất, không có chút lực phòng hộ nào.
+Bàn tay đầy máu sờ lên thắt lưng, Lý Thông Nhai mới phát hiện trong cuộc giao tranh vừa rồi, Túi Trữ Vật đã biến mất.
 
-May mà trong Túi Trữ Vật vốn không có gì đáng giá, Lý Thông Nhai giãy giụa hai cái trên mặt đất, thở hổn hển vài hơi để hồi phục pháp lực, cởi trường sam ra bọc lấy đầu Lý Huyền Lĩnh, cẩn thận buộc vào thắt lưng.
+May mắn là trong Túi Trữ Vật vốn không có gì nhiều, Lý Thông Nhai giãy giụa hai cái trên mặt đất, thở dốc vài hơi để hồi phục pháp lực, cởi áo dài bọc lấy đầu Lý Huyền Lĩnh, cẩn thận buộc vào thắt lưng.
 
-Thoát khỏi cơ thể Lý Thông Nhai, chiếc trường sam này mất đi ảnh hưởng của 『Hạo Hãn Hải』, nhanh chóng bị máu và nước mưa nhuộm thành màu nâu đỏ. Lý Thông Nhai liếc nhìn mấy luồng cầu vồng phía trên, trong đầu không ngừng có Linh thức cảnh báo:
+Rời khỏi cơ thể Lý Thông Nhai, chiếc áo dài này mất đi ảnh hưởng của 'Hạo Hãn Hải', nhanh chóng bị máu và nước mưa nhuộm thành màu nâu đỏ. Lý Thông Nhai nhìn lên mấy đóa ánh sáng ngũ sắc phía trên, trong đầu liên tục có Linh thức cảnh báo:
 
-“Nếu còn nán lại, sẽ chết!”
+"Nếu còn ở lại, sẽ chết!"
 
-Hắn cắn răng, toàn thân đau đớn như muốn bị xé thành mảnh vụn, may mà Huyền Châu Phù Chủng trong Khí Hải huyệt không ngừng cung cấp khí lưu mát lạnh giúp hắn giữ tỉnh táo.
+Y nghiến răng, toàn thân đau đớn như bị xé thành từng mảnh, may mắn là Huyền Châu Phù Chủng trong Khí Hải huyệt không ngừng cung cấp luồng khí mát mẻ giúp y giữ tỉnh táo.
 
----
+————
 
-Tình hình trên bầu trời ngày càng căng thẳng, ánh cầu vồng của thần thông chói lọi. Phẫn Nộ Ma Ha gầm lên một tiếng, thân thể như quả bóng bay phồng lớn, mặt lớn như ngôi nhà, mắt như hai chiếc đèn lồng, tỏa ra kim quang giữa không trung.
+Tình thế trên bầu trời ngày càng căng thẳng, ánh sáng thần thông chói lọi. Phẫn Nộ Ma Ha gầm lên một tiếng giận dữ, cơ thể hắn lớn lên như quả bóng bay, khuôn mặt to như căn nhà, đôi mắt tựa hai chiếc đèn lồng, phát ra kim quang trên bầu trời.
 
-“Trương Thiên Nguyên! Quả nhiên là ngươi, ta đã biết ngươi cầm đầu, gần trăm năm không gặp, ta muốn xem ngươi đã tu thành thần thông gì!”
+"Trương Thiên Nguyên! Quả nhiên là ngươi, ta đã biết là ngươi cầm đầu. Gần trăm năm không gặp, ta muốn xem ngươi đã tu thành thần thông gì!"
 
-Luồng cầu vồng ở chính giữa hiện ra một bóng người, là một thiếu niên khoác Bát Quái đạo bào, dung mạo tuấn tú, phong thái hơn người, chính là Thiên Nguyên Chân nhân đã dẫn đầu mọi người trước đó. Hắn chỉ liếc mắt nhìn Kim thân Nộ Mục Tướng trên cao, bình tĩnh nói:
+Đạo ánh sáng ngũ sắc ở trung tâm hiện ra một bóng người, là một thiếu niên khoác đạo bào bát quái, dung mạo tuấn tú, phong thái hơn người, chính là Thiên Nguyên Chân nhân đã dẫn đầu mọi người trước đó. Hắn chỉ liếc mắt nhìn kim thân Nộ Mục Tướng phía trên, bình tĩnh nói:
 
-“Nộ Mục Tứ Ma Đế Sát Tướng… Hòa thượng, ngươi đã bị Phẫn Nộ Tướng nuốt chửng tâm thần, mất đi bản ngã rồi.”
+"Nộ Mục Tứ Ma Đế Sát Tướng... Hòa thượng, ngươi đã bị Phẫn Nộ Tướng nuốt mất tâm thần, đánh mất bản ngã rồi."
 
-“Hừ!”
+"Hừ!"
 
-Hai cây đoản côn hoa văn của Phẫn Nộ Ma Ha cũng theo sự biến hóa của hắn mà phóng đại, như hai cây trụ đồng lớn, nắm trong tay vung vẩy, đánh bay hai đạo pháp khí bay tới thăm dò, cười lạnh nói:
+Hai cây đoản côn có hoa văn của Phẫn Nộ Ma Ha cũng phóng đại theo sự biến hóa của hắn, như hai cây cột đồng lớn, được hắn vung vẩy trong tay, đánh bay hai đạo pháp khí bay đến thăm dò, cười lạnh nói:
 
-“Nếu có thể hàng yêu diệt ma, dù hóa thân Nộ Mục Tướng thì sao? Các ngươi cấu kết với phản đồ của giáo ta, muốn hãm hại ta, nhưng cũng là không biết tự lượng sức mình… Cửu Thế Ma Ha… há là các ngươi có thể dò xét!”
+"Nếu có thể hàng yêu phục ma, dù có hóa thân thành Nộ Mục Tướng thì sao? Các ngươi cấu kết với phản đồ của giáo ta, muốn hãm hại ta, thật là không biết tự lượng sức... Cửu Thế Ma Ha... há là các ngươi có thể dò xét được!"
 
-Kim văn trên đồng côn lấp lánh, hoa văn chằng chịt, áp chế tràn ngập thiên địa. Thiên Nguyên Chân nhân thì vung tay lên, từ trong ống tay áo bay ra một chiếc mai rùa nhỏ màu đen, đón gió liền lớn, chớp mắt hóa thành kích thước ngôi nhà, pháp quang chói lọi, đón lấy cây đồng côn kia.
+Trên cây côn đồng kim văn lấp lánh, hoa văn phức tạp, cuồn cuộn trấn áp xuống. Thiên Nguyên Chân nhân thì giơ tay, từ ống tay áo bay ra một chiếc mai rùa nhỏ màu đen, đón gió liền lớn, trong chốc lát hóa thành kích thước căn nhà, pháp quang chói lọi, nghênh đón cây côn đồng kia.
 
-“Keng ——”
+"Đùng—"
 
-Thiên Nguyên Chân nhân tế luyện pháp khí chặn đứng công kích của Phẫn Nộ Ma Ha, ôn hòa nói:
+Thiên Nguyên Chân nhân tế luyện pháp khí chặn đứng công thế của Phẫn Nộ Ma Ha, ôn hòa nói:
 
-“Không còn được như xưa…”
+"Không còn được như xưa..."
 
-Đôi mắt Phẫn Nộ Ma Ha kim quang lấp lánh, không hề sợ hãi nhìn về phía các Tử Phủ xung quanh, trong miệng phun ra Phạm âm, vang vọng như sấm sét giữa không trung.
+Phẫn Nộ Ma Ha đôi mắt kim quang lấp lánh, không chút sợ hãi nhìn về phía các vị Tử Phủ xung quanh, trong miệng phun ra Phạm âm, vang vọng như sấm sét trên không trung.
 
-“Nực cười! Ngươi có biết thế nào mới là Nộ Mục Tứ Ma Đế Sát Tướng không!”
+"Nực cười! Ngươi có biết Nộ Mục Tứ Ma Đế Sát Tướng là gì không!"
 
-Phẫn Nộ Ma Ha dậm chân mạnh một cái, làm ra động tác nuốt vào phun ra, hàm răng giữa đôi môi trắng muốt sắc bén, lớn như đầu người, trong cổ họng phun ra vô số kim quang, ào ạt rơi xuống giữa trận mưa lớn.
+Phẫn Nộ Ma Ha dậm chân mạnh một cái, làm động tác nuốt nhả, hàm răng giữa đôi môi trắng muốt sắc bén, lớn như đầu người, trong cổ họng phun ra vô số kim quang, bay lả tả rơi xuống giữa màn mưa tầm tã. Kim quang này không ngừng múa lượn trên không, khi chạm đất biến hóa thành đủ loại hình dạng.
 
-Hoặc là tăng nhân cầm đoản côn, hoặc là La Hán thân quấn Xà Giao, hoặc là đồng nam đồng nữ, hổ lang hồ xà, ngự gió xuyên qua không trung, lũ lượt kết trận, nhất thời giữa thiên địa đầy rẫy bóng người, đều trợn mắt nhìn.
+Hoặc là tăng nhân cầm đoản côn, hoặc là La Hán quấn Xà Giao quanh người, hoặc là đồng nam đồng nữ, hổ lang hồ xà, cưỡi gió xuyên qua không trung, ùn ùn kết trận, nhất thời giữa trời đất đầy rẫy bóng người, tất cả đều trợn mắt nhìn.
 
-“Thì ra đã sớm luyện thành Nộ Mục Tướng Phục Ma Thiên Địa, e rằng dưới gầm trời này, ngươi là Thích Tu gần với Pháp Tướng nhất! Thảo nào lại tự tin như vậy.”
+"Thì ra đã sớm luyện thành Nộ Mục Tướng Phục Ma Thiên Địa, e rằng dưới gầm trời này, ngươi là Thích Tu gần với Pháp Tướng nhất rồi! Hèn gì lòng đầy tự tin."
 
-Thiên Nguyên Chân nhân khen một tiếng, nhưng cũng không hề sợ hãi, cười nói:
+Thiên Nguyên Chân nhân tán thưởng một tiếng, nhưng cũng không chút sợ hãi, cười nói:
 
-“Nếu ngươi bình thường một chút, đối xử lịch sự với Thất Đạo Thích Pháp phương Bắc, hà cớ gì phải rơi vào kết cục ngày hôm nay…”
+"Nếu ngươi bình thường hơn một chút, khách khí với Thích Pháp thất đạo phương Bắc, thì hà cớ gì lại rơi vào kết cục ngày hôm nay..."
 
-Phẫn Nộ Ma Ha thấy hắn một vẻ tự tại, trong lòng dâng lên bất an, mơ hồ có một suy đoán, liền thấy Thiên Nguyên Chân nhân cười ha ha, khẽ vỗ tay, bấm quyết thi pháp, cười nói:
+Phẫn Nộ Ma Ha thấy hắn vẻ mặt tự tại, trong lòng dâng lên bất an, mơ hồ có một suy đoán, liền thấy Thiên Nguyên Chân nhân cười ha ha, khẽ vỗ tay, niệm chú thi pháp, cười nói:
 
-“Cung thỉnh Pháp Bảo hiện thân!”
+"Cung thỉnh Pháp Bảo hiện thân!"
 
-“Đinh linh…”
+"Leng keng..."
 
-Phẫn Nộ Ma Ha cuối cùng cũng biến sắc, kinh hãi thất sắc, những hoa văn vàng trên người lần lượt sáng lên, muốn tránh khỏi sợi xích này.
+Phẫn Nộ Ma Ha cuối cùng cũng động dung, kinh hãi biến sắc, những hoa văn vàng trên người hắn lần lượt sáng lên, muốn tránh khỏi những sợi xích này.
 
-Nào ngờ pháp bảo này như hình với bóng, không thể tránh khỏi mà rơi xuống người Phẫn Nộ Ma Ha, trùng trùng điệp điệp quấn quanh lấy. Phẫn Nộ Ma Ha điên cuồng gào thét, gằn giọng nói:
+Ai ngờ pháp bảo này như hình với bóng, không thể tránh khỏi mà giáng xuống người Phẫn Nộ Ma Ha, quấn quanh chồng chất lên nhau. Phẫn Nộ Ma Ha điên cuồng gào thét, gằn giọng nói:
 
-“Pháp Bảo… là Pháp Bảo… là vị Chân Quân nào!”
+"Pháp bảo... là pháp bảo... là vị Chân Quân nào!"
 
----
+(Hết chương này)
 
 *(Bản dịch được thực hiện bởi model: gemini-2.5-flash)*
