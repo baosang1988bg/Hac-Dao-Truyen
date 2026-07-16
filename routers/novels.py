@@ -7,9 +7,11 @@ Endpoint quản lý truyện: danh sách, chi tiết, catalog, glossary.
 import os
 import re
 import json
+import importlib.util
 from typing import Dict
 
 from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from novel_manager import load_novel
@@ -162,6 +164,64 @@ def update_glossary(slug: str, req: GlossaryUpdateRequest):
         return {"status": "success", "message": "Glossary updated"}
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Novel not found")
+
+
+@router.get("/api/novels/{slug}/epub")
+def download_epub(slug: str):
+    """
+    Tải EPUB của truyện (public) — roadmap 2.2.
+
+    Cache tại novels/<slug>/book.epub; tự build lại (ebooklib) khi chưa có
+    hoặc khi translated/ có file mới hơn file EPUB đã build.
+    """
+    validate_slug(slug)
+    novel_dir = os.path.join(NOVELS_DIR, slug)
+    if not os.path.isfile(os.path.join(novel_dir, "novel.json")):
+        raise HTTPException(status_code=404, detail="Novel not found")
+
+    trans_dir = os.path.join(novel_dir, "translated")
+    md_files = (
+        [os.path.join(trans_dir, f) for f in os.listdir(trans_dir) if f.endswith(".md")]
+        if os.path.isdir(trans_dir) else []
+    )
+    if not md_files:
+        raise HTTPException(status_code=404, detail="Truyện chưa có chương dịch nào")
+
+    newest_mtime = 0.0
+    for p in md_files:
+        try:
+            newest_mtime = max(newest_mtime, os.path.getmtime(p))
+        except OSError:
+            continue
+
+    epub_path = os.path.join(novel_dir, "book.epub")
+    stale = (not os.path.isfile(epub_path)) or os.path.getmtime(epub_path) < newest_mtime
+    if stale:
+        if importlib.util.find_spec("ebooklib") is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Chưa cài ebooklib nên không build được EPUB — chạy `pip install ebooklib` rồi thử lại.",
+            )
+        try:
+            from tools.build_epub import build_novel_epub
+            build_novel_epub(slug, novels_dir=NOVELS_DIR, out_path=epub_path,
+                             prefer_ebooklib=True, quiet=True)
+        except (FileNotFoundError, RuntimeError) as e:
+            raise HTTPException(status_code=404, detail=f"Không build được EPUB: {e}")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Build EPUB lỗi: {e}")
+
+    # Filename đẹp: "<Title> (<N> chuong).epub"
+    title = slug
+    try:
+        with open(os.path.join(novel_dir, "novel.json"), encoding="utf-8") as f:
+            title = json.load(f).get("title") or slug
+    except Exception:
+        pass
+    n_chapters = _translated_stats(slug)["chapter_count"]
+    filename = f"{title} ({n_chapters} chuong).epub"
+
+    return FileResponse(epub_path, media_type="application/epub+zip", filename=filename)
 
 
 @router.get("/api/novels/{slug}/catalog")

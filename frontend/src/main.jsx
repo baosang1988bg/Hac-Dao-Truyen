@@ -11,3 +11,12 @@ createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </StrictMode>,
 )
+
+// Đăng ký service worker (PWA + đọc offline) — chỉ ở bản build production
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .catch((err) => console.error('Đăng ký service worker thất bại:', err))
+  })
+}

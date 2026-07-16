@@ -72,6 +72,12 @@ async function handleApi(request, url, env) {
     return getNovel(env, novelMatch[1], request);
   }
 
+  // GET /api/novels/:slug/epub — tải EPUB đã build (upload lên R2 bởi migrate)
+  const epubMatch = path.match(/^\/api\/novels\/([^/]+)\/epub$/);
+  if (epubMatch && method === 'GET') {
+    return getEpub(env, epubMatch[1]);
+  }
+
   // GET /api/novels/:slug/chapters
   const chaptersMatch = path.match(/^\/api\/novels\/([^/]+)\/chapters$/);
   if (chaptersMatch && method === 'GET') {
@@ -212,6 +218,23 @@ async function getNovel(env, slug, request) {
     }
   }
   return jsonResponse({ ...novel, ...common });
+}
+
+async function getEpub(env, slug) {
+  // EPUB được build local (tools/build_epub.py) và upload lên R2 key
+  // "<slug>/book.epub" bởi migrate_to_cloudflare.py / tools/auto_update.py.
+  const obj = await env.CHAPTERS.get(`${slug}/book.epub`);
+  if (!obj) {
+    return jsonResponse({ error: 'EPUB chưa có cho truyện này — chạy migrate_to_cloudflare.py sau khi build EPUB.' }, 404);
+  }
+  return new Response(obj.body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/epub+zip',
+      // slug là ASCII-safe → dùng làm filename tải về
+      'Content-Disposition': `attachment; filename="${slug}.epub"`,
+    },
+  });
 }
 
 async function getChapters(env, slug) {

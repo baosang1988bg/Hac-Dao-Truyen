@@ -364,6 +364,12 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
         os.unlink(gloss_tmp)
         print(f"  {'✅' if ok_g else '❌'} Glossary ({len(glossary)} terms) → R2")
 
+    # ── 2b. EPUB → R2 (nếu đã build bằng tools/build_epub.py) ──────────
+    epub_path = novel_dir / "book.epub"
+    if epub_path.exists() and not skip_r2:
+        ok_e = r2_put(epub_path, f"{slug}/book.epub", dry_run)
+        print(f"  {'✅' if ok_e else '❌'} EPUB ({epub_path.stat().st_size // 1024} KB) → R2")
+
     # ── 3. Chapters ──────────────────────────────────────────────────────
     if not trans_dir.exists():
         print(f"  ⚠️  Không có translated/")

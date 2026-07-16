@@ -136,6 +136,54 @@ a:hover {
   border-radius: 4px;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   READER THEMES — biến chỉ có hiệu lực bên trong .reader-root (trang đọc),
+   không ảnh hưởng theme dark toàn site. Reader.jsx gắn class reader--<id>.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.reader-root {
+  /* fallback = sepia (mặc định của Reader) */
+  --reader-bg: #f4ecd8;
+  --reader-text: #5b4636;
+  --reader-border: #dcd1b3;
+  --reader-panel: #efe5cd;
+}
+.reader--white {
+  --reader-bg: #ffffff;
+  --reader-text: #1a1a1a;
+  --reader-border: #e5e7eb;
+  --reader-panel: #f9fafb;
+}
+.reader--light {
+  --reader-bg: #fafafa;
+  --reader-text: #1a1a1a;
+  --reader-border: #e5e7eb;
+  --reader-panel: #f1f1f1;
+}
+.reader--sepia {
+  --reader-bg: #f4ecd8;
+  --reader-text: #5b4636;
+  --reader-border: #dcd1b3;
+  --reader-panel: #efe5cd;
+}
+.reader--green {
+  --reader-bg: #e8f5e9;
+  --reader-text: #2e4a31;
+  --reader-border: #c8e6c9;
+  --reader-panel: #dceddc;
+}
+.reader--dark {
+  --reader-bg: #1a1a1a;
+  --reader-text: #d1d5db;
+  --reader-border: #333333;
+  --reader-panel: #262626;
+}
+.reader--blue {
+  --reader-bg: #f0f4f8;
+  --reader-text: #2d3748;
+  --reader-border: #d1d5db;
+  --reader-panel: #e2e8f0;
+}
+
 /* Layouts */
 .container {
   max-width: 1200px;

@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Home, ChevronUp, Settings, Type, Maximize2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Home, ChevronUp, Settings, Type, Maximize2, Download } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import api from '../api'
+import { markChapterRead } from '../utils/readingHistory'
+
+const OFFLINE_BATCH_SIZE = 10
 
 // Mặc định cho người dùng mới (người dùng cũ giữ nguyên cài đặt đã lưu)
 const DEFAULT_SETTINGS = {
@@ -53,6 +56,10 @@ export default function Reader() {
   const saveScrollTimerRef = useRef(null)
   const touchRef = useRef(null)
 
+  // ── Tải trước chương để đọc offline (service worker cache lại) ────────────
+  const [downloading, setDownloading] = useState(false)
+  const [dlProgress, setDlProgress] = useState(null) // { done, total } | null
+
   // ── Reader Settings (Persistent) ──────────────────────────────────────────
   const [settings, setSettings] = useState(() => {
     try {
@@ -83,13 +90,8 @@ export default function Reader() {
       localStorage.setItem('last_read_novel', novelSlug);
       localStorage.setItem(`last_read_chapter_${novelSlug}`, chapId);
 
-      // 3. Lưu mảng danh sách chương đã đọc
-      const readListKey = `read_chapters_${novelSlug}`;
-      const readList = JSON.parse(localStorage.getItem(readListKey) || '[]');
-      if (!readList.includes(chapId)) {
-        readList.push(chapId);
-        localStorage.setItem(readListKey, JSON.stringify(readList));
-      }
+      // 3. Đánh dấu chương đã đọc (helper dùng chung với mục lục NovelPage)
+      markChapterRead(novelSlug, chapId);
     } catch (err) {
       console.error('Error saving read progress:', err);
     }
@@ -97,6 +99,7 @@ export default function Reader() {
 
   useEffect(() => {
     setLoading(true)
+    setDlProgress(null) // đổi chương → reset trạng thái tải offline
     api.get(`/novels/${slug}/chapters/${chapter}`)
       .then(res => {
         setContent(res.data.content)
@@ -234,7 +237,39 @@ export default function Reader() {
     else goNext()
   }
 
-  const currentTheme = THEMES[settings.theme] || THEMES.sepia
+  // ── Tải N chương kế tiếp: fetch tuần tự để service worker cache lại ───────
+  const downloadNextChapters = async () => {
+    if (downloading || currentChapterIndex === -1) return
+    const next = chapters.slice(
+      currentChapterIndex + 1,
+      currentChapterIndex + 1 + OFFLINE_BATCH_SIZE
+    )
+    if (next.length === 0) return
+    setDownloading(true)
+    setDlProgress({ done: 0, total: next.length })
+    let done = 0
+    for (const c of next) {
+      // Dùng đúng định danh mà Reader sẽ request khi mở chương (số hoặc filename)
+      // để URL trùng khớp với cache của service worker
+      const id = getChapNum(c.title) || c.filename
+      try {
+        await api.get(`/novels/${slug}/chapters/${id}`)
+      } catch { /* chương lỗi — bỏ qua, tải tiếp chương sau */ }
+      done += 1
+      setDlProgress({ done, total: next.length })
+    }
+    setDownloading(false)
+  }
+
+  // Theme áp dụng bằng CSS class `reader--<id>` (biến định nghĩa trong index.css,
+  // chỉ ảnh hưởng trang đọc). THEMES giữ lại làm màu ô chọn trong panel Settings.
+  const themeId = THEMES[settings.theme] ? settings.theme : 'sepia'
+  const currentTheme = {
+    bg: 'var(--reader-bg)',
+    text: 'var(--reader-text)',
+    border: 'var(--reader-border)',
+    panel: 'var(--reader-panel)',
+  }
 
   const NavBar = ({ position }) => {
     const isBottom = position === 'bottom'
@@ -320,7 +355,7 @@ export default function Reader() {
   }
 
   return (
-    <div className="reader-root" style={{
+    <div className={`reader-root reader--${themeId}`} style={{
       background: currentTheme.bg, color: currentTheme.text,
       minHeight: '100vh', transition: 'background 0.3s, color 0.3s'
     }}>
@@ -525,6 +560,35 @@ export default function Reader() {
                   <span style={{ flex: 1, textAlign: 'center', fontSize: '1.1rem', fontWeight: 800 }}>{settings.contentWidth}</span>
                   <button className="ctrl-btn" onClick={() => updateSetting('contentWidth', Math.min(1200, settings.contentWidth + 50))}><Maximize2 size={24} /></button>
                 </div>
+              </div>
+            </div>
+
+            {/* Đọc offline: tải trước N chương kế tiếp để service worker cache */}
+            <div style={{ marginBottom: '0.5rem' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '0.8rem', letterSpacing: '0.05em' }}>ĐỌC OFFLINE</div>
+              <button
+                onClick={downloadNextChapters}
+                disabled={downloading || !nextChapter}
+                style={{
+                  width: '100%', minHeight: '52px', borderRadius: '16px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                  background: downloading ? 'rgba(255,255,255,0.1)' : 'var(--accent)',
+                  color: 'white', border: 'none', fontSize: '1rem', fontWeight: 700,
+                  cursor: downloading || !nextChapter ? 'not-allowed' : 'pointer',
+                  opacity: !nextChapter ? 0.4 : 1, transition: 'all 0.2s',
+                }}
+              >
+                <Download size={18} />
+                {downloading
+                  ? `Đang tải... đã tải ${dlProgress?.done ?? 0}/${dlProgress?.total ?? OFFLINE_BATCH_SIZE}`
+                  : dlProgress
+                    ? `Đã tải ${dlProgress.done}/${dlProgress.total} chương`
+                    : `Tải ${OFFLINE_BATCH_SIZE} chương tiếp`}
+              </button>
+              <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.6rem', lineHeight: 1.5 }}>
+                {nextChapter
+                  ? 'Chương đã tải sẽ đọc được cả khi mất mạng.'
+                  : 'Đây là chương cuối — không còn chương kế tiếp để tải.'}
               </div>
             </div>
           </div>

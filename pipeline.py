@@ -820,6 +820,41 @@ def _write_chapter_file(ctx: TranslationContext, title: str, chunk: str,
     logger.info(f"[+] Saved: {out}")
 
 
+_failed_chapters_lock = threading.Lock()
+
+
+def _record_failed_chapter(slug: str, url: str, title: str, error: str):
+    """
+    Ghi 1 chương dịch thất bại vào novels/<slug>/failed_chapters.json
+    (list các {url, title, error, ts}) để tools/retry_failed.py dịch lại sau.
+    Không bao giờ raise — lỗi ghi file không được phá phiên dịch.
+    """
+    path = os.path.join("novels", slug, "failed_chapters.json")
+    try:
+        with _failed_chapters_lock:
+            entries = []
+            if os.path.isfile(path):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        entries = json.load(f)
+                    if not isinstance(entries, list):
+                        entries = []
+                except Exception:
+                    entries = []
+            ts = datetime.now().isoformat(timespec="seconds")
+            for e in entries:
+                if isinstance(e, dict) and e.get("url") == url and e.get("title") == title:
+                    e["error"], e["ts"] = str(error)[:300], ts  # cập nhật entry cũ
+                    break
+            else:
+                entries.append({"url": url, "title": title,
+                                "error": str(error)[:300], "ts": ts})
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(entries, f, ensure_ascii=False, indent=2)
+    except Exception:  # noqa: BLE001 — best-effort, không phá flow dịch
+        pass
+
+
 def _tally_chapter_result(ctx: TranslationContext, title: str, chunk: str):
     """Cập nhật translated_count + progress + session_usage cho 1 chương/phần."""
     args = ctx.args
@@ -927,6 +962,11 @@ async def process_batch_async(ctx: TranslationContext, batch_copy, urls_copy,
             chunk, _model_used = await _retry_single_chunk(ctx, i, title, content, summary_copy)
 
         _chap_url = urls_copy[i] if i < len(urls_copy) else ""
+        # Chương dịch thất bại (kể cả sau retry riêng lẻ) → ghi vào
+        # failed_chapters.json để tools/retry_failed.py xử lý lại (roadmap 2.5)
+        if "[Translation failed" in (chunk or "")[:100]:
+            _record_failed_chapter(ctx.profile.slug, _chap_url, title,
+                                   (chunk or "").strip()[:300])
         _write_chapter_file(ctx, title, chunk, _chap_url, _model_used)
         _tally_chapter_result(ctx, title, chunk)
 

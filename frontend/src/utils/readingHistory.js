@@ -8,6 +8,9 @@
 // (cả cookie lẫn localStorage, localStorage ưu tiên)
 
 const CHAPTER_PREFIX = 'last_read_chapter_'
+// Khóa cũ do Reader.jsx ghi từ trước — DÙNG LẠI, không tạo khóa mới trùng lặp:
+//   read_chapters_<slug> → JSON array các chương (số hoặc filename) đã mở
+const READ_SET_PREFIX = 'read_chapters_'
 
 function getCookie(name) {
   const value = `; ${document.cookie}`
@@ -82,6 +85,37 @@ export function getAllHistory() {
   }))
   list.sort((a, b) => (b.isCurrent ? 1 : 0) - (a.isCurrent ? 1 : 0))
   return list
+}
+
+// ── Đánh dấu chương đã đọc ────────────────────────────────────────────────────
+
+/**
+ * Ghi nhận một chương đã đọc (Reader gọi mỗi khi mở chương).
+ * chapterId: số chương (string/number) hoặc filename — giữ nguyên định dạng
+ * tham số URL của Reader để mục lục so khớp được cả hai.
+ */
+export function markChapterRead(slug, chapterId) {
+  if (!slug || chapterId === null || chapterId === undefined) return
+  try {
+    const key = `${READ_SET_PREFIX}${slug}`
+    const list = JSON.parse(localStorage.getItem(key) || '[]')
+    const id = String(chapterId)
+    if (Array.isArray(list) && !list.includes(id)) {
+      list.push(id)
+      localStorage.setItem(key, JSON.stringify(list))
+    }
+  } catch { /* localStorage bị chặn / dữ liệu hỏng — bỏ qua */ }
+}
+
+/** Tập các chương đã đọc của một truyện → Set<string> (rỗng nếu chưa có). */
+export function getReadChapters(slug) {
+  if (!slug) return new Set()
+  try {
+    const list = JSON.parse(localStorage.getItem(`${READ_SET_PREFIX}${slug}`) || '[]')
+    return new Set(Array.isArray(list) ? list.map(String) : [])
+  } catch {
+    return new Set()
+  }
 }
 
 /** Nhãn hiển thị đẹp cho tham số chương (bỏ .md / _VI, decode URI). */

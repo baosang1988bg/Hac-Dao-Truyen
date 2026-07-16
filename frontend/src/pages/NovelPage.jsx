@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import api from '../api'
 import NovelCover from '../components/NovelCover'
-import { getLastReadForSlug, fmtChapterLabel } from '../utils/readingHistory'
+import { getLastReadForSlug, fmtChapterLabel, getReadChapters } from '../utils/readingHistory'
 import { fmtTimeAgo, fmtNumber } from '../utils/format'
 
 const PAGE_SIZE = 100
@@ -182,13 +182,8 @@ function ChapterList({ slug, chapters }) {
   // Đổi bộ lọc → reset phân trang
   useEffect(() => { setVisibleCount(PAGE_SIZE) }, [searchTerm, sortDesc, slug])
 
-  const readChapters = useMemo(() => {
-    try {
-      return JSON.parse(localStorage.getItem(`read_chapters_${slug}`) || '[]')
-    } catch {
-      return []
-    }
-  }, [slug])
+  // Set các chương đã đọc (helper dùng chung với Reader — key read_chapters_<slug>)
+  const readChapters = useMemo(() => getReadChapters(slug), [slug])
 
   const filtered = useMemo(() => {
     const q = searchTerm.toLowerCase()
@@ -258,7 +253,7 @@ function ChapterList({ slug, chapters }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {shown.map(chap => {
             const num = getChapNum(chap.title)
-            const isRead = readChapters.includes(chap.filename) || (num && readChapters.includes(String(num)))
+            const isRead = readChapters.has(chap.filename) || (num && readChapters.has(String(num)))
             return (
               <Link
                 key={chap.filename}

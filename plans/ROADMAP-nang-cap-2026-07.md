@@ -14,11 +14,11 @@
 | 1.3 Chuẩn hóa dữ liệu chương | ✅ Xong | 16/07 | Đã apply: 21 extras + 11 trùng → `extras/`, log hoàn tác trong từng truyện |
 | 1.4 CI + integration test | ✅ Xong | 16/07 | `tests/test_integration.py` 7/7 PASS; `.github/workflows/ci.yml` |
 | 1.5 Backup định kỳ | ✅ Xong | 16/07 | `tools/backup_novels.py`, giữ 4 bản, restore đã test |
-| 2.1 PWA + offline | ⬜ Chưa làm | | |
-| 2.2 Nút tải EPUB | ⬜ Chưa làm | | |
-| 2.3 Reader hoàn thiện | ⬜ Chưa làm | | |
-| 2.4 Cron crawl+dịch tự động | ⬜ Chưa làm | | |
-| 2.5 Phiên dịch bền + resume | ⬜ Chưa làm | | |
+| 2.1 PWA + offline | ✅ Xong | 16/07 | manifest + sw.js thủ công; nút "Tải 10 chương tiếp" trong Settings Reader |
+| 2.2 Nút tải EPUB | ✅ Xong | 16/07 | `GET /api/novels/{slug}/epub` (FastAPI build+cache; Worker đọc R2); migrate upload book.epub |
+| 2.3 Reader hoàn thiện | ✅ Xong | 16/07 | Đã có sẵn 5 theme/5 font — refactor sang CSS class; ✓ chương đã đọc qua helper chung |
+| 2.4 Cron crawl+dịch tự động | ✅ Xong | 16/07 | `tools/auto_update.py` (lock, notify webhook, log); cần đặt crontab trên máy |
+| 2.5 Phiên dịch bền + resume | ✅ Xong | 16/07 | `failed_chapters.json` + `tools/retry_failed.py`; skip chương đã dịch có sẵn từ trước |
 | 3.x / 4.x | ⬜ Chưa mở | | Mở sau khi GĐ2 xong |
 
 Định hướng đã chốt: mở cho **cộng đồng nhỏ** trong 6–12 tháng tới, ưu tiên đồng đều cả bốn mảng: trải nghiệm đọc, pipeline dịch tự động, quản trị & chất lượng dịch, hạ tầng & đồng bộ. Tài liệu này là kế hoạch hành động, sắp theo thứ tự nên làm; mỗi hạng mục có lý do, độ khó (S/M/L) và tiêu chí verify để biết khi nào được tính là xong.
