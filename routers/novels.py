@@ -224,6 +224,45 @@ def download_epub(slug: str):
     return FileResponse(epub_path, media_type="application/epub+zip", filename=filename)
 
 
+@router.get("/api/novels/{slug}/qa", dependencies=[Depends(require_admin)])
+def get_qa_report(slug: str, refresh: int = 0):
+    """
+    Báo cáo QA chất lượng dịch của truyện (admin) — roadmap 3.5.
+
+    Đọc novels/<slug>/qa_report.json (do tools/qa_check.py sinh ra).
+    Query `?refresh=1` → chạy lại qa_check cho truyện này (import hàm,
+    không subprocess) rồi trả kết quả mới.
+    """
+    validate_slug(slug)
+    novel_dir = os.path.join(NOVELS_DIR, slug)
+    if not os.path.isfile(os.path.join(novel_dir, "novel.json")):
+        raise HTTPException(status_code=404, detail="Novel not found")
+
+    if refresh:
+        try:
+            from tools.qa_check import run_qa
+            return run_qa(slug)
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"QA check lỗi: {e}")
+
+    report_path = os.path.join(novel_dir, "qa_report.json")
+    if not os.path.isfile(report_path):
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Chưa có qa_report.json — chạy "
+                f"`python3 tools/qa_check.py --slug {slug}` hoặc gọi lại với ?refresh=1"
+            ),
+        )
+    try:
+        with open(report_path, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Không đọc được qa_report.json: {e}")
+
+
 @router.get("/api/novels/{slug}/catalog")
 def get_novel_catalog(slug: str):
     """Lấy danh sách catalog chương của truyện từ catalog.json."""

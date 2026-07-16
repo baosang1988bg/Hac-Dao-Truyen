@@ -19,7 +19,13 @@
 | 2.3 Reader hoàn thiện | ✅ Xong | 16/07 | Đã có sẵn 5 theme/5 font — refactor sang CSS class; ✓ chương đã đọc qua helper chung |
 | 2.4 Cron crawl+dịch tự động | ✅ Xong | 16/07 | `tools/auto_update.py` (lock, notify webhook, log); cần đặt crontab trên máy |
 | 2.5 Phiên dịch bền + resume | ✅ Xong | 16/07 | `failed_chapters.json` + `tools/retry_failed.py`; skip chương đã dịch có sẵn từ trước |
-| 3.x / 4.x | ⬜ Chưa mở | | Mở sau khi GĐ2 xong |
+| 3.1 Tài khoản người dùng | ✅ Xong | 16/07 | FastAPI (SQLite) + Worker (D1, migrations/002); hash cross-compat; 12/12 test |
+| 3.2 Theo dõi + sync vị trí đọc | ✅ Xong | 16/07 | Trang /account, nút Theo dõi, badge chương mới, Reader tự sync |
+| 3.3 Thông báo chương mới (push/email) | ⬜ Chưa làm | | Mới có Discord webhook cho admin (auto_update); web push cho user làm sau |
+| 3.4 Bình luận theo chương | ✅ Xong | 16/07 | Cuối trang đọc; rate limit 20s; xóa bởi admin/chính chủ |
+| 3.5 QA chất lượng dịch | ✅ Xong | 16/07 | tools/qa_check.py + GET /api/novels/{slug}/qa (admin); test 132 chương: 130 green |
+| 3.6 Glossary editor nâng cấp | ✅ Xong | 16/07 | Tìm kiếm + phân trang 100/trang + panel phát hiện mâu thuẫn |
+| 4.x Dài hạn | ⬜ Chưa mở | | Mở sau khi deploy GĐ1–3 và chạy ổn |
 
 Định hướng đã chốt: mở cho **cộng đồng nhỏ** trong 6–12 tháng tới, ưu tiên đồng đều cả bốn mảng: trải nghiệm đọc, pipeline dịch tự động, quản trị & chất lượng dịch, hạ tầng & đồng bộ. Tài liệu này là kế hoạch hành động, sắp theo thứ tự nên làm; mỗi hạng mục có lý do, độ khó (S/M/L) và tiêu chí verify để biết khi nào được tính là xong.
 
