@@ -102,6 +102,65 @@ async function handleApi(request, url, env) {
     return getHealth(env, healthMatch[1]);
   }
 
+  // ── User account routes (roadmap 3.1–3.4) ───────────────────────────
+  // Đặt TRƯỚC block proxy. Lưu ý: /api/user/* vốn không match proxy
+  // (proxy chỉ bắt /translate, /tools, /api/logs) nhưng để đây cho rõ ràng.
+
+  // POST /api/user/register | login | logout
+  if (path === '/api/user/register' && method === 'POST') {
+    return userRegister(request, env);
+  }
+  if (path === '/api/user/login' && method === 'POST') {
+    return userLogin(request, env);
+  }
+  if (path === '/api/user/logout' && method === 'POST') {
+    return userLogout(request, env);
+  }
+
+  // GET /api/user/me
+  if (path === '/api/user/me' && method === 'GET') {
+    const user = await getUserFromRequest(request, env);
+    if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+    return jsonResponse({ id: user.id, email: user.email, name: user.name });
+  }
+
+  // GET /api/user/bookmarks
+  if (path === '/api/user/bookmarks' && method === 'GET') {
+    return userBookmarksList(request, env);
+  }
+
+  // PUT/DELETE /api/user/bookmarks/:slug
+  const bookmarkMatch = path.match(/^\/api\/user\/bookmarks\/([^/]+)$/);
+  if (bookmarkMatch && (method === 'PUT' || method === 'DELETE')) {
+    return userBookmarkModify(request, env, bookmarkMatch[1], method);
+  }
+
+  // GET /api/user/progress
+  if (path === '/api/user/progress' && method === 'GET') {
+    return userProgressList(request, env);
+  }
+
+  // PUT /api/user/progress/:slug
+  const progressMatch = path.match(/^\/api\/user\/progress\/([^/]+)$/);
+  if (progressMatch && method === 'PUT') {
+    return userProgressUpdate(request, env, progressMatch[1]);
+  }
+
+  // GET/POST /api/novels/:slug/comments
+  const commentsMatch = path.match(/^\/api\/novels\/([^/]+)\/comments$/);
+  if (commentsMatch && method === 'GET') {
+    return commentsList(env, commentsMatch[1], url);
+  }
+  if (commentsMatch && method === 'POST') {
+    return commentCreate(request, env, commentsMatch[1]);
+  }
+
+  // DELETE /api/comments/:id
+  const commentDelMatch = path.match(/^\/api\/comments\/(\d+)$/);
+  if (commentDelMatch && method === 'DELETE') {
+    return commentDelete(request, env, parseInt(commentDelMatch[1]));
+  }
+
   // ── Proxy translate jobs → Python backend (nếu có BACKEND_URL) ──────
   if (path.includes('/translate') || path.includes('/tools') || path === '/api/logs') {
     return proxyToBackend(request, url, env);
@@ -325,6 +384,311 @@ async function getHealth(env, slug) {
     },
     issues: [],
   });
+}
+
+// ── User account system (roadmap 3.1–3.4) ────────────────────────────────────
+// Mirror hợp đồng API của backend FastAPI: register/login/logout/me,
+// bookmarks, reading progress, comments. Dữ liệu ở D1 (migrations/002_users.sql).
+
+const SLUG_RE = /^[a-z0-9-]{1,100}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 ngày
+
+// Parse JSON body an toàn — trả null nếu JSON hỏng (handler trả 400)
+async function readJsonBody(request) {
+  try {
+    return await request.json();
+  } catch {
+    return null;
+  }
+}
+
+// ── Password hashing (PBKDF2-SHA256, tương thích hashlib.pbkdf2_hmac Python) ──
+
+function toHex(buf) {
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function fromHex(hex) {
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  return out;
+}
+
+async function pbkdf2Sha256(password, salt, iterations) {
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
+  );
+  return crypto.subtle.deriveBits(
+    { name: 'PBKDF2', hash: 'SHA-256', salt, iterations }, key, 256
+  );
+}
+
+// Format lưu trữ: pbkdf2$100000$<salt_hex>$<hash_hex>
+async function hashPassword(password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const bits = await pbkdf2Sha256(password, salt, 100000);
+  return `pbkdf2$100000$${toHex(salt)}$${toHex(bits)}`;
+}
+
+// So sánh timing-safe đơn giản: XOR từng ký tự, không return sớm
+function timingSafeEqualStr(a, b) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+async function verifyPassword(password, stored) {
+  const parts = (stored || '').split('$');
+  if (parts.length !== 4 || parts[0] !== 'pbkdf2') return false;
+  const iterations = parseInt(parts[1]);
+  if (!Number.isInteger(iterations) || iterations <= 0) return false;
+  let salt;
+  try {
+    salt = fromHex(parts[2]);
+  } catch {
+    return false;
+  }
+  const bits = await pbkdf2Sha256(password, salt, iterations);
+  return timingSafeEqualStr(toHex(bits), parts[3]);
+}
+
+// ── Session helpers ───────────────────────────────────────────────────────────
+
+// D1 dùng UTC "YYYY-MM-DD HH:MM:SS" (datetime('now')) → format giống hệt để so sánh
+function sqliteDatetime(date) {
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+async function createUserSession(env, userId) {
+  const token = 'u_' + toHex(crypto.getRandomValues(new Uint8Array(32)));
+  const expiresAt = sqliteDatetime(new Date(Date.now() + SESSION_TTL_MS));
+  await env.DB.prepare(
+    `INSERT INTO user_sessions (token, user_id, expires_at) VALUES (?, ?, ?)`
+  ).bind(token, userId, expiresAt).run();
+  return token;
+}
+
+function extractUserToken(request) {
+  const auth = request.headers.get('Authorization') || '';
+  if (!auth.startsWith('Bearer u_')) return null;
+  return auth.slice('Bearer '.length);
+}
+
+// Trả về user row {id,email,name} hoặc null; đồng thời dọn session hết hạn của token
+async function getUserFromRequest(request, env) {
+  const token = extractUserToken(request);
+  if (!token) return null;
+  const row = await env.DB.prepare(`
+    SELECT u.id, u.email, u.name, s.expires_at
+    FROM user_sessions s JOIN users u ON u.id = s.user_id
+    WHERE s.token = ?
+  `).bind(token).first();
+  if (!row) return null;
+  if (row.expires_at <= sqliteDatetime(new Date())) {
+    // Session quá hạn → xóa luôn khỏi DB
+    await env.DB.prepare(`DELETE FROM user_sessions WHERE token = ?`).bind(token).run();
+    return null;
+  }
+  return { id: row.id, email: row.email, name: row.name };
+}
+
+// ── Auth handlers ─────────────────────────────────────────────────────────────
+
+async function userRegister(request, env) {
+  const body = await readJsonBody(request);
+  if (!body) return jsonResponse({ error: 'Invalid JSON body' }, 400);
+
+  const email = String(body.email || '').trim().toLowerCase();
+  const password = String(body.password || '');
+  const name = String(body.name || '').trim();
+
+  if (!EMAIL_RE.test(email)) return jsonResponse({ error: 'Email không hợp lệ' }, 400);
+  if (password.length < 8) return jsonResponse({ error: 'Mật khẩu phải có ít nhất 8 ký tự' }, 400);
+
+  const existing = await env.DB.prepare(
+    `SELECT id FROM users WHERE email = ?`
+  ).bind(email).first();
+  if (existing) return jsonResponse({ error: 'Email đã được đăng ký' }, 409);
+
+  const passwordHash = await hashPassword(password);
+  let userId;
+  try {
+    const { meta } = await env.DB.prepare(
+      `INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)`
+    ).bind(email, name, passwordHash).run();
+    userId = meta.last_row_id;
+  } catch (err) {
+    // Race hiếm gặp: UNIQUE constraint khi 2 request đăng ký cùng lúc
+    if (String(err.message || '').includes('UNIQUE')) {
+      return jsonResponse({ error: 'Email đã được đăng ký' }, 409);
+    }
+    throw err;
+  }
+
+  const token = await createUserSession(env, userId);
+  return jsonResponse({ token, user: { id: userId, email, name } }, 201);
+}
+
+async function userLogin(request, env) {
+  const body = await readJsonBody(request);
+  if (!body) return jsonResponse({ error: 'Invalid JSON body' }, 400);
+
+  const email = String(body.email || '').trim().toLowerCase();
+  const password = String(body.password || '');
+
+  const user = await env.DB.prepare(
+    `SELECT id, email, name, password_hash FROM users WHERE email = ?`
+  ).bind(email).first();
+
+  // Không phân biệt "email không tồn tại" và "sai mật khẩu" (tránh dò email)
+  if (!user || !(await verifyPassword(password, user.password_hash))) {
+    return jsonResponse({ error: 'Email hoặc mật khẩu không đúng' }, 401);
+  }
+
+  const token = await createUserSession(env, user.id);
+  return jsonResponse({ token, user: { id: user.id, email: user.email, name: user.name } });
+}
+
+async function userLogout(request, env) {
+  const token = extractUserToken(request);
+  if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
+  await env.DB.prepare(`DELETE FROM user_sessions WHERE token = ?`).bind(token).run();
+  return jsonResponse({ ok: true });
+}
+
+// ── Bookmarks ─────────────────────────────────────────────────────────────────
+
+async function userBookmarksList(request, env) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  const { results } = await env.DB.prepare(`
+    SELECT slug, created_at FROM bookmarks
+    WHERE user_id = ? ORDER BY created_at DESC
+  `).bind(user.id).all();
+  return jsonResponse(results);
+}
+
+async function userBookmarkModify(request, env, slug, method) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
+
+  if (method === 'PUT') {
+    // Idempotent: bookmark đã tồn tại thì bỏ qua
+    await env.DB.prepare(
+      `INSERT INTO bookmarks (user_id, slug) VALUES (?, ?)
+       ON CONFLICT(user_id, slug) DO NOTHING`
+    ).bind(user.id, slug).run();
+  } else {
+    await env.DB.prepare(
+      `DELETE FROM bookmarks WHERE user_id = ? AND slug = ?`
+    ).bind(user.id, slug).run();
+  }
+  return jsonResponse({ ok: true });
+}
+
+// ── Reading progress ──────────────────────────────────────────────────────────
+
+async function userProgressList(request, env) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  const { results } = await env.DB.prepare(`
+    SELECT slug, chapter, updated_at FROM reading_progress
+    WHERE user_id = ? ORDER BY updated_at DESC
+  `).bind(user.id).all();
+  return jsonResponse(results);
+}
+
+async function userProgressUpdate(request, env, slug) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
+
+  const body = await readJsonBody(request);
+  if (!body || !Number.isInteger(body.chapter)) {
+    return jsonResponse({ error: 'chapter phải là số nguyên' }, 400);
+  }
+
+  // Upsert: mỗi user chỉ giữ 1 record tiến độ cho mỗi truyện
+  await env.DB.prepare(`
+    INSERT INTO reading_progress (user_id, slug, chapter, updated_at)
+    VALUES (?, ?, ?, datetime('now'))
+    ON CONFLICT(user_id, slug) DO UPDATE SET
+      chapter = excluded.chapter, updated_at = excluded.updated_at
+  `).bind(user.id, slug, body.chapter).run();
+  return jsonResponse({ ok: true });
+}
+
+// ── Comments ──────────────────────────────────────────────────────────────────
+
+async function commentsList(env, slug, url) {
+  if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
+  const chapterParam = url.searchParams.get('chapter');
+
+  // Public: JOIN users lấy tên hiển thị, mới nhất trước, tối đa 100
+  let stmt;
+  if (chapterParam !== null && /^\d+$/.test(chapterParam)) {
+    stmt = env.DB.prepare(`
+      SELECT c.id, u.name AS user_name, c.chapter, c.content, c.created_at
+      FROM comments c JOIN users u ON u.id = c.user_id
+      WHERE c.slug = ? AND c.chapter = ?
+      ORDER BY c.id DESC LIMIT 100
+    `).bind(slug, parseInt(chapterParam));
+  } else {
+    stmt = env.DB.prepare(`
+      SELECT c.id, u.name AS user_name, c.chapter, c.content, c.created_at
+      FROM comments c JOIN users u ON u.id = c.user_id
+      WHERE c.slug = ?
+      ORDER BY c.id DESC LIMIT 100
+    `).bind(slug);
+  }
+  const { results } = await stmt.all();
+  return jsonResponse(results);
+}
+
+async function commentCreate(request, env, slug) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
+
+  const body = await readJsonBody(request);
+  if (!body) return jsonResponse({ error: 'Invalid JSON body' }, 400);
+
+  const content = String(body.content || '').trim();
+  const chapter = Number.isInteger(body.chapter) ? body.chapter : 0;
+  if (!content || content.length > 2000) {
+    return jsonResponse({ error: 'Nội dung phải từ 1 đến 2000 ký tự' }, 400);
+  }
+
+  // Rate limit: 1 comment / 20 giây / user — so sánh created_at bằng SQL datetime
+  const recent = await env.DB.prepare(`
+    SELECT id FROM comments
+    WHERE user_id = ? AND created_at > datetime('now', '-20 seconds')
+    LIMIT 1
+  `).bind(user.id).first();
+  if (recent) return jsonResponse({ error: 'Bình luận quá nhanh, thử lại sau 20 giây' }, 429);
+
+  const { meta } = await env.DB.prepare(
+    `INSERT INTO comments (user_id, slug, chapter, content) VALUES (?, ?, ?, ?)`
+  ).bind(user.id, slug, chapter, content).run();
+  return jsonResponse({ id: meta.last_row_id }, 201);
+}
+
+async function commentDelete(request, env, id) {
+  const comment = await env.DB.prepare(
+    `SELECT id, user_id FROM comments WHERE id = ?`
+  ).bind(id).first();
+  if (!comment) return jsonResponse({ error: 'Comment not found' }, 404);
+
+  // Chính chủ (token u_...) xóa được comment của mình; token admin hỏi backend
+  const user = await getUserFromRequest(request, env);
+  const allowed = (user && user.id === comment.user_id) || (await isAdminRequest(request, env));
+  if (!allowed) return jsonResponse({ error: 'Forbidden' }, 403);
+
+  await env.DB.prepare(`DELETE FROM comments WHERE id = ?`).bind(id).run();
+  return jsonResponse({ ok: true });
 }
 
 // ── Proxy to Python backend ───────────────────────────────────────────────────

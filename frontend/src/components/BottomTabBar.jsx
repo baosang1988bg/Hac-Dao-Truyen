@@ -1,16 +1,15 @@
 import React from 'react'
-import { NavLink, Link, useLocation } from 'react-router-dom'
-import { Home, Library, User } from 'lucide-react'
+import { NavLink, Link } from 'react-router-dom'
+import { Home, Library, User, Shield } from 'lucide-react'
 
 /**
  * Tab bar dưới cùng — chỉ hiện trên mobile (<769px, ẩn bằng CSS).
- * 3 tab: Trang chủ / Tủ truyện / Tài khoản (admin → /admin, guest → /login).
- * GuestLayout không render component này trên route đọc truyện.
+ * Tab: Trang chủ / Tủ truyện / Tôi (/account — tài khoản người dùng).
+ * Admin có thêm tab Quản trị. GuestLayout không render component này
+ * trên route đọc truyện.
  */
 export default function BottomTabBar() {
-  const location = useLocation()
   const isAdmin = localStorage.getItem('userRole') === 'admin'
-  const accountTo = isAdmin ? '/admin' : '/login'
 
   const cls = ({ isActive }) => `tab-item${isActive ? ' active' : ''}`
 
@@ -24,13 +23,16 @@ export default function BottomTabBar() {
         <Library size={21} />
         <span>Tủ truyện</span>
       </NavLink>
-      <Link
-        to={accountTo}
-        className={`tab-item${location.pathname.startsWith('/login') ? ' active' : ''}`}
-      >
+      <NavLink to="/account" className={cls}>
         <User size={21} />
-        <span>Tài khoản</span>
-      </Link>
+        <span>Tôi</span>
+      </NavLink>
+      {isAdmin && (
+        <Link to="/admin" className="tab-item">
+          <Shield size={21} />
+          <span>Quản trị</span>
+        </Link>
+      )}
     </nav>
   )
 }

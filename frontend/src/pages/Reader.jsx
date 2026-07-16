@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Home, ChevronUp, Settings, Type, Maximize2, Download } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import api from '../api'
+import userApi, { isLoggedIn } from '../userApi'
+import ChapterComments from '../components/ChapterComments'
 import { markChapterRead } from '../utils/readingHistory'
 
 const OFFLINE_BATCH_SIZE = 10
@@ -55,6 +57,7 @@ export default function Reader() {
   const lastScrollRef = useRef(0)
   const saveScrollTimerRef = useRef(null)
   const touchRef = useRef(null)
+  const lastSyncedChapterRef = useRef(null) // debounce: chỉ sync progress khi đổi chương
 
   // ── Tải trước chương để đọc offline (service worker cache lại) ────────────
   const [downloading, setDownloading] = useState(false)
@@ -106,6 +109,14 @@ export default function Reader() {
         setLoading(false)
         // Lưu tiến trình đọc
         saveReadProgress(slug, chapter)
+        // Đồng bộ tiến trình lên server nếu đã đăng nhập user
+        // (fire-and-forget, chỉ gọi khi chương thực sự đổi)
+        const syncKey = `${slug}/${chapter}`
+        if (isLoggedIn() && lastSyncedChapterRef.current !== syncKey) {
+          lastSyncedChapterRef.current = syncKey
+          const chap = /^\d+$/.test(chapter) ? Number(chapter) : chapter
+          userApi.put(`/user/progress/${slug}`, { chapter: chap }).catch(() => {})
+        }
       })
       .catch(err => {
         console.error(err)
@@ -432,6 +443,9 @@ export default function Reader() {
             </ReactMarkdown>
           )}
         </div>
+
+        {/* Bình luận theo chương — dưới nội dung, trước thanh điều hướng */}
+        {!loading && <ChapterComments slug={slug} chapter={chapter} />}
 
         <NavBar position="bottom" />
       </div>

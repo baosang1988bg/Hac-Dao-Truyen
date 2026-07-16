@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { BookOpen, Home, Library, Shield, LogIn } from 'lucide-react'
+import { BookOpen, Home, Library, Shield, LogIn, User } from 'lucide-react'
 
 /**
  * Header trang guest.
@@ -35,13 +35,16 @@ export default function SiteHeader() {
         </nav>
 
         <div className="site-header__right">
+          <NavLink to="/account" className={navCls} title="Tài khoản">
+            <User size={16} /> Tài khoản
+          </NavLink>
           {isAdmin ? (
             <Link to="/admin" className="site-header__navlink" style={{ color: 'var(--accent)' }}>
               <Shield size={15} /> Quản trị
             </Link>
           ) : (
             <Link to="/login" className="site-header__navlink" style={{ opacity: 0.7, fontSize: '0.82rem' }}>
-              <LogIn size={14} /> Đăng nhập
+              <LogIn size={14} /> Admin
             </Link>
           )}
         </div>

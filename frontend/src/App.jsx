@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage'
 import LibraryPage from './pages/LibraryPage'
 import NovelPage from './pages/NovelPage'
 import Reader from './pages/Reader'
+import AccountPage from './pages/AccountPage'
 import LoginPage from './pages/LoginPage'
 import Logs from './pages/Logs'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -26,6 +27,7 @@ import './index.css'
  * - Guest (public, GuestLayout):
  *     /                        → HomePage
  *     /library                 → LibraryPage
+ *     /account                 → AccountPage (đăng nhập/đăng ký USER + theo dõi)
  *     /novel/:slug             → NovelPage
  *     /novel/:slug/read/:chapter → Reader
  */
@@ -53,6 +55,7 @@ function App() {
       <Route element={<GuestLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/library" element={<LibraryPage />} />
+        <Route path="/account" element={<AccountPage />} />
         <Route path="/novel/:slug" element={<NovelPage />} />
         <Route path="/novel/:slug/read/:chapter" element={<Reader />} />
       </Route>

@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Play, BookOpen, Search, ArrowUpDown,
-  ChevronDown, ChevronUp, Shield,
+  ChevronDown, ChevronUp, Shield, Heart,
 } from 'lucide-react'
 import api from '../api'
+import userApi, { isLoggedIn } from '../userApi'
 import NovelCover from '../components/NovelCover'
 import { getLastReadForSlug, fmtChapterLabel, getReadChapters } from '../utils/readingHistory'
 import { fmtTimeAgo, fmtNumber } from '../utils/format'
@@ -122,6 +123,7 @@ export default function NovelPage() {
             <BookOpen size={16} /> Đọc tiếp Ch. {fmtChapterLabel(lastRead)}
           </Link>
         )}
+        <FollowButton slug={slug} />
       </div>
 
       {/* ── Danh sách chương ── */}
@@ -139,6 +141,61 @@ export default function NovelPage() {
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * Nút Theo dõi / Đang theo dõi (bookmark của user).
+ * Chưa đăng nhập → điều hướng /account để đăng nhập/đăng ký.
+ */
+function FollowButton({ slug }) {
+  const navigate = useNavigate()
+  const [following, setFollowing] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    setFollowing(false)
+    if (!isLoggedIn()) return undefined
+    userApi.get('/user/bookmarks')
+      .then(res => {
+        if (alive) setFollowing((res.data || []).some(b => b.slug === slug))
+      })
+      .catch(() => { /* phiên hết hạn / lỗi mạng — coi như chưa theo dõi */ })
+    return () => { alive = false }
+  }, [slug])
+
+  const toggle = async () => {
+    if (!isLoggedIn()) {
+      navigate('/account')
+      return
+    }
+    if (busy) return
+    setBusy(true)
+    const next = !following
+    setFollowing(next) // optimistic
+    try {
+      if (next) await userApi.put(`/user/bookmarks/${slug}`)
+      else await userApi.delete(`/user/bookmarks/${slug}`)
+    } catch (err) {
+      setFollowing(!next) // hoàn tác
+      if (err.response?.status === 401) navigate('/account')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      className={`btn btn-follow${following ? ' is-following' : ''}`}
+      onClick={toggle}
+      disabled={busy}
+      aria-pressed={following}
+    >
+      <Heart size={16} fill={following ? 'currentColor' : 'none'} />
+      {following ? 'Đang theo dõi' : 'Theo dõi'}
+    </button>
   )
 }
 

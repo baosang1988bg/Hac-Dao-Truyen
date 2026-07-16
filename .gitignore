@@ -106,6 +106,8 @@ build/
 # novels/
 logs/
 discover_results/
+# Database người dùng (SQLite) — không commit dữ liệu tài khoản
+data/
 
 # Bỏ comment nếu chỉ muốn exclude nội dung nhưng giữ folder structure
 # novels/**/*.txt
