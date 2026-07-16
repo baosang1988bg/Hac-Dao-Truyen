@@ -21,6 +21,7 @@ Kèm các helper IO của pipeline (save_raw_parts, merge_translated_parts...)
 
 import os
 import re
+import sys
 import json
 import asyncio
 import logging
@@ -1202,3 +1203,33 @@ async def finalize_session(ctx: TranslationContext, session_ts: str, started_at:
                         timestamp=session_ts, started_at=started_at)
     ctx.report_progress(ctx.chapter_count, args.chapters, "finished",
                         f"Hoàn thành dịch {ctx.chapter_count} chương.")
+
+    # ── Đồng bộ Cloudflare tự động (roadmap 1.2) ─────────────────────────────
+    # Bật bằng env AUTO_SYNC_CLOUDFLARE=1. Chạy nền, lỗi sync không được làm
+    # hỏng phiên dịch — chỉ log warning để check_drift.py bắt lại sau.
+    _maybe_auto_sync(profile.slug, ctx.chapter_count, logger)
+
+
+def _maybe_auto_sync(slug: str, new_chapters: int, logger):
+    """Gọi migrate_to_cloudflare.py --slug <slug> nếu AUTO_SYNC_CLOUDFLARE=1
+    và phiên vừa dịch được ít nhất 1 chương."""
+    import subprocess
+    if new_chapters <= 0:
+        return
+    if os.getenv("AUTO_SYNC_CLOUDFLARE", "0") != "1":
+        logger.info("[sync] AUTO_SYNC_CLOUDFLARE tắt — bỏ qua đồng bộ. "
+                    "Chạy tay: python3 migrate_to_cloudflare.py --slug %s" % slug)
+        return
+    logger.info(f"[sync] Đồng bộ '{slug}' lên Cloudflare...")
+    try:
+        r = subprocess.run(
+            [sys.executable, "migrate_to_cloudflare.py", "--slug", slug],
+            capture_output=True, text=True, timeout=600,
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+        )
+        if r.returncode == 0:
+            logger.info(f"[sync] ✓ Đồng bộ '{slug}' hoàn tất.")
+        else:
+            logger.warning(f"[sync] ✗ Sync lỗi (exit {r.returncode}): {r.stderr[-500:]}")
+    except Exception as e:  # noqa: BLE001 — sync không được phá phiên dịch
+        logger.warning(f"[sync] ✗ Không chạy được migrate_to_cloudflare.py: {e}")

@@ -69,7 +69,7 @@ async function handleApi(request, url, env) {
   // GET /api/novels/:slug
   const novelMatch = path.match(/^\/api\/novels\/([^/]+)$/);
   if (novelMatch && method === 'GET') {
-    return getNovel(env, novelMatch[1]);
+    return getNovel(env, novelMatch[1], request);
   }
 
   // GET /api/novels/:slug/chapters
@@ -121,7 +121,8 @@ async function getNovels(env) {
              WHERE c.novel_slug = n.slug
              ORDER BY c.chapter_number DESC LIMIT 1)         AS latest_chapter_title,
            (SELECT MAX(c.created_at) FROM chapters c
-             WHERE c.novel_slug = n.slug)                    AS last_created_at
+             WHERE c.novel_slug = n.slug)                    AS last_created_at,
+           n.glossary_count
     FROM novels n
     ORDER BY n.updated_at DESC
   `).all();
@@ -132,27 +133,74 @@ async function getNovels(env) {
     last_translated_at: last_created_at
       ? Math.floor(Date.parse(last_created_at.replace(' ', 'T') + 'Z') / 1000)
       : null,
-    // Glossary nằm trên R2, không đếm được trong 1 query list — trả null
-    // để frontend hiển thị 0 thay vì số bịa.
-    glossary_count: null,
+    glossary_count: n.glossary_count || 0,
   }));
   return jsonResponse(novels);
 }
 
-async function getNovel(env, slug) {
+/**
+ * Xác thực admin: Worker không giữ session token (token sống trong Python
+ * backend), nên khi có Authorization header thì hỏi backend qua BACKEND_URL.
+ * Không có BACKEND_URL (chế độ Cloudflare thuần) → mọi request là guest.
+ */
+async function isAdminRequest(request, env) {
+  const auth = request.headers.get('Authorization') || '';
+  if (!auth.startsWith('Bearer ') || !env.BACKEND_URL) return false;
+  try {
+    const res = await fetch(`${env.BACKEND_URL}/api/auth/verify`, {
+      headers: { Authorization: auth },
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+// Field công khai của novel — đồng bộ với _PUBLIC_FIELDS trong routers/novels.py.
+// KHÔNG có source_url/last_translated_url (lộ nguồn crawl) và glossary (nặng, chỉ admin).
+const NOVEL_PUBLIC_FIELDS = [
+  'slug', 'title', 'original_title', 'author', 'genre', 'notes',
+  'total_chapters', 'cover_url', 'translation_style', 'status', 'updated_at',
+];
+
+async function getNovel(env, slug, request) {
   const novel = await env.DB.prepare(`
     SELECT * FROM novels WHERE slug = ?
   `).bind(slug).first();
 
   if (!novel) return jsonResponse({ error: 'Novel not found' }, 404);
 
-  // Đọc glossary từ R2 thay vì cột D1 (do giới hạn kích thước row của D1)
+  // Thống kê từ bảng chapters — cùng ngữ nghĩa _translated_stats() của FastAPI
+  const stats = await env.DB.prepare(`
+    SELECT COUNT(*) AS chapter_count,
+           MAX(created_at) AS last_created_at,
+           (SELECT title FROM chapters WHERE novel_slug = ?1
+             ORDER BY chapter_number DESC LIMIT 1) AS latest_chapter_title
+    FROM chapters WHERE novel_slug = ?1
+  `).bind(slug).first();
+
+  const common = {
+    chapter_count: stats?.chapter_count || 0,
+    latest_chapter_title: stats?.latest_chapter_title || null,
+    last_translated_at: stats?.last_created_at
+      ? Math.floor(Date.parse(stats.last_created_at.replace(' ', 'T') + 'Z') / 1000)
+      : null,
+    glossary_count: novel.glossary_count || 0,
+  };
+
+  if (!(request && await isAdminRequest(request, env))) {
+    // Guest: chỉ field whitelist + thống kê
+    const pub = {};
+    for (const k of NOVEL_PUBLIC_FIELDS) if (k in novel) pub[k] = novel[k];
+    return jsonResponse({ ...pub, ...common });
+  }
+
+  // Admin: full novel.json gồm glossary (đọc từ R2 do giới hạn row D1)
   try {
     const glossaryObj = await env.CHAPTERS.get(`${slug}/glossary.json`);
     if (glossaryObj) {
       novel.glossary = await glossaryObj.json();
     } else {
-      // Fallback đọc từ D1 nếu file R2 chưa tồn tại
       novel.glossary = JSON.parse(novel.glossary || '{}');
     }
   } catch (err) {
@@ -163,8 +211,7 @@ async function getNovel(env, slug) {
       novel.glossary = {};
     }
   }
-
-  return jsonResponse(novel);
+  return jsonResponse({ ...novel, ...common });
 }
 
 async function getChapters(env, slug) {
@@ -230,10 +277,11 @@ async function updateGlossary(env, slug, request) {
   // 1. Lưu glossary dạng file JSON lên R2 (để lưu trữ không giới hạn kích thước)
   await env.CHAPTERS.put(`${slug}/glossary.json`, JSON.stringify(glossary, null, 2));
 
-  // 2. Cập nhật D1 (cột glossary để '{}' để tránh SQLITE_TOOBIG, và update timestamp)
+  // 2. Cập nhật D1 (cột glossary để '{}' tránh SQLITE_TOOBIG; lưu glossary_count
+  // để danh sách /api/novels có số thuật ngữ thật mà không phải đọc R2)
   await env.DB.prepare(`
-    UPDATE novels SET glossary = ?, updated_at = ? WHERE slug = ?
-  `).bind('{}', new Date().toISOString(), slug).run();
+    UPDATE novels SET glossary = ?, glossary_count = ?, updated_at = ? WHERE slug = ?
+  `).bind('{}', Object.keys(glossary).length, new Date().toISOString(), slug).run();
 
   return jsonResponse({ status: 'success', message: 'Glossary updated and saved to R2' });
 }

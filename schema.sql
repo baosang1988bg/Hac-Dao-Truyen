@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS novels (
   last_translated_url TEXT DEFAULT '',
   last_chapter_number INTEGER DEFAULT 0,
   total_chapters    INTEGER DEFAULT 0,
-  glossary          TEXT DEFAULT '{}',   -- JSON string
+  glossary          TEXT DEFAULT '{}',   -- JSON string (thực tế để '{}', nội dung ở R2)
+  glossary_count    INTEGER DEFAULT 0,   -- số thuật ngữ (đếm sẵn cho /api/novels)
   translation_style TEXT DEFAULT '',
   notes             TEXT DEFAULT '',
   cover_url         TEXT DEFAULT '',

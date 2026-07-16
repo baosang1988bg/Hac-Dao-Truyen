@@ -1,0 +1,54 @@
+# CI tối thiểu (roadmap 1.4): syntax + build + contract test.
+# Lưu ý: integration test cần dữ liệu novels/ — trên CI không có truyện thật
+# nên bước test tạo 1 truyện mẫu nhỏ trước khi chạy.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Syntax check toàn bộ Python
+        run: |
+          python -m compileall -q . -x 'node_modules|AgentReach|\.venv|scratch'
+      - name: Tạo dữ liệu mẫu cho integration test
+        run: |
+          mkdir -p novels/ci-demo/translated
+          cat > novels/ci-demo/novel.json <<'EOF'
+          {"slug":"ci-demo","title":"CI Demo","total_chapters":1,"glossary":{"甲":"Giáp"}}
+          EOF
+          printf '# Chương 1: Mở đầu\n\nNội dung chương một đủ dài để vượt qua kiểm tra tối thiểu của test đọc chương.\n' \
+            > "novels/ci-demo/translated/Chương 1 - Mở đầu_VI.md"
+      - name: Integration tests (contract API)
+        run: python tests/test_integration.py
+      - name: Kiểm tra không lộ secret
+        run: |
+          git check-ignore .env .dev.vars key_status.json || true
+          ! git ls-files | grep -E '^\.env$|^\.dev\.vars$|^key_status\.json$'
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Syntax check Worker
+        run: node --check src/index.js

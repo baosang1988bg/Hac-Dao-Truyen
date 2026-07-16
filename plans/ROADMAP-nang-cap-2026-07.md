@@ -9,11 +9,11 @@
 
 | Hạng mục | Trạng thái | Ngày | Ghi chú |
 |---|---|---|---|
-| 1.1 Contract API Worker↔FastAPI | ⬜ Chưa làm | | |
-| 1.2 Sync tự động + check_drift | ⬜ Chưa làm | | |
-| 1.3 Chuẩn hóa dữ liệu chương | ⬜ Chưa làm | | |
-| 1.4 CI + integration test | ⬜ Chưa làm | | |
-| 1.5 Backup định kỳ | ⬜ Chưa làm | | |
+| 1.1 Contract API Worker↔FastAPI | ✅ Xong | 16/07 | getNovel whitelist + glossary_count D1; cần `wrangler deploy` + chạy `migrations/001` |
+| 1.2 Sync tự động + check_drift | ✅ Xong | 16/07 | Bật bằng env `AUTO_SYNC_CLOUDFLARE=1`; `tools/check_drift.py` |
+| 1.3 Chuẩn hóa dữ liệu chương | ✅ Xong | 16/07 | Đã apply: 21 extras + 11 trùng → `extras/`, log hoàn tác trong từng truyện |
+| 1.4 CI + integration test | ✅ Xong | 16/07 | `tests/test_integration.py` 7/7 PASS; `.github/workflows/ci.yml` |
+| 1.5 Backup định kỳ | ✅ Xong | 16/07 | `tools/backup_novels.py`, giữ 4 bản, restore đã test |
 | 2.1 PWA + offline | ⬜ Chưa làm | | |
 | 2.2 Nút tải EPUB | ⬜ Chưa làm | | |
 | 2.3 Reader hoàn thiện | ⬜ Chưa làm | | |

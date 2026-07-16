@@ -1,0 +1,17 @@
+[
+ {
+  "ts": "2026-07-16T21:43:33.948111",
+  "ops": [
+   {
+    "action": "move:extras",
+    "from": "/sessions/quirky-inspiring-gates/mnt/HacDaoTruyen/novels/toan-cau-cau-sinh-khai-cuc-mot-chiec-be-go/translated/上架感言求訂閱_VI.md",
+    "to": "/sessions/quirky-inspiring-gates/mnt/HacDaoTruyen/novels/toan-cau-cau-sinh-khai-cuc-mot-chiec-be-go/extras/上架感言求訂閱_VI.md"
+   },
+   {
+    "action": "move:extras",
+    "from": "/sessions/quirky-inspiring-gates/mnt/HacDaoTruyen/novels/toan-cau-cau-sinh-khai-cuc-mot-chiec-be-go/translated/上架感言！（求訂閱！）_VI.md",
+    "to": "/sessions/quirky-inspiring-gates/mnt/HacDaoTruyen/novels/toan-cau-cau-sinh-khai-cuc-mot-chiec-be-go/extras/上架感言！（求訂閱！）_VI.md"
+   }
+  ]
+ }
+]

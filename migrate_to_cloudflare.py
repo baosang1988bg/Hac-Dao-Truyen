@@ -331,7 +331,7 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
     novel_sql = (
         f"INSERT INTO novels (slug,title,original_title,author,genre,"
         f"source_url,last_translated_url,last_chapter_number,total_chapters,"
-        f"glossary,translation_style,notes,updated_at) VALUES ("
+        f"glossary,glossary_count,translation_style,notes,updated_at) VALUES ("
         f"{q(slug)},{q(title)},"
         f"{q(data.get('original_title',''))},"
         f"{q(data.get('author',''))},"
@@ -340,12 +340,12 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
         f"{q(data.get('last_translated_url',''))},"
         f"{data.get('last_chapter_number',0)},"
         f"{data.get('total_chapters',0)},"
-        f"'{{}}',{q(data.get('translation_style',''))},"
+        f"'{{}}',{len(data.get('glossary', {}) or {})},{q(data.get('translation_style',''))},"
         f"{q(str(data.get('notes',''))[:400])},"
         f"{q(datetime.now().isoformat())}"
         f") ON CONFLICT(slug) DO UPDATE SET "
         f"title=excluded.title,last_chapter_number=excluded.last_chapter_number,"
-        f"total_chapters=excluded.total_chapters,updated_at=excluded.updated_at;"
+        f"total_chapters=excluded.total_chapters,glossary_count=excluded.glossary_count,updated_at=excluded.updated_at;"
     )
     if not skip_d1:
         ok = d1_file(novel_sql, dry_run)
