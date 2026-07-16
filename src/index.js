@@ -107,15 +107,36 @@ async function handleApi(request, url, env) {
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
 async function getNovels(env) {
+  // Trang chủ lọc theo chapter_count > 0 và dùng last_translated_at /
+  // latest_chapter_title, nên phải tính các field này từ bảng chapters —
+  // giống hệt _translated_stats() của backend FastAPI (routers/novels.py).
+  // KHÔNG trả source_url/last_translated_url cho guest (lộ nguồn crawl).
   const { results } = await env.DB.prepare(`
-    SELECT slug, title, author, genre, source_url,
-           last_chapter_number, total_chapters, notes,
-           cover_url, status, updated_at
-    FROM novels
-    ORDER BY updated_at DESC
+    SELECT n.slug, n.title, n.original_title, n.author, n.genre, n.notes,
+           n.total_chapters, n.cover_url, n.translation_style, n.status,
+           n.updated_at,
+           (SELECT COUNT(*) FROM chapters c
+             WHERE c.novel_slug = n.slug)                    AS chapter_count,
+           (SELECT c.title FROM chapters c
+             WHERE c.novel_slug = n.slug
+             ORDER BY c.chapter_number DESC LIMIT 1)         AS latest_chapter_title,
+           (SELECT MAX(c.created_at) FROM chapters c
+             WHERE c.novel_slug = n.slug)                    AS last_created_at
+    FROM novels n
+    ORDER BY n.updated_at DESC
   `).all();
-  // Parse glossary JSON nếu cần
-  return jsonResponse(results);
+
+  const novels = results.map(({ last_created_at, ...n }) => ({
+    ...n,
+    // D1 datetime('now') là UTC "YYYY-MM-DD HH:MM:SS" → epoch seconds
+    last_translated_at: last_created_at
+      ? Math.floor(Date.parse(last_created_at.replace(' ', 'T') + 'Z') / 1000)
+      : null,
+    // Glossary nằm trên R2, không đếm được trong 1 query list — trả null
+    // để frontend hiển thị 0 thay vì số bịa.
+    glossary_count: null,
+  }));
+  return jsonResponse(novels);
 }
 
 async function getNovel(env, slug) {
