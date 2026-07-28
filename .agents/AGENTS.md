@@ -32,7 +32,30 @@ Khi người dùng hỏi "có chương mới không?" hoặc tương tự cho b�
    c. Chạy: `python -u main.py translate --novel <slug> --chapters <N>` (N = số chương mới).
    d. Sau khi dịch xong, chạy sync: `python -u migrate_to_cloudflare.py --slug <slug> --from-chapter <first_new_chapter>`.
    e. Deploy: `cmd.exe /c "npx.cmd wrangler deploy"`.
-   f. Commit và push git: `git add . && git commit -m "feat: translate chapters X-Y of <slug>" && git push`.
-3. **Nếu không có chương mới**: Chỉ cần thông báo cho người dùng.
 
 **Lưu ý**: Không dừng lại giữa chừng để hỏi "có muốn dịch không?". Nếu có chương mới thì dịch luôn.
+
+---
+
+## Command Shortcut: /epub-help
+Khi người dùng gõ `/epub-help` hoặc hỏi về câu lệnh tải/upload EPUB, luôn hiển thị ngay lập tức 2 câu lệnh chuẩn sau cho cả macOS và Windows:
+
+### 1. Lệnh Tải EPUB (Downloader - 4 luồng + Tor + Auto-Sync):
+- **macOS:**
+  ```bash
+  python3 tools/download_epubs.py --dir ~/Downloads/epub_library --workers 4 --use-tor --resume --item-timeout 40 --delay 0.2
+  ```
+- **Windows:**
+  ```cmd
+  python tools\download_epubs.py --dir D:\epub_library --workers 4 --use-tor --resume --item-timeout 40 --delay 0.2
+  ```
+
+### 2. Lệnh Upload Lên Google Drive (Uploader):
+- **macOS:**
+  ```bash
+  python3 tools/gdrive_upload.py --epub-dir ~/Downloads/epub_library --folder-id 1RKfWakoQOidHnxLXnZNgWoF_YokNt9lV
+  ```
+- **Windows:**
+  ```cmd
+  python tools\gdrive_upload.py --epub-dir D:\epub_library --folder-id 1RKfWakoQOidHnxLXnZNgWoF_YokNt9lV
+  ```
