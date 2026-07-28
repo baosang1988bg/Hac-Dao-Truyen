@@ -288,15 +288,89 @@ def fmt_size(b):
     if b >= 1024*1024: return f"{b/1024/1024:.1f}MB"
     return f"{b/1024:.0f}KB"
 
-def fmt_time(s):
-    if s < 60: return f"{s:.0f}s"
-    if s < 3600: return f"{s/60:.0f}m"
-    return f"{s/3600:.1f}h"
+class WorkerDashboard:
+    def __init__(self, num_workers, total):
+        self.num_workers = num_workers
+        self.total = total
+        self.workers = {}
+        for w in range(1, num_workers + 1):
+            self.workers[f"W-{w}"] = {
+                "idx": 0, "title": "(Chờ công việc...)", "chs": 0,
+                "stage": "IDLE", "color": GRY, "details": "---"
+            }
+        self.ok_n = 0
+        self.skip_n = 0
+        self.fail_n = 0
+        self.bytes_total = 0
+        self.t0 = time.time()
+        self.lines_printed = 0
 
-def log_step(worker_id, idx, total, tag, color, title, details=""):
-    w_prefix = f"{MGT}[{worker_id}]{R}" if worker_id else f"{MGT}[W-1]{R}"
-    with state_lock:
-        print(f"{w_prefix} [{idx:>5}/{total}] {color}[{tag:<13}]{R} {BOLD}{title:<34}{R} {GRY}{details}{R}")
+    def update_stage(self, worker_id, idx, stage, color, title, chs=0, details=""):
+        with state_lock:
+            self.workers[worker_id] = {
+                "idx": idx,
+                "title": title[:30],
+                "chs": chs,
+                "stage": stage,
+                "color": color,
+                "details": details
+            }
+            if stage in ("DOWN-SUCCESS", "FAIL"):
+                icon = "✓ OK" if stage == "DOWN-SUCCESS" else "✗ FAIL"
+                c = GRN if stage == "DOWN-SUCCESS" else RED
+                # In dòng lịch sử khi hoàn thành
+                print(f"  {c}{icon}{R} [{worker_id}] [{idx:>5}/{self.total}] {BOLD}{title[:32]:<32}{R} {GRY}{chs:,}ch | {details}{R}")
+
+            self.render()
+
+    def render(self):
+        if not sys.stdout.isatty():
+            return
+        
+        if self.lines_printed > 0:
+            sys.stdout.write(f"\033[{self.lines_printed}A")
+
+        lines = []
+        lines.append(f"{BOLD}┌{'─'*76}┐{R}")
+        lines.append(f"{BOLD}│  📚 MULTI-WORKER DASHBOARD — BẢNG THEO DÕI SONG SONG ({self.num_workers} WORKERS){' '*9}│{R}")
+        lines.append(f"├{'─'*10}┬{'─'*18}┬{'─'*11}┬{'─'*34}┤")
+        lines.append(f"│ {BOLD}{'WORKER':<8}{R} │ {BOLD}{'BƯỚC (STAGE)':<16}{R} │ {BOLD}{'SỐ CHƯƠNG':<9}{R} │ {BOLD}{'TÊN TRUYỆN DANG XỬ LÝ':<32}{R} │")
+        lines.append(f"├{'─'*10}┼{'─'*18}┼{'─'*11}┼{'─'*34}┤")
+
+        for w in range(1, self.num_workers + 1):
+            w_key = f"W-{w}"
+            info = self.workers.get(w_key, {})
+            stg = info.get("stage", "IDLE")
+            clr = info.get("color", GRY)
+            ttl = info.get("title", "---")
+            chs = info.get("chs", 0)
+            chs_str = f"{chs:,}ch" if chs > 0 else "--"
+            lines.append(f"│ {MGT}{w_key:<8}{R} │ {clr}{stg:<16}{R} │ {CYN}{chs_str:>9}{R} │ {WHT}{ttl:<32}{R} │")
+
+        lines.append(f"└{'─'*10}┴{'─'*18}┴{'─'*11}┴{'─'*34}┘")
+
+        elapsed  = time.time() - self.t0
+        dl_done  = self.ok_n + self.fail_n
+        rate     = dl_done / elapsed * 3600 if dl_done > 0 and elapsed > 0 else 0
+        tot_proc = self.ok_n + self.skip_n + self.fail_n
+        pct      = tot_proc / self.total * 100 if self.total > 0 else 0
+        bar      = progress_bar(pct, 20)
+        lines.append(f"  {bar} {CYN}{fmt_size(self.bytes_total)}{R} | {YLW}~{rate:.0f}/h{R} | {GRN}✓{self.ok_n}{R} {GRY}⤼{self.skip_n}{R} {RED}✗{self.fail_n}{R}")
+
+        out_text = "\n".join(f"\033[K{line}" for line in lines) + "\n"
+        sys.stdout.write(out_text)
+        sys.stdout.flush()
+        self.lines_printed = len(lines)
+
+global_dashboard = [None]
+
+def log_step(worker_id, idx, total, tag, color, title, chs=0, details=""):
+    if global_dashboard[0]:
+        global_dashboard[0].update_stage(worker_id, idx, tag, color, title, chs, details)
+    else:
+        w_prefix = f"{MGT}[{worker_id}]{R}" if worker_id else f"{MGT}[W-1]{R}"
+        with state_lock:
+            print(f"{w_prefix} [{idx:>5}/{total}] {color}[{tag:<13}]{R} {BOLD}{title:<34}{R} {GRY}{chs:,}ch | {details}{R}")
 
 # ── Download 1 truyện ─────────────────────────────────────────────────────────
 def dl_one(item, outdir, state, state_path, genre_cache, worker_id="W-1", idx=0, total_count=0,
@@ -310,13 +384,13 @@ def dl_one(item, outdir, state, state_path, genre_cache, worker_id="W-1", idx=0,
     short_title = title[:34]
 
     # Stage 1: PRE-DOWN
-    log_step(worker_id, idx, total_count, "PRE-DOWN", CYN, short_title, f"{chs:,}ch | Chuẩn bị request")
+    log_step(worker_id, idx, total_count, "PRE-DOWN", CYN, short_title, chs, "Chuẩn bị request")
 
     # ── Resume Check ──
     if resume and slug in state["ok"]:
         ok, _ = verify_epub(epub_p)
         if ok:
-            log_step(worker_id, idx, total_count, "SKIP", GRY, short_title, "Đã có sẵn & Verified OK")
+            log_step(worker_id, idx, total_count, "SKIP", GRY, short_title, chs, "Đã có sẵn & Verified OK")
             return "skip", 0
         del state["ok"][slug]
         save_json(state_path, state)
@@ -324,15 +398,15 @@ def dl_one(item, outdir, state, state_path, genre_cache, worker_id="W-1", idx=0,
     if dry:
         genres = fetch_genres(slug, genre_cache) if fetch_genre else []
         g_str  = " ".join(GENRE_NAMES.get(g, g) for g in genres[:3])
-        log_step(worker_id, idx, total_count, "DRY-RUN", YLW, short_title, f"{chs}ch | {g_str}")
+        log_step(worker_id, idx, total_count, "DRY-RUN", YLW, short_title, chs, g_str)
         return "skip", 0
 
     # Stage 2: SERVER-EXPORT
-    log_step(worker_id, idx, total_count, "SERVER-EXPORT", YLW, short_title, "Gửi API biên dịch EPUB...")
+    log_step(worker_id, idx, total_count, "SERVER-EXPORT", YLW, short_title, chs, "Gửi API biên dịch EPUB...")
 
     def on_progress(st, pct):
         if pct > 0 and pct % 25 == 0:
-            log_step(worker_id, idx, total_count, f"EXPORT {pct}%", YLW, short_title, f"Server render: {st}")
+            log_step(worker_id, idx, total_count, f"EXPORT {pct}%", YLW, short_title, chs, f"Server render: {st}")
 
     try:
         exp      = export_epub(slug, on_progress, max_timeout=item_timeout)
@@ -340,7 +414,7 @@ def dl_one(item, outdir, state, state_path, genre_cache, worker_id="W-1", idx=0,
         if not file_url: raise RuntimeError("no file_url")
 
         # Stage 3: DOWNLOADING
-        log_step(worker_id, idx, total_count, "DOWNLOADING", BLU, short_title, "Đang nhận file nhị phân EPUB...")
+        log_step(worker_id, idx, total_count, "DOWNLOADING", BLU, short_title, chs, "Đang nhận file nhị phân EPUB...")
 
         nbytes, sha = dl_bytes(file_url, epub_p, timeout=item_timeout)
         ok, reason  = verify_epub(epub_p)
@@ -367,7 +441,7 @@ def dl_one(item, outdir, state, state_path, genre_cache, worker_id="W-1", idx=0,
 
         # Stage 4: DOWN-SUCCESS
         g_display = " ".join(GENRE_NAMES.get(g,g) for g in genres[:2]) if genres else ""
-        log_step(worker_id, idx, total_count, "DOWN-SUCCESS", GRN, short_title, f"{fmt_size(nbytes)} | sha:{sha[:8]}… | {g_display}")
+        log_step(worker_id, idx, total_count, "DOWN-SUCCESS", GRN, short_title, chs, f"{fmt_size(nbytes)} | sha:{sha[:8]}… | {g_display}")
 
         with state_lock:
             state["ok"][slug] = {
@@ -381,7 +455,7 @@ def dl_one(item, outdir, state, state_path, genre_cache, worker_id="W-1", idx=0,
 
     except Exception as e:
         msg = str(e)[:90]
-        log_step(worker_id, idx, total_count, "FAIL", RED, short_title, msg)
+        log_step(worker_id, idx, total_count, "FAIL", RED, short_title, chs, msg)
         with state_lock:
             state["fail"][slug] = {"err": msg, "at": datetime.now().isoformat()}
             save_json(state_path, state)
@@ -550,7 +624,8 @@ def main():
     ok_n = skip_n = fail_n = 0
     bytes_total = 0
     t0 = time.time()
-    num_workers = max(1, args.workers)
+    if num_workers > 1:
+        global_dashboard[0] = WorkerDashboard(num_workers, total)
 
     def process_item(index_and_item):
         nonlocal ok_n, skip_n, fail_n, bytes_total
@@ -559,11 +634,6 @@ def main():
         title = item.get("title","")
         chs   = item.get("chapter_count",0)
         ms    = item.get("manga_status","")
-
-        g_cached = genre_cache.get(slug,[])
-        g_str    = " ".join(GENRE_NAMES.get(g,"") for g in g_cached[:2] if g in GENRE_NAMES)
-        short_t  = title[:42]
-        status_icon = "🔄" if "dang" in ms.lower() else "✅"
 
         w_id = f"W-{((i-1)%num_workers)+1}"
         r, nb = dl_one(item, outdir, state, state_path, genre_cache,
@@ -576,13 +646,18 @@ def main():
             if r=="ok":
                 ok_n += 1; bytes_total += nb
                 tor_dl_count[0] += 1
+                if global_dashboard[0]:
+                    global_dashboard[0].ok_n = ok_n
+                    global_dashboard[0].bytes_total = bytes_total
                 if use_tor_global[0] and tor_dl_count[0] % 15 == 0:
                     print(f"{YLW}[🔄 AUTO IP ROTATION] Đã tải {tor_dl_count[0]} truyện -> Đổi IP mới...{R}")
                     renew_tor_circuit()
             elif r=="skip":
                 skip_n += 1
+                if global_dashboard[0]: global_dashboard[0].skip_n = skip_n
             else:
                 fail_n += 1
+                if global_dashboard[0]: global_dashboard[0].fail_n = fail_n
 
             elapsed  = time.time()-t0
             dl_done  = ok_n + fail_n
