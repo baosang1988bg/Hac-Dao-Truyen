@@ -293,8 +293,12 @@ def fmt_time(s):
     if s < 3600: return f"{s/60:.0f}m"
     return f"{s/3600:.1f}h"
 
+def log_step(idx, total, tag, color, title, details=""):
+    with state_lock:
+        print(f"[{idx:>5}/{total}] {color}[{tag:<13}]{R} {BOLD}{title:<34}{R} {GRY}{details}{R}")
+
 # ── Download 1 truyện ─────────────────────────────────────────────────────────
-def dl_one(item, outdir, state, state_path, genre_cache,
+def dl_one(item, outdir, state, state_path, genre_cache, idx=0, total_count=0,
            resume=True, covers=True, dry=False, fetch_genre=True, item_timeout=40):
     slug   = item["slug"]
     title  = item.get("title","")
@@ -302,31 +306,40 @@ def dl_one(item, outdir, state, state_path, genre_cache,
     epubs  = outdir/"epubs";  epubs.mkdir(parents=True, exist_ok=True)
     metas  = outdir/"meta";   metas.mkdir(parents=True, exist_ok=True)
     epub_p = epubs / f"{slug}.epub"
+    short_title = title[:34]
 
-    # ── Resume ──
+    # Stage 1: PRE-DOWN
+    log_step(idx, total_count, "PRE-DOWN", CYN, short_title, f"{chs}ch | Đang chuẩn bị request")
+
+    # ── Resume Check ──
     if resume and slug in state["ok"]:
         ok, _ = verify_epub(epub_p)
-        if ok: return "skip", 0
+        if ok:
+            log_step(idx, total_count, "SKIP", GRY, short_title, "Đã có sẵn & Verified OK")
+            return "skip", 0
         del state["ok"][slug]
         save_json(state_path, state)
 
     if dry:
         genres = fetch_genres(slug, genre_cache) if fetch_genre else []
         g_str  = " ".join(GENRE_NAMES.get(g, g) for g in genres[:3])
-        print(f"    {DIM}{slug[:48]}{R} {GRY}| {chs}ch | {g_str}{R}")
+        log_step(idx, total_count, "DRY-RUN", YLW, short_title, f"{chs}ch | {g_str}")
         return "skip", 0
 
-    # ── Export ──
-    export_pct = [0]
+    # Stage 2: SERVER-EXPORT
+    log_step(idx, total_count, "SERVER-EXPORT", YLW, short_title, "Gửi API biên dịch EPUB trên server...")
+
     def on_progress(st, pct):
-        export_pct[0] = pct
-        bar = progress_bar(pct, 20)
-        print(f"    {DIM}export{R} {bar} {GRY}{st}{R}   ", end="\r", flush=True)
+        if pct > 0 and pct % 25 == 0:
+            log_step(idx, total_count, f"EXPORT {pct}%", YLW, short_title, f"Server render: {st}")
 
     try:
         exp      = export_epub(slug, on_progress, max_timeout=item_timeout)
         file_url = exp.get("file_url","")
         if not file_url: raise RuntimeError("no file_url")
+
+        # Stage 3: DOWNLOADING
+        log_step(idx, total_count, "DOWNLOADING", BLU, short_title, "Đang nhận file nhị phân EPUB...")
 
         nbytes, sha = dl_bytes(file_url, epub_p, timeout=item_timeout)
         ok, reason  = verify_epub(epub_p)
@@ -338,7 +351,8 @@ def dl_one(item, outdir, state, state_path, genre_cache,
         genres = []
         if fetch_genre:
             genres = fetch_genres(slug, genre_cache)
-            save_json(outdir/"genre_cache.json", genre_cache)
+            with state_lock:
+                save_json(outdir/"genre_cache.json", genre_cache)
 
         # Metadata
         meta_p = metas / f"{slug}.json"
@@ -349,6 +363,10 @@ def dl_one(item, outdir, state, state_path, genre_cache,
             "epub_local": str(epub_p),
             "downloaded_at": datetime.now().isoformat(),
         }, ensure_ascii=False, indent=2), "utf-8")
+
+        # Stage 4: DOWN-SUCCESS
+        g_display = " ".join(GENRE_NAMES.get(g,g) for g in genres[:2]) if genres else ""
+        log_step(idx, total_count, "DOWN-SUCCESS", GRN, short_title, f"{fmt_size(nbytes)} | sha:{sha[:8]}… | {g_display}")
 
         with state_lock:
             state["ok"][slug] = {
@@ -361,7 +379,8 @@ def dl_one(item, outdir, state, state_path, genre_cache,
         return "ok", nbytes
 
     except Exception as e:
-        msg = str(e)[:120]
+        msg = str(e)[:90]
+        log_step(idx, total_count, "FAIL", RED, short_title, msg)
         with state_lock:
             state["fail"][slug] = {"err": msg, "at": datetime.now().isoformat()}
             save_json(state_path, state)
@@ -546,6 +565,7 @@ def main():
         status_icon = "🔄" if "dang" in ms.lower() else "✅"
 
         r, nb = dl_one(item, outdir, state, state_path, genre_cache,
+                       idx=i, total_count=total,
                        resume=args.resume, covers=not args.no_covers,
                        dry=args.dry_run, fetch_genre=not args.no_genre,
                        item_timeout=args.item_timeout)
@@ -554,20 +574,13 @@ def main():
             if r=="ok":
                 ok_n += 1; bytes_total += nb
                 tor_dl_count[0] += 1
-                genres = state["ok"].get(slug,{}).get("genres",[])
-                g_display = "  ".join(GENRE_NAMES.get(g,g) for g in genres[:3]) if genres else ""
-                print(f"[{i:>5}/{total}] {GRN}✓ OK{R} {short_t:<30} | {chs}ch | {fmt_size(nb)} | {MGT}{g_display}{R}")
                 if use_tor_global[0] and tor_dl_count[0] % 15 == 0:
-                    print(f"\n{YLW}[🔄 AUTO IP ROTATION] Đã tải {tor_dl_count[0]} truyện -> Đổi IP mới...{R}")
+                    print(f"{YLW}[🔄 AUTO IP ROTATION] Đã tải {tor_dl_count[0]} truyện -> Đổi IP mới...{R}")
                     renew_tor_circuit()
             elif r=="skip":
                 skip_n += 1
-                if not args.resume:
-                    print(f"[{i:>5}/{total}] {GRY}⤼ Skip{R} {short_t:<30}")
             else:
                 fail_n += 1
-                err = state["fail"].get(slug,{}).get("err","?")
-                print(f"[{i:>5}/{total}] {RED}✗ Fail{R} {short_t:<30} | {err[:50]}")
 
             elapsed  = time.time()-t0
             dl_done  = ok_n + fail_n
