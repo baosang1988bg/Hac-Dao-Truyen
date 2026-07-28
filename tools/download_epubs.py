@@ -293,12 +293,13 @@ def fmt_time(s):
     if s < 3600: return f"{s/60:.0f}m"
     return f"{s/3600:.1f}h"
 
-def log_step(idx, total, tag, color, title, details=""):
+def log_step(worker_id, idx, total, tag, color, title, details=""):
+    w_prefix = f"{MGT}[{worker_id}]{R}" if worker_id else f"{MGT}[W-1]{R}"
     with state_lock:
-        print(f"[{idx:>5}/{total}] {color}[{tag:<13}]{R} {BOLD}{title:<34}{R} {GRY}{details}{R}")
+        print(f"{w_prefix} [{idx:>5}/{total}] {color}[{tag:<13}]{R} {BOLD}{title:<34}{R} {GRY}{details}{R}")
 
 # ── Download 1 truyện ─────────────────────────────────────────────────────────
-def dl_one(item, outdir, state, state_path, genre_cache, idx=0, total_count=0,
+def dl_one(item, outdir, state, state_path, genre_cache, worker_id="W-1", idx=0, total_count=0,
            resume=True, covers=True, dry=False, fetch_genre=True, item_timeout=40):
     slug   = item["slug"]
     title  = item.get("title","")
@@ -309,13 +310,13 @@ def dl_one(item, outdir, state, state_path, genre_cache, idx=0, total_count=0,
     short_title = title[:34]
 
     # Stage 1: PRE-DOWN
-    log_step(idx, total_count, "PRE-DOWN", CYN, short_title, f"{chs}ch | Đang chuẩn bị request")
+    log_step(worker_id, idx, total_count, "PRE-DOWN", CYN, short_title, f"{chs:,}ch | Chuẩn bị request")
 
     # ── Resume Check ──
     if resume and slug in state["ok"]:
         ok, _ = verify_epub(epub_p)
         if ok:
-            log_step(idx, total_count, "SKIP", GRY, short_title, "Đã có sẵn & Verified OK")
+            log_step(worker_id, idx, total_count, "SKIP", GRY, short_title, "Đã có sẵn & Verified OK")
             return "skip", 0
         del state["ok"][slug]
         save_json(state_path, state)
@@ -323,15 +324,15 @@ def dl_one(item, outdir, state, state_path, genre_cache, idx=0, total_count=0,
     if dry:
         genres = fetch_genres(slug, genre_cache) if fetch_genre else []
         g_str  = " ".join(GENRE_NAMES.get(g, g) for g in genres[:3])
-        log_step(idx, total_count, "DRY-RUN", YLW, short_title, f"{chs}ch | {g_str}")
+        log_step(worker_id, idx, total_count, "DRY-RUN", YLW, short_title, f"{chs}ch | {g_str}")
         return "skip", 0
 
     # Stage 2: SERVER-EXPORT
-    log_step(idx, total_count, "SERVER-EXPORT", YLW, short_title, "Gửi API biên dịch EPUB trên server...")
+    log_step(worker_id, idx, total_count, "SERVER-EXPORT", YLW, short_title, "Gửi API biên dịch EPUB...")
 
     def on_progress(st, pct):
         if pct > 0 and pct % 25 == 0:
-            log_step(idx, total_count, f"EXPORT {pct}%", YLW, short_title, f"Server render: {st}")
+            log_step(worker_id, idx, total_count, f"EXPORT {pct}%", YLW, short_title, f"Server render: {st}")
 
     try:
         exp      = export_epub(slug, on_progress, max_timeout=item_timeout)
@@ -339,7 +340,7 @@ def dl_one(item, outdir, state, state_path, genre_cache, idx=0, total_count=0,
         if not file_url: raise RuntimeError("no file_url")
 
         # Stage 3: DOWNLOADING
-        log_step(idx, total_count, "DOWNLOADING", BLU, short_title, "Đang nhận file nhị phân EPUB...")
+        log_step(worker_id, idx, total_count, "DOWNLOADING", BLU, short_title, "Đang nhận file nhị phân EPUB...")
 
         nbytes, sha = dl_bytes(file_url, epub_p, timeout=item_timeout)
         ok, reason  = verify_epub(epub_p)
@@ -366,7 +367,7 @@ def dl_one(item, outdir, state, state_path, genre_cache, idx=0, total_count=0,
 
         # Stage 4: DOWN-SUCCESS
         g_display = " ".join(GENRE_NAMES.get(g,g) for g in genres[:2]) if genres else ""
-        log_step(idx, total_count, "DOWN-SUCCESS", GRN, short_title, f"{fmt_size(nbytes)} | sha:{sha[:8]}… | {g_display}")
+        log_step(worker_id, idx, total_count, "DOWN-SUCCESS", GRN, short_title, f"{fmt_size(nbytes)} | sha:{sha[:8]}… | {g_display}")
 
         with state_lock:
             state["ok"][slug] = {
@@ -380,7 +381,7 @@ def dl_one(item, outdir, state, state_path, genre_cache, idx=0, total_count=0,
 
     except Exception as e:
         msg = str(e)[:90]
-        log_step(idx, total_count, "FAIL", RED, short_title, msg)
+        log_step(worker_id, idx, total_count, "FAIL", RED, short_title, msg)
         with state_lock:
             state["fail"][slug] = {"err": msg, "at": datetime.now().isoformat()}
             save_json(state_path, state)
@@ -564,8 +565,9 @@ def main():
         short_t  = title[:42]
         status_icon = "🔄" if "dang" in ms.lower() else "✅"
 
+        w_id = f"W-{((i-1)%num_workers)+1}"
         r, nb = dl_one(item, outdir, state, state_path, genre_cache,
-                       idx=i, total_count=total,
+                       worker_id=w_id, idx=i, total_count=total,
                        resume=args.resume, covers=not args.no_covers,
                        dry=args.dry_run, fetch_genre=not args.no_genre,
                        item_timeout=args.item_timeout)
