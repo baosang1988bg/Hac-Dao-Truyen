@@ -519,6 +519,21 @@ def main():
     state      = load_json(state_path, {"ok":{}, "fail":{}})
     genre_cache= load_json(outdir/"genre_cache.json", {})
 
+    # 🔗 Tự động đồng bộ với upload_state.json (Google Drive)
+    # Bất kỳ truyện nào ĐÃ CÓ trên Google Drive -> tự động skip bên Downloader, không tải lại!
+    upload_state_path = outdir / "upload_state.json"
+    if upload_state_path.exists():
+        ustate = load_json(upload_state_path, {})
+        up_done = ustate.get("uploaded", {})
+        synced_cnt = 0
+        for slug, info in up_done.items():
+            if slug not in state["ok"]:
+                state["ok"][slug] = {"at": info.get("at",""), "bytes": 0, "sha256": "gdrive_synced", "genres": [], "chapters": 0}
+                synced_cnt += 1
+        if synced_cnt > 0:
+            save_json(state_path, state)
+            print(f"{GRN}[sync]{R} Đã tự động đồng bộ {synced_cnt} truyện từ Google Drive -> Bỏ qua không tải lại!")
+
     print_header(outdir, state)
 
     # ── Verify-only ──
