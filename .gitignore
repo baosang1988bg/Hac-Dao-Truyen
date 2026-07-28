@@ -14,15 +14,12 @@
 google-services.json
 GoogleService-Info.plist
 
-# Keystores & Certificates
-*.jks
-*.keystore
-*.p12
-*.pem
-*.cer
-*.pfx
-*.key
-key_status.json
+# Credentials & OAuth tokens
+tools/credentials.json
+tools/token.json
+*.jsonl
+epub_library/
+bad_slugs.txt
 
 # ─────────────────────────────────────────────
 # PYTHON
