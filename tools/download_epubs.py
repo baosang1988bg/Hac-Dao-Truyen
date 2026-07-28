@@ -624,6 +624,7 @@ def main():
     ok_n = skip_n = fail_n = 0
     bytes_total = 0
     t0 = time.time()
+    num_workers = max(1, args.workers)
     if num_workers > 1:
         global_dashboard[0] = WorkerDashboard(num_workers, total)
 
