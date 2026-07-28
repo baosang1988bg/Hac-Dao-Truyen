@@ -60,42 +60,46 @@ GENRE_NAMES = {
 }
 
 # ── HTTP ──────────────────────────────────────────────────────────────────────
+import threading
+from concurrent.futures import ThreadPoolExecutor
+
 # TOR Proxy config
 TOR_PROXY = "socks5h://127.0.0.1:9050"
 use_tor_global = [False]
 tor_dl_count = [0]
+state_lock = threading.Lock()
+tor_lock   = threading.Lock()
 
 def renew_tor_circuit():
     """Gửi tín hiệu đổi IP cho Tor — Hỗ trợ cả Windows, macOS và Linux."""
-    try:
-        # Cách 1: Gửi lệnh qua Tor Control Port (9051) nếu có
-        import socket
+    with tor_lock:
         try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(2)
-            s.connect(("127.0.0.1", 9051))
-            s.sendall(b'AUTHENTICATE ""\r\nSIGNAL NEWNYM\r\n')
-            resp = s.recv(1024)
-            s.close()
-            if b"250" in resp:
-                time.sleep(2)
-                print(f"\n{YLW}[🔄 NEW IP] Đã đổi IP Tor thành công (Control Port 9051)!{R}")
-                return
-        except Exception:
-            pass
+            import socket
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(2)
+                s.connect(("127.0.0.1", 9051))
+                s.sendall(b'AUTHENTICATE ""\r\nSIGNAL NEWNYM\r\n')
+                resp = s.recv(1024)
+                s.close()
+                if b"250" in resp:
+                    time.sleep(2)
+                    print(f"\n{YLW}[🔄 NEW IP] Đã đổi IP Tor thành công (Control Port 9051)!{R}")
+                    return
+            except Exception:
+                pass
 
-        # Cách 2: Tín hiệu HUP / Taskkill cross-platform
-        if sys.platform == "win32":
-            os.system("taskkill /IM tor.exe /F >nul 2>&1")
-            time.sleep(1)
-            os.system("start /B tor >nul 2>&1")
-        else:
-            os.system("pkill -HUP tor 2>/dev/null")
+            if sys.platform == "win32":
+                os.system("taskkill /IM tor.exe /F >nul 2>&1")
+                time.sleep(1)
+                os.system("start /B tor >nul 2>&1")
+            else:
+                os.system("pkill -HUP tor 2>/dev/null")
 
-        time.sleep(2)
-        print(f"\n{YLW}[🔄 NEW IP] Đã đổi đường truyền Tor sang IP mới!{R}")
-    except Exception as e:
-        print(f"\n{RED}[!] Lỗi đổi IP Tor: {e}{R}")
+            time.sleep(2)
+            print(f"\n{YLW}[🔄 NEW IP] Đã đổi đường truyền Tor sang IP mới!{R}")
+        except Exception as e:
+            print(f"\n{RED}[!] Lỗi đổi IP Tor: {e}{R}")
 
 def get_opener(use_tor=False):
     if use_tor or use_tor_global[0]:
@@ -346,19 +350,21 @@ def dl_one(item, outdir, state, state_path, genre_cache,
             "downloaded_at": datetime.now().isoformat(),
         }, ensure_ascii=False, indent=2), "utf-8")
 
-        state["ok"][slug] = {
-            "at": datetime.now().isoformat(),
-            "bytes": nbytes, "sha256": sha,
-            "genres": genres, "chapters": chs,
-        }
-        state["fail"] = {k:v for k,v in state["fail"].items() if k!=slug}
-        save_json(state_path, state)
+        with state_lock:
+            state["ok"][slug] = {
+                "at": datetime.now().isoformat(),
+                "bytes": nbytes, "sha256": sha,
+                "genres": genres, "chapters": chs,
+            }
+            state["fail"] = {k:v for k,v in state["fail"].items() if k!=slug}
+            save_json(state_path, state)
         return "ok", nbytes
 
     except Exception as e:
         msg = str(e)[:120]
-        state["fail"][slug] = {"err": msg, "at": datetime.now().isoformat()}
-        save_json(state_path, state)
+        with state_lock:
+            state["fail"][slug] = {"err": msg, "at": datetime.now().isoformat()}
+            save_json(state_path, state)
         return "fail", 0
 
 # ── Header banner ─────────────────────────────────────────────────────────────
@@ -406,6 +412,7 @@ def main():
                    help="Xây dựng catalog phân theo thể loại từ genre_cache")
     p.add_argument("--use-tor",       action="store_true", help="Bắt đầu tải bằng Tor SOCKS5 proxy ngay")
     p.add_argument("--item-timeout",  type=float, default=40.0, help="Thời gian tối đa (giây) cho 1 truyện trước khi tự động skip (mặc định: 40s)")
+    p.add_argument("--workers",       type=int, default=1, help="Số luồng tải song song cùng lúc (mặc định: 1, khuyến nghị: 3-5)")
     p.add_argument("--delay",         type=float, default=0.3)
     args = p.parse_args()
 
@@ -523,62 +530,65 @@ def main():
     ok_n = skip_n = fail_n = 0
     bytes_total = 0
     t0 = time.time()
+    num_workers = max(1, args.workers)
 
-    for i, item in enumerate(work, 1):
+    def process_item(index_and_item):
+        nonlocal ok_n, skip_n, fail_n, bytes_total
+        i, item = index_and_item
         slug  = item.get("slug","")
         title = item.get("title","")
         chs   = item.get("chapter_count",0)
         ms    = item.get("manga_status","")
 
-        # Print item header
         g_cached = genre_cache.get(slug,[])
         g_str    = " ".join(GENRE_NAMES.get(g,"") for g in g_cached[:2] if g in GENRE_NAMES)
         short_t  = title[:42]
         status_icon = "🔄" if "dang" in ms.lower() else "✅"
-        print(f"\n{GRY}┌{'─'*66}{R}")
-        print(f"{GRY}│{R} {BOLD}[{i:>5}/{total}]{R}  {WHT}{short_t}{R}")
-        print(f"{GRY}│{R}  {DIM}{slug[:55]}{R}  {GRY}{chs}ch {status_icon}{R}  {MGT}{g_str}{R}")
 
         r, nb = dl_one(item, outdir, state, state_path, genre_cache,
                        resume=args.resume, covers=not args.no_covers,
                        dry=args.dry_run, fetch_genre=not args.no_genre,
                        item_timeout=args.item_timeout)
 
-        if r=="ok":
-            ok_n += 1; bytes_total += nb
-            tor_dl_count[0] += 1
-            print(f"{GRY}│{R}  {GRN}✓ OK{R}  {fmt_size(nb)}  sha:{state['ok'][slug]['sha256'][:10]}…")
-            genres = state["ok"][slug].get("genres",[])
-            if genres:
-                g_display = "  ".join(GENRE_NAMES.get(g,g) for g in genres[:5])
-                print(f"{GRY}│{R}  {MGT}{g_display}{R}")
+        with state_lock:
+            if r=="ok":
+                ok_n += 1; bytes_total += nb
+                tor_dl_count[0] += 1
+                genres = state["ok"].get(slug,{}).get("genres",[])
+                g_display = "  ".join(GENRE_NAMES.get(g,g) for g in genres[:3]) if genres else ""
+                print(f"[{i:>5}/{total}] {GRN}✓ OK{R} {short_t:<30} | {chs}ch | {fmt_size(nb)} | {MGT}{g_display}{R}")
+                if use_tor_global[0] and tor_dl_count[0] % 15 == 0:
+                    print(f"\n{YLW}[🔄 AUTO IP ROTATION] Đã tải {tor_dl_count[0]} truyện -> Đổi IP mới...{R}")
+                    renew_tor_circuit()
+            elif r=="skip":
+                skip_n += 1
+                if not args.resume:
+                    print(f"[{i:>5}/{total}] {GRY}⤼ Skip{R} {short_t:<30}")
+            else:
+                fail_n += 1
+                err = state["fail"].get(slug,{}).get("err","?")
+                print(f"[{i:>5}/{total}] {RED}✗ Fail{R} {short_t:<30} | {err[:50]}")
 
-            # Đổi IP Tor tự động mỗi 15 lần tải thành công
-            if use_tor_global[0] and tor_dl_count[0] % 15 == 0:
-                print(f"\n{YLW}[🔄 AUTO IP ROTATION] Đã tải {tor_dl_count[0]} truyện -> Đổi IP mới...{R}")
-                renew_tor_circuit()
-        elif r=="skip":
-            skip_n += 1
-            print(f"{GRY}│{R}  {GRY}⤼ Skip{R}")
-        else:
-            fail_n += 1
-            err = state["fail"].get(slug,{}).get("err","?")
-            print(f"{GRY}│{R}  {RED}✗ Fail{R}: {err[:60]}")
+            elapsed  = time.time()-t0
+            dl_done  = ok_n + fail_n
+            rate     = dl_done/elapsed*3600 if dl_done>0 and elapsed>0 else 0
+            remaining= total - i
+            eta_s    = remaining/(dl_done/elapsed) if dl_done>0 and elapsed>0 else 0
+            pct_done = i/total*100
+            bar      = progress_bar(pct_done, 20)
+            if i % 10 == 0 or i == total:
+                print(f"  {bar}  {CYN}{fmt_size(bytes_total)}{R}  {YLW}~{rate:.0f}/h{R}  {GRY}ETA {fmt_time(eta_s)}{R}")
 
-        print(f"{GRY}└{'─'*66}{R}")
+        if not args.dry_run and args.delay > 0:
+            time.sleep(args.delay)
 
-        # Stats bar
-        elapsed  = time.time()-t0
-        dl_done  = ok_n + fail_n  # không tính skip vào rate
-        rate     = dl_done/elapsed*3600 if dl_done>0 and elapsed>0 else 0
-        remaining= total - i
-        eta_s    = remaining/(dl_done/elapsed) if dl_done>0 and elapsed>0 else 0
-        pct_done = i/total*100
-        bar      = progress_bar(pct_done, 28)
-        print(f"  {bar}  {CYN}{fmt_size(bytes_total)}{R}  "
-              f"{YLW}{rate:.0f}/h{R}  {GRY}ETA {fmt_time(eta_s)}{R}")
-
-        if not args.dry_run: time.sleep(args.delay)
+    if num_workers > 1 and not args.dry_run:
+        print(f"{BLU}[pool]{R} Đang chạy {num_workers} luồng tải song song (Parallel Pool)...")
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
+            executor.map(process_item, enumerate(work, 1))
+    else:
+        for index_item in enumerate(work, 1):
+            process_item(index_item)
 
     # ── Summary ──
     elapsed = time.time()-t0
