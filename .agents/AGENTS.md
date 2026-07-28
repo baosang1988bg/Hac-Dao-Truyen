@@ -43,19 +43,35 @@ Khi người dùng gõ `/epub-help` hoặc hỏi về câu lệnh tải/upload E
 ### 1. Lệnh Tải EPUB (Downloader - 4 luồng + Tor + Auto-Sync):
 - **macOS:**
   ```bash
-  python3 tools/download_epubs.py --dir ~/Downloads/epub_library --workers 4 --use-tor --resume --item-timeout 40 --delay 0.2
+  python3 tools/download_epubs.py \
+    --dir ~/Downloads/epub_library \
+    --workers 4 \
+    --use-tor \
+    --resume \
+    --item-timeout 40 \
+    --delay 0.2
   ```
 - **Windows:**
   ```cmd
-  python tools\download_epubs.py --dir D:\epub_library --workers 4 --use-tor --resume --item-timeout 40 --delay 0.2
+  python tools\download_epubs.py ^
+    --dir D:\epub_library ^
+    --workers 4 ^
+    --use-tor ^
+    --resume ^
+    --item-timeout 40 ^
+    --delay 0.2
   ```
 
 ### 2. Lệnh Upload Lên Google Drive (Uploader):
 - **macOS:**
   ```bash
-  python3 tools/gdrive_upload.py --epub-dir ~/Downloads/epub_library --folder-id 1RKfWakoQOidHnxLXnZNgWoF_YokNt9lV
+  python3 tools/gdrive_upload.py \
+    --epub-dir ~/Downloads/epub_library \
+    --folder-id 1RKfWakoQOidHnxLXnZNgWoF_YokNt9lV
   ```
 - **Windows:**
   ```cmd
-  python tools\gdrive_upload.py --epub-dir D:\epub_library --folder-id 1RKfWakoQOidHnxLXnZNgWoF_YokNt9lV
+  python tools\gdrive_upload.py ^
+    --epub-dir D:\epub_library ^
+    --folder-id 1RKfWakoQOidHnxLXnZNgWoF_YokNt9lV
   ```
