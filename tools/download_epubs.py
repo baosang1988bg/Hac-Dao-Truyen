@@ -132,12 +132,21 @@ def post(url, body, timeout=30):
             return post(url, body, timeout)
         raise RuntimeError(f"HTTP {e.code}: {e.read().decode('utf-8','replace')[:150]}")
 
-def dl_bytes(url, dest, timeout=120):
+def dl_bytes(url, dest, timeout=45):
     req = urllib.request.Request(url, headers={"User-Agent":"Mozilla/5.0"})
+    data = bytearray()
+    t_start = time.time()
     with urllib.request.urlopen(req, timeout=timeout) as r:
-        data = r.read()
-    dest.write_bytes(data)
-    return len(data), hashlib.sha256(data).hexdigest()
+        while True:
+            if time.time() - t_start > timeout:
+                raise RuntimeError(f"Tải file quá lâu (> {timeout}s) -> skip")
+            chunk = r.read(65536)
+            if not chunk:
+                break
+            data.extend(chunk)
+    bytes_data = bytes(data)
+    dest.write_bytes(bytes_data)
+    return len(bytes_data), hashlib.sha256(bytes_data).hexdigest()
 
 def retry(fn, *a, n=3, d=2, **kw):
     for i in range(n):
@@ -183,10 +192,10 @@ def verify_epub(path):
     return True, f"{size/1024:.0f}KB"
 
 # ── Export ────────────────────────────────────────────────────────────────────
-def export_epub(slug, progress_fn=None):
+def export_epub(slug, progress_fn=None, max_timeout=45):
     rid = f"dl-{slug}-{int(time.time())}"
     r = retry(post, f"{BASE}/story-epub-export/start",
-              {"slug_truyen":slug,"action":"download","request_id":rid})
+              {"slug_truyen":slug,"action":"download","request_id":rid}, n=2, d=1)
     if not r.get("success"): raise RuntimeError(f"start: {r}")
     if r.get("status")=="done" and r.get("file_url"): return r
 
@@ -282,7 +291,7 @@ def fmt_time(s):
 
 # ── Download 1 truyện ─────────────────────────────────────────────────────────
 def dl_one(item, outdir, state, state_path, genre_cache,
-           resume=True, covers=True, dry=False, fetch_genre=True):
+           resume=True, covers=True, dry=False, fetch_genre=True, item_timeout=40):
     slug   = item["slug"]
     title  = item.get("title","")
     chs    = item.get("chapter_count",0)
@@ -311,11 +320,11 @@ def dl_one(item, outdir, state, state_path, genre_cache,
         print(f"    {DIM}export{R} {bar} {GRY}{st}{R}   ", end="\r", flush=True)
 
     try:
-        exp      = export_epub(slug, on_progress)
+        exp      = export_epub(slug, on_progress, max_timeout=item_timeout)
         file_url = exp.get("file_url","")
         if not file_url: raise RuntimeError("no file_url")
 
-        nbytes, sha = dl_bytes(file_url, epub_p)
+        nbytes, sha = dl_bytes(file_url, epub_p, timeout=item_timeout)
         ok, reason  = verify_epub(epub_p)
         if not ok:
             epub_p.unlink(missing_ok=True)
@@ -396,6 +405,7 @@ def main():
     p.add_argument("--build-genre-catalog", action="store_true",
                    help="Xây dựng catalog phân theo thể loại từ genre_cache")
     p.add_argument("--use-tor",       action="store_true", help="Bắt đầu tải bằng Tor SOCKS5 proxy ngay")
+    p.add_argument("--item-timeout",  type=float, default=40.0, help="Thời gian tối đa (giây) cho 1 truyện trước khi tự động skip (mặc định: 40s)")
     p.add_argument("--delay",         type=float, default=0.3)
     args = p.parse_args()
 
@@ -531,7 +541,8 @@ def main():
 
         r, nb = dl_one(item, outdir, state, state_path, genre_cache,
                        resume=args.resume, covers=not args.no_covers,
-                       dry=args.dry_run, fetch_genre=not args.no_genre)
+                       dry=args.dry_run, fetch_genre=not args.no_genre,
+                       item_timeout=args.item_timeout)
 
         if r=="ok":
             ok_n += 1; bytes_total += nb
