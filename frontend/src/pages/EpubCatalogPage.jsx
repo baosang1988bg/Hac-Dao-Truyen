@@ -148,22 +148,25 @@ export default function EpubCatalogPage() {
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sắp xếp</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {SORT_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setSort(opt.value)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '5px',
-                      padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
-                      background: sort === opt.value ? 'rgba(99,102,241,0.2)' : 'var(--glass-bg)',
-                      border: `1px solid ${sort === opt.value ? '#6366f1' : 'var(--border)'}`,
-                      color: sort === opt.value ? '#818cf8' : 'var(--text-main)',
-                      fontSize: '0.82rem', transition: 'all 0.15s',
-                    }}
-                  >
-                    <opt.icon size={13} /> {opt.label}
-                  </button>
-                ))}
+                {SORT_OPTIONS.map(opt => {
+                  const Icon = opt.icon
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => setSort(opt.value)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '5px',
+                        padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
+                        background: sort === opt.value ? 'rgba(99,102,241,0.2)' : 'var(--glass-bg)',
+                        border: `1px solid ${sort === opt.value ? '#6366f1' : 'var(--border)'}`,
+                        color: sort === opt.value ? '#818cf8' : 'var(--text-main)',
+                        fontSize: '0.82rem', transition: 'all 0.15s',
+                      }}
+                    >
+                      <Icon size={13} /> {opt.label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -212,22 +215,25 @@ export default function EpubCatalogPage() {
 
       {/* ── Quick sort chips (luôn hiện) ── */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', overflowX: 'auto', paddingBottom: '4px' }}>
-        {SORT_OPTIONS.slice(0, 4).map(opt => (
-          <button
-            key={opt.value}
-            onClick={() => setSort(opt.value)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '5px',
-              padding: '5px 12px', borderRadius: '20px', cursor: 'pointer', whiteSpace: 'nowrap',
-              background: sort === opt.value ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'var(--glass-bg)',
-              border: `1px solid ${sort === opt.value ? 'transparent' : 'var(--border)'}`,
-              color: sort === opt.value ? '#fff' : 'var(--text-muted)',
-              fontSize: '0.8rem', transition: 'all 0.2s',
-            }}
-          >
-            <opt.icon size={12} /> {opt.label}
-          </button>
-        ))}
+        {SORT_OPTIONS.slice(0, 4).map(opt => {
+          const Icon = opt.icon
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setSort(opt.value)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '5px',
+                padding: '5px 12px', borderRadius: '20px', cursor: 'pointer', whiteSpace: 'nowrap',
+                background: sort === opt.value ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'var(--glass-bg)',
+                border: `1px solid ${sort === opt.value ? 'transparent' : 'var(--border)'}`,
+                color: sort === opt.value ? '#fff' : 'var(--text-muted)',
+                fontSize: '0.8rem', transition: 'all 0.2s',
+              }}
+            >
+              <Icon size={12} /> {opt.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* ── Grid ── */}
