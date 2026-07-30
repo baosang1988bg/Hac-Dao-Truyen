@@ -11,6 +11,7 @@ import { coverGradient } from '../utils/coverColors'
 export default function NovelCover({ novel, size = 'md', badge }) {
   const [imgError, setImgError] = useState(false)
   const gradient = coverGradient(novel?.slug || '')
+  const title = novel?.title || '?'
   let coverSrc = novel?.cover_url || ''
   if (coverSrc && coverSrc.includes('audiotruyenfull.org')) {
     coverSrc = `/api/proxy-cover?url=${encodeURIComponent(coverSrc)}`
