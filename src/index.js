@@ -231,10 +231,10 @@ async function getNovels(env, params = new URLSearchParams()) {
     WITH base AS (
       SELECT n.slug, n.title, n.original_title, n.author, n.genre, n.notes,
              n.total_chapters, n.cover_url, n.translation_style, n.status,
-             n.updated_at, n.views, n.has_epub,
+             n.updated_at, n.views, n.has_epub, n.drive_file_id,
              CASE WHEN n.rating_count > 0 THEN ROUND(CAST(n.rating_sum AS REAL) / n.rating_count, 1) ELSE 0.0 END AS rating,
              n.rating_count,
-             (SELECT COUNT(*) FROM chapters c WHERE c.novel_slug = n.slug) AS chapter_count,
+             MAX(COALESCE(n.total_chapters, 0), (SELECT COUNT(*) FROM chapters c WHERE c.novel_slug = n.slug)) AS chapter_count,
              (SELECT c.title FROM chapters c WHERE c.novel_slug = n.slug
                ORDER BY c.chapter_number DESC LIMIT 1) AS latest_chapter_title,
              (SELECT MAX(c.created_at) FROM chapters c WHERE c.novel_slug = n.slug) AS last_created_at,
