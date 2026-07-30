@@ -10,6 +10,8 @@ import Reader from './pages/Reader'
 import AccountPage from './pages/AccountPage'
 import LoginPage from './pages/LoginPage'
 import Logs from './pages/Logs'
+import EpubReader from './pages/EpubReader'
+import EpubCatalogPage from './pages/EpubCatalogPage'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminNovels from './pages/admin/AdminNovels'
 import AdminNovelDetail from './pages/admin/AdminNovelDetail'
@@ -58,6 +60,8 @@ function App() {
         <Route path="/account" element={<AccountPage />} />
         <Route path="/novel/:slug" element={<NovelPage />} />
         <Route path="/novel/:slug/read/:chapter" element={<Reader />} />
+        <Route path="/novel/:slug/epub-reader" element={<EpubReader />} />
+        <Route path="/epub" element={<EpubCatalogPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

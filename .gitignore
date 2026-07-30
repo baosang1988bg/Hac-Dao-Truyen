@@ -15,11 +15,15 @@ google-services.json
 GoogleService-Info.plist
 
 # Credentials & OAuth tokens
+credentials.json
+key_status.json
 tools/credentials.json
 tools/token.json
 *.jsonl
 epub_library/
 bad_slugs.txt
+scratch/
+*.epub
 
 # ─────────────────────────────────────────────
 # PYTHON

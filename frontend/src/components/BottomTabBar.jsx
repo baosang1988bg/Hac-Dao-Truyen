@@ -1,6 +1,6 @@
 import React from 'react'
 import { NavLink, Link } from 'react-router-dom'
-import { Home, Library, User, Shield } from 'lucide-react'
+import { Home, Library, User, Shield, BookMarked } from 'lucide-react'
 
 /**
  * Tab bar dưới cùng — chỉ hiện trên mobile (<769px, ẩn bằng CSS).
@@ -22,6 +22,10 @@ export default function BottomTabBar() {
       <NavLink to="/library" className={cls}>
         <Library size={21} />
         <span>Tủ truyện</span>
+      </NavLink>
+      <NavLink to="/epub" className={cls}>
+        <BookMarked size={21} />
+        <span>EPUB</span>
       </NavLink>
       <NavLink to="/account" className={cls}>
         <User size={21} />

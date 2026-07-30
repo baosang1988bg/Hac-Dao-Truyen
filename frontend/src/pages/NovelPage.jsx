@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Play, BookOpen, Search, ArrowUpDown,
-  ChevronDown, ChevronUp, Shield, Heart,
+  ChevronDown, ChevronUp, Shield, Heart, BookMarked,
 } from 'lucide-react'
 import api from '../api'
 import userApi, { isLoggedIn } from '../userApi'
@@ -123,6 +123,14 @@ export default function NovelPage() {
             <BookOpen size={16} /> Đọc tiếp Ch. {fmtChapterLabel(lastRead)}
           </Link>
         )}
+        <Link
+          to={`/novel/${slug}/epub-reader`}
+          className="btn btn-secondary"
+          title="Đọc EPUB trực tiếp trên trình duyệt"
+          style={{ gap: '6px' }}
+        >
+          <BookMarked size={16} /> Đọc EPUB
+        </Link>
         <FollowButton slug={slug} />
       </div>
 

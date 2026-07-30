@@ -16,7 +16,7 @@ export default function LibraryPage() {
   useEffect(() => {
     let alive = true
     api.get('/novels')
-      .then(res => { if (alive) setNovels(res.data || []) })
+      .then(res => { if (alive) { const data = res.data; setNovels(Array.isArray(data) ? data : (data.novels || [])) } })
       .catch(() => { if (alive) setNovels([]) })
     return () => { alive = false }
   }, [])

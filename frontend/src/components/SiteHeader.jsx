@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { BookOpen, Home, Library, Shield, LogIn, User } from 'lucide-react'
+import { BookOpen, Home, Library, Shield, LogIn, User, BookMarked } from 'lucide-react'
 
 /**
  * Header trang guest.
@@ -31,6 +31,9 @@ export default function SiteHeader() {
           </NavLink>
           <NavLink to="/library" className={navCls}>
             <Library size={16} /> Tủ truyện
+          </NavLink>
+          <NavLink to="/epub" className={navCls}>
+            <BookMarked size={16} /> Kho EPUB
           </NavLink>
         </nav>
 

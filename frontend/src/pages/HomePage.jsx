@@ -21,7 +21,7 @@ export default function HomePage() {
   useEffect(() => {
     let alive = true
     api.get('/novels')
-      .then(res => { if (alive) { setNovels(res.data || []); setLoading(false) } })
+      .then(res => { if (alive) { const data = res.data; setNovels(Array.isArray(data) ? data : (data.novels || [])); setLoading(false) } })
       .catch(() => { if (alive) { setError('Không thể kết nối máy chủ. Vui lòng thử lại sau.'); setLoading(false) } })
     return () => { alive = false }
   }, [])
