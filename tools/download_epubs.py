@@ -59,52 +59,93 @@ GENRE_NAMES = {
     "dong-phuong-huyen-huyen": "🐉 Đông Phương HH",
 }
 
-# ── HTTP ──────────────────────────────────────────────────────────────────────
-import threading
+import socket, threading
 from concurrent.futures import ThreadPoolExecutor
 
+_raw_socket = socket.socket
+
 # TOR Proxy config
-TOR_PROXY = "socks5h://127.0.0.1:9050"
 use_tor_global = [False]
 tor_dl_count = [0]
 state_lock = threading.Lock()
 tor_lock   = threading.Lock()
 
+def get_active_tor_port():
+    for port in (9150, 9050):
+        try:
+            s = _raw_socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(1.5)
+            res = s.connect_ex(("127.0.0.1", port))
+            s.close()
+            if res == 0:
+                return port
+        except:
+            pass
+    return 9150
+
 def renew_tor_circuit():
-    """Gửi tín hiệu đổi IP cho Tor — Hỗ trợ cả Windows, macOS và Linux."""
+    """Gửi tín hiệu đổi IP cho Tor — Hỗ trợ cả Windows, macOS và Linux im lặng không bật popup."""
     with tor_lock:
         try:
-            import socket
+            for cport in (9151, 9051):
+                try:
+                    s = _raw_socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.settimeout(2)
+                    s.connect(("127.0.0.1", cport))
+                    s.sendall(b'AUTHENTICATE ""\r\nSIGNAL NEWNYM\r\n')
+                    resp = s.recv(1024)
+                    s.close()
+                    if b"250" in resp:
+                        time.sleep(2)
+                        print(f"\n{YLW}[🔄 NEW IP] Đã đổi IP Tor thành công (Control Port {cport})!{R}")
+                        return
+                except Exception:
+                    pass
+
+            tor_exe = Path(r"C:\Users\ADMIN\Desktop\Tor Browser\Browser\TorBrowser\Tor\tor.exe")
+            if sys.platform == "win32" and tor_exe.exists():
+                import subprocess
+                subprocess.Popen([str(tor_exe)], creationflags=0x08000000, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                time.sleep(2)
+                print(f"\n{YLW}[🔄 NEW IP] Đã khởi động lại Tor service ngầm!{R}")
+        except Exception:
+            pass
+
+last_warp_rotate_time = [0.0]
+
+def rotate_warp_ip():
+    """Tự động đổi IP Cloudflare WARP bằng warp-cli khi dính lỗi 403 hết lượt tải. Hỗ trợ đa luồng song song (Multi-worker safe)."""
+    with tor_lock:
+        now = time.time()
+        # Tránh xoay IP trùng lặp nếu luồng khác vừa xoay xong trong vòng 6 giây gần đây
+        if now - last_warp_rotate_time[0] < 6.0:
+            time.sleep(1.0)
+            return True
+
+        print(f"\n{YLW}[🔄 WARP AUTO-ROTATE] Đã bị 403 Limit (Hết lượt tải) -> Đang ngắt & kết nối lại WARP để lấy IP mới...{R}")
+        warp_cli = Path(r"C:\Program Files\Cloudflare\Cloudflare WARP\warp-cli.exe")
+        if warp_cli.exists():
+            import subprocess
             try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.settimeout(2)
-                s.connect(("127.0.0.1", 9051))
-                s.sendall(b'AUTHENTICATE ""\r\nSIGNAL NEWNYM\r\n')
-                resp = s.recv(1024)
-                s.close()
-                if b"250" in resp:
-                    time.sleep(2)
-                    print(f"\n{YLW}[🔄 NEW IP] Đã đổi IP Tor thành công (Control Port 9051)!{R}")
-                    return
-            except Exception:
-                pass
-
-            if sys.platform == "win32":
-                os.system("taskkill /IM tor.exe /F >nul 2>&1")
-                time.sleep(1)
-                os.system("start /B tor >nul 2>&1")
-            else:
-                os.system("pkill -HUP tor 2>/dev/null")
-
-            time.sleep(2)
-            print(f"\n{YLW}[🔄 NEW IP] Đã đổi đường truyền Tor sang IP mới!{R}")
-        except Exception as e:
-            print(f"\n{RED}[!] Lỗi đổi IP Tor: {e}{R}")
+                subprocess.run([str(warp_cli), "disconnect"], capture_output=True, check=False)
+                time.sleep(1.2)
+                subprocess.run([str(warp_cli), "connect"], capture_output=True, check=False)
+                time.sleep(2.0)
+                last_warp_rotate_time[0] = time.time()
+                print(f"{GRN}[✓ WARP AUTO-ROTATE] Đã đổi IP Cloudflare WARP mới thành công! Tất cả luồng tiếp tục...{R}\n")
+                return True
+            except Exception as e:
+                print(f"{RED}[!] Lỗi đổi IP WARP: {e}{R}")
+        else:
+            print(f"{RED}[!] Không tìm thấy warp-cli.exe tại {warp_cli}{R}")
+        return False
 
 def get_opener(use_tor=False):
+    socket.setdefaulttimeout(30)
     if use_tor or use_tor_global[0]:
-        import socks, socket
-        socks.set_default_proxy(socks.SOCKS5, "127.0.0.1", 9050)
+        import socks
+        port = get_active_tor_port()
+        socks.set_default_proxy(socks.SOCKS5, "127.0.0.1", port, True)
         socket.socket = socks.socksocket
 
 def get(url, timeout=30):
@@ -114,11 +155,15 @@ def get(url, timeout=30):
             return json.loads(r.read().decode())
     except urllib.error.HTTPError as e:
         if e.code == 403:
-            print(f"\n{YLW}[⚡ TOR] Bị 403 Limit -> Đổi IP Tor ngay...{R}")
-            use_tor_global[0] = True
-            get_opener(use_tor=True)
-            renew_tor_circuit()
-            return get(url, timeout)
+            if use_tor_global[0]:
+                print(f"\n{YLW}[⚡ TOR] Hết lượt tải IP này -> Tự động đổi IP Tor ngay...{R}")
+                get_opener(use_tor=True)
+                renew_tor_circuit()
+                return get(url, timeout)
+            else:
+                if rotate_warp_ip():
+                    return get(url, timeout)
+                raise RuntimeError("Hết lượt tải ebook hôm nay (IP bị giới hạn 403).")
         raise RuntimeError(f"HTTP {e.code}")
 
 def post(url, body, timeout=30):
@@ -129,11 +174,17 @@ def post(url, body, timeout=30):
             return json.loads(r.read().decode())
     except urllib.error.HTTPError as e:
         if e.code == 403:
-            print(f"\n{YLW}[⚡ TOR] Bị 403 Limit -> Đổi IP Tor ngay...{R}")
-            use_tor_global[0] = True
-            get_opener(use_tor=True)
-            renew_tor_circuit()
-            return post(url, body, timeout)
+            if use_tor_global[0]:
+                print(f"\n{YLW}[⚡ TOR] Hết lượt tải IP này -> Tự động đổi IP Tor ngay...{R}")
+                get_opener(use_tor=True)
+                renew_tor_circuit()
+                return post(url, body, timeout)
+            else:
+                if rotate_warp_ip():
+                    return post(url, body, timeout)
+                raise RuntimeError("Hết lượt tải ebook hôm nay (IP bị giới hạn 403).")
+        elif e.code in (502, 503, 504, 500):
+            raise RuntimeError(f"Server quá tải ({e.code} Bad Gateway)")
         raise RuntimeError(f"HTTP {e.code}: {e.read().decode('utf-8','replace')[:150]}")
 
 def dl_bytes(url, dest, timeout=45):
@@ -152,7 +203,7 @@ def dl_bytes(url, dest, timeout=45):
     dest.write_bytes(bytes_data)
     return len(bytes_data), hashlib.sha256(bytes_data).hexdigest()
 
-def retry(fn, *a, n=3, d=2, **kw):
+def retry(fn, *a, n=4, d=3, **kw):
     for i in range(n):
         try: return fn(*a, **kw)
         except Exception as e:
@@ -199,21 +250,21 @@ def verify_epub(path):
 def export_epub(slug, progress_fn=None, max_timeout=45):
     rid = f"dl-{slug}-{int(time.time())}"
     r = retry(post, f"{BASE}/story-epub-export/start",
-              {"slug_truyen":slug,"action":"download","request_id":rid}, n=2, d=1)
+              {"slug_truyen":slug,"action":"download","request_id":rid}, n=4, d=3, timeout=min(15, max_timeout))
     if not r.get("success"): raise RuntimeError(f"start: {r}")
     if r.get("status")=="done" and r.get("file_url"): return r
 
     token = r.get("token")
     if not token: raise RuntimeError("no token")
-    deadline = time.time() + EXP_TIMEOUT
+    deadline = time.time() + max_timeout
     while time.time() < deadline:
         time.sleep(POLL_INT)
-        sr = retry(get, f"{BASE}/story-epub-export/{urllib.parse.quote(token)}/status")
+        sr = retry(get, f"{BASE}/story-epub-export/{urllib.parse.quote(token)}/status", n=3, d=2, timeout=min(15, max_timeout))
         st, pct = sr.get("status","").lower(), sr.get("percent",0)
         if progress_fn: progress_fn(st, pct)
         if st=="done" and sr.get("file_url"): return sr
         if st in ("error","failed"): raise RuntimeError(f"server: {sr.get('message','')}")
-    raise RuntimeError("timeout")
+    raise RuntimeError(f"timeout (> {max_timeout}s)")
 
 # ── State ─────────────────────────────────────────────────────────────────────
 def load_json(path, default):
@@ -304,22 +355,30 @@ class WorkerDashboard:
         self.bytes_total = 0
         self.t0 = time.time()
         self.lines_printed = 0
+        self.recent_fails = []  # Lưu 5 lỗi mới nhất để hiển thị trực quan dưới Dashboard
 
     def update_stage(self, worker_id, idx, stage, color, title, chs=0, details=""):
         with state_lock:
             self.workers[worker_id] = {
                 "idx": idx,
-                "title": title[:30],
+                "title": title[:24],
                 "chs": chs,
                 "stage": stage,
                 "color": color,
-                "details": details
+                "details": details[:35]
             }
+            if stage == "FAIL":
+                self.recent_fails.insert(0, {
+                    "worker": worker_id, "idx": idx, "title": title[:28],
+                    "chs": chs, "err": details[:65], "time": datetime.now().strftime("%H:%M:%S")
+                })
+                self.recent_fails = self.recent_fails[:5]  # Giữ 5 lỗi gần nhất
+
             if stage in ("DOWN-SUCCESS", "FAIL"):
                 icon = "✓ OK" if stage == "DOWN-SUCCESS" else "✗ FAIL"
                 c = GRN if stage == "DOWN-SUCCESS" else RED
-                # In dòng lịch sử khi hoàn thành
-                print(f"  {c}{icon}{R} [{worker_id}] [{idx:>5}/{self.total}] {BOLD}{title[:32]:<32}{R} {GRY}{chs:,}ch | {details}{R}")
+                err_prefix = "🛑 LÝ DO: " if stage == "FAIL" else ""
+                print(f"  {c}{icon}{R} [{worker_id}] [{idx:>5}/{self.total}] {BOLD}{title[:28]:<28}{R} {GRY}{chs:,}ch{R} | {c}{err_prefix}{details}{R}")
 
             self.render()
 
@@ -331,11 +390,11 @@ class WorkerDashboard:
             sys.stdout.write(f"\033[{self.lines_printed}A")
 
         lines = []
-        lines.append(f"{BOLD}┌{'─'*76}┐{R}")
-        lines.append(f"{BOLD}│  📚 MULTI-WORKER DASHBOARD — BẢNG THEO DÕI SONG SONG ({self.num_workers} WORKERS){' '*9}│{R}")
-        lines.append(f"├{'─'*10}┬{'─'*18}┬{'─'*11}┬{'─'*34}┤")
-        lines.append(f"│ {BOLD}{'WORKER':<8}{R} │ {BOLD}{'BƯỚC (STAGE)':<16}{R} │ {BOLD}{'SỐ CHƯƠNG':<9}{R} │ {BOLD}{'TÊN TRUYỆN DANG XỬ LÝ':<32}{R} │")
-        lines.append(f"├{'─'*10}┼{'─'*18}┼{'─'*11}┼{'─'*34}┤")
+        lines.append(f"{BOLD}┌{'─'*88}┐{R}")
+        lines.append(f"{BOLD}│  📚 MULTI-WORKER DASHBOARD — BẢNG THEO DÕI SONG SONG ({self.num_workers} WORKERS){' '*21}│{R}")
+        lines.append(f"├{'─'*8}┬{'─'*15}┬{'─'*9}┬{'─'*26}┬{'─'*24}┤")
+        lines.append(f"│ {BOLD}{'WORKER':<6}{R} │ {BOLD}{'BƯỚC (STAGE)':<13}{R} │ {BOLD}{'CHƯƠNG':<7}{R} │ {BOLD}{'TÊN TRUYỆN DANG XỬ LÝ':<24}{R} │ {BOLD}{'TRẠNG THÁI / LỖI':<22}{R} │")
+        lines.append(f"├{'─'*8}┼{'─'*15}┼{'─'*9}┼{'─'*26}┼{'─'*24}┤")
 
         for w in range(1, self.num_workers + 1):
             w_key = f"W-{w}"
@@ -344,10 +403,11 @@ class WorkerDashboard:
             clr = info.get("color", GRY)
             ttl = info.get("title", "---")
             chs = info.get("chs", 0)
+            dtl = info.get("details", "---")
             chs_str = f"{chs:,}ch" if chs > 0 else "--"
-            lines.append(f"│ {MGT}{w_key:<8}{R} │ {clr}{stg:<16}{R} │ {CYN}{chs_str:>9}{R} │ {WHT}{ttl:<32}{R} │")
+            lines.append(f"│ {MGT}{w_key:<6}{R} │ {clr}{stg:<13}{R} │ {CYN}{chs_str:>7}{R} │ {WHT}{ttl:<24}{R} │ {GRY}{dtl:<22}{R} │")
 
-        lines.append(f"└{'─'*10}┴{'─'*18}┴{'─'*11}┴{'─'*34}┘")
+        lines.append(f"└{'─'*8}┴{'─'*15}┴{'─'*9}┴{'─'*26}┴{'─'*24}┘")
 
         elapsed  = time.time() - self.t0
         dl_done  = self.ok_n + self.fail_n
@@ -356,6 +416,12 @@ class WorkerDashboard:
         pct      = tot_proc / self.total * 100 if self.total > 0 else 0
         bar      = progress_bar(pct, 20)
         lines.append(f"  {bar} {CYN}{fmt_size(self.bytes_total)}{R} | {YLW}~{rate:.0f}/h{R} | {GRN}✓{self.ok_n}{R} {GRY}⤼{self.skip_n}{R} {RED}✗{self.fail_n}{R}")
+
+        # 📋 Khối hiển thị chi tiết nguyên nhân FAIL mới nhất trực quan bên dưới Process:
+        if self.recent_fails:
+            lines.append(f"\n{BOLD}{RED}  ❌ CHI TIẾT LÍ DO FAIL GẦN ĐÂY NHẤT (RECENT FAIL REASONS):{R}")
+            for f_item in self.recent_fails:
+                lines.append(f"    {RED}• [{f_item['time']}] [{f_item['worker']}] {f_item['title']:<26}{R} → {RED}{BOLD}{f_item['err']}{R}")
 
         out_text = "\n".join(f"\033[K{line}" for line in lines) + "\n"
         sys.stdout.write(out_text)
@@ -369,8 +435,9 @@ def log_step(worker_id, idx, total, tag, color, title, chs=0, details=""):
         global_dashboard[0].update_stage(worker_id, idx, tag, color, title, chs, details)
     else:
         w_prefix = f"{MGT}[{worker_id}]{R}" if worker_id else f"{MGT}[W-1]{R}"
+        err_prefix = "🛑 LÝ DO: " if tag == "FAIL" else ""
         with state_lock:
-            print(f"{w_prefix} [{idx:>5}/{total}] {color}[{tag:<13}]{R} {BOLD}{title:<34}{R} {GRY}{chs:,}ch | {details}{R}")
+            print(f"{w_prefix} [{idx:>5}/{total}] {color}[{tag:<13}]{R} {BOLD}{title:<28}{R} {GRY}{chs:,}ch{R} | {color}{err_prefix}{details}{R}")
 
 # ── Download 1 truyện ─────────────────────────────────────────────────────────
 def dl_one(item, outdir, state, state_path, genre_cache, worker_id="W-1", idx=0, total_count=0,
@@ -416,7 +483,7 @@ def dl_one(item, outdir, state, state_path, genre_cache, worker_id="W-1", idx=0,
         # Stage 3: DOWNLOADING
         log_step(worker_id, idx, total_count, "DOWNLOADING", BLU, short_title, chs, "Đang nhận file nhị phân EPUB...")
 
-        nbytes, sha = dl_bytes(file_url, epub_p, timeout=item_timeout)
+        nbytes, sha = retry(dl_bytes, file_url, epub_p, timeout=item_timeout, n=3, d=2)
         ok, reason  = verify_epub(epub_p)
         if not ok:
             epub_p.unlink(missing_ok=True)
@@ -461,6 +528,53 @@ def dl_one(item, outdir, state, state_path, genre_cache, worker_id="W-1", idx=0,
             save_json(state_path, state)
         return "fail", 0
 
+def print_error_breakdown(state, outdir):
+    fails = state.get("fail", {})
+    if not fails:
+        print(f"\n{GRN}✓ Tuyệt vời! Không có truyện nào bị lỗi trong state.json!{R}\n")
+        return
+
+    print(f"\n{BOLD}{'═'*76}{R}")
+    print(f"{BOLD}{RED}  ❌ BẢNG THỐNG KÊ VÀ TRỰC QUAN HÓA CHI TIẾT LỖI ({len(fails):,} TRUYỆN FAIL){R}")
+    print(f"{'─'*76}")
+
+    categories = {}
+    for slug, info in fails.items():
+        err = info.get("err", "Lỗi không xác định")
+        if "SOCKS5 proxy" in err or "socks" in err.lower() or "10061" in err:
+            cat = "🔌 Lỗi kết nối Tor Proxy (Chưa bật Tor / Sai Cổng 9050)"
+        elif "HTTP" in err:
+            cat = f"🌐 Lỗi Server HTTP ({err[:35]})"
+        elif "timeout" in err.lower() or "quá lâu" in err:
+            cat = "⏱️ Lỗi Timeout (Quá thời gian phản hồi)"
+        elif "verify" in err.lower() or "ZIP" in err or "small" in err:
+            cat = "📦 Lỗi File EPUB bị hỏng / Không đạt chất lượng"
+        else:
+            cat = f"⚠️ Lỗi khác ({err[:45]})"
+        
+        categories.setdefault(cat, []).append((slug, err, info.get("at", "")))
+
+    print(f"  {BOLD}{'NGUYÊN NHÂN LỖI TRỰC QUAN':<54} │ {'SỐ LƯỢNG':<12}{R}")
+    print(f"  {'─'*54}─┼─{'─'*12}")
+    for cat, items in sorted(categories.items(), key=lambda x: -len(x[1])):
+        print(f"  {YLW}{cat:<54}{R} │ {RED}{len(items):>8,} truyện{R}")
+
+    print(f"\n  {BOLD}📋 TOP 15 TRUYỆN MỚI BỊ LỖI GẦN ĐÂY NHẤT:{R}")
+    print(f"  {'─'*76}")
+    
+    sorted_fails = sorted(fails.items(), key=lambda x: x[1].get("at", ""), reverse=True)
+    for idx, (slug, info) in enumerate(sorted_fails[:15], 1):
+        err_msg = info.get("err", "")
+        time_str = info.get("at", "")[:19].replace("T", " ")
+        print(f"  {GRY}{idx:>2}.{R} {BOLD}{slug:<42}{R}")
+        print(f"      {RED}└─> {err_msg}{R} {GRY}(Lúc: {time_str}){R}")
+
+    if len(fails) > 15:
+        print(f"\n  {GRY}... và còn {len(fails)-15:,} truyện lỗi khác trong state.json{R}")
+
+    print(f"\n  {CYN}💡 Gợi ý:{R} Để chạy lại các truyện lỗi này, hãy dùng cờ: {BOLD}--retry-failed --resume{R}")
+    print(f"{BOLD}{'═'*76}\n")
+
 # ── Header banner ─────────────────────────────────────────────────────────────
 def print_header(outdir, state):
     ok_n   = len(state["ok"])
@@ -502,6 +616,7 @@ def main():
     p.add_argument("--limit",         type=int, default=0)
     p.add_argument("--retry-failed",  action="store_true")
     p.add_argument("--verify-only",   action="store_true")
+    p.add_argument("--show-errors",   action="store_true", help="Hiển thị bảng thống kê chi tiết và phân loại tất cả lỗi")
     p.add_argument("--build-genre-catalog", action="store_true",
                    help="Xây dựng catalog phân theo thể loại từ genre_cache")
     p.add_argument("--use-tor",       action="store_true", help="Bắt đầu tải bằng Tor SOCKS5 proxy ngay")
@@ -518,6 +633,10 @@ def main():
     state_path = outdir/"state.json"
     state      = load_json(state_path, {"ok":{}, "fail":{}})
     genre_cache= load_json(outdir/"genre_cache.json", {})
+
+    if args.show_errors:
+        print_error_breakdown(state, outdir)
+        return
 
     # 🔗 Tự động đồng bộ với upload_state.json (Google Drive)
     # Bất kỳ truyện nào ĐÃ CÓ trên Google Drive -> tự động skip bên Downloader, không tải lại!

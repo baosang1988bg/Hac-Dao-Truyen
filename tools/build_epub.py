@@ -250,7 +250,8 @@ def build(src_dir, title, author, out_epub, prefer_ebooklib=None, quiet=False):
                 say("WARN: ebooklib chưa cài (pip install ebooklib) — fallback pandoc, có thể chậm.")
                 use_ebooklib = False
         if not use_ebooklib:
-            combined = os.path.join('/tmp', re.sub(r'\W+', '_', title) + '_build.md')
+            import tempfile
+            combined = os.path.join(tempfile.gettempdir(), re.sub(r'\W+', '_', title) + '_build.md')
             with open(combined, 'w', encoding='utf-8') as fh:
                 fh.write('\n\n'.join(parts))
             meta = combined + '.yaml'
@@ -336,8 +337,9 @@ def main():
 
     try:
         if a.src:
+            import tempfile
             src, title = a.src, a.title or os.path.basename(a.src.rstrip('/'))
-            out = a.out or os.path.join('/tmp', re.sub(r'\W+', '', title) + '.epub')
+            out = a.out or os.path.join(tempfile.gettempdir(), re.sub(r'\W+', '', title) + '.epub')
             build(src, title, a.author, out, prefer_ebooklib=prefer)
         else:
             if not a.novel:

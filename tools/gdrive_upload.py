@@ -29,6 +29,9 @@ import time
 from pathlib import Path
 from datetime import datetime
 
+import socket
+socket.setdefaulttimeout(60)
+
 try:
     from googleapiclient.discovery import build
     from googleapiclient.http import MediaFileUpload
@@ -40,14 +43,17 @@ except ImportError:
     print("  pip install google-api-python-client google-auth-oauthlib google-auth-httplib2")
     sys.exit(1)
 
+import threading
+from concurrent.futures import ThreadPoolExecutor
+
 # ─── Config ───────────────────────────────────────────────────────────────────
 SCOPES            = ["https://www.googleapis.com/auth/drive"]
 CREDENTIALS_FILE  = str(Path(__file__).parent / "credentials.json")  # OAuth client secret
 TOKEN_FILE        = str(Path(__file__).parent / "token.json")
-CHUNK_SIZE        = 4 * 1024 * 1024   # 4MB chunk upload
-RETRY_COUNT       = 3
-RETRY_DELAY       = 3
-UPLOAD_DELAY      = 0.3               # delay giữa các file upload
+CHUNK_SIZE        = 8 * 1024 * 1024   # 8MB chunk upload
+RETRY_COUNT       = 5
+RETRY_DELAY       = 4
+UPLOAD_DELAY      = 0.0               # delay giữa các file upload
 
 MIME_EPUB   = "application/epub+zip"
 MIME_JSON   = "application/json"
@@ -59,6 +65,11 @@ MIME_MAP    = {
     ".png":  "image/png",
     ".json": MIME_JSON,
 }
+
+thread_local = threading.local()
+state_lock   = threading.Lock()
+folder_lock  = threading.Lock()
+folder_cache = {}
 
 # ─── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -85,19 +96,36 @@ def get_drive_service(credentials_file=CREDENTIALS_FILE, token_file=TOKEN_FILE):
 
     return build("drive", "v3", credentials=creds)
 
+def get_thread_service(credentials_file, token_file):
+    if not hasattr(thread_local, "service"):
+        thread_local.service = get_drive_service(credentials_file, token_file)
+    return thread_local.service
+
 # ─── Drive helpers ─────────────────────────────────────────────────────────────
 
 def get_or_create_folder(service, name, parent_id):
-    """Tìm hoặc tạo folder con trong parent_id."""
+    """Tìm hoặc tạo folder con trong parent_id (có cache)."""
+    cache_key = f"{parent_id}:{name}"
+    with folder_lock:
+        if cache_key in folder_cache:
+            return folder_cache[cache_key]
+
     q = (f"name='{name}' and mimeType='{MIME_FOLDER}' "
          f"and '{parent_id}' in parents and trashed=false")
     r = service.files().list(q=q, fields="files(id,name)").execute()
     files = r.get("files", [])
     if files:
-        return files[0]["id"]
+        fid = files[0]["id"]
+        with folder_lock:
+            folder_cache[cache_key] = fid
+        return fid
+
     meta = {"name": name, "mimeType": MIME_FOLDER, "parents": [parent_id]}
     f = service.files().create(body=meta, fields="id").execute()
-    return f["id"]
+    fid = f["id"]
+    with folder_lock:
+        folder_cache[cache_key] = fid
+    return fid
 
 
 def file_exists_on_drive(service, name, parent_id, local_md5=None):
@@ -173,11 +201,11 @@ def save_upload_state(path, state):
 
 # ─── Upload 1 truyện ──────────────────────────────────────────────────────────
 
-def upload_novel(service, slug, epub_dir, root_folder_id, state, state_path):
+def upload_novel(credentials_file, token_file, slug, epub_dir, root_folder_id, state, state_path):
     """Upload EPUB + cover + meta cho 1 truyện. Trả về 'ok'|'skip'|'fail'."""
-    if slug in state.get("uploaded", {}):
-        # Nhanh skip nếu đã upload đủ
-        return "skip"
+    with state_lock:
+        if slug in state.get("uploaded", {}):
+            return "skip"
 
     epubs_dir  = epub_dir / "epubs"
     covers_dir = epub_dir / "covers"
@@ -188,7 +216,8 @@ def upload_novel(service, slug, epub_dir, root_folder_id, state, state_path):
         return "skip"  # Chưa có EPUB local
 
     try:
-        # Tạo sub-folder cho truyện
+        service = get_thread_service(credentials_file, token_file)
+        # Tạo sub-folder cho truyện (có cache)
         novel_folder_id = get_or_create_folder(service, slug, root_folder_id)
 
         uploaded_files = {}
@@ -196,7 +225,6 @@ def upload_novel(service, slug, epub_dir, root_folder_id, state, state_path):
         # Upload EPUB
         fid, status = upload_file(service, epub_path, novel_folder_id)
         uploaded_files["epub"] = {"id": fid, "status": status}
-        time.sleep(UPLOAD_DELAY)
 
         # Upload cover (nếu có)
         for ext in [".jpg", ".jpeg", ".png", ".webp"]:
@@ -204,7 +232,6 @@ def upload_novel(service, slug, epub_dir, root_folder_id, state, state_path):
             if cov.exists():
                 fid2, st2 = upload_file(service, cov, novel_folder_id)
                 uploaded_files["cover"] = {"id": fid2, "status": st2}
-                time.sleep(UPLOAD_DELAY)
                 break
 
         # Upload metadata JSON
@@ -212,15 +239,15 @@ def upload_novel(service, slug, epub_dir, root_folder_id, state, state_path):
         if meta_path.exists():
             fid3, st3 = upload_file(service, meta_path, novel_folder_id)
             uploaded_files["meta"] = {"id": fid3, "status": st3}
-            time.sleep(UPLOAD_DELAY)
 
-        state.setdefault("uploaded", {})[slug] = {
-            "at": datetime.now().isoformat(),
-            "folder_id": novel_folder_id,
-            "files": uploaded_files,
-        }
-        state["failed"] = {k: v for k, v in state.get("failed", {}).items() if k != slug}
-        save_upload_state(state_path, state)
+        with state_lock:
+            state.setdefault("uploaded", {})[slug] = {
+                "at": datetime.now().isoformat(),
+                "folder_id": novel_folder_id,
+                "files": uploaded_files,
+            }
+            state["failed"] = {k: v for k, v in state.get("failed", {}).items() if k != slug}
+            save_upload_state(state_path, state)
 
         statuses = [v["status"] for v in uploaded_files.values()]
         overall = "skip" if all(s == "skip" for s in statuses) else "ok"
@@ -229,8 +256,9 @@ def upload_novel(service, slug, epub_dir, root_folder_id, state, state_path):
     except Exception as e:
         msg = str(e)[:200]
         print(f"  ✗ upload {slug}: {msg}")
-        state.setdefault("failed", {})[slug] = {"error": msg, "at": datetime.now().isoformat()}
-        save_upload_state(state_path, state)
+        with state_lock:
+            state.setdefault("failed", {})[slug] = {"error": msg, "at": datetime.now().isoformat()}
+            save_upload_state(state_path, state)
         return "fail"
 
 # ─── CLI ───────────────────────────────────────────────────────────────────────
@@ -246,7 +274,8 @@ def parse_args():
     p.add_argument("--retry-failed", action="store_true")
     p.add_argument("--verify-only",  action="store_true", help="Chỉ verify file trên Drive")
     p.add_argument("--limit",        type=int, default=0)
-    p.add_argument("--delay",        type=float, default=0.3)
+    p.add_argument("--workers",      type=int, default=4, help="Số luồng upload song song (mặc định: 4, khuyến nghị: 4-6)")
+    p.add_argument("--delay",        type=float, default=0.0)
     return p.parse_args()
 
 
@@ -260,9 +289,10 @@ def main():
 
     print("=" * 64)
     print("  Google Drive Upload — AudioTruyenFull EPUB Library")
-    print(f"  Local : {epub_dir}")
-    print(f"  Drive : https://drive.google.com/drive/folders/{args.folder_id}")
-    print(f"  Resume: {'Có (Tự động bỏ qua file đã up)' if resume_active else 'Tắt (Upload lại)'}")
+    print(f"  Local  : {epub_dir}")
+    print(f"  Drive  : https://drive.google.com/drive/folders/{args.folder_id}")
+    print(f"  Workers: {args.workers} luồng song song")
+    print(f"  Resume : {'Có (Tự động bỏ qua file đã up)' if resume_active else 'Tắt (Upload lại)'}")
     print("=" * 64)
 
     # Auth
@@ -322,30 +352,44 @@ def main():
         return
 
     # Upload loop
-    print(f"\n[upload] Bắt đầu upload {len(work):,} truyện...")
+    num_workers = max(1, args.workers)
+    print(f"\n[upload] Bắt đầu upload {len(work):,} truyện với {num_workers} luồng song song...")
     ok = skip = fail = 0
     total = len(work)
     t0 = time.time()
+    processed_count = 0
 
-    for i, slug in enumerate(work, 1):
-        if i % 10 == 1 or i == total:
-            pct = i / total * 100
-            elapsed = time.time() - t0
-            rate = i / elapsed * 60 if elapsed > 0 else 0
-            eta  = (total - i) / (rate / 60) / 60 if rate > 0 else 0
-            print(f"\n[{i:>5}/{total}] {pct:.0f}% | {rate:.0f}/min | ETA {eta:.0f}h | {slug}")
+    def worker_job(item_tuple):
+        nonlocal ok, skip, fail, processed_count
+        idx, slug = item_tuple
+        r = upload_novel(args.credentials, args.token, slug, epub_dir, args.folder_id, ustate, upload_state_path)
+        
+        with state_lock:
+            processed_count += 1
+            if r == "ok":   ok   += 1
+            elif r == "skip": skip += 1
+            else:           fail += 1
 
-        r = upload_novel(service, slug, epub_dir, args.folder_id, ustate, upload_state_path)
-        sym = "✓" if r == "ok" else ("⤼" if r == "skip" else "✗")
-        if r != "ok":
-            print(f"  {sym} {slug}")
+            if processed_count % 10 == 1 or processed_count == total:
+                pct = processed_count / total * 100
+                elapsed = time.time() - t0
+                rate = processed_count / elapsed * 60 if elapsed > 0 else 0
+                eta  = (total - processed_count) / (rate / 60) / 60 if rate > 0 else 0
+                print(f"\n[{processed_count:>5}/{total}] {pct:.0f}% | ~{rate:.0f} truyện/phút | ETA {eta:.1f}h | {slug}")
 
-        if r == "ok":   ok   += 1
-        elif r == "skip": skip += 1
-        else:           fail += 1
+            if r != "ok":
+                sym = "✓" if r == "ok" else ("⤼" if r == "skip" else "✗")
+                print(f"  {sym} {slug}")
 
-        if r in ("ok", "fail"):
+        if r in ("ok", "fail") and args.delay > 0:
             time.sleep(args.delay)
+
+    if num_workers > 1:
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
+            executor.map(worker_job, enumerate(work, 1))
+    else:
+        for item in enumerate(work, 1):
+            worker_job(item)
 
     elapsed = time.time() - t0
     print("\n" + "=" * 64)
