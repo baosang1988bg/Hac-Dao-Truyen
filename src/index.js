@@ -41,9 +41,14 @@ async function handleApi(request, url, env) {
   const path = url.pathname;
   const method = request.method;
 
-  // GET /api/novels
+  // GET /api/novels?q=&sort=&order=&genre=&status=&has_epub=&page=&limit=
   if (path === '/api/novels' && method === 'GET') {
-    return getNovels(env);
+    return getNovels(env, url.searchParams);
+  }
+
+  // GET /api/novels/genres — danh sách thể loại distinct
+  if (path === '/api/novels/genres' && method === 'GET') {
+    return getGenres(env);
   }
 
   // GET /api/server-info
@@ -76,6 +81,18 @@ async function handleApi(request, url, env) {
   const epubMatch = path.match(/^\/api\/novels\/([^/]+)\/epub$/);
   if (epubMatch && method === 'GET') {
     return getEpub(env, epubMatch[1]);
+  }
+
+  // POST /api/novels/:slug/view — tăng lượt xem
+  const viewMatch = path.match(/^\/api\/novels\/([^/]+)\/view$/);
+  if (viewMatch && method === 'POST') {
+    return trackView(env, viewMatch[1]);
+  }
+
+  // POST /api/novels/:slug/rate — đánh giá truyện (1-5 sao)
+  const rateMatch = path.match(/^\/api\/novels\/([^/]+)\/rate$/);
+  if (rateMatch && method === 'POST') {
+    return rateNovel(env, rateMatch[1], request);
   }
 
   // GET /api/novels/:slug/chapters
@@ -171,37 +188,125 @@ async function handleApi(request, url, env) {
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
-async function getNovels(env) {
-  // Trang chủ lọc theo chapter_count > 0 và dùng last_translated_at /
-  // latest_chapter_title, nên phải tính các field này từ bảng chapters —
-  // giống hệt _translated_stats() của backend FastAPI (routers/novels.py).
-  // KHÔNG trả source_url/last_translated_url cho guest (lộ nguồn crawl).
-  const { results } = await env.DB.prepare(`
-    SELECT n.slug, n.title, n.original_title, n.author, n.genre, n.notes,
-           n.total_chapters, n.cover_url, n.translation_style, n.status,
-           n.updated_at,
-           (SELECT COUNT(*) FROM chapters c
-             WHERE c.novel_slug = n.slug)                    AS chapter_count,
-           (SELECT c.title FROM chapters c
-             WHERE c.novel_slug = n.slug
-             ORDER BY c.chapter_number DESC LIMIT 1)         AS latest_chapter_title,
-           (SELECT MAX(c.created_at) FROM chapters c
-             WHERE c.novel_slug = n.slug)                    AS last_created_at,
-           n.glossary_count
-    FROM novels n
-    ORDER BY n.updated_at DESC
-  `).all();
+async function getNovels(env, params = new URLSearchParams()) {
+  const q       = (params.get('q') || '').trim().toLowerCase();
+  const sort    = params.get('sort') || 'updated_at';   // updated_at | chapter_count | views | rating | title
+  const order   = params.get('order') === 'asc' ? 'ASC' : 'DESC';
+  const genre   = (params.get('genre') || '').trim();
+  const status  = params.get('status') || '';           // ongoing | completed
+  const hasEpub = params.get('has_epub');               // '1' | 'true' | ''
+  const page    = Math.max(1, parseInt(params.get('page') || '1'));
+  const limit   = Math.min(100, Math.max(1, parseInt(params.get('limit') || '48')));
+  const offset  = (page - 1) * limit;
 
-  const novels = results.map(({ last_created_at, ...n }) => ({
+  // D1/SQLite không cho ORDER BY alias của subquery trực tiếp → wrap trong CTE
+  const SORT_COLS = {
+    updated_at:    'updated_at',
+    chapter_count: 'chapter_count',
+    views:         'views',
+    rating:        'rating',
+    title:         'title',
+  };
+  const sortCol = SORT_COLS[sort] || 'updated_at';
+
+  // Build WHERE clauses
+  const where = ['1=1'];
+  const binds = [];
+
+  if (genre) {
+    where.push("n.genre LIKE ?");
+    binds.push(`%${genre}%`);
+  }
+  if (status === 'ongoing' || status === 'completed') {
+    where.push("n.status = ?");
+    binds.push(status);
+  }
+  if (hasEpub === '1' || hasEpub === 'true') {
+    where.push("n.has_epub = 1");
+  }
+
+  const whereStr = where.join(' AND ');
+
+  const { results } = await env.DB.prepare(`
+    WITH base AS (
+      SELECT n.slug, n.title, n.original_title, n.author, n.genre, n.notes,
+             n.total_chapters, n.cover_url, n.translation_style, n.status,
+             n.updated_at, n.views, n.has_epub,
+             CASE WHEN n.rating_count > 0 THEN ROUND(CAST(n.rating_sum AS REAL) / n.rating_count, 1) ELSE 0.0 END AS rating,
+             n.rating_count,
+             (SELECT COUNT(*) FROM chapters c WHERE c.novel_slug = n.slug) AS chapter_count,
+             (SELECT c.title FROM chapters c WHERE c.novel_slug = n.slug
+               ORDER BY c.chapter_number DESC LIMIT 1) AS latest_chapter_title,
+             (SELECT MAX(c.created_at) FROM chapters c WHERE c.novel_slug = n.slug) AS last_created_at,
+             n.glossary_count
+      FROM novels n
+      WHERE ${whereStr}
+    )
+    SELECT * FROM base
+    ORDER BY ${sortCol} ${order}
+  `).bind(...binds).all();
+
+  // Client-side text search (D1 không có FTS)
+  let filtered = results;
+  if (q) {
+    filtered = results.filter(n =>
+      (n.title || '').toLowerCase().includes(q) ||
+      (n.original_title || '').toLowerCase().includes(q) ||
+      (n.author || '').toLowerCase().includes(q)
+    );
+  }
+
+  // Chỉ truyện có chương dịch (trừ khi sort catalog toàn bộ)
+  const total = filtered.length;
+
+  // Phân trang
+  const paged = filtered.slice(offset, offset + limit);
+
+  const novels = paged.map(({ last_created_at, ...n }) => ({
     ...n,
-    // D1 datetime('now') là UTC "YYYY-MM-DD HH:MM:SS" → epoch seconds
     last_translated_at: last_created_at
       ? Math.floor(Date.parse(last_created_at.replace(' ', 'T') + 'Z') / 1000)
       : null,
     glossary_count: n.glossary_count || 0,
   }));
-  return jsonResponse(novels);
+
+  return jsonResponse({ novels, total, page, limit, pages: Math.ceil(total / limit) });
 }
+
+async function getGenres(env) {
+  const { results } = await env.DB.prepare(`
+    SELECT DISTINCT genre FROM novels
+    WHERE genre IS NOT NULL AND genre != ''
+    ORDER BY genre ASC
+  `).all();
+  return jsonResponse(results.map(r => r.genre));
+}
+
+async function trackView(env, slug) {
+  await env.DB.prepare(`
+    UPDATE novels SET views = views + 1 WHERE slug = ?
+  `).bind(slug).run();
+  return jsonResponse({ ok: true });
+}
+
+async function rateNovel(env, slug, request) {
+  let body;
+  try { body = await request.json(); } catch { return jsonResponse({ error: 'Invalid JSON' }, 400); }
+  const stars = parseInt(body.stars);
+  if (!stars || stars < 1 || stars > 5) return jsonResponse({ error: 'stars must be 1-5' }, 400);
+
+  await env.DB.prepare(`
+    UPDATE novels SET rating_sum = rating_sum + ?, rating_count = rating_count + 1 WHERE slug = ?
+  `).bind(stars, slug).run();
+
+  const row = await env.DB.prepare(`
+    SELECT rating_sum, rating_count FROM novels WHERE slug = ?
+  `).bind(slug).first();
+  const avg = row && row.rating_count > 0 ? Math.round((row.rating_sum / row.rating_count) * 10) / 10 : 0;
+  return jsonResponse({ ok: true, rating: avg, rating_count: row?.rating_count || 0 });
+}
+
+
 
 /**
  * Xác thực admin: Worker không giữ session token (token sống trong Python
@@ -280,18 +385,38 @@ async function getNovel(env, slug, request) {
 }
 
 async function getEpub(env, slug) {
-  // EPUB được build local (tools/build_epub.py) và upload lên R2 key
-  // "<slug>/book.epub" bởi migrate_to_cloudflare.py / tools/auto_update.py.
+  // 1. Kiểm tra drive_file_id từ Google Drive Library trong D1
+  const novel = await env.DB.prepare(`SELECT drive_file_id FROM novels WHERE slug = ?`).bind(slug).first();
+  if (novel?.drive_file_id) {
+    const driveUrl = `https://drive.usercontent.google.com/download?id=${novel.drive_file_id}&export=download&confirm=t`;
+    try {
+      const driveRes = await fetch(driveUrl, { redirect: 'follow' });
+      if (driveRes.ok) {
+        return new Response(driveRes.body, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/epub+zip',
+            'Content-Disposition': `inline; filename="${slug}.epub"`,
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'public, max-age=86400',
+          },
+        });
+      }
+    } catch { /* fallback to R2 */ }
+  }
+
+  // 2. Fallback: EPUB từ R2 key "<slug>/book.epub"
   const obj = await env.CHAPTERS.get(`${slug}/book.epub`);
   if (!obj) {
-    return jsonResponse({ error: 'EPUB chưa có cho truyện này — chạy migrate_to_cloudflare.py sau khi build EPUB.' }, 404);
+    return jsonResponse({ error: 'EPUB chưa có cho truyện này.' }, 404);
   }
   return new Response(obj.body, {
     status: 200,
     headers: {
       'Content-Type': 'application/epub+zip',
-      // slug là ASCII-safe → dùng làm filename tải về
-      'Content-Disposition': `attachment; filename="${slug}.epub"`,
+      'Content-Disposition': `inline; filename="${slug}.epub"`,
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=86400',
     },
   });
 }
