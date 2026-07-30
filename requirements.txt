@@ -1,3 +1,7 @@
+fastapi
+uvicorn
+httpx
+pydantic
 google-genai
 groq
 openai
