@@ -295,17 +295,23 @@ function EpubCard({ novel }) {
       </Link>
 
       {/* Info */}
-      <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+      <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 }}>
         <Link to={`/novel/${novel.slug}`} style={{ color: 'var(--text-main)', textDecoration: 'none' }}>
           <div style={{ fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {novel.title}
           </div>
         </Link>
 
+        {novel.genre ? (
+          <div style={{ fontSize: '0.68rem', color: '#818cf8', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {novel.genre}
+          </div>
+        ) : null}
+
         {/* Stats */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-            <BookOpen size={11} /> {fmtNumber(novel.chapter_count)}
+            <BookOpen size={11} /> {fmtNumber(novel.chapter_count || novel.total_chapters || 0)} chương
           </span>
           {novel.views > 0 && (
             <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
