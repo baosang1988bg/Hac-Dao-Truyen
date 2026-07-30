@@ -11,17 +11,21 @@ import { coverGradient } from '../utils/coverColors'
 export default function NovelCover({ novel, size = 'md', badge }) {
   const [imgError, setImgError] = useState(false)
   const gradient = coverGradient(novel?.slug || '')
-  const title = novel?.title || '?'
-  const showImg = novel?.cover_url && !imgError
+  let coverSrc = novel?.cover_url || ''
+  if (coverSrc && coverSrc.includes('audiotruyenfull.org')) {
+    coverSrc = `/api/proxy-cover?url=${encodeURIComponent(coverSrc)}`
+  }
+  const showImg = Boolean(coverSrc) && !imgError
 
   return (
     <div className={`novel-cover novel-cover--${size}`}>
       {showImg ? (
         <img
           className="novel-cover__img"
-          src={novel.cover_url}
+          src={coverSrc}
           alt={title}
           loading="lazy"
+          referrerPolicy="no-referrer"
           onError={() => setImgError(true)}
         />
       ) : (

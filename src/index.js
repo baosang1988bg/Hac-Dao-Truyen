@@ -41,6 +41,11 @@ async function handleApi(request, url, env) {
   const path = url.pathname;
   const method = request.method;
 
+  // GET /api/proxy-cover?url=...
+  if (path === '/api/proxy-cover' && method === 'GET') {
+    return proxyCover(url);
+  }
+
   // GET /api/novels?q=&sort=&order=&genre=&status=&has_epub=&page=&limit=
   if (path === '/api/novels' && method === 'GET') {
     return getNovels(env, url.searchParams);
@@ -178,6 +183,11 @@ async function handleApi(request, url, env) {
     return commentDelete(request, env, parseInt(commentDelMatch[1]));
   }
 
+  // GET /api/proxy-cover?url=...
+  if (path === '/api/proxy-cover' && method === 'GET') {
+    return proxyCover(url);
+  }
+
   // ── Proxy translate jobs → Python backend (nếu có BACKEND_URL) ──────
   if (path.includes('/translate') || path.includes('/tools') || path === '/api/logs') {
     return proxyToBackend(request, url, env);
@@ -187,6 +197,27 @@ async function handleApi(request, url, env) {
 }
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
+
+async function proxyCover(url) {
+  const targetUrl = url.searchParams.get('url');
+  if (!targetUrl) return new Response('Missing url', { status: 400 });
+  try {
+    const imgRes = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://audiotruyenfull.org/',
+      },
+    });
+    if (imgRes.ok) {
+      const headers = new Headers();
+      headers.set('Content-Type', imgRes.headers.get('Content-Type') || 'image/jpeg');
+      headers.set('Access-Control-Allow-Origin', '*');
+      headers.set('Cache-Control', 'public, max-age=604800, s-maxage=604800');
+      return new Response(imgRes.body, { status: 200, headers });
+    }
+  } catch { /* fallback */ }
+  return new Response('Cover fetch failed', { status: 502 });
+}
 
 async function getNovels(env, params = new URLSearchParams()) {
   const q       = (params.get('q') || '').trim().toLowerCase();
