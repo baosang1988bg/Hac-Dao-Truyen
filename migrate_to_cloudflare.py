@@ -147,14 +147,16 @@ def migrate_synopsis(slug: str, dry_run=False, skip_r2=False, skip_d1=False) -> 
     # R2: upload synopsis.md
     if not skip_r2:
         ok_r2 = r2_put(synopsis_path, f"{slug}/synopsis.md", dry_run)
-        print(f"  {'\u2705' if ok_r2 else '\u274c'} synopsis.md ({len(synopsis_text)} ký tự) → R2")
+        ok_icon = '✅' if ok_r2 else '❌'
+        print(f"  {ok_icon} synopsis.md ({len(synopsis_text)} ký tự) → R2")
 
     # D1: ghi 2000 ký tự đầu làm preview nhanh
     if not skip_d1:
         preview = synopsis_text[:2000].replace("'", "''")
         sql = f"UPDATE novels SET synopsis = '{preview}' WHERE slug = '{slug}';"
         ok_d1 = d1_file(sql, dry_run)
-        print(f"  {'\u2705' if ok_d1 else '\u274c'} synopsis preview (2000 ký tự) → D1")
+        ok_icon = '✅' if ok_d1 else '❌'
+        print(f"  {ok_icon} synopsis preview (2000 ký tự) → D1")
 
     return True
 

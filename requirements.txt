@@ -8,3 +8,4 @@ openai
 beautifulsoup4
 playwright
 python-dotenv
+ebooklib
