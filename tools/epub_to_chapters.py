@@ -31,14 +31,26 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 
-# ── HTML → Plain Text converter ────────────────────────────────────────────────
+# ── HTML → Markdown converter (giữ định dạng đậm/nghiêng/heading/hr) ──────────
+
+_MD_ESCAPE_RE = re.compile(r'([\\`*_])')
+
+
+def _escape_md(text: str) -> str:
+    """Escape các ký tự markdown đặc biệt trong text thô, tránh format lạ ngoài ý muốn."""
+    return _MD_ESCAPE_RE.sub(r'\\\1', text)
+
 
 class _HtmlToText(HTMLParser):
-    """Convert HTML sang Markdown-like plain text, không cần beautifulsoup4."""
+    """Convert HTML sang Markdown, giữ nguyên format gốc (đậm/nghiêng/heading/hr),
+    không cần beautifulsoup4."""
 
     SKIP_TAGS = {'script', 'style', 'img', 'figure', 'svg', 'meta', 'link',
                  'head', 'nav', 'footer', 'aside'}
     HEADING_TAGS = {'h1', 'h2', 'h3', 'h4', 'h5', 'h6'}
+    BLOCK_TAGS = {'p', 'div', 'li', 'blockquote', 'dd', 'dt'}
+    BOLD_TAGS = {'b', 'strong'}
+    ITALIC_TAGS = {'i', 'em', 'cite'}
 
     def __init__(self):
         super().__init__()
@@ -47,7 +59,10 @@ class _HtmlToText(HTMLParser):
         self._in_heading = False
         self._heading_tag = ''
         self._buf = ''
-        self._in_block = False  # đang trong <p> hoặc <div>
+        self._block_depth = 0  # cho phép block lồng nhau (vd <div><p>...)
+
+    def _in_content_ctx(self) -> bool:
+        return self._in_heading or self._block_depth > 0
 
     def handle_starttag(self, tag, attrs):
         if self._skip_depth > 0:
@@ -60,11 +75,30 @@ class _HtmlToText(HTMLParser):
             self._in_heading = True
             self._heading_tag = tag
             self._buf = ''
-        elif tag in ('p', 'div', 'li', 'blockquote', 'dd', 'dt'):
-            self._in_block = True
-            self._buf = ''
+        elif tag in self.BLOCK_TAGS:
+            if self._block_depth == 0:
+                self._buf = ''
+            self._block_depth += 1
+        elif tag in self.BOLD_TAGS:
+            if self._in_content_ctx():
+                self._buf += '**'
+        elif tag in self.ITALIC_TAGS:
+            if self._in_content_ctx():
+                self._buf += '*'
         elif tag == 'br':
-            self.result.append('')
+            if self._in_content_ctx():
+                self._buf += '  \n'
+            else:
+                self.result.append('')
+        elif tag == 'hr':
+            self.result.append('---')
+
+    def handle_startendtag(self, tag, attrs):
+        # Thẻ tự đóng kiểu <br/>, <hr/>, <head/> — PHẢI gọi cả start lẫn end,
+        # nếu không skip_depth (vd sau <head/>) sẽ không bao giờ giảm lại,
+        # khiến toàn bộ nội dung phía sau bị coi là "đang skip".
+        self.handle_starttag(tag, attrs)
+        self.handle_endtag(tag)
 
     def handle_endtag(self, tag):
         if self._skip_depth > 0:
@@ -77,18 +111,25 @@ class _HtmlToText(HTMLParser):
                 self.result.append(f'{prefix} {text}')
             self._in_heading = False
             self._buf = ''
-        elif tag in ('p', 'div', 'li', 'blockquote', 'dd', 'dt') and self._in_block:
-            text = self._buf.strip()
-            if text:
-                self.result.append(text)
-            self._in_block = False
-            self._buf = ''
+        elif tag in self.BLOCK_TAGS and self._block_depth > 0:
+            self._block_depth -= 1
+            if self._block_depth == 0:
+                text = self._buf.strip()
+                if text:
+                    self.result.append(text)
+                self._buf = ''
+        elif tag in self.BOLD_TAGS:
+            if self._in_content_ctx():
+                self._buf += '**'
+        elif tag in self.ITALIC_TAGS:
+            if self._in_content_ctx():
+                self._buf += '*'
 
     def handle_data(self, data):
         if self._skip_depth > 0:
             return
-        cleaned = data.replace('\r', '').replace('\n', ' ')
-        if self._in_heading or self._in_block:
+        cleaned = _escape_md(data.replace('\r', '').replace('\n', ' '))
+        if self._in_content_ctx():
             self._buf += cleaned
         else:
             stripped = cleaned.strip()
@@ -96,21 +137,14 @@ class _HtmlToText(HTMLParser):
                 self.result.append(stripped)
 
     def get_text(self) -> str:
-        lines = []
-        prev_blank = False
-        for line in self.result:
-            if not line:
-                if not prev_blank:
-                    lines.append('')
-                prev_blank = True
-            else:
-                lines.append(line)
-                prev_blank = False
-        return '\n\n'.join(p for p in '\n'.join(lines).split('\n\n') if p.strip())
+        # Mỗi phần tử trong self.result là 1 heading/đoạn/hr hoàn chỉnh -> nối
+        # bằng dòng trống để tạo đúng ranh giới đoạn văn (markdown paragraph).
+        paragraphs = [p for p in self.result if p.strip()]
+        return '\n\n'.join(paragraphs)
 
 
 def html_to_text(html_bytes: bytes) -> str:
-    """Convert HTML bytes sang plain text Markdown-like."""
+    """Convert HTML bytes sang Markdown giữ định dạng (đậm/nghiêng/heading/hr)."""
     try:
         html = html_bytes.decode('utf-8', errors='replace')
     except Exception:
@@ -140,21 +174,58 @@ def _clean_chapter_title(title: str) -> str:
 
 
 def _is_synopsis_item(text: str, title: str) -> bool:
-    """Phán đoán xem item này có phải synopsis/intro không."""
+    """Fallback: phán đoán synopsis/intro khi không xác định được chương nào có số
+    thứ tự rõ ràng (dùng khi không thể áp dụng logic vị trí trong _split_front_matter)."""
     lower_title = title.lower()
-    # Kiểm tra keywords trong tiêu đề
     intro_keywords = ['introduction', 'intro', 'synopsis', 'summary', 'giới thiệu',
                       'tóm tắt', '简介', 'preface', 'about', 'description', 'cover',
                       'foreword', 'prologue', 'mở đầu']
     for kw in intro_keywords:
         if kw in lower_title:
             return True
-    # Nội dung ngắn và không chứa dấu hiệu chương
     chapter_markers = ['chương', '章', 'chapter', '回 ', '第']
     has_chapter_marker = any(m in text[:200].lower() for m in chapter_markers)
     if not has_chapter_marker and len(text) < 5000:
         return True
     return False
+
+
+_TOC_MARKERS = {
+    'mục lục', 'muc luc', 'table of contents', 'contents', '目录', '目錄', 'toc',
+}
+
+
+def _looks_like_toc_marker(paragraph: str) -> bool:
+    """Nhận diện 1 đoạn có phải tiêu đề 'Mục Lục' / TOC hay không."""
+    p = paragraph.strip().lstrip('#').strip().lower()
+    # Bỏ dấu ':' cuối nếu có, kiểu "Mục lục:"
+    p = p.rstrip(':').strip()
+    return p in _TOC_MARKERS
+
+
+def _split_before_toc(text: str) -> str:
+    """Cắt bỏ toàn bộ nội dung TỪ mục lục trở đi, chỉ giữ phần trước đó.
+    Nếu không tìm thấy mục lục thì giữ nguyên toàn bộ text."""
+    paragraphs = text.split('\n\n')
+    for i, para in enumerate(paragraphs):
+        if _looks_like_toc_marker(para):
+            return '\n\n'.join(paragraphs[:i]).strip()
+    return text.strip()
+
+
+def _strip_leading_title(text: str, book_title: str) -> str:
+    """Bỏ dòng đầu nếu nó chỉ lặp lại tên truyện, để synopsis bắt đầu ngay SAU tên truyện."""
+    if not book_title:
+        return text
+    normalized_title = book_title.strip().lower()
+    paragraphs = text.split('\n\n')
+    while paragraphs:
+        first = paragraphs[0].strip().lstrip('#').strip().lower()
+        if first and first == normalized_title:
+            paragraphs.pop(0)
+        else:
+            break
+    return '\n\n'.join(paragraphs).strip()
 
 
 def _extract_chapter_number_from_title(title: str) -> int | None:
@@ -175,12 +246,21 @@ def _extract_chapter_number_from_title(title: str) -> int | None:
 def parse_epub(epub_path: str) -> dict:
     """
     Parse EPUB và trả về dict gồm:
-    - synopsis: str (nội dung giới thiệu)
-    - chapters: list[dict] với keys: number, title, content
+    - synopsis: str (toàn bộ nội dung từ SAU tên truyện đến TRƯỚC mục lục)
+    - chapters: list[dict] với keys: number, title, content (giữ format markdown)
     """
     ebooklib, epub = _try_import_ebooklib()
 
     book = epub.read_epub(epub_path)
+
+    # Tên truyện từ metadata — dùng để cắt dòng lặp lại tiêu đề trong synopsis
+    book_title = ''
+    try:
+        title_meta = book.get_metadata('DC', 'title')
+        if title_meta:
+            book_title = title_meta[0][0]
+    except Exception:
+        pass
 
     # Lấy TOC để map href -> title
     toc_map: dict[str, str] = {}  # href -> title
@@ -197,10 +277,8 @@ def parse_epub(epub_path: str) -> dict:
 
     _walk_toc(book.toc)
 
-    # Duyệt spine để giữ đúng thứ tự
-    synopsis = ''
-    chapters: list[dict] = []
-    chap_counter = 0
+    # Duyệt spine, giữ đúng thứ tự, gom (title, text) cho từng item có nội dung
+    docs: list[dict] = []  # {'title': str, 'text': str, 'chap_num': int|None}
 
     for item_id, _ in book.spine:
         item = book.get_item_with_id(item_id)
@@ -222,26 +300,51 @@ def parse_epub(epub_path: str) -> dict:
         # Thử lấy tiêu đề từ dòng đầu nội dung
         first_line = text.split('\n')[0].lstrip('#').strip()
         raw_title = toc_title or first_line
-
         clean_title = _clean_chapter_title(raw_title)
 
-        # Phán đoán synopsis
-        if not synopsis and _is_synopsis_item(text, clean_title):
-            # Loại bỏ heading nếu đó chỉ là "Giới thiệu" không phải nội dung
-            synopsis_text = text
-            if first_line.lower() in ('giới thiệu', 'tóm tắt', 'synopsis', 'introduction', 'cover'):
-                synopsis_text = '\n'.join(text.split('\n')[1:]).strip()
-            synopsis = synopsis_text
-            continue
+        docs.append({
+            'title': clean_title,
+            'text': text,
+            'chap_num': _extract_chapter_number_from_title(clean_title),
+        })
 
-        # Đây là chương
+    # Xác định chương THẬT đầu tiên (có số thứ tự rõ ràng qua tiêu đề/TOC).
+    # Mọi item ĐỨNG TRƯỚC nó trong spine được coi là "front matter" (bìa, lời tựa,
+    # giới thiệu, mục lục...) — gộp lại rồi cắt lấy đúng phần giới thiệu.
+    first_chapter_idx = next(
+        (i for i, d in enumerate(docs) if d['chap_num'] is not None), None
+    )
+
+    synopsis = ''
+    chapters: list[dict] = []
+    chap_counter = 0
+
+    if first_chapter_idx is not None and first_chapter_idx > 0:
+        front_matter_text = '\n\n'.join(d['text'] for d in docs[:first_chapter_idx])
+        synopsis_text = _split_before_toc(front_matter_text)
+        synopsis_text = _strip_leading_title(synopsis_text, book_title)
+        synopsis = synopsis_text.strip()
+        chapter_docs = docs[first_chapter_idx:]
+    elif first_chapter_idx is None and docs:
+        # Không xác định được chương nào có số thứ tự -> dùng fallback heuristic
+        # cũ cho đúng 1 item đầu tiên, phần còn lại coi là chương theo thứ tự spine.
+        first_doc = docs[0]
+        if _is_synopsis_item(first_doc['text'], first_doc['title']):
+            synopsis_text = _split_before_toc(first_doc['text'])
+            synopsis = _strip_leading_title(synopsis_text, book_title).strip()
+            chapter_docs = docs[1:]
+        else:
+            chapter_docs = docs
+    else:
+        chapter_docs = docs
+
+    for d in chapter_docs:
         chap_counter += 1
-        chap_num = _extract_chapter_number_from_title(clean_title) or chap_counter
-
+        chap_num = d['chap_num'] or chap_counter
         chapters.append({
             'number': chap_num,
-            'title': clean_title or f'Chương {chap_num}',
-            'content': text,
+            'title': d['title'] or f'Chương {chap_num}',
+            'content': d['text'],
         })
 
     # Sắp xếp theo số chương
