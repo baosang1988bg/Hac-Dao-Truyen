@@ -20,6 +20,27 @@ if [ "$#" -eq 0 ]; then
   exit 1
 fi
 
+# Tự phát hiện lệnh python/pip đúng (macOS thường chỉ có python3, không có python)
+if command -v python3 >/dev/null 2>&1; then
+  PY=python3
+elif command -v python >/dev/null 2>&1; then
+  PY=python
+else
+  echo "[ERROR] Không tìm thấy python3 hoặc python trong PATH."
+  exit 1
+fi
+
+if command -v pip3 >/dev/null 2>&1; then
+  PIP=pip3
+elif command -v pip >/dev/null 2>&1; then
+  PIP=pip
+else
+  echo "[ERROR] Không tìm thấy pip3 hoặc pip trong PATH."
+  exit 1
+fi
+
+echo "  Dùng: $PY / $PIP"
+
 echo "=== [0/7] Kiểm tra đang ở nhánh exec/epub-quick-overview-01 ==="
 BRANCH=$(git branch --show-current)
 if [ "$BRANCH" != "exec/epub-quick-overview-01" ]; then
@@ -29,8 +50,8 @@ if [ "$BRANCH" != "exec/epub-quick-overview-01" ]; then
 fi
 
 echo "=== [1/7] Cài dependency ==="
-pip install -r requirements.txt
-python -c "import ebooklib; print('  OK: ebooklib sẵn sàng')"
+$PIP install -r requirements.txt
+$PY -c "import ebooklib; print('  OK: ebooklib sẵn sàng')"
 
 echo "=== [2/7] D1 migration (thêm cột synopsis, an toàn nếu đã tồn tại) ==="
 npx wrangler d1 execute hacdao-db --command="ALTER TABLE novels ADD COLUMN synopsis TEXT DEFAULT ''" --remote \
@@ -42,13 +63,13 @@ for slug in "$@"; do
     echo "  [SKIP] Không có novels/$slug/book.epub"
     continue
   fi
-  python tools/epub_to_chapters.py --slug "$slug" --synopsis-only --dry-run
-  python tools/epub_to_chapters.py --slug "$slug" --synopsis-only
+  $PY tools/epub_to_chapters.py --slug "$slug" --synopsis-only --dry-run
+  $PY tools/epub_to_chapters.py --slug "$slug" --synopsis-only
 
   echo "=== [5/7] Sync synopsis lên D1 + R2: $slug (bỏ qua nếu không có synopsis.md) ==="
   if [ -f "novels/$slug/synopsis.md" ]; then
-    python migrate_to_cloudflare.py --slug "$slug" --synopsis --dry-run
-    python migrate_to_cloudflare.py --slug "$slug" --synopsis
+    $PY migrate_to_cloudflare.py --slug "$slug" --synopsis --dry-run
+    $PY migrate_to_cloudflare.py --slug "$slug" --synopsis
   else
     echo "  [SKIP] $slug không có synopsis.md (EPUB không có mục giới thiệu)."
   fi
