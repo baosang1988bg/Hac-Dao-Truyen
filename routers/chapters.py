@@ -46,7 +46,22 @@ def list_chapters(slug: str):
     def get_chapter_num(filename):
         return extract_chapter_number_from_text(filename)
 
-    sorted_files = sorted(filtered, key=get_chapter_num)
+    # Khử trùng lặp khi 2 quy ước đặt tên khác nhau cùng tồn tại cho 1 số chương
+    # (vd: "chapter-1431txt_VI.md" kiểu cũ và "1431_ten-chuong_VI.md" kiểu mới
+    # từ epub_to_chapters.py) — nếu không khử, danh sách chương sẽ có 2 dòng
+    # cùng số thứ tự, làm lệch pha giữa index trong danh sách và nội dung thật
+    # sự được trả về ở get_chapter_content() (khiến nút "chương tiếp theo" bị
+    # lặp lại chương hiện tại thay vì sang chương kế). Duyệt theo thứ tự alphabet
+    # trước rồi chỉ giữ file ĐẦU TIÊN gặp cho mỗi số chương — khớp đúng quy tắc
+    # chọn file của get_chapter_content() bên dưới (cũng duyệt sorted(all_files)
+    # và trả về file khớp đầu tiên), đảm bảo 2 endpoint luôn đồng nhất.
+    first_file_by_num: dict[int, str] = {}
+    for f in sorted(filtered):
+        n = get_chapter_num(f)
+        if n not in first_file_by_num:
+            first_file_by_num[n] = f
+
+    sorted_files = sorted(first_file_by_num.values(), key=get_chapter_num)
     result = []
     for f in sorted_files:
         filepath = os.path.join(translated_dir, f)
