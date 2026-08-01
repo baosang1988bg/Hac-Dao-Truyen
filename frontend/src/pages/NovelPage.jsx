@@ -9,6 +9,7 @@ import userApi, { isLoggedIn } from '../userApi'
 import NovelCover from '../components/NovelCover'
 import { getLastReadForSlug, fmtChapterLabel, getReadChapters } from '../utils/readingHistory'
 import { fmtTimeAgo, fmtNumber } from '../utils/format'
+import SynopsisPanel from '../components/SynopsisPanel'
 
 const PAGE_SIZE = 100
 
@@ -110,6 +111,16 @@ export default function NovelPage() {
           {novel.notes && <CollapsibleNotes notes={novel.notes} />}
         </div>
       </div>
+
+      {/* ── Synopsis / Giới thiệu nhanh ── */}
+      {novel.synopsis && (
+        <SynopsisPanel
+          slug={slug}
+          synopsis={novel.synopsis}
+          hasMore={novel.has_more_synopsis}
+          maxLines={5}
+        />
+      )}
 
       {/* ── Thanh hành động ── */}
       <div className="novel-action-bar">
