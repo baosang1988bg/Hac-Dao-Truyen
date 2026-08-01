@@ -124,6 +124,40 @@ def r2_get_glossary(slug: str) -> dict:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
 
+def migrate_synopsis(slug: str, dry_run=False, skip_r2=False, skip_d1=False) -> bool:
+    """
+    Sync synopsis.md của slug lên R2 và ghi phần đầu (2000 ký tự) vào D1.
+    Tạo synopsis.md từ tools/epub_to_chapters.py nếu chưa có.
+    """
+    synopsis_path = NOVELS_DIR / slug / "synopsis.md"
+    if not synopsis_path.exists():
+        print(f"  ⚠️  Không có synopsis.md cho {slug}. Chạy epub_to_chapters.py --synopsis-only trước.")
+        return False
+
+    synopsis_text = synopsis_path.read_text(encoding='utf-8').strip()
+    if not synopsis_text:
+        print(f"  ⚠️  synopsis.md trống cho {slug}")
+        return False
+
+    # Loại bỏ heading "# Giới Thiệu" nếu có
+    lines = synopsis_text.split('\n')
+    if lines and lines[0].startswith('#'):
+        synopsis_text = '\n'.join(lines[1:]).strip()
+
+    # R2: upload synopsis.md
+    if not skip_r2:
+        ok_r2 = r2_put(synopsis_path, f"{slug}/synopsis.md", dry_run)
+        print(f"  {'\u2705' if ok_r2 else '\u274c'} synopsis.md ({len(synopsis_text)} ký tự) → R2")
+
+    # D1: ghi 2000 ký tự đầu làm preview nhanh
+    if not skip_d1:
+        preview = synopsis_text[:2000].replace("'", "''")
+        sql = f"UPDATE novels SET synopsis = '{preview}' WHERE slug = '{slug}';"
+        ok_d1 = d1_file(sql, dry_run)
+        print(f"  {'\u2705' if ok_d1 else '\u274c'} synopsis preview (2000 ký tự) → D1")
+
+    return True
+
 # ── Wrangler ──────────────────────────────────────────────────────────────────
 
 def get_wrangler():
@@ -370,6 +404,11 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
         ok_e = r2_put(epub_path, f"{slug}/book.epub", dry_run)
         print(f"  {'✅' if ok_e else '❌'} EPUB ({epub_path.stat().st_size // 1024} KB) → R2")
 
+    # ── 2c. Synopsis → R2 + D1 (nếu đã chạy epub_to_chapters.py --synopsis-only) ──────
+    synopsis_path = novel_dir / "synopsis.md"
+    if synopsis_path.exists() and not skip_r2:
+        migrate_synopsis(slug, dry_run=dry_run, skip_r2=skip_r2, skip_d1=skip_d1)
+
     # ── 3. Chapters ──────────────────────────────────────────────────────
     if not trans_dir.exists():
         print(f"  ⚠️  Không có translated/")
@@ -496,10 +535,25 @@ def main():
     ap.add_argument('--set-synced', action='store_true', dest='set_synced',
                     help='Đánh dấu toàn bộ local files là đã synced (dùng khi đã sync thủ công trước đó)')
     ap.add_argument('--limit', type=int, help='Giới hạn số file (để test)')
+    ap.add_argument('--synopsis', action='store_true',
+                    help='Sync synopsis.md lên R2 + D1 (dùng sau khi chạy epub_to_chapters.py)')
     args = ap.parse_args()
 
     if args.dry_run:
         print("🔍 DRY RUN\n")
+
+    # --synopsis: chỉ sync synopsis, không làm gì khác
+    if getattr(args, 'synopsis', False):
+        slugs = [args.slug] if args.slug else [
+            d.name for d in NOVELS_DIR.iterdir()
+            if d.is_dir() and (d / "synopsis.md").exists()
+        ]
+        print(f"📄 Synopsis sync cho {len(slugs)} novel(s)...\n")
+        for slug in slugs:
+            migrate_synopsis(slug, dry_run=args.dry_run,
+                             skip_r2=args.skip_r2, skip_d1=args.skip_d1)
+        print("\n🎉 Xong synopsis sync!")
+        return
 
     # --set-synced: cập nhật state từ local files, không upload gì
     if args.set_synced:
