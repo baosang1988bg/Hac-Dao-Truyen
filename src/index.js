@@ -100,6 +100,12 @@ async function handleApi(request, url, env) {
     return rateNovel(env, rateMatch[1], request);
   }
 
+  // GET /api/novels/:slug/synopsis — lazy load full synopsis
+  const synopsisMatch = path.match(/^\/api\/novels\/([^/]+)\/synopsis$/);
+  if (synopsisMatch && method === 'GET') {
+    return getSynopsis(env, synopsisMatch[1]);
+  }
+
   // GET /api/novels/:slug/chapters
   const chaptersMatch = path.match(/^\/api\/novels\/([^/]+)\/chapters$/);
   if (chaptersMatch && method === 'GET') {
@@ -361,7 +367,7 @@ async function isAdminRequest(request, env) {
 // KHÔNG có source_url/last_translated_url (lộ nguồn crawl) và glossary (nặng, chỉ admin).
 const NOVEL_PUBLIC_FIELDS = [
   'slug', 'title', 'original_title', 'author', 'genre', 'notes',
-  'total_chapters', 'cover_url', 'translation_style', 'status', 'updated_at',
+  'total_chapters', 'cover_url', 'translation_style', 'status', 'updated_at', 'synopsis',
 ];
 
 async function getNovel(env, slug, request) {
@@ -393,6 +399,15 @@ async function getNovel(env, slug, request) {
     // Guest: chỉ field whitelist + thống kê
     const pub = {};
     for (const k of NOVEL_PUBLIC_FIELDS) if (k in novel) pub[k] = novel[k];
+    // synopsis preview: cắt 500 ký tự cho NovelPage, lazy load full qua /synopsis
+    if (pub.synopsis && pub.synopsis.length > 500) {
+      pub.synopsis_preview = pub.synopsis.slice(0, 500);
+      pub.synopsis = pub.synopsis.slice(0, 500);
+      pub.has_more_synopsis = true;
+    } else {
+      pub.synopsis_preview = pub.synopsis || '';
+      pub.has_more_synopsis = false;
+    }
     return jsonResponse({ ...pub, ...common });
   }
 
@@ -450,6 +465,31 @@ async function getEpub(env, slug) {
       'Cache-Control': 'public, max-age=86400',
     },
   });
+}
+
+/**
+ * GET /api/novels/:slug/synopsis
+ * Trả về full synopsis text. Ưu tiên D1, fallback R2 key <slug>/synopsis.md
+ */
+async function getSynopsis(env, slug) {
+  // 1. Thử lấy từ D1 (synopsis đã được index khi migrate)
+  const row = await env.DB.prepare(`SELECT synopsis FROM novels WHERE slug = ?`).bind(slug).first();
+  if (row && row.synopsis && row.synopsis.trim()) {
+    return jsonResponse({ slug, synopsis: row.synopsis, source: 'd1' });
+  }
+
+  // 2. Fallback: đọc từ R2 key <slug>/synopsis.md
+  const obj = await env.CHAPTERS.get(`${slug}/synopsis.md`);
+  if (obj) {
+    const text = await obj.text();
+    // Ghi ngược lại D1 để cache cho lần sau (fire-and-forget)
+    if (text.trim()) {
+      env.DB.prepare(`UPDATE novels SET synopsis = ? WHERE slug = ?`).bind(text.slice(0, 2000), slug).run().catch(() => {});
+    }
+    return jsonResponse({ slug, synopsis: text, source: 'r2' });
+  }
+
+  return jsonResponse({ slug, synopsis: '', source: 'none' });
 }
 
 async function getChapters(env, slug) {
