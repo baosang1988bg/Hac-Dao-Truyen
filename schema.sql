@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS novels (
   notes             TEXT DEFAULT '',
   cover_url         TEXT DEFAULT '',
   status            TEXT DEFAULT 'ongoing',  -- ongoing | completed
+  synopsis          TEXT DEFAULT '',         -- giới thiệu truyện (trích từ EPUB/meta)
   updated_at        TEXT DEFAULT (datetime('now'))
 );
 
