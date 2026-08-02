@@ -1,7 +1,5 @@
 # Chương 24. Địa ngục nhà xác, toàn bộ server thông báo!
 
-Chương 24; Địa ngục nhà xác, toàn bộ server thông báo!
-
 Lâm Trạch tiếp tục xem cái tiếp theo chiến lợi phẩm, lần này là một bộ đầy đủ trang phục, mà lại là năm kiện bộ.
 
 « tai ách chi nguyên trang phục, nắm giữ số lượng; 2 »
@@ -34,13 +32,7 @@ Lâm Trạch xem hết tai ách chi nguyên trang phục hiệu quả, ngoại t
 
 "Cấp 10, cũng là thời điểm thay mới trang bị."
 
-Lâm Trạch mặt lộ vẻ mỉm cười, đem tai ách bộ thay đổi, bảng thuộc tính lập tức tăng vọt một mảng lớn!
-
-Đồng thời, bản thân quần áo vẻ ngoài từ một tên soái khí bạch cốt chiến sĩ, biến thành đen kịt trang phục tai ách thích khách.
-
-Phong bế thức kim loại mũ giáp che khuất tuấn lang bề ngoài, góc cạnh rõ ràng bó sát người giáp da dán vào thân thể, kim loại cảm nhận hộ thủ cùng trường ngoa đều mang theo lăng đâm, đều là vật lộn lợi khí.
-
-Phối hợp một kiện không gió khiêu vũ phiêu dật màu tím khăn quàng cổ, trên chiến trường đến như ảnh đi như gió, chỉ để lại một đạo màu tím mị ảnh, thần bí lại soái khí.
+Lâm Trạch mặt lộ vẻ mỉm cười, đem tai ách bộ thay đổi, bảng thuộc tính lập tức tăng vọt một mảng lớn! Đồng thời, bản thân quần áo vẻ ngoài từ một tên soái khí bạch cốt chiến sĩ, biến thành đen kịt trang phục tai ách thích khách. Phong bế thức kim loại mũ giáp che khuất tuấn lang bề ngoài, góc cạnh rõ ràng bó sát người giáp da dán vào thân thể, kim loại cảm nhận hộ thủ cùng trường ngoa đều mang theo lăng đâm, đều là vật lộn lợi khí. Phối hợp một kiện không gió khiêu vũ phiêu dật màu tím khăn quàng cổ, trên chiến trường đến như ảnh đi như gió, chỉ để lại một đạo màu tím mị ảnh, thần bí lại soái khí.
 
 "Ta trước đó còn đang suy nghĩ, lên tới cấp 10 sau đi đâu tìm đúng ứng đẳng cấp trang bị, lần này thoải mái!"
 
@@ -62,9 +54,7 @@ Tiếp xuống chiến lợi phẩm, là càng thêm trân quý sử thi cấp b
 
 « bản tóm tắt; Địa ngục nhà xác nắm giữ chiêu mộ cấp 10 sử thi cấp địa ngục binh chủng; Địa ngục chiến chó, cùng đem địa ngục chiến chó tấn thăng làm Địa Ngục Tam Đầu Khuyển tiến giai kiến trúc hiệu quả.
 
-Sử thi cấp kiến trúc đặc hiệu; Địa ngục trở về, trên chiến trường bị đánh giết Địa Ngục Khuyển hoặc Địa Ngục Tam Đầu Khuyển, có 25% xác suất tại nhà xác lập tức phục sinh, không tổn hao gì hao tổn.
-
-Chú ý; Tất cả binh chủng kiến trúc làm một đồ 1 xây, kiến tạo sau bản vẽ biến mất vô pháp nhiều lần lợi dụng. »
+Sử thi cấp kiến trúc đặc hiệu; Địa ngục trở về, trên chiến trường bị đánh giết Địa Ngục Khuyển hoặc Địa Ngục Tam Đầu Khuyển, có 25% xác suất tại nhà xác lập tức phục sinh, không tổn hao gì hao tổn. Chú ý; Tất cả binh chủng kiến trúc làm một đồ 1 xây, kiến tạo sau bản vẽ biến mất vô pháp nhiều lần lợi dụng. »
 
 . . .
 
@@ -76,15 +66,7 @@ Chú ý; Tất cả binh chủng kiến trúc làm một đồ 1 xây, kiến t�
 
 "Nếu không, có phân thân ta đều bận không qua nổi."
 
-Lâm Trạch nhìn thấy binh chủng kiến trúc bản vẽ, lập tức kích động lên.
-
-Như vậy đại nhất con thuyền, như vậy một mảng lớn hải vực.
-
-Một người làm không là cái gì đại sự, nhất định phải biện pháp phát triển mình thế lực.
-
-Đồng thời, binh chủng cũng là hàng hải kỷ nguyên cân nhắc người chơi thực lực trọng yếu nhất nhân tố một trong, nhất định phải phát triển.
-
-Bất quá, khi Lâm Trạch chú ý đến kiến tạo yêu cầu, lập tức nhíu mày
+Lâm Trạch nhìn thấy binh chủng kiến trúc bản vẽ, lập tức kích động lên. Như vậy đại nhất con thuyền, như vậy một mảng lớn hải vực. Một người làm không là cái gì đại sự, nhất định phải biện pháp phát triển mình thế lực. Đồng thời, binh chủng cũng là hàng hải kỷ nguyên cân nhắc người chơi thực lực trọng yếu nhất nhân tố một trong, nhất định phải phát triển. Bất quá, khi Lâm Trạch chú ý đến kiến tạo yêu cầu, lập tức nhíu mày
 
 "Đây sử thi cấp binh chủng kiến trúc có chút đắt a, đổi lại phổ thông người chơi trong thời gian ngắn thật đúng là chế."
 
@@ -92,11 +74,7 @@ Bất quá, khi Lâm Trạch chú ý đến kiến tạo yêu cầu, lập tức
 
 "Với lại, kiến trúc tạo ra đến về sau, chiêu mộ binh chủng cũng là muốn tiếp tục dùng tiền."
 
-Lâm Trạch mặc dù còn chưa bắt đầu phát triển thế lực, nhưng đã có tài nguyên không đủ dùng cảm giác cấp bách.
-
-Nhất định phải nghĩ biện pháp lấy tới càng nhiều tài nguyên.
-
-Tiếp tục quả cầu tuyết mở rộng mình ưu thế!
+Lâm Trạch mặc dù còn chưa bắt đầu phát triển thế lực, nhưng đã có tài nguyên không đủ dùng cảm giác cấp bách. Nhất định phải nghĩ biện pháp lấy tới càng nhiều tài nguyên. Tiếp tục quả cầu tuyết mở rộng mình ưu thế!
 
 . . .
 
@@ -108,11 +86,7 @@ Cuối cùng một kiện chiến lợi phẩm, là truyền thuyết cấp ẩn
 
 "Nhiệm vụ vật phẩm, đợi chút nữa lại nhìn a."
 
-Lâm Trạch nhìn lướt qua, liền đem bản này phi thường trọng yếu nhật ký bỏ vào ba lô.
-
-Quyết định tiên nghiệm thu chiến lợi phẩm cùng thuộc tính trưởng thành.
-
-Cường hóa bản thân cùng nhìn nhiệm vụ kịch bản, cái gì nhẹ cái gì nặng, hắn đương nhiên linh thanh.
+Lâm Trạch nhìn lướt qua, liền đem bản này phi thường trọng yếu nhật ký bỏ vào ba lô. Quyết định tiên nghiệm thu chiến lợi phẩm cùng thuộc tính trưởng thành. Cường hóa bản thân cùng nhìn nhiệm vụ kịch bản, cái gì nhẹ cái gì nặng, hắn đương nhiên linh thanh.
 
 . . .
 
@@ -120,26 +94,10 @@ Thời gian trở lại nửa phút trước, ngay tại Lâm Trạch đánh gi�
 
 « hệ thống; Keng, chúc mừng ngài đánh giết sử thi cấp anh hùng; Vong linh pháp sư Rais, ngươi hoàn thành một lần đủ để lưu lại ghi chép công tích vĩ đại, sắp tiến hành toàn bộ server thông báo, phải chăng ẩn tàng tính danh? Không ẩn tàng tính danh đem thu hoạch được ngoài định mức Vong Giả hải vực danh vọng cùng thành tựu. »
 
-Lâm Trạch nhìn thấy cái hệ thống này popup, biểu lộ lập tức sửng sốt một chút.
-
-Lúc trước hắn vô luận thăng cấp vẫn là đánh giết cương thi thủ lĩnh, cũng không có xuất hiện qua loại này popup.
-
-Nói rõ phía trước đánh giết quái vật cấp bậc khá thấp, nhưng lần này không giống nhau.
-
-Hắn đánh giết một tên sử thi cấp anh hùng!
-
-Dù là đối phương chỉ có cấp 10, cấp độ bày ở cái kia cấp bậc khẳng định thấp không được.
-
-Với lại, không ẩn tàng tính danh thế mà còn có khen thưởng thêm.
+Lâm Trạch nhìn thấy cái hệ thống này popup, biểu lộ lập tức sửng sốt một chút. Lúc trước hắn vô luận thăng cấp vẫn là đánh giết cương thi thủ lĩnh, cũng không có xuất hiện qua loại này popup. Nói rõ phía trước đánh giết quái vật cấp bậc khá thấp, nhưng lần này không giống nhau. Hắn đánh giết một tên sử thi cấp anh hùng! Dù là đối phương chỉ có cấp 10, cấp độ bày ở cái kia cấp bậc khẳng định thấp không được. Với lại, không ẩn tàng tính danh thế mà còn có khen thưởng thêm.
 
 Lấy không ban thưởng không cần thì phí!
 
 "Không ẩn tàng!"
 
-Lâm Trạch nghĩ một hồi, cuối cùng quyết định không ẩn tàng.
-
-Đây có cái gì tốt Tàng, tiến một bước cất cao giọng nhìn, có lợi cho hắn tại thị trường giao dịch bên trên cắt rau hẹ.
-
-Hắn tự nhận không phải cái gì thánh mẫu, tại không có tổn hại đạo đức ranh giới cuối cùng tình huống dưới, hắn sẽ không cự tuyệt đối với có lợi cho mình sự tình.
-
-Cái này mới là người bình thường tư duy, người không vì mình, trời tru đất diệt!
+Lâm Trạch nghĩ một hồi, cuối cùng quyết định không ẩn tàng. Đây có cái gì tốt Tàng, tiến một bước cất cao giọng nhìn, có lợi cho hắn tại thị trường giao dịch bên trên cắt rau hẹ. Hắn tự nhận không phải cái gì thánh mẫu, tại không có tổn hại đạo đức ranh giới cuối cùng tình huống dưới, hắn sẽ không cự tuyệt đối với có lợi cho mình sự tình. Cái này mới là người bình thường tư duy, người không vì mình, trời tru đất diệt!

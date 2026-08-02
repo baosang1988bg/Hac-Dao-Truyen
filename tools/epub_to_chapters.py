@@ -260,47 +260,89 @@ _WATERMARK_PATTERNS = [
 ]
 
 
+def _normalize_title_key(title: str) -> str:
+    """Loại bỏ dấu câu và ký tự đặc biệt để so sánh 2 tiêu đề."""
+    t = title.lstrip('#').strip().lower()
+    t = re.sub(r'[^\w\s]', '', t)
+    return re.sub(r'\s+', ' ', t).strip()
+
+
 def _clean_chapter_text(text: str, title: str) -> str:
-    """Loại bỏ watermark rác, dòng thông tin thừa và trùng lặp đoạn văn."""
+    """Loại bỏ watermark rác, khử lặp tiêu đề, và gom các câu tự sự lẻ thành đoạn văn chuẩn."""
     if not text:
         return ''
 
-    paragraphs = text.split('\n\n')
+    paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+    if not paragraphs:
+        return ''
+
+    # Step 1: Lọc watermark & tiêu đề lặp
+    title_key = _normalize_title_key(title)
     cleaned_paras = []
     seen_paras = set()
 
-    for p in paragraphs:
-        p_strip = p.strip()
-        if not p_strip:
-            continue
-
+    for i, p in enumerate(paragraphs):
         # Lọc watermark/quảng cáo
         is_watermark = False
         for pat in _WATERMARK_PATTERNS:
-            if pat.match(p_strip):
+            if pat.match(p):
                 is_watermark = True
                 break
         if is_watermark:
             continue
 
+        # Bỏ dòng lặp tiêu đề ở đầu (vd: # Chương 1. ... và Chương 1; ...)
+        p_key = _normalize_title_key(p)
+        if i < 2 and title_key and (p_key == title_key or (len(title_key) > 5 and (title_key in p_key or p_key in title_key))):
+            continue
+
         # Khử trùng lặp dòng/đoạn văn lặp lại hoàn toàn
-        # Giữ lại các đoạn ngắn đặc biệt hoặc phân cách ---
-        if p_strip != '---' and len(p_strip) > 15:
-            p_key = p_strip.lower()
+        if p != '---' and len(p) > 15:
             if p_key in seen_paras:
                 continue
             seen_paras.add(p_key)
 
-        cleaned_paras.append(p_strip)
+        cleaned_paras.append(p)
 
-    # Loại bỏ dòng tiêu đề lặp lại ở 2 dòng đầu (vd dòng 1: # Chương 1, dòng 2: Chương 1)
-    if len(cleaned_paras) >= 2:
-        h1 = cleaned_paras[0].lstrip('#').strip().lower()
-        h2 = cleaned_paras[1].lstrip('#').strip().lower()
-        if h1 and h2 and (h1 == h2 or h1 in h2 or h2 in h1):
-            cleaned_paras.pop(1)
+    if not cleaned_paras:
+        cleaned_paras = paragraphs
 
-    return '\n\n'.join(cleaned_paras).strip()
+    # Step 2: Merge broken narrative lines into paragraphs
+    merged_paras = []
+    current_block = []
+
+    def is_standalone_line(p_str: str) -> bool:
+        if p_str.startswith('#'):
+            return True
+        if p_str in ('---', '. . .', '...', '***'):
+            return True
+        first_char = p_str[0]
+        if first_char in ('"', '«', '“', "'", '‘', '「', '【', '（', '('):
+            return True
+        if p_str.startswith('- ') or p_str.startswith('* ') or re.match(r'^\d+[\.\)]\s', p_str):
+            return True
+        if p_str.startswith('«') or p_str.startswith('»'):
+            return True
+        return False
+
+    for p in cleaned_paras:
+        if is_standalone_line(p):
+            if current_block:
+                merged_paras.append(' '.join(current_block))
+                current_block = []
+            merged_paras.append(p)
+        else:
+            curr_len = sum(len(x) for x in current_block)
+            if curr_len > 450:
+                merged_paras.append(' '.join(current_block))
+                current_block = [p]
+            else:
+                current_block.append(p)
+
+    if current_block:
+        merged_paras.append(' '.join(current_block))
+
+    return '\n\n'.join(merged_paras).strip()
 
 
 def parse_epub(epub_path: str) -> dict:

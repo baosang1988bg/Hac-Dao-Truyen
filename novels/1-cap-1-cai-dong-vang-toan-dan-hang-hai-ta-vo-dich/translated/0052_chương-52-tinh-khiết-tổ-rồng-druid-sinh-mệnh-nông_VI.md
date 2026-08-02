@@ -1,36 +1,16 @@
 # Chương 52. Tinh khiết tổ rồng, Druid sinh mệnh nông trường
 
-Chương 52; Tinh khiết tổ rồng, Druid sinh mệnh nông trường
-
-Lâm Trạch tại chỗ giao nhiệm vụ, giải tỏa đẳng cấp, chờ sau này rút ra dòng vàng tin tức.
-
-Không nghĩ đến hệ thống trước cho hắn đến sóng lớn (ngực bự)!
+Lâm Trạch tại chỗ giao nhiệm vụ, giải tỏa đẳng cấp, chờ sau này rút ra dòng vàng tin tức. Không nghĩ đến hệ thống trước cho hắn đến sóng lớn (ngực bự)!
 
 "Phần thưởng này thật giả, bật hack đi. . ."
 
-Lâm Trạch lập tức từ dưới đất nhảy lên.
-
-Phần thưởng này ai nhìn không trợn mắt hốc mồm a, hoàn toàn ngoài dự liệu!
-
-Sự thật chứng minh, tấn thăng thí luyện không chỉ là thí luyện, càng là một lần ban thưởng quan!
-
-Rất thật tốt không dễ dàng lên tới cấp 10, khát vọng ở cái thế giới này đại triển hoành đồ thuyền trưởng, bởi vì tài nguyên thiếu thốn chuyện gì đều không làm được.
-
-Nhưng chỉ cần có thể tại thí luyện bên trong đánh ra tương đối cao chấm điểm, tài nguyên vấn đề lập tức liền có thể giải quyết.
+Lâm Trạch lập tức từ dưới đất nhảy lên. Phần thưởng này ai nhìn không trợn mắt hốc mồm a, hoàn toàn ngoài dự liệu! Sự thật chứng minh, tấn thăng thí luyện không chỉ là thí luyện, càng là một lần ban thưởng quan! Rất thật tốt không dễ dàng lên tới cấp 10, khát vọng ở cái thế giới này đại triển hoành đồ thuyền trưởng, bởi vì tài nguyên thiếu thốn chuyện gì đều không làm được. Nhưng chỉ cần có thể tại thí luyện bên trong đánh ra tương đối cao chấm điểm, tài nguyên vấn đề lập tức liền có thể giải quyết.
 
 Nếu như là siêu cao chấm điểm, liền sẽ giống như hắn tại chỗ cất cánh!
 
 "Ngưu a, lần này một đêm chợt giàu!"
 
-Lâm Trạch cảm khái nói.
-
-Một giây sau nhiệm vụ kết toán ban thưởng " đinh đinh thùng thùng " truyền tống vào hắn ba lô.
-
-Lâm Trạch kích động mở ra ba lô, xem xét nhiệm vụ kết toán ban thưởng.
-
-Mấu chốt là thu hoạch được truyền thuyết cấp bản vẽ cùng anh hùng lệnh bài, cùng thần thoại cấp dị thường vật phẩm.
-
-Đây đều là cấp độ cố định nhưng nội dung ngẫu nhiên đồ vật, cần tranh thủ thời gian xác nhận.
+Lâm Trạch cảm khái nói. Một giây sau nhiệm vụ kết toán ban thưởng " đinh đinh thùng thùng " truyền tống vào hắn ba lô. Lâm Trạch kích động mở ra ba lô, xem xét nhiệm vụ kết toán ban thưởng. Mấu chốt là thu hoạch được truyền thuyết cấp bản vẽ cùng anh hùng lệnh bài, cùng thần thoại cấp dị thường vật phẩm. Đây đều là cấp độ cố định nhưng nội dung ngẫu nhiên đồ vật, cần tranh thủ thời gian xác nhận.
 
 . . .
 
@@ -78,27 +58,9 @@ Mấu chốt là thu hoạch được truyền thuyết cấp bản vẽ cùng a
 
 "Đây mẹ nó là cái gì thần tiên bản vẽ, bật hack đi? !"
 
-Lâm Trạch xem hết phần thứ nhất truyền thuyết cấp bản vẽ sau trong nháy mắt sợ ngây người.
+Lâm Trạch xem hết phần thứ nhất truyền thuyết cấp bản vẽ sau trong nháy mắt sợ ngây người. Phần này bản vẽ cường đại hoàn toàn vượt qua hắn tưởng tượng. Trước đó thu hoạch được sử thi cấp binh chủng kiến trúc, địa ngục nhà xác. Kém xa phần này bản vẽ một phần mười! Lâm Trạch rốt cuộc minh bạch, hệ thống nói tới. Đem thông quan ban thưởng đề thăng đến thế giới hiện tại cho phép hạn mức cao nhất là có ý gì. Thật sự giúp hắn chọn thời đại này tốt nhất đồ vật!
 
-Phần này bản vẽ cường đại hoàn toàn vượt qua hắn tưởng tượng.
-
-Trước đó thu hoạch được sử thi cấp binh chủng kiến trúc, địa ngục nhà xác.
-
-Kém xa phần này bản vẽ một phần mười!
-
-Lâm Trạch rốt cuộc minh bạch, hệ thống nói tới.
-
-Đem thông quan ban thưởng đề thăng đến thế giới hiện tại cho phép hạn mức cao nhất là có ý gì.
-
-Thật sự giúp hắn chọn thời đại này tốt nhất đồ vật!
-
-Đây bản vẽ cho dù tại truyền thuyết cấp binh chủng kiến trúc bên trong, cũng là trần nhà cấp bậc tồn tại!
-
-Dù sao, Long tộc là cái thế giới này cường đại nhất tộc đàn, đã từng thống trị một cái thời đại.
-
-Thế gian vạn tộc phủ phục tại bầy rồng dưới chân, đưa chúng nó coi là thần linh!
-
-Đồng thời, Long tộc cũng là địa ngục hư không chi hải thế lực, những cái kia khủng bố ngoại thần cùng quỷ dị quái vật quân chủ lực.
+Đây bản vẽ cho dù tại truyền thuyết cấp binh chủng kiến trúc bên trong, cũng là trần nhà cấp bậc tồn tại! Dù sao, Long tộc là cái thế giới này cường đại nhất tộc đàn, đã từng thống trị một cái thời đại. Thế gian vạn tộc phủ phục tại bầy rồng dưới chân, đưa chúng nó coi là thần linh! Đồng thời, Long tộc cũng là địa ngục hư không chi hải thế lực, những cái kia khủng bố ngoại thần cùng quỷ dị quái vật quân chủ lực.
 
 "Hệ thống a, ta thật là ngươi sống cha a."
 
@@ -106,21 +68,7 @@ Thế gian vạn tộc phủ phục tại bầy rồng dưới chân, đưa chú
 
 "Ta mẹ hắn yêu ngươi chết mất!"
 
-Lâm Trạch cảm động đến nhận việc điểm nước mắt mắt.
-
-Quyết định sau khi trở về lập tức đem tinh khiết tổ rồng tạo ra đến.
-
-Tạo xong liền cất cánh!
-
-Với lại, tại hảo sự thành đôi chiến lợi phẩm gấp bội gia trì dưới, hắn có hai phần tinh khiết tổ rồng bản vẽ!
-
-Song tinh khiết tổ rồng đồng thời ấp trứng Long tộc binh chủng!
-
-Lâm Trạch tương lai xưng hào bên trong.
-
-Một cái Long tộc lãnh chúa xưng hô, khẳng định là chạy không thoát.
-
-Chúng ta tiếp tục xem phần thứ hai trần nhà truyền thuyết cấp kiến trúc.
+Lâm Trạch cảm động đến nhận việc điểm nước mắt mắt. Quyết định sau khi trở về lập tức đem tinh khiết tổ rồng tạo ra đến. Tạo xong liền cất cánh! Với lại, tại hảo sự thành đôi chiến lợi phẩm gấp bội gia trì dưới, hắn có hai phần tinh khiết tổ rồng bản vẽ! Song tinh khiết tổ rồng đồng thời ấp trứng Long tộc binh chủng! Lâm Trạch tương lai xưng hào bên trong. Một cái Long tộc lãnh chúa xưng hô, khẳng định là chạy không thoát. Chúng ta tiếp tục xem phần thứ hai trần nhà truyền thuyết cấp kiến trúc.
 
 . . .
 
@@ -138,9 +86,7 @@ Chúng ta tiếp tục xem phần thứ hai trần nhà truyền thuyết cấp 
 
 « kiến trúc đặc hiệu 3; Sinh Mệnh Thụ mầm non, sinh mệnh nông trường mang theo Tinh Linh tộc truyền thuyết cấp bảo vật, Sinh Mệnh Thụ mầm non, mỗi tuần miễn phí ấp trứng 10 tên tuổi nhỏ tinh linh, trọng thương đơn vị có thể vào nông trường nghỉ ngơi, có thể trong nháy mắt khôi phục tất cả thể lực cùng sinh mệnh lực, mỗi tuần có thể khôi phục 10000 điểm sinh mệnh trị, 1000 thể lực.
 
-Theo Sinh Mệnh Thụ mầm non sinh trưởng, mỗi tuần ấp trứng tinh linh nhân đếm +1, tối cao; 100 mỗi tuần.
-
-Theo Sinh Mệnh Thụ mầm non sinh trưởng, mỗi tuần Sinh Mệnh Thụ khôi phục lượng +1 Vạn Sinh mệnh trị, +10 thể lực, tối cao; 100 Vạn Sinh mệnh trị /1 vạn thể lực mỗi tuần. »
+Theo Sinh Mệnh Thụ mầm non sinh trưởng, mỗi tuần ấp trứng tinh linh nhân đếm +1, tối cao; 100 mỗi tuần. Theo Sinh Mệnh Thụ mầm non sinh trưởng, mỗi tuần Sinh Mệnh Thụ khôi phục lượng +1 Vạn Sinh mệnh trị, +10 thể lực, tối cao; 100 Vạn Sinh mệnh trị /1 vạn thể lực mỗi tuần. »
 
 « nói rõ; 1 tòa trăm vạn nhân khẩu tinh linh lãnh địa, mới có thể xuất hiện 1 tòa hoàn chỉnh sinh mệnh nông trường, đây là Tinh Linh tộc vĩ đại nhất khoa kỹ kiến trúc, cũng là bọn chúng thời đại truyền thừa cùng phát triển hạch tâm kiến trúc. »
 

@@ -1,7 +1,5 @@
 # Chương 85. Hắc Thạch Hào lần nữa thăng cấp, bị tin phục nữ anh hùng
 
-Chương 85; Hắc Thạch Hào lần nữa thăng cấp, bị tin phục nữ anh hùng
-
 "Đêm qua, ta ở trên biển tao ngộ một vị bị hư không ô nhiễm thần linh, cùng hắn bạo phát một trận có chút kịch liệt chiến đấu."
 
 Lâm Trạch mở miệng câu nói đầu tiên, liền đem hai vị mới tới anh hùng dọa cho phát sợ.
@@ -26,11 +24,7 @@ Lâm Trạch gãi gãi đầu, nhưng cũng không có chứng cứ, chỉ có t
 
 "Chúng ta hiện tại mục tiêu là tại Rutland cái này phương nam đảo quốc bên trong, chế tạo thuộc về chúng ta thế lực, điên cuồng bạo binh sớm ngày giết trở về, ta nói như vậy các ngươi nghe hiểu được sao?"
 
-Nghe vậy, hai vị nữ anh hùng hai mặt nhìn nhau, các nàng một lần không thể tin được mình nghe được nội dung, không thể tin được trước mắt thuyền trưởng không riêng đánh vị kia thần linh một bàn tay, lại còn dự định tiếp tục giết trở về!
-
-Nếu như đổi lại là những người khác, đoạn văn này nói xong vô luận là Avna, vẫn là Thief, chỉ sợ đều biết lần đầu tiên đóng gói hành lý, thay minh chủ.
-
-Các nàng mặc dù là từ khác thời đại triệu hoán mà đến, nhưng thật vất vả thu hoạch được lần thứ hai sinh mệnh, ai nhàn rỗi không chuyện gì đi tìm chết a!
+Nghe vậy, hai vị nữ anh hùng hai mặt nhìn nhau, các nàng một lần không thể tin được mình nghe được nội dung, không thể tin được trước mắt thuyền trưởng không riêng đánh vị kia thần linh một bàn tay, lại còn dự định tiếp tục giết trở về! Nếu như đổi lại là những người khác, đoạn văn này nói xong vô luận là Avna, vẫn là Thief, chỉ sợ đều biết lần đầu tiên đóng gói hành lý, thay minh chủ. Các nàng mặc dù là từ khác thời đại triệu hoán mà đến, nhưng thật vất vả thu hoạch được lần thứ hai sinh mệnh, ai nhàn rỗi không chuyện gì đi tìm chết a!
 
 "Chủ nhân, ngươi là nghiêm túc? Thật dự định xử lý một vị thần linh!"
 
@@ -38,11 +32,7 @@ Thief nuốt ngụm nước bọt, lần nữa xác nhận nói.
 
 "Yên tâm, ta sẽ không để cho các ngươi đi chịu chết, vị kia thần linh giao cho ta đến giải quyết, đến lúc đó các ngươi chỉ cần giúp ta ngăn chặn hắn triệu hoán mà đến Vong Giả chi hải đại quân liền có thể."
 
-Lâm Trạch phất tay nhắc nhở, hắn nhưng không có để cho người ta đầu dự định, nhất định phải tự tay báo thù, mới đúng nổi mình đây thân cường hãn dòng vàng.
-
-Nói đến, hắn bỗng nhiên một cái cổ tay chặt đập vào Thief trên ót, dặn dò; "Đừng đem địa ngục bên kia thói quen xấu mang tới, nữ hài tử không chuẩn nói tục nói."
-
-Thief; ". . ."
+Lâm Trạch phất tay nhắc nhở, hắn nhưng không có để cho người ta đầu dự định, nhất định phải tự tay báo thù, mới đúng nổi mình đây thân cường hãn dòng vàng. Nói đến, hắn bỗng nhiên một cái cổ tay chặt đập vào Thief trên ót, dặn dò; "Đừng đem địa ngục bên kia thói quen xấu mang tới, nữ hài tử không chuẩn nói tục nói." Thief; ". . ."
 
 "Tại chúng ta niên đại đó, cũng có rất nhiều thần linh bị hư không ô nhiễm biến thành ngoại thần chó săn, giết chết rất nhiều vô tội sinh mệnh, ta rất tình nguyện đi theo một vị có can đảm hướng thần linh vung đao dũng sĩ, đây vừa lúc nói rõ ngài thật có đối kháng hư không dũng khí."
 
@@ -68,11 +58,7 @@ Lâm Trạch còn kém không có đem nơi này khẳng định có ẩn tàng 
 
 "Không cần, Hắc Thạch Hào hiệu suất so trong tưởng tượng của ngươi càng nhanh, chờ chúng ta cùng một chỗ đánh xuống hòn đảo về sau, các ngươi ở trên đảo giúp ta quản lý."
 
-Lâm Trạch cười nhạt một tiếng; "Đến lúc đó, ta sống thêm bắt mấy cái có chút danh tiếng hải tặc thủ lĩnh, đi Rutland cầm treo giải thưởng cùng viếng thăm Rutland quốc vương, liền xem như lễ gặp mặt."
-
-Đem kế hoạch thuyết minh sơ qua một lần, Lâm Trạch liền lần nữa khởi động Hắc Thạch Hào, lúc trước hướng cách mình gần nhất hòn đảo.
-
-Từ thâm uyên quà tặng bên trong, mới mở đi ra ba kiện truyền thuyết cấp thuyền lớn đạo cụ, u linh thuyền buồm, tinh thần hướng dẫn dụng cụ, hải yêu chi ca kèn lệnh.
+Lâm Trạch cười nhạt một tiếng; "Đến lúc đó, ta sống thêm bắt mấy cái có chút danh tiếng hải tặc thủ lĩnh, đi Rutland cầm treo giải thưởng cùng viếng thăm Rutland quốc vương, liền xem như lễ gặp mặt." Đem kế hoạch thuyết minh sơ qua một lần, Lâm Trạch liền lần nữa khởi động Hắc Thạch Hào, lúc trước hướng cách mình gần nhất hòn đảo. Từ thâm uyên quà tặng bên trong, mới mở đi ra ba kiện truyền thuyết cấp thuyền lớn đạo cụ, u linh thuyền buồm, tinh thần hướng dẫn dụng cụ, hải yêu chi ca kèn lệnh.
 
 Lâm Trạch thông qua dung hợp rèn đúc lô, đem trang bị phẩm chất tăng lên tới thần thoại cấp về sau, cho cánh buồm hư mất cột buồm thuyền một lần nữa thay đổi, thuộc tính như sau
 
@@ -92,11 +78,7 @@ Lâm Trạch thông qua dung hợp rèn đúc lô, đem trang bị phẩm chất
 
 . . .
 
-Lâm Trạch hợp ra cái này cánh buồm thời điểm, cả người đều này lên, đây cánh buồm bộ kiện thật có điểm lợi hại đi, ngay cả lặn tàu đều làm ra đến.
-
-Nói đến hàng hải cùng đội thuyền loại hình, u linh thuyền khẳng định là không vòng qua được đi chủ đề, cũng là người chơi trong suy nghĩ nhất khốc được hoan nghênh nhất loại hình.
-
-Nhưng u linh thuyền chỉ có Bất Tử tộc đại quân, hoặc đối ứng anh hùng mới có thể khống chế, người sống mở u linh thuyền là muốn bị nguyền rủa, thời gian lâu dài nhất định bị đồng hóa sống được người chết.
+Lâm Trạch hợp ra cái này cánh buồm thời điểm, cả người đều này lên, đây cánh buồm bộ kiện thật có điểm lợi hại đi, ngay cả lặn tàu đều làm ra đến. Nói đến hàng hải cùng đội thuyền loại hình, u linh thuyền khẳng định là không vòng qua được đi chủ đề, cũng là người chơi trong suy nghĩ nhất khốc được hoan nghênh nhất loại hình. Nhưng u linh thuyền chỉ có Bất Tử tộc đại quân, hoặc đối ứng anh hùng mới có thể khống chế, người sống mở u linh thuyền là muốn bị nguyền rủa, thời gian lâu dài nhất định bị đồng hóa sống được người chết.
 
 Lâm Trạch khống chế không được u linh thuyền, nhưng bởi vì có cái này thần thoại cấp cánh buồm, lại nắm giữ cùng u linh thuyền đồng dạng công năng, u linh hóa!
 
@@ -104,15 +86,11 @@ Lâm Trạch khống chế không được u linh thuyền, nhưng bởi vì có
 
 "Không riêng gì miễn dịch, U Minh lặn tàu chuyến buồm với tư cách cánh buồm bộ kiện, cho tốc độ di chuyển tăng thêm đơn giản thái quá, ta hiện tại tốc độ di chuyển sợ không phải Thành Hải bên trên F1 Ferrari, màu đỏ u linh."
 
-Lâm Trạch hít sâu một hơi, nhìn thoáng qua tốc độ, cả người đều sợ ngây người.
-
-Truy sát, lôi kéo, đi đường, tất cả đều là cấp cao nhất!
+Lâm Trạch hít sâu một hơi, nhìn thoáng qua tốc độ, cả người đều sợ ngây người. Truy sát, lôi kéo, đi đường, tất cả đều là cấp cao nhất!
 
 "Cái này mới là phù hợp thân phận ta thuyền lớn, toàn thân thần thoại cấp bộ kiện, lúc này gặp lại Arkham, liền tính không cần Hải Thần thông đạo, ta chỉ dựa vào tốc độ đều có thể vung hắn nửa cái hư không chi hải!"
 
-Lâm Trạch lòng tự tin bạo rạp, tốt tọa giá tựa như nam nhân tự tin chi nguyên, hắn hiện tại cảm giác mình lại được.
-
-Còn lại hai kiện mới ra thần thoại cấp thuyền lớn bộ kiện mặc dù so sánh ít lưu ý, nhưng kỳ thật dùng tốt phi thường, phi thường thích hợp Lâm Trạch tiếp xuống sắp xếp hành trình.
+Lâm Trạch lòng tự tin bạo rạp, tốt tọa giá tựa như nam nhân tự tin chi nguyên, hắn hiện tại cảm giác mình lại được. Còn lại hai kiện mới ra thần thoại cấp thuyền lớn bộ kiện mặc dù so sánh ít lưu ý, nhưng kỳ thật dùng tốt phi thường, phi thường thích hợp Lâm Trạch tiếp xuống sắp xếp hành trình.
 
 . . .
 
@@ -132,11 +110,7 @@ Còn lại hai kiện mới ra thần thoại cấp thuyền lớn bộ kiện m
 
 . . .
 
-Cái này thuyền lớn bộ kiện là đặt ở phòng thuyền trưởng bàn công tác, hoặc giá sách bên cạnh nhắm ngay ngoài cửa sổ xem sao dụng cụ, công năng mặt chữ trên ý nghĩa điều tra, định vị, tác địch.
-
-Tại hư không chi hải sử dụng tinh không hướng dẫn dụng cụ thuộc về đại tài tiểu dụng, cái này bộ kiện chân chính phát huy tác dụng địa phương là thế giới bên ngoài hư không, cũng chính là bên ngoài không.
-
-Hàng hải kỷ nguyên tiến vào phiên bản trung hậu kỳ, toàn dân phản công hư không sau định vị hướng dẫn hệ thống tác dụng, mới có thể có đến chân chính hiển lộ rõ ràng, tại hư không chi hải có hệ thống phụ trợ, hiệu quả xác thực không lớn.
+Cái này thuyền lớn bộ kiện là đặt ở phòng thuyền trưởng bàn công tác, hoặc giá sách bên cạnh nhắm ngay ngoài cửa sổ xem sao dụng cụ, công năng mặt chữ trên ý nghĩa điều tra, định vị, tác địch. Tại hư không chi hải sử dụng tinh không hướng dẫn dụng cụ thuộc về đại tài tiểu dụng, cái này bộ kiện chân chính phát huy tác dụng địa phương là thế giới bên ngoài hư không, cũng chính là bên ngoài không. Hàng hải kỷ nguyên tiến vào phiên bản trung hậu kỳ, toàn dân phản công hư không sau định vị hướng dẫn hệ thống tác dụng, mới có thể có đến chân chính hiển lộ rõ ràng, tại hư không chi hải có hệ thống phụ trợ, hiệu quả xác thực không lớn.
 
 Nhưng Lâm Trạch tại trò chơi tiền kỳ, liền đem cái đồ chơi này cho hợp đi ra, quả thực là có chút đại pháo đánh con muỗi mỹ cảm.
 
@@ -144,9 +118,7 @@ Nhưng Lâm Trạch tại trò chơi tiền kỳ, liền đem cái đồ chơi n
 
 "Vừa vặn, cái này tinh không hướng dẫn dụng cụ không riêng có thể giúp ta sưu tập tình báo, điều tra địch tình, còn có thể đề cao pháo kích tỉ lệ chính xác, thuộc tính tăng thêm không cao nhưng công năng cực kỳ mấu chốt."
 
-Lâm Trạch đắc ý đem tinh không hướng dẫn dụng cụ bày ra tại phòng thuyền trưởng, thuận tiện tùy thời sử dụng.
-
-Cuối cùng một kiện, tiến hóa sau thần thoại cấp thuyền trưởng chuyên môn vật phẩm, hải yêu Siren kèn hiệu.
+Lâm Trạch đắc ý đem tinh không hướng dẫn dụng cụ bày ra tại phòng thuyền trưởng, thuận tiện tùy thời sử dụng. Cuối cùng một kiện, tiến hóa sau thần thoại cấp thuyền trưởng chuyên môn vật phẩm, hải yêu Siren kèn hiệu.
 
 . . .
 
@@ -166,36 +138,20 @@ Cuối cùng một kiện, tiến hóa sau thần thoại cấp thuyền trưở
 
 . . .
 
-Cùng trước hai cái thuyền lớn bộ kiện so sánh, hải yêu Siren kèn hiệu đã thoát ly thuyền lớn bộ kiện định vị, định vị là thuyền trưởng chuyên môn vật phẩm, tựa như câu cá thuật đồng dạng.
-
-Hải yêu Siren kèn hiệu giống dị thường vật phẩm đồng dạng có thể tùy thân mang theo, nhưng sử dụng nhưng không có bất kỳ giá nào, lại bổ sung thuộc tính, các loại kỹ năng đặc hiệu, phi thường thái quá.
+Cùng trước hai cái thuyền lớn bộ kiện so sánh, hải yêu Siren kèn hiệu đã thoát ly thuyền lớn bộ kiện định vị, định vị là thuyền trưởng chuyên môn vật phẩm, tựa như câu cá thuật đồng dạng. Hải yêu Siren kèn hiệu giống dị thường vật phẩm đồng dạng có thể tùy thân mang theo, nhưng sử dụng nhưng không có bất kỳ giá nào, lại bổ sung thuộc tính, các loại kỹ năng đặc hiệu, phi thường thái quá.
 
 "Lại là một kiện cực phẩm thần khí, ta trên thân thần khí giống như đều vượt qua mười cái đi?"
 
-Lâm Trạch ở trong lòng kiểm kê một chút số lượng, ngay cả hắn đều kinh hãi.
-
-Quả nhiên, đây nhìn như không đáng chú ý dòng vàng « tự nhiên dung hợp » cũng là một thớt chân chính Hắc Mã, cũng không biết giúp hắn trước giờ mò bao nhiêu cực phẩm thần khí.
-
-Lâm Trạch tại lắp đặt những này thần thoại cấp thuyền lớn bộ kiện thời điểm, Avna cùng Thief toàn bộ hành trình đứng ngoài quan sát, hai nữ trên mặt biểu lộ đó là sững sờ tiếp lấy sững sờ.
-
-Cái gì quỷ, các nàng tương lai lãnh chúa chẳng lẽ là có lần nguyên túi Lam bàn tử? Đây xem xét liền rất lợi hại hàng hải đạo cụ, làm sao lầm lượt từng món ra bên ngoài móc.
+Lâm Trạch ở trong lòng kiểm kê một chút số lượng, ngay cả hắn đều kinh hãi. Quả nhiên, đây nhìn như không đáng chú ý dòng vàng « tự nhiên dung hợp » cũng là một thớt chân chính Hắc Mã, cũng không biết giúp hắn trước giờ mò bao nhiêu cực phẩm thần khí. Lâm Trạch tại lắp đặt những này thần thoại cấp thuyền lớn bộ kiện thời điểm, Avna cùng Thief toàn bộ hành trình đứng ngoài quan sát, hai nữ trên mặt biểu lộ đó là sững sờ tiếp lấy sững sờ. Cái gì quỷ, các nàng tương lai lãnh chúa chẳng lẽ là có lần nguyên túi Lam bàn tử? Đây xem xét liền rất lợi hại hàng hải đạo cụ, làm sao lầm lượt từng món ra bên ngoài móc.
 
 "Câu này chủ nhân thật đúng là kêu một điểm đều không oan. . ."
 
-Thief ở trong lòng An An tắc lưỡi, độ trung thành lại tăng một điểm, đã tăng tới 97.
-
-Khoảng cách khăng khăng một mực, đến chết cũng không đổi còn kém một chút trên chiến trường rèn luyện.
-
-Chỉ cần nhìn thấy Lâm Trạch chân chính thực lực, cái kia đoán chừng cuối cùng treo lấy một trái tim cũng phải rơi xuống, triệt để tin phục.
-
-Avna độ trung thành cũng tăng theo, nhưng không có Thief khoa trương như vậy, chỉ là đã tăng tới 89 liền đột nhiên trúng liền, đoán chừng sau này còn cần cái gì thời cơ mới có thể đột phá.
+Thief ở trong lòng An An tắc lưỡi, độ trung thành lại tăng một điểm, đã tăng tới 97. Khoảng cách khăng khăng một mực, đến chết cũng không đổi còn kém một chút trên chiến trường rèn luyện. Chỉ cần nhìn thấy Lâm Trạch chân chính thực lực, cái kia đoán chừng cuối cùng treo lấy một trái tim cũng phải rơi xuống, triệt để tin phục. Avna độ trung thành cũng tăng theo, nhưng không có Thief khoa trương như vậy, chỉ là đã tăng tới 89 liền đột nhiên trúng liền, đoán chừng sau này còn cần cái gì thời cơ mới có thể đột phá.
 
 Nhưng những này việc nhỏ không đáng kể Lâm Trạch cũng sẽ không để ý, chỉ cần bảo trì tại 80 trở lên là được, toàn đều truy cầu 100 độ trung thành đó mới thái quá, trừ phi đến điểm " nghe lời thủy " loại hình thần thoại đạo cụ.
 
 "Quả nhiên, hiện ra thực lực mới là tốt nhất cai quản bên dưới chi đạo, trước có để làm cho người tin phục thực lực, bàn lại làm cho lòng người phục phẩm tính, nhất là tại cái này hư không xâm lấn hỗn loạn thời đại, càng là như vậy."
 
-Lâm Trạch khóe miệng hơi giương lên, mình thu phục nhân tâm kế hoạch, hiệu quả đàn nhổ.
-
-Hắc Thạch Hào thay đổi U Minh lặn tàu cánh buồm về sau, hàng hải tốc độ không thể so sánh nổi, trong nháy mắt liền đến khoảng cách gần nhất 1 tòa mục tiêu hòn đảo.
+Lâm Trạch khóe miệng hơi giương lên, mình thu phục nhân tâm kế hoạch, hiệu quả đàn nhổ. Hắc Thạch Hào thay đổi U Minh lặn tàu cánh buồm về sau, hàng hải tốc độ không thể so sánh nổi, trong nháy mắt liền đến khoảng cách gần nhất 1 tòa mục tiêu hòn đảo.
 
 . . .

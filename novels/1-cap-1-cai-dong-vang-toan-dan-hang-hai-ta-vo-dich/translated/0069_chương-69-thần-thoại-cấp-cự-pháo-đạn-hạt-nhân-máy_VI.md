@@ -1,7 +1,5 @@
 # Chương 69. Thần thoại cấp cự pháo, đạn hạt nhân máy phát xạ đến
 
-Chương 69; Thần thoại cấp cự pháo, đạn hạt nhân máy phát xạ đến
-
 « hệ thống; Keng! Thiên phú; Chuyện tốt thành 3 phát động, thu hoạch được gấp ba kinh nghiệm ban thưởng! »
 
 « hệ thống; Vượt cấp đánh giết cấp 40 tinh anh sinh vật biển; Naga hải yêu \*5, thu hoạch được 200% kinh nghiệm, kinh nghiệm + 32000! »
@@ -16,21 +14,9 @@ Lâm Trạch ổn thỏa thuyền trưởng văn phòng, tiếp thu những tin 
 
 "Đây chính là ảnh phân thân, treo máy thăng cấp thần!"
 
-Hắn cái gì đều không cần làm, chỉ cần ở văn phòng nằm ngửa là được, tự có ảnh phân thân hỗ trợ đánh quái thăng cấp.
+Hắn cái gì đều không cần làm, chỉ cần ở văn phòng nằm ngửa là được, tự có ảnh phân thân hỗ trợ đánh quái thăng cấp. Naruto ảnh phân thân tu luyện pháp thật sự là lần nào cũng đúng, ai dùng người nấy biết! Đương nhiên, chủ yếu là những này đê giai hoặc đồng cấp con tôm nhỏ, Lâm Trạch lười nhác tự mình xuất thủ, cũng không đáng cho hắn tự mình xuất thủ, liền giao cho ảnh phân thân đi làm. Ảnh phân thân mặc dù không cách nào sử dụng diệt pháp chi ảnh thần thoại cấp kỹ năng, nhưng lại nắm giữ dòng vàng giao phó siêu cường thuộc tính, cùng thần thoại cấp trang phục, vũ khí, cánh!
 
-Naruto ảnh phân thân tu luyện pháp thật sự là lần nào cũng đúng, ai dùng người nấy biết!
-
-Đương nhiên, chủ yếu là những này đê giai hoặc đồng cấp con tôm nhỏ, Lâm Trạch lười nhác tự mình xuất thủ, cũng không đáng cho hắn tự mình xuất thủ, liền giao cho ảnh phân thân đi làm.
-
-Ảnh phân thân mặc dù không cách nào sử dụng diệt pháp chi ảnh thần thoại cấp kỹ năng, nhưng lại nắm giữ dòng vàng giao phó siêu cường thuộc tính, cùng thần thoại cấp trang phục, vũ khí, cánh!
-
-Chỉ là những này tăng thêm, ảnh phân thân vượt cấp chiến đấu đều nhẹ nhõm một đao miểu sát, lại để cho Lâm Trạch cái này bản tôn tự mình xuất thủ, là thật hạ giá.
-
-Dù sao ảnh phân thân đánh giết quái vật, hắn làm theo có thể thu được kinh nghiệm.
-
-Chiến lợi phẩm phân thân cũng có thể thay thu thập, chỉ là không thể trực tiếp bỏ vào ba lô mà thôi.
-
-Chia đều thân đại lượng vận chuyển tập trung lên, hắn lại đi thống nhất thu nạp liền có thể.
+Chỉ là những này tăng thêm, ảnh phân thân vượt cấp chiến đấu đều nhẹ nhõm một đao miểu sát, lại để cho Lâm Trạch cái này bản tôn tự mình xuất thủ, là thật hạ giá. Dù sao ảnh phân thân đánh giết quái vật, hắn làm theo có thể thu được kinh nghiệm. Chiến lợi phẩm phân thân cũng có thể thay thu thập, chỉ là không thể trực tiếp bỏ vào ba lô mà thôi. Chia đều thân đại lượng vận chuyển tập trung lên, hắn lại đi thống nhất thu nạp liền có thể.
 
 "Nếu là phân thân tiếp tục thời gian cùng hữu hiệu khoảng cách có thể lại lâu một chút liền tốt, dạng này ta liền có thể làm đến bày mưu nghĩ kế, quyết thắng tại ngàn dặm."
 
@@ -38,39 +24,21 @@ Chia đều thân đại lượng vận chuyển tập trung lên, hắn lại �
 
 "Dòng vàng hàng ngàn hàng vạn, nhớ ghép đôi đến vừa vặn phù hợp thật đúng là không dễ dàng."
 
-Lâm Trạch cảm khái một tiếng, từ trên mặt biển đang tại vận chuyển chiến lợi phẩm phân thân trên thân thu tầm mắt lại, tiếp tục làm mình nên làm sự tình.
-
-Mặc dù sắc trời đã tối, nhưng hắn tinh lực dồi dào, phòng thuyền trưởng đèn đuốc sáng trưng, không cần cắm đầu ngủ ngon.
-
-Huống hồ, hắn trong ba lô còn có rất nhiều truyền thuyết cấp chiến lợi phẩm không có hợp xong đâu, lúc này rảnh rỗi lại có thể tiếp tục chơi dung hợp rèn đúc lô.
-
-Dung hợp rèn đúc lô, khởi động!
+Lâm Trạch cảm khái một tiếng, từ trên mặt biển đang tại vận chuyển chiến lợi phẩm phân thân trên thân thu tầm mắt lại, tiếp tục làm mình nên làm sự tình. Mặc dù sắc trời đã tối, nhưng hắn tinh lực dồi dào, phòng thuyền trưởng đèn đuốc sáng trưng, không cần cắm đầu ngủ ngon. Huống hồ, hắn trong ba lô còn có rất nhiều truyền thuyết cấp chiến lợi phẩm không có hợp xong đâu, lúc này rảnh rỗi lại có thể tiếp tục chơi dung hợp rèn đúc lô. Dung hợp rèn đúc lô, khởi động!
 
 . . .
 
 "Hệ thống, khởi động dung hợp rèn đúc lô, bắt đầu hợp thành."
 
-Lâm Trạch tiếp tục đem trong ba lô còn thừa truyền thuyết cấp chiến lợi phẩm nhét vào.
-
-Hắn lần này cần hợp thành đồ vật, là thuyền lớn bộ kiện!
-
-Đói khát thiên sứ thịt thối cự long không riêng rơi xuống một bộ đầy đủ trang bị, trả lại cho ba cái thuyền lớn bộ kiện, tất cả đều là truyền thuyết cấp.
-
-Thật sự quần cộc đều tuôn ra đến, đơn giản không nên quá thái quá.
-
-Bắt đầu dung hợp trước, Lâm Trạch dùng tay vỗ vỗ dung hợp rèn đúc lô cạnh nồi, cảnh cáo nói
+Lâm Trạch tiếp tục đem trong ba lô còn thừa truyền thuyết cấp chiến lợi phẩm nhét vào. Hắn lần này cần hợp thành đồ vật, là thuyền lớn bộ kiện! Đói khát thiên sứ thịt thối cự long không riêng rơi xuống một bộ đầy đủ trang bị, trả lại cho ba cái thuyền lớn bộ kiện, tất cả đều là truyền thuyết cấp. Thật sự quần cộc đều tuôn ra đến, đơn giản không nên quá thái quá. Bắt đầu dung hợp trước, Lâm Trạch dùng tay vỗ vỗ dung hợp rèn đúc lô cạnh nồi, cảnh cáo nói
 
 "Cũng đừng lại cho ta đùa giỡn, ta muốn phẩm chất tấn thăng, nghe hiểu không?"
 
-Dung hợp rèn đúc lô; . . .
-
-Phàm là dung hợp rèn đúc lô có thể nói nửa câu, cũng sẽ không trầm mặc không nói.
+Dung hợp rèn đúc lô; . . . Phàm là dung hợp rèn đúc lô có thể nói nửa câu, cũng sẽ không trầm mặc không nói.
 
 "Ta liền làm ngươi đáp ứng, bắt đầu đi." Lâm Trạch hài lòng gật gật đầu.
 
-Từ hệ thống hậu trường thao tác giao diện, đưa ra thuyền lớn bộ kiện, bắt đầu dung hợp.
-
-Nửa phút đồng hồ sau, dung hợp kết quả đi ra.
+Từ hệ thống hậu trường thao tác giao diện, đưa ra thuyền lớn bộ kiện, bắt đầu dung hợp. Nửa phút đồng hồ sau, dung hợp kết quả đi ra.
 
 . . .
 
@@ -88,17 +56,7 @@ Nửa phút đồng hồ sau, dung hợp kết quả đi ra.
 
 "Đời ông nội dạy tổ truyền phim truyền hình cắt sửa tiểu kỹ xảo, chính là dùng tốt!"
 
-Lâm Trạch mặt lộ vẻ vui mừng, không nghĩ đến thuyền lớn bộ kiện toàn bộ thành công.
-
-Thuyền lớn bộ kiện trình độ hiếm hoi viễn siêu phi phong, hạng liên, giới chỉ các bộ vị.
-
-Bởi vì thuyền lớn bộ kiện không có đẳng cấp thiết lập cùng sử dụng nhu cầu.
-
-Chỉ cần phẩm chất đủ cao, trang bị bên trên về phía sau một đoạn thời gian rất dài, đều không cần lại lần thay đổi.
-
-Thần thoại cấp thuyền lớn bộ kiện càng là có thể trực tiếp tuyên bố dùng cả một đời.
-
-Lâm Trạch lần sau nếu là lại hợp xuất thần nói cấp trở lên thuyền lớn bộ kiện, vậy thì không phải là thay đổi thuyền lớn bộ kiện đơn giản như vậy.
+Lâm Trạch mặt lộ vẻ vui mừng, không nghĩ đến thuyền lớn bộ kiện toàn bộ thành công. Thuyền lớn bộ kiện trình độ hiếm hoi viễn siêu phi phong, hạng liên, giới chỉ các bộ vị. Bởi vì thuyền lớn bộ kiện không có đẳng cấp thiết lập cùng sử dụng nhu cầu. Chỉ cần phẩm chất đủ cao, trang bị bên trên về phía sau một đoạn thời gian rất dài, đều không cần lại lần thay đổi. Thần thoại cấp thuyền lớn bộ kiện càng là có thể trực tiếp tuyên bố dùng cả một đời. Lâm Trạch lần sau nếu là lại hợp xuất thần nói cấp trở lên thuyền lớn bộ kiện, vậy thì không phải là thay đổi thuyền lớn bộ kiện đơn giản như vậy.
 
 Mà là muốn gia tăng thuyền chi số lượng, tạo thành một chi từ thần thoại cấp bộ kiện vũ trang siêu cấp hạm đội!
 

@@ -1,10 +1,6 @@
 # Chương 88. Đánh giết Đại Hải Tặc, cái thứ ba thần thoại cấp chức nghiệp!
 
-Chương 88; Đánh giết Đại Hải Tặc, cái thứ ba thần thoại cấp chức nghiệp!
-
-Lâm Trạch vượt cấp khiêu chiến trăm cấp thần linh hàm kim lượng còn tại đề thăng.
-
-Thief cũng không nhịn được nhổ nước bọt nói ; "Ta đã nói, là chủ nhân ngươi quá bất hợp lí!"
+Lâm Trạch vượt cấp khiêu chiến trăm cấp thần linh hàm kim lượng còn tại đề thăng. Thief cũng không nhịn được nhổ nước bọt nói ; "Ta đã nói, là chủ nhân ngươi quá bất hợp lí!"
 
 "Nào có giống như ngươi vượt cấp chiến đấu, cái thế giới này quy tắc ở trước mặt ngươi, liền giống bị vò nát ném trong thùng rác giấy lộn đồng dạng, không đáng một đồng a!"
 
@@ -12,9 +8,7 @@ Avna âm thanh như chim sơn ca cảm khái nói; "Dù là nhìn chung thần �
 
 "Ha ha ha ha, các ngươi biết nói chuyện liền nhiều lời điểm, nhưng phía trước cái kia lão nam nhân còn sống, ta không thích, có thể hay không mau đem hắn giết trò chuyện tiếp?"
 
-Lâm Trạch cười lớn nhắc nhở một câu, trước mắt cái này Đại Hải Tặc Mạc Lý Tư mặt cũng không cần, thế mà dự định thừa dịp bọn hắn nói chuyện, chuẩn bị lặng lẽ chạy trốn.
-
-Hắn cũng không dự định buông tha cái này, có thể cung cấp kếch xù kinh nghiệm cùng phong phú chiến lợi phẩm sử thi cấp thủ lĩnh, cùng đem đảo nhỏ cư dân nô dịch mấy năm kẻ cầm đầu!
+Lâm Trạch cười lớn nhắc nhở một câu, trước mắt cái này Đại Hải Tặc Mạc Lý Tư mặt cũng không cần, thế mà dự định thừa dịp bọn hắn nói chuyện, chuẩn bị lặng lẽ chạy trốn. Hắn cũng không dự định buông tha cái này, có thể cung cấp kếch xù kinh nghiệm cùng phong phú chiến lợi phẩm sử thi cấp thủ lĩnh, cùng đem đảo nhỏ cư dân nô dịch mấy năm kẻ cầm đầu!
 
 "Ân a, ta cũng phải hướng chủ nhân làm chuẩn, vượt cấp chiến đấu!"
 
@@ -22,19 +16,11 @@ Thief lộ ra tàn nhẫn nụ cười, lập tức vung vẩy lang nha bổng t
 
 "Viêm Bạo toàn lũy đánh!"
 
-Oanh ——!
-
-Trong tay nàng lang nha bổng chính giữa Mạc Lý Tư mặt.
+Oanh ——! Trong tay nàng lang nha bổng chính giữa Mạc Lý Tư mặt.
 
 . . .
 
-Nửa giờ sau, Avna cùng Thief hoàn mỹ phối hợp, đem chỉ còn nửa máu cấp 50 sử thi cấp thủ lĩnh, Đại Hải Tặc Mạc Lý Tư gắng gượng mài chết.
-
-Đại Hải Tặc Mạc Lý Tư trước khi chết vẫn là một mặt không phục, liền đây hai nương môn nếu như hắn đầy máu đầy trạng thái đều không mang theo sợ.
-
-Nhưng ngươi nhìn người lãnh chúa kia đã làm gì, ngoài miệng nói không giúp đỡ, đi lên đem hắn lượng máu áp chế một nửa.
-
-Trên thân trang bị mang theo các loại quang hoàn, còn tại khoảng cách 50 mét địa phương cho các nàng đốc chiến, đây còn đánh cái lông, tranh thủ thời gian chết cầu được.
+Nửa giờ sau, Avna cùng Thief hoàn mỹ phối hợp, đem chỉ còn nửa máu cấp 50 sử thi cấp thủ lĩnh, Đại Hải Tặc Mạc Lý Tư gắng gượng mài chết. Đại Hải Tặc Mạc Lý Tư trước khi chết vẫn là một mặt không phục, liền đây hai nương môn nếu như hắn đầy máu đầy trạng thái đều không mang theo sợ. Nhưng ngươi nhìn người lãnh chúa kia đã làm gì, ngoài miệng nói không giúp đỡ, đi lên đem hắn lượng máu áp chế một nửa. Trên thân trang bị mang theo các loại quang hoàn, còn tại khoảng cách 50 mét địa phương cho các nàng đốc chiến, đây còn đánh cái lông, tranh thủ thời gian chết cầu được.
 
 Một bên khác, bởi vì Lâm Trạch tham dự chiến đấu lại cung cấp tổn thương cống hiến cao hơn 50% đánh giết Mạc Lý Tư rơi xuống chiến lợi phẩm, vẫn như cũ hưởng thụ hắn lượng lớn may mắn tăng thêm.
 
@@ -58,15 +44,7 @@ Một bên khác, bởi vì Lâm Trạch tham dự chiến đấu lại cung c�
 
 . . .
 
-Vượt cấp đánh giết 50 cấp sử thi cấp thủ lĩnh kinh nghiệm ban thưởng mười phần phong phú.
-
-Mặc dù có 25% bị hai tên nữ anh hùng phân đi, nhưng Lâm Trạch tính gộp lại thu hoạch được gấp ba kinh nghiệm trị, vẫn như cũ để hắn thăng liền ba cấp ngay cả khí đều không mang theo thở.
-
-Phải biết, khi ở trấn nhỏ hắn liền đã thăng qua một cấp.
-
-Với lại, cấp 25 với tư cách 5 bội số là một đạo khảm, dù vậy hắn vẫn là thăng liền ba cấp.
-
-Cách hắn ghi tên yên tĩnh đảo vẫn chưa tới một giờ, đây luyện cấp hiệu suất đơn giản khủng bố.
+Vượt cấp đánh giết 50 cấp sử thi cấp thủ lĩnh kinh nghiệm ban thưởng mười phần phong phú. Mặc dù có 25% bị hai tên nữ anh hùng phân đi, nhưng Lâm Trạch tính gộp lại thu hoạch được gấp ba kinh nghiệm trị, vẫn như cũ để hắn thăng liền ba cấp ngay cả khí đều không mang theo thở. Phải biết, khi ở trấn nhỏ hắn liền đã thăng qua một cấp. Với lại, cấp 25 với tư cách 5 bội số là một đạo khảm, dù vậy hắn vẫn là thăng liền ba cấp. Cách hắn ghi tên yên tĩnh đảo vẫn chưa tới một giờ, đây luyện cấp hiệu suất đơn giản khủng bố.
 
 Không riêng gì Lâm Trạch, Thief cùng Avna đẳng cấp cũng cùng theo một lúc tăng vọt, thăng liền hai cấp!
 
@@ -76,13 +54,7 @@ Không riêng gì Lâm Trạch, Thief cùng Avna đẳng cấp cũng cùng theo 
 
 "Sảng a, đây chính là vượt cấp chiến đấu khoái hoạt, đây chính là khai hoang thu hoạch."
 
-Lâm Trạch nhếch miệng cười một tiếng, mở ra bảng xem xét thăng cấp thu hoạch được từ mới đầu.
-
-Nói lên đến, hàng hải kỷ nguyên hiện giai đoạn không bao giờ thiếu, chính là loại này chờ đợi người chơi khai hoang hòn đảo.
-
-Ai có thể trước giờ thông qua thuyền lớn khảo nghiệm, liền có thể đem càng nhiều hòn đảo bỏ vào trong túi!
-
-Lâm Trạch chính là toàn bộ thế giới cái thứ nhất lên đảo cùng ngoạm miếng thịt lớn người chơi!
+Lâm Trạch nhếch miệng cười một tiếng, mở ra bảng xem xét thăng cấp thu hoạch được từ mới đầu. Nói lên đến, hàng hải kỷ nguyên hiện giai đoạn không bao giờ thiếu, chính là loại này chờ đợi người chơi khai hoang hòn đảo. Ai có thể trước giờ thông qua thuyền lớn khảo nghiệm, liền có thể đem càng nhiều hòn đảo bỏ vào trong túi! Lâm Trạch chính là toàn bộ thế giới cái thứ nhất lên đảo cùng ngoạm miếng thịt lớn người chơi!
 
 . . .
 
@@ -98,23 +70,13 @@ Chức nghiệp giới thiệu; Đêm tối quân vương là tiềm hành cùng
 
 "A?"
 
-Lâm Trạch nhìn thấy hệ thống bắn ra một cái có thể từ ghép đầu, cả người đều mộng.
+Lâm Trạch nhìn thấy hệ thống bắn ra một cái có thể từ ghép đầu, cả người đều mộng. Đây là cái gì tình huống, hệ thống hậu trường dòng vàng dự trữ số lượng hơn vạn, hắn cấp 27 liền liên tục xoát ra 4 cái tam tinh max cấp dòng vàng, vận khí này hoàn toàn có thể dùng Thiên Hồ để hình dung! Chẳng lẽ dòng vàng ngẫu nhiên cùng tuyển, cũng sẽ bị may mắn thuộc tính ảnh hưởng? Nếu như là cái kia có thể quá tốt rồi! Ngay sau đó, khi Lâm Trạch tập trung nhìn vào, phát hiện lần này có thể từ ghép đầu, đúng là Ám Ảnh đại sư liên quan chức nghiệp lúc, trong lòng lập tức phun lên một trận cuồng hỉ.
 
-Đây là cái gì tình huống, hệ thống hậu trường dòng vàng dự trữ số lượng hơn vạn, hắn cấp 27 liền liên tục xoát ra 4 cái tam tinh max cấp dòng vàng, vận khí này hoàn toàn có thể dùng Thiên Hồ để hình dung!
-
-Chẳng lẽ dòng vàng ngẫu nhiên cùng tuyển, cũng sẽ bị may mắn thuộc tính ảnh hưởng? Nếu như là cái kia có thể quá tốt rồi!
-
-Ngay sau đó, khi Lâm Trạch tập trung nhìn vào, phát hiện lần này có thể từ ghép đầu, đúng là Ám Ảnh đại sư liên quan chức nghiệp lúc, trong lòng lập tức phun lên một trận cuồng hỉ.
-
-Ám Ảnh đại sư, theo hắn cùng nhau đi tới cực phẩm thiên phú, tiện lợi tính kéo căng truyền kỳ chức nghiệp, cuối cùng cũng phải đuổi theo phiên bản tấn thăng thần thoại chức nghiệp!
-
-Nhìn xem đây tân chức nghiệp danh tự, đêm tối quân vương, bức cách kéo căng!
+Ám Ảnh đại sư, theo hắn cùng nhau đi tới cực phẩm thiên phú, tiện lợi tính kéo căng truyền kỳ chức nghiệp, cuối cùng cũng phải đuổi theo phiên bản tấn thăng thần thoại chức nghiệp! Nhìn xem đây tân chức nghiệp danh tự, đêm tối quân vương, bức cách kéo căng!
 
 "Còn chờ cái gì, giao phó dòng vàng sau đó hợp thành!"
 
-Lâm Trạch vung tay lên, đem tân thu hoạch được dòng dung hợp tiến thân thể.
-
-Lúc này, hệ thống thanh âm nhắc nhở vang lên lần nữa
+Lâm Trạch vung tay lên, đem tân thu hoạch được dòng dung hợp tiến thân thể. Lúc này, hệ thống thanh âm nhắc nhở vang lên lần nữa
 
 « hệ thống; Dòng vàng giao phó thành công, ngươi tự động thu hoạch được hoàn toàn mới thiên phú; Đêm tối quân vương (màu vàng truyền thuyết ☆☆☆ ) »
 
@@ -136,9 +98,7 @@ Lúc này, hệ thống thanh âm nhắc nhở vang lên lần nữa
 
 « Ám Ảnh phân thân; Thần thoại cấp kỹ năng chủ động, đêm tối quân vương ở khắp mọi nơi, bất tử bất diệt tuyệt kỹ thành danh, tiêu hao 100 lý trí, chế ra một đạo nắm giữ bản thể 100% thuộc tính Ám Ảnh phân thân, phân thân có thể sử dụng bản thể nắm giữ đêm tối quân vương kỹ năng cùng các loại trang bị đặc hiệu.
 
-Quân vương có thể tùy thời cùng Ám Ảnh phân thân hoán đổi vị trí, quân vương tử vong lúc như cái khác Ám Ảnh phân thân tồn tại, tắc phân thân thay thế quân vương tử vong.
-
-Nên kỹ năng không có cooldown lại, Ám Ảnh phân thân không có tiếp tục thời gian, nhiều nhất tồn tại 999 cái Ám Ảnh phân thân. »
+Quân vương có thể tùy thời cùng Ám Ảnh phân thân hoán đổi vị trí, quân vương tử vong lúc như cái khác Ám Ảnh phân thân tồn tại, tắc phân thân thay thế quân vương tử vong. Nên kỹ năng không có cooldown lại, Ám Ảnh phân thân không có tiếp tục thời gian, nhiều nhất tồn tại 999 cái Ám Ảnh phân thân. »
 
 « U Minh chi nhận; Thần thoại cấp kỹ năng chủ động, ngươi hướng về phía trước phóng thích một đạo dao găm hình dáng Ám Ảnh phân thân, trong nháy mắt tiếp cận cũng nhanh chóng mục tiêu công kích, tạo thành một lần 1000% Ám Ảnh tổn thương, cũng dùng mục tiêu ở sau đó 3 giây bên trong vô pháp sử dụng kỹ năng, Ám Ảnh phân thân tiếp tục tồn tại 15 giây, nắm giữ bản thể 100% thuộc tính, tiêu hao 50 thể lực lý trí, kỹ năng cooldown 10 giây. »
 
@@ -152,19 +112,11 @@ Nên kỹ năng không có cooldown lại, Ám Ảnh phân thân không có ti�
 
 . . .
 
-Lâm Trạch đem dòng hợp thành cũng giao phó mình về sau, Ám Ảnh đại sư tất cả kỹ năng đều bị đêm tối quân vương thay thế, kỹ năng vô luận là ra tổn thương vẫn là cơ chế đều lật ra mười mấy lần!
-
-Khoa trương nhất còn muốn kể tới đêm tối quân vương hạch tâm kỹ năng cơ chế, Ám Ảnh phân thân!
-
-Tối cao tồn tại 999 cái phân thân, phân thân tồn tại bản thể liền sẽ không tử vong, phân thân tiếp tục thời gian vô hạn, lại nên kỹ năng không có cooldown lại, chỉ cần có đầy đủ lý trí liền có thể vô hạn phân thân, vô hạn phục sinh!
+Lâm Trạch đem dòng hợp thành cũng giao phó mình về sau, Ám Ảnh đại sư tất cả kỹ năng đều bị đêm tối quân vương thay thế, kỹ năng vô luận là ra tổn thương vẫn là cơ chế đều lật ra mười mấy lần! Khoa trương nhất còn muốn kể tới đêm tối quân vương hạch tâm kỹ năng cơ chế, Ám Ảnh phân thân! Tối cao tồn tại 999 cái phân thân, phân thân tồn tại bản thể liền sẽ không tử vong, phân thân tiếp tục thời gian vô hạn, lại nên kỹ năng không có cooldown lại, chỉ cần có đầy đủ lý trí liền có thể vô hạn phân thân, vô hạn phục sinh!
 
 "Mặc kệ là cùng diệt pháp chi ảnh so, vẫn là cùng Thần Long Cuồng Huyết chiến sĩ so, đêm tối quân vương đều là cùng cấp bậc tồn tại, sinh tồn năng lực từ cơ chế bên trên so sánh, thậm chí so cuồng chiến sĩ còn muốn vô lại."
 
-Lâm Trạch hít sâu một hơi, hắn cũng biết Ám Ảnh đại sư, không. . . Là hoàn toàn mới đêm tối quân vương sẽ không để cho hắn thất vọng, quả nhiên mạnh ngoại hạng!
-
-Có thể nói như vậy, Lâm Trạch thu hoạch được cái thứ ba thần thoại cấp chức nghiệp về sau, hắn thực lực lại leo lên một cái tân bậc thang, lần này liền tính thí thần cũng có mấy phần chắc chắn!
-
-Chỉ cần cho hắn đầy đủ thời gian, triệu hồi ra đầy đủ Ám Ảnh phân thân, 1000 cái phối hợp thân mật vô gian thần thoại cấp chiến lực đơn vị, có thể đem bất kỳ thần linh kéo xuống thần đài!
+Lâm Trạch hít sâu một hơi, hắn cũng biết Ám Ảnh đại sư, không. . . Là hoàn toàn mới đêm tối quân vương sẽ không để cho hắn thất vọng, quả nhiên mạnh ngoại hạng! Có thể nói như vậy, Lâm Trạch thu hoạch được cái thứ ba thần thoại cấp chức nghiệp về sau, hắn thực lực lại leo lên một cái tân bậc thang, lần này liền tính thí thần cũng có mấy phần chắc chắn! Chỉ cần cho hắn đầy đủ thời gian, triệu hồi ra đầy đủ Ám Ảnh phân thân, 1000 cái phối hợp thân mật vô gian thần thoại cấp chiến lực đơn vị, có thể đem bất kỳ thần linh kéo xuống thần đài!
 
 "Ta nguyên lai tưởng rằng đã từng mình đã là cùng giai vô địch tồn tại, nhưng theo ta không ngừng thăng cấp, dòng vàng không ngừng tăng nhiều, ta vô địch trình độ còn tại không ngừng đề cao!"
 
@@ -174,19 +126,13 @@ Lâm Trạch mười phần khiêm tốn dùng ngón tay trỏ cùng ngón cái 
 
 . . .
 
-Ngoại trừ tân hợp thành tam tinh max cấp dòng vàng đêm tối quân vương, Lâm Trạch còn thu hoạch được một cái tân dòng, Dave nông trường, dòng danh tự nghe lên có chút quen tai.
-
-Lâm Trạch mở ra xem, biểu lộ lập tức có chút cổ quái.
+Ngoại trừ tân hợp thành tam tinh max cấp dòng vàng đêm tối quân vương, Lâm Trạch còn thu hoạch được một cái tân dòng, Dave nông trường, dòng danh tự nghe lên có chút quen tai. Lâm Trạch mở ra xem, biểu lộ lập tức có chút cổ quái.
 
 « Dave nông trường; Phụ trợ loại dòng vàng, nên dòng làm một Trương Khả thu nạp kiến trúc trên sông đồ, sử dụng sau lập tức triệu hoán thu nạp Dave nông trường, Dave nông trường tồn tục trong lúc đó mỗi tuần có thể sản xuất ánh nắng, lương thực, kim cương, hàng hải tệ các loại tư nguyên, cùng chiêu mộ truyền thuyết cấp thực vật cùng cương thi! »
 
 "Không phải anh em, làm sao còn có bản vẽ loại dòng vàng a? Là có chút hài hước."
 
-Lâm Trạch khóe miệng hơi co rúm, nhưng bản vẽ đã bay đến hắn ba lô, về sau hắn liền có thể tùy thân triệu hoán cùng thu nạp Dave nông trường.
-
-Dave trong nông trại cụ thể có cái gì, còn phải tìm khối địa phương triệu hoán hoặc trở lại trên thuyền lại xác nhận, hiện tại khẳng định không có thời gian.
-
-Kế tiếp là chiến lợi phẩm, Lâm Trạch với tư cách lãnh chúa đương nhiên muốn đích thân sờ thưởng!
+Lâm Trạch khóe miệng hơi co rúm, nhưng bản vẽ đã bay đến hắn ba lô, về sau hắn liền có thể tùy thân triệu hoán cùng thu nạp Dave nông trường. Dave trong nông trại cụ thể có cái gì, còn phải tìm khối địa phương triệu hoán hoặc trở lại trên thuyền lại xác nhận, hiện tại khẳng định không có thời gian. Kế tiếp là chiến lợi phẩm, Lâm Trạch với tư cách lãnh chúa đương nhiên muốn đích thân sờ thưởng!
 
 "Chủ nhân, ngươi còn đứng ở cái kia làm gì, thi thể đến nhân lúc còn nóng a, nếu là thả lạnh liền điềm xấu!"
 
@@ -222,23 +168,9 @@ Lâm Trạch không nhìn Thief kêu đau, đi đến thi thể trước mặt t
 
 . . .
 
-Lại là một trận hoa lệ đại bạo.
+Lại là một trận hoa lệ đại bạo. Nhưng thần thoại cấp phía dưới chiến lợi phẩm Lâm Trạch hết thảy không nhìn. Có tự nhiên dung hợp, hắn đều là chờ dung hợp sau lại thống nhất xem xét, miễn cho lãng phí thời gian. Bất quá, từ lần này chiến lợi phẩm thu hoạch đến xem. Đánh giết Đại Hải Tặc Mạc Lý Tư, đối phương ngay cả quần cộc đều bị bạo sạch sẽ. Từ vũ khí, phòng cụ, phi phong, đến dị thường vật phẩm. Cuối cùng ngay cả đặc sắc binh chủng kiến trúc cùng chuyển chức sách đều tuôn ra đến, cái gì cần có đều có!
 
-Nhưng thần thoại cấp phía dưới chiến lợi phẩm Lâm Trạch hết thảy không nhìn.
-
-Có tự nhiên dung hợp, hắn đều là chờ dung hợp sau lại thống nhất xem xét, miễn cho lãng phí thời gian.
-
-Bất quá, từ lần này chiến lợi phẩm thu hoạch đến xem.
-
-Đánh giết Đại Hải Tặc Mạc Lý Tư, đối phương ngay cả quần cộc đều bị bạo sạch sẽ.
-
-Từ vũ khí, phòng cụ, phi phong, đến dị thường vật phẩm.
-
-Cuối cùng ngay cả đặc sắc binh chủng kiến trúc cùng chuyển chức sách đều tuôn ra đến, cái gì cần có đều có!
-
-Cái gì gọi là bị nữ thần may mắn bao nuôi nam nhân a?
-
-Lâm Trạch đem chiến lợi phẩm thu sạch vào trong túi, đối với bên người hai người nói
+Cái gì gọi là bị nữ thần may mắn bao nuôi nam nhân a? Lâm Trạch đem chiến lợi phẩm thu sạch vào trong túi, đối với bên người hai người nói
 
 "Ta tiếp xuống vào biệt thự tìm kiếm toà đảo này đảo chi tâm, chính thức thu hoạch được toà đảo này quyền sở hữu."
 

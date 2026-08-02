@@ -1,7 +1,5 @@
 # Chương 45. Mỹ vị mồi câu mực đầu? Thâm uyên miệng lớn chi mũi sừng
 
-Chương 45; Mỹ vị mồi câu mực đầu? Thâm uyên miệng lớn chi mũi sừng
-
 « bạo thực chi nha »
 
 « loại hình; Sử thi cấp dao găm (bị ô nhiễm, duy nhất nhiệm vụ đạo cụ ) »
@@ -22,9 +20,7 @@ Chương 45; Mỹ vị mồi câu mực đầu? Thâm uyên miệng lớn chi m�
 
 "Thật tà ác vũ khí, lần đầu tiên nhìn thấy đại giới như thế nặng nề trang bị, khó trách là với tư cách nhiệm vụ vật phẩm ngoài định mức rơi xuống."
 
-Lâm Trạch xem hết vũ khí thuộc tính về sau, thậm chí cũng không dám đem vũ khí này phóng tới trên tay, tựa như một cái phỏng tay khoai lang.
-
-Nghĩ nghĩ, Lâm Trạch quyết định đem cái này vũ khí ném nơi hẻo lánh hít bụi, có cơ hội liền giao cho hiện có cái khác giáo phái, mặc kệ là Thái Dương giáo phái vẫn là cái khác, khẳng định đều có người đối với loại này tà vật cảm thấy hứng thú.
+Lâm Trạch xem hết vũ khí thuộc tính về sau, thậm chí cũng không dám đem vũ khí này phóng tới trên tay, tựa như một cái phỏng tay khoai lang. Nghĩ nghĩ, Lâm Trạch quyết định đem cái này vũ khí ném nơi hẻo lánh hít bụi, có cơ hội liền giao cho hiện có cái khác giáo phái, mặc kệ là Thái Dương giáo phái vẫn là cái khác, khẳng định đều có người đối với loại này tà vật cảm thấy hứng thú.
 
 « mất sống bạo thực xúc tu »
 
@@ -40,23 +36,11 @@ Nghĩ nghĩ, Lâm Trạch quyết định đem cái này vũ khí ném nơi hẻ
 
 "Đây mồi câu mực đầu nó nghiêm chỉnh sao, này mồi câu mực không phải kia mồi câu mực a, ăn vào đi thật không biết biến thành hắn dòng dõi?"
 
-Lâm Trạch khóe miệng co quắp một chút, không biết nên như thế nào nhổ nước bọt.
-
-Nhưng trải qua hệ thống kiên định, mất sống bạo thực xúc tu xác thực không có tiêu cực hiệu quả.
-
-Nếu như chỉ là một loại nhìn so sánh buồn nôn, ăn so sánh buồn nôn, nuốt xuống bụng còn có thể sẽ làm ác mộng đồ ăn, giống như cũng không phải không thể tiếp nhận.
-
-Nhất là tại hiện giai đoạn, mọi người đều gấp thiếu lương thực.
-
-Mặc kệ ngươi là gián biển vẫn là Hải lão chuột, chỉ cần có thể no nhắm mắt nuốt vào đi đều một cái dạng.
+Lâm Trạch khóe miệng co quắp một chút, không biết nên như thế nào nhổ nước bọt. Nhưng trải qua hệ thống kiên định, mất sống bạo thực xúc tu xác thực không có tiêu cực hiệu quả. Nếu như chỉ là một loại nhìn so sánh buồn nôn, ăn so sánh buồn nôn, nuốt xuống bụng còn có thể sẽ làm ác mộng đồ ăn, giống như cũng không phải không thể tiếp nhận. Nhất là tại hiện giai đoạn, mọi người đều gấp thiếu lương thực. Mặc kệ ngươi là gián biển vẫn là Hải lão chuột, chỉ cần có thể no nhắm mắt nuốt vào đi đều một cái dạng.
 
 "Được rồi, vẫn là đem đây mỹ vị mồi câu mực đầu lưu cho có có lộc ăn người đi, ta liền ăn chút bình thường cá ngừ đại dương thịt là được rồi."
 
-Lâm Trạch đem 202 căn mất sống bạo thực xúc tu thu vào tài nguyên rương, hệ thống tự động chuyển hóa làm 2020 đơn vị đồ ăn.
-
-Nguyên bản thiếu thốn thức ăn bình thường tài nguyên, cuối cùng bổ sung đi lên một chút.
-
-Nói thật, muốn để hắn cầm cự hình cá ngừ đại dương thịt đi thị trường giao dịch, hắn thật là có điểm không bỏ được.
+Lâm Trạch đem 202 căn mất sống bạo thực xúc tu thu vào tài nguyên rương, hệ thống tự động chuyển hóa làm 2020 đơn vị đồ ăn. Nguyên bản thiếu thốn thức ăn bình thường tài nguyên, cuối cùng bổ sung đi lên một chút. Nói thật, muốn để hắn cầm cự hình cá ngừ đại dương thịt đi thị trường giao dịch, hắn thật là có điểm không bỏ được.
 
 "Không nghĩ đến giết quỷ dị sinh vật còn có thể rơi ra nguyên liệu nấu ăn, đơn giản không thể tưởng tượng. . ."
 
@@ -78,51 +62,17 @@ Lâm Trạch bất đắc dĩ lắc đầu, tiếp tục xem cái tiếp theo ch
 
 . . .
 
-Đây là Lâm Trạch lần đầu tiên thu hoạch được quỷ dị binh chủng kiến trúc bản vẽ.
+Đây là Lâm Trạch lần đầu tiên thu hoạch được quỷ dị binh chủng kiến trúc bản vẽ. Khác biệt chủng tộc binh chủng đều có riêng phần mình đặc điểm, Lâm Trạch nhìn một hồi liền phát hiện quỷ dị binh chủng chỗ đặc biệt. Phi thường đơn giản thô bạo, hoặc là trị số quái, hoặc là cơ chế quái! Huyết nhục khôi lỗi thuộc về cái trước, trị số cao đến quá đáng! Huyết nhục khôi lỗi công thủ máu, là đồng vị giai đồng cấp, thuộc tính trưởng thành tương đối bình quân nhân tộc binh chủng 5 lần!
 
-Khác biệt chủng tộc binh chủng đều có riêng phần mình đặc điểm, Lâm Trạch nhìn một hồi liền phát hiện quỷ dị binh chủng chỗ đặc biệt.
+Là cấp 10 sử thi cấp binh chủng địa ngục chiến chó 3 lần! Không nhìn lầm, trị số chính là như vậy thái quá, kỹ năng thuận tiện quỷ dị binh chủng cũng càng thắng một bậc. Nhưng quỷ dị sinh vật khuyết điểm cũng rất rõ ràng, quỷ dị binh chủng cùng cái khác chủng tộc binh chủng lộn xộn lúc, sẽ sinh ra cùng Vong Linh tộc đồng dạng hiệu quả. Giảm xuống cái khác chủng tộc đội ngũ sĩ khí, lý do cùng loại. Mỗi loại sống sót sinh vật trời sinh đối với quỷ dị sinh vật bài xích, phản cảm, chán ghét.
 
-Phi thường đơn giản thô bạo, hoặc là trị số quái, hoặc là cơ chế quái!
+Liền ngay cả địa ngục binh chủng cũng chán ghét quỷ dị sinh vật trên thân loại kia quỷ dị khí tức. Thứ hai, quỷ dị binh chủng vô luận chiêu mộ vẫn là duy trì, đều cần tiêu hao lượng lớn đồ ăn hoặc một loại nào đó đắt đỏ đại giới. Đây điểm cũng tương đương đáng ghét, đơn giản đến nói không phải Phú ca đừng đụng. Khuyết điểm này cùng vong linh sinh vật hoàn toàn tương phản. Vong linh sinh vật chỉ cần duy trì ma lực, thuộc về phi thường giá rẻ liền có thể hình thành nhân số kém chiến thuật biển người binh chủng.
 
-Huyết nhục khôi lỗi thuộc về cái trước, trị số cao đến quá đáng!
-
-Huyết nhục khôi lỗi công thủ máu, là đồng vị giai đồng cấp, thuộc tính trưởng thành tương đối bình quân nhân tộc binh chủng 5 lần!
-
-Là cấp 10 sử thi cấp binh chủng địa ngục chiến chó 3 lần!
-
-Không nhìn lầm, trị số chính là như vậy thái quá, kỹ năng thuận tiện quỷ dị binh chủng cũng càng thắng một bậc.
-
-Nhưng quỷ dị sinh vật khuyết điểm cũng rất rõ ràng, quỷ dị binh chủng cùng cái khác chủng tộc binh chủng lộn xộn lúc, sẽ sinh ra cùng Vong Linh tộc đồng dạng hiệu quả.
-
-Giảm xuống cái khác chủng tộc đội ngũ sĩ khí, lý do cùng loại.
-
-Mỗi loại sống sót sinh vật trời sinh đối với quỷ dị sinh vật bài xích, phản cảm, chán ghét.
-
-Liền ngay cả địa ngục binh chủng cũng chán ghét quỷ dị sinh vật trên thân loại kia quỷ dị khí tức.
-
-Thứ hai, quỷ dị binh chủng vô luận chiêu mộ vẫn là duy trì, đều cần tiêu hao lượng lớn đồ ăn hoặc một loại nào đó đắt đỏ đại giới.
-
-Đây điểm cũng tương đương đáng ghét, đơn giản đến nói không phải Phú ca đừng đụng.
-
-Khuyết điểm này cùng vong linh sinh vật hoàn toàn tương phản.
-
-Vong linh sinh vật chỉ cần duy trì ma lực, thuộc về phi thường giá rẻ liền có thể hình thành nhân số kém chiến thuật biển người binh chủng.
-
-Cho nên, quỷ dị binh chủng am hiểu là đơn binh tác chiến cùng quy mô nhỏ đoàn chiến.
-
-Huyết nhục khôi lỗi định vị lại là công thành binh chủng, xe tăng, đây liền phi thường để cho người ta ảo não.
-
-Lâm Trạch cảm giác mình hoàn toàn không dùng được.
+Cho nên, quỷ dị binh chủng am hiểu là đơn binh tác chiến cùng quy mô nhỏ đoàn chiến. Huyết nhục khôi lỗi định vị lại là công thành binh chủng, xe tăng, đây liền phi thường để cho người ta ảo não. Lâm Trạch cảm giác mình hoàn toàn không dùng được.
 
 "Trước tạm thời để đó đi, không phải không thích gấp năm lần trị số, chủ yếu là dùng không nổi, ta lấy ở đâu như vậy nhiều đồ ăn uy những này bạo thực hệ thùng cơm a? !"
 
-Lâm Trạch bất đắc dĩ thả xuống bản vẽ, hắn không riêng thiếu bảo thạch, còn thiếu đồ ăn.
-
-Dù là mới vừa vào sổ sách 2000 đồ ăn, cũng không đủ một chi 6 đầu huyết nhục khôi lỗi tạo thành tiểu đội, tiêu xài một tuần.
-
-Cũng không thể làm cái một tuần sau đó giải tán đội ngũ a.
-
-Huyết nhục khôi lỗi lại không thể lấy ra làm ruộng!
+Lâm Trạch bất đắc dĩ thả xuống bản vẽ, hắn không riêng thiếu bảo thạch, còn thiếu đồ ăn. Dù là mới vừa vào sổ sách 2000 đồ ăn, cũng không đủ một chi 6 đầu huyết nhục khôi lỗi tạo thành tiểu đội, tiêu xài một tuần. Cũng không thể làm cái một tuần sau đó giải tán đội ngũ a. Huyết nhục khôi lỗi lại không thể lấy ra làm ruộng!
 
 . . .
 
@@ -142,20 +92,10 @@ Cái cuối cùng chiến lợi phẩm, là một cái thuyền linh kiện.
 
 . . .
 
-Mũi sừng, là thuyền cố định tại đầu tàu đột xuất vật, dùng cho đâm cháy địch thuyền cùng vật lý gia tốc, tại hơi nước trên thuyền loại này mũi sừng càng dùng tốt.
-
-Ở trong game mũi sừng tương đương với thuyền vật lộn vũ khí, tiến vào chiến trường hình thức lúc còn có thể phát động hiệu quả đặc biệt, là phi thường trọng yếu vũ khí bộ kiện.
+Mũi sừng, là thuyền cố định tại đầu tàu đột xuất vật, dùng cho đâm cháy địch thuyền cùng vật lý gia tốc, tại hơi nước trên thuyền loại này mũi sừng càng dùng tốt. Ở trong game mũi sừng tương đương với thuyền vật lộn vũ khí, tiến vào chiến trường hình thức lúc còn có thể phát động hiệu quả đặc biệt, là phi thường trọng yếu vũ khí bộ kiện.
 
 "Tê, đây lớn mũi sừng là kiện cực phẩm a, cuối cùng ra kiện lớn hàng!"
 
-Lâm Trạch nhìn thấy mũi sừng thuộc tính, cuối cùng lai kính.
+Lâm Trạch nhìn thấy mũi sừng thuộc tính, cuối cùng lai kính. Sau khi rời khỏi đây, chỉ cần cho hắn Hắc Thạch Hào trang bị cái này mũi sừng, hắn thuyền lớn liền có thể tự động bắt được trôi nổi ở trên biển tài nguyên rương, không cần hắn lại phái bộ đội hoặc tự mình xuống biển vớt. Tựa như một chiếc to lớn máy hút bụi, gió bão hút vào! Muốn nói có khuyết điểm gì, chính là thuyền nhanh hàng đến so sánh rõ ràng, đối với phổ thông thuyền lớn mà nói tương đương với chia đôi chặt.
 
-Sau khi rời khỏi đây, chỉ cần cho hắn Hắc Thạch Hào trang bị cái này mũi sừng, hắn thuyền lớn liền có thể tự động bắt được trôi nổi ở trên biển tài nguyên rương, không cần hắn lại phái bộ đội hoặc tự mình xuống biển vớt.
-
-Tựa như một chiếc to lớn máy hút bụi, gió bão hút vào!
-
-Muốn nói có khuyết điểm gì, chính là thuyền nhanh hàng đến so sánh rõ ràng, đối với phổ thông thuyền lớn mà nói tương đương với chia đôi chặt.
-
-Nhưng Lâm Trạch Hắc Thạch Hào không giống nhau, hắn Hắc Thạch Hào có thể không ngừng thăng cấp, mỗi cấp gia tăng 1 mét giây tốc độ di chuyển.
-
-Phối hợp cái này mũi sừng kết quả là, Hắc Thạch Hào lại có thể luyện cấp lại có thể thu thập bảo vật, thắng tê!
+Nhưng Lâm Trạch Hắc Thạch Hào không giống nhau, hắn Hắc Thạch Hào có thể không ngừng thăng cấp, mỗi cấp gia tăng 1 mét giây tốc độ di chuyển. Phối hợp cái này mũi sừng kết quả là, Hắc Thạch Hào lại có thể luyện cấp lại có thể thu thập bảo vật, thắng tê!

@@ -1,7 +1,5 @@
 # Chương 27. Sử thi cấp xưng hào, Rais hàng hải nhật ký
 
-Chương 27; Sử thi cấp xưng hào, Rais hàng hải nhật ký
-
 Vừa dẫn xong tân Tử cấp xưng hào, lần đầu tiên giết sử thi cấp anh hùng kích hoạt xưng hào cũng theo đó cấp cho.
 
 « hệ thống; Keng! Ngài là cái thứ nhất đánh giết sử thi cấp anh hùng người chơi, thu hoạch được sử thi cấp ẩn tàng thành tựu « sử thi kẻ huỷ diệt » hư không chi hải danh vọng +1000, may mắn +10, đối với thủ lĩnh cấp trở lên đơn vị tạo thành tổn thương +10%! »
@@ -16,15 +14,7 @@ Vừa dẫn xong tân Tử cấp xưng hào, lần đầu tiên giết sử thi 
 
 "Không giống rất nhiều trò chơi xưng hào chính là cái bài trí, vật trang sức, không có gì tồn tại cảm."
 
-Lâm Trạch cao hứng đem cái thứ hai xưng hào nhận lấy.
-
-Những này ẩn tàng xưng hào chỉ cần kích hoạt, bổ sung thuộc tính tăng thêm chính là vĩnh cửu, không cần đeo xưng hào cũng có thể có hiệu lực.
-
-Thuận tiện nhấc lên, hảo sự thành đôi không đối xứng hào thuộc tính có hiệu lực.
-
-Là bởi vì xưng hào thuộc tính bắt nguồn từ xưng hào, tựa như trang bị thuộc tính đồng dạng, là dán vào tại trang bị phía trên.
-
-Nhưng cùng với một cái xưng hào vô pháp thu hoạch được lần hai, dẫn đến hảo sự thành đôi mất đi hiệu lực.
+Lâm Trạch cao hứng đem cái thứ hai xưng hào nhận lấy. Những này ẩn tàng xưng hào chỉ cần kích hoạt, bổ sung thuộc tính tăng thêm chính là vĩnh cửu, không cần đeo xưng hào cũng có thể có hiệu lực. Thuận tiện nhấc lên, hảo sự thành đôi không đối xứng hào thuộc tính có hiệu lực. Là bởi vì xưng hào thuộc tính bắt nguồn từ xưng hào, tựa như trang bị thuộc tính đồng dạng, là dán vào tại trang bị phía trên. Nhưng cùng với một cái xưng hào vô pháp thu hoạch được lần hai, dẫn đến hảo sự thành đôi mất đi hiệu lực.
 
 . . .
 
@@ -32,11 +22,7 @@ Cuối cùng, là Ám Ảnh đại sư lên tới cấp 10 về sau, lĩnh ngộ
 
 « hệ thống; Keng! Chúc mừng ngài tại lên tới cấp 10 lúc, từ Ám Ảnh đại sư thiên phú bên trong lĩnh ngộ tân kỹ năng; Ảnh Thiểm loạn vũ (truyền thuyết cấp )
 
-Truyền thuyết cấp kỹ năng, bắn vọt đồng tiến vào không thể khóa chặt Ám Ảnh trạng thái, từ trong bóng tối đối với địch nhân tiến hành cuồng phong bạo vũ một dạng loạn vũ công kích.
-
-Tại 2 giây bên trong, tạo thành 5+100 nhanh nhẹn số lần cấp độ cùng 200% bội suất công kích, như mục tiêu địch nhân trước giờ tử vong, tắc ngẫu nhiên hướng xung quanh địch nhân phát động còn thừa loạn vũ công kích số lần!
-
-Kỹ năng mỗi lần sử dụng tiêu hao 30 thể lực, cooldown 5 phút. »
+Truyền thuyết cấp kỹ năng, bắn vọt đồng tiến vào không thể khóa chặt Ám Ảnh trạng thái, từ trong bóng tối đối với địch nhân tiến hành cuồng phong bạo vũ một dạng loạn vũ công kích. Tại 2 giây bên trong, tạo thành 5+100 nhanh nhẹn số lần cấp độ cùng 200% bội suất công kích, như mục tiêu địch nhân trước giờ tử vong, tắc ngẫu nhiên hướng xung quanh địch nhân phát động còn thừa loạn vũ công kích số lần! Kỹ năng mỗi lần sử dụng tiêu hao 30 thể lực, cooldown 5 phút. »
 
 . . .
 
@@ -44,13 +30,7 @@ Kỹ năng mỗi lần sử dụng tiêu hao 30 thể lực, cooldown 5 phút. �
 
 "Không có ý tứ, kế tiếp là vô địch tấm thời gian, ưa thích ta kỹ năng ấn loạn, toàn bộ hành trình vô địch lại tổn thương cao đến bạo tạc Ám Ảnh đại sư showtime sao?"
 
-Lâm Trạch rất ưa thích kỹ năng này, trong đầu đã có mình cạc cạc giết lung tung hình ảnh.
-
-Không hổ là truyền thuyết cấp kỹ năng, vô luận cơ chế vẫn là bội suất đều phi thường hoàn mỹ!
-
-Hắn đã không kịp chờ đợi muốn tìm mấy con quái thử một chút hiệu quả, kỹ năng này tổn thương chỉ cần đầy đủ cao, đồng dạng có thể coi là đàn xoát kỹ năng, liền thái quá!
-
-Lâm Trạch lần này lên tới cấp 10, thuộc tính cùng cấp 7 so sánh có nghiêng trời lệch đất biến hóa, đơn giản có thể sử dụng thay máu để hình dung.
+Lâm Trạch rất ưa thích kỹ năng này, trong đầu đã có mình cạc cạc giết lung tung hình ảnh. Không hổ là truyền thuyết cấp kỹ năng, vô luận cơ chế vẫn là bội suất đều phi thường hoàn mỹ! Hắn đã không kịp chờ đợi muốn tìm mấy con quái thử một chút hiệu quả, kỹ năng này tổn thương chỉ cần đầy đủ cao, đồng dạng có thể coi là đàn xoát kỹ năng, liền thái quá! Lâm Trạch lần này lên tới cấp 10, thuộc tính cùng cấp 7 so sánh có nghiêng trời lệch đất biến hóa, đơn giản có thể sử dụng thay máu để hình dung.
 
 Lâm Trạch mở ra bảng nhìn lướt qua, con mắt liền có chút na bất khai, đây trị số trưởng thành cũng quá đẹp!
 
@@ -86,39 +66,17 @@ Lâm Trạch mở ra bảng nhìn lướt qua, con mắt liền có chút na b�
 
 . . .
 
-Đây đợt thuộc tính trưởng thành, tại nguyên trên cơ sở trực tiếp gấp bội!
-
-Tối cao nhanh nhẹn thuộc tính trực tiếp phá ngàn, để Ảnh Thiểm loạn vũ có thể đánh ra tối cao 18 lần công kích, chân chính nhanh như thiểm điện!
+Đây đợt thuộc tính trưởng thành, tại nguyên trên cơ sở trực tiếp gấp bội! Tối cao nhanh nhẹn thuộc tính trực tiếp phá ngàn, để Ảnh Thiểm loạn vũ có thể đánh ra tối cao 18 lần công kích, chân chính nhanh như thiểm điện!
 
 "Hiện tại thuộc tính mới là ta phải có thực lực."
 
-Lâm Trạch vừa lòng thỏa ý đóng lại bảng thuộc tính.
+Lâm Trạch vừa lòng thỏa ý đóng lại bảng thuộc tính. Nghiệm thu xong chiến lợi phẩm cùng thuộc tính trưởng thành, tiếp xuống đương nhiên là đẩy nhiệm vụ. Ngoại trừ trang bị, thi khôi, bản vẽ. Lâm Trạch còn từ Rais trên thân sờ soạng một kiện nhiệm vụ đạo cụ. Rais hàng hải nhật ký. Đem nhật ký mở ra cũng đọc về sau, truyền thuyết cấp ẩn tàng nhiệm vụ; Vong Giả hải vực chi vương, mới có thể xuất hiện tân nhiệm vụ tin tức. Thế là, Lâm Trạch bắt đầu đọc Rais hàng hải nhật ký.
 
-Nghiệm thu xong chiến lợi phẩm cùng thuộc tính trưởng thành, tiếp xuống đương nhiên là đẩy nhiệm vụ.
+—— không ai có thể đem chúng ta tách ra, tử vong cũng không được! Ta là tử linh pháp sư Rais, Tử Vong giáo phái có thiên phú nhất tử linh pháp sư, ta gia nhập Tử Vong giáo phái chỉ vì một sự kiện, phục sinh ta tình cảm chân thành, ta vong thê, Lilith. Ta bỏ ra thời gian ba năm, thông qua được sử thi cấp tấn thăng nhiệm vụ trở thành sử thi cấp anh hùng, cuối cùng đạt được Tử Vong giáo phái đại tế ti tín nhiệm cùng trọng dụng, cũng giúp ta tương vong vợ bảo tồn hoàn chỉnh thi cốt luyện thành thi khôi, làm bạn tại ta bên người.
 
-Ngoại trừ trang bị, thi khôi, bản vẽ.
+Hắn sau đó làm ta trở thành lịch luyện đoàn đội lãnh tụ, dẫn đầu một nhóm người mới xuyên qua đẳng cấp kết giới ngăn cách Vong Giả hải vực, chiếm trước vùng biển này quyền làm chủ trên biển, cũng công lược mới xuất hiện Hắc Hồ bí cảnh. Một năm trước, hư không ngày cá voi đụng nát mấy vạn mét hải trình, đem một mảnh thông hướng văn minh thời thượng cổ Aisali bí cảnh thông đạo mở ra, đó là một cái tại Linh Hồn lĩnh vực nghiên cứu rất sâu văn minh, nghe nói đã có người từ đó thu hoạch được linh hồn liên quan thượng cổ cấm thuật.
 
-Lâm Trạch còn từ Rais trên thân sờ soạng một kiện nhiệm vụ đạo cụ.
-
-Rais hàng hải nhật ký.
-
-Đem nhật ký mở ra cũng đọc về sau, truyền thuyết cấp ẩn tàng nhiệm vụ; Vong Giả hải vực chi vương, mới có thể xuất hiện tân nhiệm vụ tin tức.
-
-Thế là, Lâm Trạch bắt đầu đọc Rais hàng hải nhật ký.
-
-—— không ai có thể đem chúng ta tách ra, tử vong cũng không được!
-
-Ta là tử linh pháp sư Rais, Tử Vong giáo phái có thiên phú nhất tử linh pháp sư, ta gia nhập Tử Vong giáo phái chỉ vì một sự kiện, phục sinh ta tình cảm chân thành, ta vong thê, Lilith.
-
-Ta bỏ ra thời gian ba năm, thông qua được sử thi cấp tấn thăng nhiệm vụ trở thành sử thi cấp anh hùng, cuối cùng đạt được Tử Vong giáo phái đại tế ti tín nhiệm cùng trọng dụng, cũng giúp ta tương vong vợ bảo tồn hoàn chỉnh thi cốt luyện thành thi khôi, làm bạn tại ta bên người.
-
-Hắn sau đó làm ta trở thành lịch luyện đoàn đội lãnh tụ, dẫn đầu một nhóm người mới xuyên qua đẳng cấp kết giới ngăn cách Vong Giả hải vực, chiếm trước vùng biển này quyền làm chủ trên biển, cũng công lược mới xuất hiện Hắc Hồ bí cảnh.
-
-Một năm trước, hư không ngày cá voi đụng nát mấy vạn mét hải trình, đem một mảnh thông hướng văn minh thời thượng cổ Aisali bí cảnh thông đạo mở ra, đó là một cái tại Linh Hồn lĩnh vực nghiên cứu rất sâu văn minh, nghe nói đã có người từ đó thu hoạch được linh hồn liên quan thượng cổ cấm thuật.
-
-Tử Vong giáo phái lãnh đạo cấp cao đối với loại này cấm thuật cảm thấy rất hứng thú, nhưng thăm dò bí cảnh từ trước đến nay đều là cửu tử nhất sinh, cho dù ta là sử thi cấp anh hùng cũng không có thập toàn nắm chắc.
-
-Nhưng vì càng nhiều liên quan tới linh hồn cùng phục sinh cấm thuật, vì triệt để phục sinh ta tình cảm chân thành, ta vong thê, ta nguyện ý tiến về.
+Tử Vong giáo phái lãnh đạo cấp cao đối với loại này cấm thuật cảm thấy rất hứng thú, nhưng thăm dò bí cảnh từ trước đến nay đều là cửu tử nhất sinh, cho dù ta là sử thi cấp anh hùng cũng không có thập toàn nắm chắc. Nhưng vì càng nhiều liên quan tới linh hồn cùng phục sinh cấm thuật, vì triệt để phục sinh ta tình cảm chân thành, ta vong thê, ta nguyện ý tiến về.
 
 . . .
 

@@ -1,24 +1,14 @@
 # Chương 54. Lần nữa thế giới xoát màn hình, 13 cái dòng vàng!
 
-Chương 54; Lần nữa thế giới xoát màn hình, 13 cái dòng vàng!
-
 "Ha ha ha ha, đây dẫn ban thưởng tiết tấu căn bản không dừng được a!"
 
-Lâm Trạch cao hứng cười to, tiếp lấy lựa chọn không ẩn tàng.
-
-Kích động như vậy nhân tâm sự tình đương nhiên muốn cùng toàn bộ thế giới Lam Tinh công dân chia sẻ.
-
-Sau đó nhìn những cái kia ngoại quốc người chơi các loại ước ao ghen tị, cùng đối với mình quốc gia quan phương không lưu tình chút nào nhổ nước bọt, tràng diện kia đơn giản không nên quá sảng.
-
-Từ giờ khắc này, Lâm Trạch sắp trở thành chân chính trên ý nghĩa Bá Quyền người chơi, vô địch người chơi, căn bản không có có thể cùng hắn đọ sức cùng thời kỳ người chơi.
+Lâm Trạch cao hứng cười to, tiếp lấy lựa chọn không ẩn tàng. Kích động như vậy nhân tâm sự tình đương nhiên muốn cùng toàn bộ thế giới Lam Tinh công dân chia sẻ. Sau đó nhìn những cái kia ngoại quốc người chơi các loại ước ao ghen tị, cùng đối với mình quốc gia quan phương không lưu tình chút nào nhổ nước bọt, tràng diện kia đơn giản không nên quá sảng. Từ giờ khắc này, Lâm Trạch sắp trở thành chân chính trên ý nghĩa Bá Quyền người chơi, vô địch người chơi, căn bản không có có thể cùng hắn đọ sức cùng thời kỳ người chơi.
 
 Chỉ có cái thế giới này dân bản địa cùng hư không chi hải ngày xưa thần linh, mới có tư cách coi hắn đối thủ.
 
 « keng! Thế giới thông báo; Chúc mừng Hạ quốc người chơi " Lâm Trạch " trở thành cái thứ nhất đánh giết truyền thuyết cấp thần thoại sinh vật; Đói khát thiên sứ thịt thối cự long người chơi, hắn hành động vĩ đại sẽ vĩnh viễn ghi chép tại hàng hải kỷ nguyên sự kiện lớn lên!
 
-Cùng thuộc Hạ quốc người chơi đem thu hoạch được; 50 tự do điểm thuộc tính, 10% hàng hải tốc độ di chuyển, +5% đối với thủ lĩnh cấp trở lên đối với quái vật tạo thành tổn thương đề thăng.
-
-Lâm Trạch người chơi đem ngoài định mức thu hoạch được 200 điểm tự do thuộc tính, 100 điểm thể lực hạn mức cao nhất, 100 điểm lý trí hạn mức cao nhất, 10000 điểm hư không chi hải danh vọng, cùng 20 vạn hàng hải tệ ban thưởng! »
+Cùng thuộc Hạ quốc người chơi đem thu hoạch được; 50 tự do điểm thuộc tính, 10% hàng hải tốc độ di chuyển, +5% đối với thủ lĩnh cấp trở lên đối với quái vật tạo thành tổn thương đề thăng. Lâm Trạch người chơi đem ngoài định mức thu hoạch được 200 điểm tự do thuộc tính, 100 điểm thể lực hạn mức cao nhất, 100 điểm lý trí hạn mức cao nhất, 10000 điểm hư không chi hải danh vọng, cùng 20 vạn hàng hải tệ ban thưởng! »
 
 « keng! . . . »
 
@@ -36,19 +26,9 @@ Lâm Trạch đem ngoài định mức thu hoạch được 100 điểm kỹ nă
 
 . . .
 
-Khi Lâm Trạch lần đầu tiên giết truyền thuyết cấp thần thoại sinh vật, thủ thông thâm uyên độ khó tấn thăng thí luyện tin tức vừa ra, toàn bộ hàng hải kỷ nguyên đều rung động.
+Khi Lâm Trạch lần đầu tiên giết truyền thuyết cấp thần thoại sinh vật, thủ thông thâm uyên độ khó tấn thăng thí luyện tin tức vừa ra, toàn bộ hàng hải kỷ nguyên đều rung động. Lâm Trạch cũng không phải lần đầu tiên cầm thủ thông, nhưng lần này lần đầu tiên giết cùng thủ thông đối tượng cùng ban thưởng, đều tương đương nổ tung! Trước tiên nói Hạ quốc người chơi, trong lòng mọi người hâm mộ tự nhiên là hâm mộ, nhưng đó là người ta đại lão mình bằng bản sự cầm lần đầu tiên giết cùng thủ thông.
 
-Lâm Trạch cũng không phải lần đầu tiên cầm thủ thông, nhưng lần này lần đầu tiên giết cùng thủ thông đối tượng cùng ban thưởng, đều tương đương nổ tung!
-
-Trước tiên nói Hạ quốc người chơi, trong lòng mọi người hâm mộ tự nhiên là hâm mộ, nhưng đó là người ta đại lão mình bằng bản sự cầm lần đầu tiên giết cùng thủ thông.
-
-Bọn hắn không học được, chỉ có thể chụp 666.
-
-Càng huống hồ Lâm Trạch cầm lần đầu tiên giết bọn hắn còn có thể húp miếng canh, tương đương miễn phí chơi miễn phí một đợt ban thưởng.
-
-Không có không ủng hộ đạo lý.
-
-Ngươi nhìn kênh thế giới cái khác ngoại quốc người chơi, đều thèm khóc tốt a!
+Bọn hắn không học được, chỉ có thể chụp 666. Càng huống hồ Lâm Trạch cầm lần đầu tiên giết bọn hắn còn có thể húp miếng canh, tương đương miễn phí chơi miễn phí một đợt ban thưởng. Không có không ủng hộ đạo lý. Ngươi nhìn kênh thế giới cái khác ngoại quốc người chơi, đều thèm khóc tốt a!
 
 « đáng ghét, lại là cái này gọi Lâm Trạch Hạ quốc người, hắn rốt cuộc muốn lấy đi bao nhiêu ban thưởng, vì cái gì chúng ta bên này một điểm động tĩnh đều không có? »
 
@@ -96,25 +76,11 @@ Lâm Trạch chờ đợi phút chốc, hệ thống thanh âm nhắc nhở vang
 
 . . .
 
-Cấp 10 sau đó, thăng cấp cần kinh nghiệm trị, mỗi cấp 1 chi kém đề cao 20% cách mỗi cấp 5 trực tiếp gấp bội.
-
-20 cấp sau thăng cấp cần kinh nghiệm, đã gấp bội đến mấy trăm ngàn điểm!
-
-Nhưng Lâm Trạch trên đường đi tất cả đều là vượt cấp đánh giết, giết tất cả đều là địa vị cao giai thủ lĩnh, lại thêm hảo sự thành đôi gấp đôi kinh nghiệm ban thưởng, cùng Hắc Thạch Hào đột phá bão tố kếch xù kinh nghiệm ban thưởng.
-
-Lâm Trạch rõ ràng chỉ có cấp 10, hoàn thành tấn thăng thí luyện sau khi kết thúc, lại có thể một hơi âm thanh đến cấp 23, đơn giản thái quá đến nhà!
+Cấp 10 sau đó, thăng cấp cần kinh nghiệm trị, mỗi cấp 1 chi kém đề cao 20% cách mỗi cấp 5 trực tiếp gấp bội. 20 cấp sau thăng cấp cần kinh nghiệm, đã gấp bội đến mấy trăm ngàn điểm! Nhưng Lâm Trạch trên đường đi tất cả đều là vượt cấp đánh giết, giết tất cả đều là địa vị cao giai thủ lĩnh, lại thêm hảo sự thành đôi gấp đôi kinh nghiệm ban thưởng, cùng Hắc Thạch Hào đột phá bão tố kếch xù kinh nghiệm ban thưởng. Lâm Trạch rõ ràng chỉ có cấp 10, hoàn thành tấn thăng thí luyện sau khi kết thúc, lại có thể một hơi âm thanh đến cấp 23, đơn giản thái quá đến nhà!
 
 "A? Một hơi cho ta làm đến cấp 13, ta sẽ không hoa mắt a?"
 
-Nhìn qua liên tiếp thăng cấp nhắc nhở, Lâm Trạch cũng mộng bức.
-
-Hắn biết mình tốc độ lên cấp khẳng định cùng cưỡi tên lửa giống như.
-
-Nhưng không nghĩ đến sẽ khoa trương đến loại trình độ này.
-
-Ý vị này, hắn một hơi thu hoạch được 13 cái truyền thuyết cấp dòng vàng.
-
-Đây chiến lực đề thăng cũng không chỉ một điểm nửa điểm!
+Nhìn qua liên tiếp thăng cấp nhắc nhở, Lâm Trạch cũng mộng bức. Hắn biết mình tốc độ lên cấp khẳng định cùng cưỡi tên lửa giống như. Nhưng không nghĩ đến sẽ khoa trương đến loại trình độ này. Ý vị này, hắn một hơi thu hoạch được 13 cái truyền thuyết cấp dòng vàng. Đây chiến lực đề thăng cũng không chỉ một điểm nửa điểm!
 
 "Xem ra ta vẫn là quá bảo thủ."
 
@@ -136,17 +102,11 @@ Lâm Trạch tranh thủ thời gian mở ra thiên phú cột, xem xét thu ho�
 
 . . .
 
-Lần này thăng cấp một hơi thu hoạch được 13 cái dòng vàng.
-
-Chiến lực loại dòng vĩnh viễn là nhiều nhất tổng cộng có tám cái, phụ trợ loại ba cái.
-
-Lâm Trạch coi trọng nhất kinh tế loại dòng cũng ra hai cái.
+Lần này thăng cấp một hơi thu hoạch được 13 cái dòng vàng. Chiến lực loại dòng vĩnh viễn là nhiều nhất tổng cộng có tám cái, phụ trợ loại ba cái. Lâm Trạch coi trọng nhất kinh tế loại dòng cũng ra hai cái.
 
 « mậu dịch đại sư » « thiên hàng hoành tài ».
 
-Danh tự này nghe xong liền rất mở cửa, có thể trên diện rộng đề cao phát triển tốc độ.
-
-Lâm Trạch không có vội vã triển khai những này dòng vàng kỹ càng thuộc tính, mà là hỏi thăm hệ thống.
+Danh tự này nghe xong liền rất mở cửa, có thể trên diện rộng đề cao phát triển tốc độ. Lâm Trạch không có vội vã triển khai những này dòng vàng kỹ càng thuộc tính, mà là hỏi thăm hệ thống.
 
 "13 cái dòng vàng, từng cái ấn mở nhìn có chút không đến a, quá lãng phí thời gian."
 

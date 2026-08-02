@@ -1,7 +1,5 @@
 # Chương 23. Tuôn ra địa ngục tân nương, ngươi vợ ta nuôi dưỡng!
 
-Chương 23; Tuôn ra địa ngục tân nương, ngươi vợ ta nuôi dưỡng!
-
 « keng! Thiên phú; Hảo sự thành đôi phát động, thu hoạch được chiến lợi phẩm số lượng gấp bội! »
 
 « thu hoạch được sử thi cấp vũ khí; Kẻ bất tử chi nắm \*2! »
@@ -22,19 +20,11 @@ Chương 23; Tuôn ra địa ngục tân nương, ngươi vợ ta nuôi dưỡng
 
 . . .
 
-Đụng vào thi thể trong nháy mắt, lượng lớn chiến lợi phẩm bị tự động thu nhập ba lô, hệ thống tin tức chỗ rực rỡ muôn màu!
-
-Chỉ là thu đạo cụ anime quá trình đều kéo dài tiếp cận hai giây, có thể thấy được chiến lợi phẩm số lượng nhiều.
-
-Nhất là lít nha lít nhít 10 vạn hàng hải tệ rầm rầm bị thu vào đi, hình ảnh kia đơn giản không nên quá giải ép.
-
-Hắn lặp lại coi trọng một trăm lần đều không cảm thấy ngán.
+Đụng vào thi thể trong nháy mắt, lượng lớn chiến lợi phẩm bị tự động thu nhập ba lô, hệ thống tin tức chỗ rực rỡ muôn màu! Chỉ là thu đạo cụ anime quá trình đều kéo dài tiếp cận hai giây, có thể thấy được chiến lợi phẩm số lượng nhiều. Nhất là lít nha lít nhít 10 vạn hàng hải tệ rầm rầm bị thu vào đi, hình ảnh kia đơn giản không nên quá giải ép. Hắn lặp lại coi trọng một trăm lần đều không cảm thấy ngán.
 
 "Ngưu bức, đây tuyệt đối là xưa nay chưa từng có đại bạo, ta muốn phát đạt!"
 
-Lâm Trạch nhìn lướt qua tin tức cột, lập tức một mặt cuồng hỉ.
-
-Chỉ là nhìn thấy liền có ba kiện sử thi cấp trang bị, còn có một cái cấp hai dị thường vật phẩm!
+Lâm Trạch nhìn lướt qua tin tức cột, lập tức một mặt cuồng hỉ. Chỉ là nhìn thấy liền có ba kiện sử thi cấp trang bị, còn có một cái cấp hai dị thường vật phẩm!
 
 "Chờ một chút, ngay cả Rais áp đáy hòm địa ngục tân nương đều thuộc về chiến lợi phẩm?"
 
@@ -42,11 +32,7 @@ Chỉ là nhìn thấy liền có ba kiện sử thi cấp trang bị, còn có 
 
 "Không riêng giết người, còn muốn tru tâm? Như vậy không tốt đâu!"
 
-Lâm Trạch mở to hai mắt, tiềm thức cảm thấy làm như vậy có chút không đạo đức, lý trí lại để hắn tranh thủ thời gian mở ra ba lô, xem xét cái này có duy nhất tính bảo vật.
-
-Hàng hải kỷ nguyên bên trong duy nhất tính vật phẩm, vô pháp bị nhiều chuyện thành đôi sao chép, nếu không liền sẽ mất đi duy nhất tính đạo cụ tồn tại giá trị.
-
-Tựa như cái thế giới này không có khả năng có hai cái hoàn toàn tương đồng người, vong linh pháp sư Rais vong thê cũng sẽ không đột nhiên biến thành song bào thai.
+Lâm Trạch mở to hai mắt, tiềm thức cảm thấy làm như vậy có chút không đạo đức, lý trí lại để hắn tranh thủ thời gian mở ra ba lô, xem xét cái này có duy nhất tính bảo vật. Hàng hải kỷ nguyên bên trong duy nhất tính vật phẩm, vô pháp bị nhiều chuyện thành đôi sao chép, nếu không liền sẽ mất đi duy nhất tính đạo cụ tồn tại giá trị. Tựa như cái thế giới này không có khả năng có hai cái hoàn toàn tương đồng người, vong linh pháp sư Rais vong thê cũng sẽ không đột nhiên biến thành song bào thai.
 
 . . .
 
@@ -72,13 +58,7 @@ Tựa như cái thế giới này không có khả năng có hai cái hoàn toà
 
 "Ha ha ha ha, có thể hiệp trợ chiến đấu, lại có thể hỗ trợ phát dục khôi lỗi, lần này thật phát tài!"
 
-Lâm Trạch một mặt cuồng hỉ, hắn liền xem như trò chơi Tiểu Bạch, cũng có thể đọc hiểu cái này thi khôi giá trị.
-
-Tương đương với đả thông một đầu thông hướng " địa ngục " đường tắt, ngươi không quan tâm cái thế giới này địa ngục có phải hay không cùng truyền thuyết khủng bố như vậy, chỉ cần địa ngục có bảo bối hắn liền nguyện ý đi một lần.
-
-Huống hồ đều không cần mình đi thăm dò, địa ngục tân nương Lilith sẽ giúp chúng ta dò đường, đào bảo!
-
-Chủ nhân không cần động, thi khôi toàn tự động!
+Lâm Trạch một mặt cuồng hỉ, hắn liền xem như trò chơi Tiểu Bạch, cũng có thể đọc hiểu cái này thi khôi giá trị. Tương đương với đả thông một đầu thông hướng " địa ngục " đường tắt, ngươi không quan tâm cái thế giới này địa ngục có phải hay không cùng truyền thuyết khủng bố như vậy, chỉ cần địa ngục có bảo bối hắn liền nguyện ý đi một lần. Huống hồ đều không cần mình đi thăm dò, địa ngục tân nương Lilith sẽ giúp chúng ta dò đường, đào bảo! Chủ nhân không cần động, thi khôi toàn tự động!
 
 . . .
 
@@ -104,31 +84,13 @@ Xem hết có duy nhất tính thi khôi, Lâm Trạch tiếp tục xem cái kh�
 
 "Ngọa tào, bị ô nhiễm sử thi cấp vũ khí, thuộc tính này quá phát nổ!"
 
-Lâm Trạch xem hết cái này sử thi cấp vũ khí thuộc tính, lại sảng đến.
-
-Cái này vũ khí, đủ để cho hắn thực hiện một người Thành Quân mộng đẹp, với lại hắn hiện tại thiếu nhất chính là nhân thủ!
-
-Ngươi không quan tâm là bất tử sinh vật vẫn là vong hồn, chỉ cần có thể dùng tới đồ vật hắn cũng không biết để ý.
-
-Đến lúc nào rồi, trước biến cường quan trọng!
-
-Về phần sử dụng cái này vũ khí đại giới, vẫn có chút khủng bố.
+Lâm Trạch xem hết cái này sử thi cấp vũ khí thuộc tính, lại sảng đến. Cái này vũ khí, đủ để cho hắn thực hiện một người Thành Quân mộng đẹp, với lại hắn hiện tại thiếu nhất chính là nhân thủ! Ngươi không quan tâm là bất tử sinh vật vẫn là vong hồn, chỉ cần có thể dùng tới đồ vật hắn cũng không biết để ý. Đến lúc nào rồi, trước biến cường quan trọng! Về phần sử dụng cái này vũ khí đại giới, vẫn có chút khủng bố.
 
 "Quỷ dị sinh vật, cái đồ chơi này giống như không dễ chọc a."
 
-Lâm Trạch khẽ nhíu mày, nhưng rất nhanh liền đem chuyện này vung ra sau đầu.
+Lâm Trạch khẽ nhíu mày, nhưng rất nhanh liền đem chuyện này vung ra sau đầu. Binh đến tướng chắn, nước đến đất chặn, nói thật giống như mình không cần cái này vũ khí, liền sẽ không khai ra quỷ dị sinh vật cừu hận đồng dạng, sớm muộn cũng phải gặp phải. Thế là, Lâm Trạch sảng khoái đem cái này sử thi cấp vũ khí thay đổi, hậu trường thuộc tính trong nháy mắt tăng vọt một mảng lớn! Bạch cốt dao găm mới thêm mười điểm công kích lực, kẻ bất tử chi nắm trực tiếp tăng gấp mười lần!
 
-Binh đến tướng chắn, nước đến đất chặn, nói thật giống như mình không cần cái này vũ khí, liền sẽ không khai ra quỷ dị sinh vật cừu hận đồng dạng, sớm muộn cũng phải gặp phải.
-
-Thế là, Lâm Trạch sảng khoái đem cái này sử thi cấp vũ khí thay đổi, hậu trường thuộc tính trong nháy mắt tăng vọt một mảng lớn!
-
-Bạch cốt dao găm mới thêm mười điểm công kích lực, kẻ bất tử chi nắm trực tiếp tăng gấp mười lần!
-
-Còn có kếch xù thuộc tính tăng thêm cùng siêu cường kỹ năng đặc hiệu, trước sau chênh lệch đơn giản không nên quá lớn!
-
-Với lại, giống như vậy vũ khí hắn có hai kiện, có thể cho tương lai bộ hạ sử dụng!
-
-Quả nhiên, đánh BOSS mới là cường giả nhanh nhất biến cường đường tắt!
+Còn có kếch xù thuộc tính tăng thêm cùng siêu cường kỹ năng đặc hiệu, trước sau chênh lệch đơn giản không nên quá lớn! Với lại, giống như vậy vũ khí hắn có hai kiện, có thể cho tương lai bộ hạ sử dụng! Quả nhiên, đánh BOSS mới là cường giả nhanh nhất biến cường đường tắt!
 
 . . .
 
@@ -148,41 +110,17 @@ Tiếp tục xem cái tiếp theo chiến lợi phẩm.
 
 « hệ thống; Ngươi thu hoạch một phần anh hùng truyền thừa, tự động thu hoạch được phía dưới liên quan tới " anh hùng " bộ phận tin tức.
 
-Nói rõ; Anh hùng là siêu thoát tại binh chủng cao cấp sinh mệnh đơn vị, bọn hắn nắm giữ cấp bậc cao hơn trí năng cùng trưởng thành hạn mức cao nhất, có thể tại trong dòng sông lịch sử lưu lại chuyên môn vận mệnh ghi khắc, từ đó tại anh hùng trong tế đàn phục sinh!
-
-Mỗi một anh hùng đều là một chủng tộc hoặc một cái chức nghiệp bên trong người nổi bật, đáng giá bị vô số sinh linh ca tụng cùng truyền xướng! »
+Nói rõ; Anh hùng là siêu thoát tại binh chủng cao cấp sinh mệnh đơn vị, bọn hắn nắm giữ cấp bậc cao hơn trí năng cùng trưởng thành hạn mức cao nhất, có thể tại trong dòng sông lịch sử lưu lại chuyên môn vận mệnh ghi khắc, từ đó tại anh hùng trong tế đàn phục sinh! Mỗi một anh hùng đều là một chủng tộc hoặc một cái chức nghiệp bên trong người nổi bật, đáng giá bị vô số sinh linh ca tụng cùng truyền xướng! »
 
 . . .
 
-Anh hùng đơn vị, ta lập tức phải có thuộc về mình anh hùng? !
+Anh hùng đơn vị, ta lập tức phải có thuộc về mình anh hùng? ! Lâm Trạch nhìn thấy kiện vật phẩm này lúc, có thể nói giật nảy cả mình. Hàng hải kỷ nguyên định nghĩa thực lực năm loại phương hướng, tài nguyên, binh chủng, anh hùng, trang bị, khoa kỹ. Anh hùng chiêm một trong số đó, tầm quan trọng không cần nói cũng biết! Phổ thông đơn vị muốn tấn thăng trở thành anh hùng, thiên phú và cố gắng thiếu một thứ cũng không được. Hắn tuôn ra quý giá anh hùng truyền thừa, lại có thể thực hiện nhân tạo anh hùng!
 
-Lâm Trạch nhìn thấy kiện vật phẩm này lúc, có thể nói giật nảy cả mình.
-
-Hàng hải kỷ nguyên định nghĩa thực lực năm loại phương hướng, tài nguyên, binh chủng, anh hùng, trang bị, khoa kỹ.
-
-Anh hùng chiêm một trong số đó, tầm quan trọng không cần nói cũng biết!
-
-Phổ thông đơn vị muốn tấn thăng trở thành anh hùng, thiên phú và cố gắng thiếu một thứ cũng không được.
-
-Hắn tuôn ra quý giá anh hùng truyền thừa, lại có thể thực hiện nhân tạo anh hùng!
-
-Đem một cái bình thường đơn vị biến thành anh hùng đơn vị!
-
-Cái đồ chơi này tùy tiện phóng tới một cái còn sót lại thế lực thành thị phòng đấu giá, đều biết dẫn phát oanh động!
-
-Là đủ để dẫn phát hỗn loạn vô giới chi bảo!
-
-Mà giống như vậy vô giới chi bảo, Lâm Trạch lập tức liền ra hai kiện, đơn giản không khiến người ta sống!
+Đem một cái bình thường đơn vị biến thành anh hùng đơn vị! Cái đồ chơi này tùy tiện phóng tới một cái còn sót lại thế lực thành thị phòng đấu giá, đều biết dẫn phát oanh động! Là đủ để dẫn phát hỗn loạn vô giới chi bảo! Mà giống như vậy vô giới chi bảo, Lâm Trạch lập tức liền ra hai kiện, đơn giản không khiến người ta sống!
 
 "Ha ha ha ha, hảo sự thành đôi ngươi làm được tốt a, loại này cực phẩm cũng có thể sao chép!"
 
-Lâm Trạch nhịn không được cười to lên, kích động không thôi.
-
-Chỉ cần tìm được phù hợp nhân tuyển, hắn lập tức liền có thể thu được hai tên anh hùng làm mình tùy tùng!
-
-Khi người khác còn tại cất bước nhặt ve chai giai đoạn, liên chiêu mộ binh trồng tài nguyên đều không có.
-
-Hắn đã chuẩn bị " sản xuất hàng loạt " anh hùng, đây liền thái quá!
+Lâm Trạch nhịn không được cười to lên, kích động không thôi. Chỉ cần tìm được phù hợp nhân tuyển, hắn lập tức liền có thể thu được hai tên anh hùng làm mình tùy tùng! Khi người khác còn tại cất bước nhặt ve chai giai đoạn, liên chiêu mộ binh trồng tài nguyên đều không có. Hắn đã chuẩn bị " sản xuất hàng loạt " anh hùng, đây liền thái quá!
 
 . . .
 
@@ -202,24 +140,12 @@ Lâm Trạch đem quý giá anh hùng truyền thừa cất xong, tiếp tục x
 
 . . .
 
-Lâm Trạch lấy chính mình nắm giữ một cấp dị thường vật phẩm cùng Hắc Ám Thánh Kinh so sánh, phát hiện chênh lệch vẫn còn rất lớn.
+Lâm Trạch lấy chính mình nắm giữ một cấp dị thường vật phẩm cùng Hắc Ám Thánh Kinh so sánh, phát hiện chênh lệch vẫn còn rất lớn. Cấp hai dị thường vật phẩm Hắc Ám Thánh Kinh, có thể cho người sử dụng tại cấp 10 lúc trước giờ sử dụng cấp 20 kỹ năng, đây là cái gì cấp bậc cường độ không cần nói cũng biết. Với lại sử dụng đại giới vẻn vẹn mỗi ngày dùng Hắc Ám Thánh Kinh, hoàn thành lần ba một kích cuối cùng? Đối với người chơi mà nói, đây chút đại giới hoàn toàn có thể bỏ qua không tính.
 
-Cấp hai dị thường vật phẩm Hắc Ám Thánh Kinh, có thể cho người sử dụng tại cấp 10 lúc trước giờ sử dụng cấp 20 kỹ năng, đây là cái gì cấp bậc cường độ không cần nói cũng biết.
-
-Với lại sử dụng đại giới vẻn vẹn mỗi ngày dùng Hắc Ám Thánh Kinh, hoàn thành lần ba một kích cuối cùng?
-
-Đối với người chơi mà nói, đây chút đại giới hoàn toàn có thể bỏ qua không tính.
-
-Điều này sẽ đưa đến Hắc Ám Thánh Kinh bằng vào cực hạn tính so sánh giá cả, phóng tầm mắt tất cả cấp hai dị thường vật phẩm.
-
-Cũng là T0 cấp bậc chất lượng tốt đạo cụ, thực sự dùng quá tốt!
+Điều này sẽ đưa đến Hắc Ám Thánh Kinh bằng vào cực hạn tính so sánh giá cả, phóng tầm mắt tất cả cấp hai dị thường vật phẩm. Cũng là T0 cấp bậc chất lượng tốt đạo cụ, thực sự dùng quá tốt!
 
 "Sảng đến, ta liền tính không phải pháp sư, bằng vào kiện vật phẩm này cũng có thể sứ dụng ra cường đại ma pháp công kích địch nhân!"
 
-Lâm Trạch lần nữa cười to, quả nhiên cường giả khắp nơi là kinh hỉ nha!
-
-Mặc dù hắn thu hoạch được cái thứ nhất dòng vàng là Ám Ảnh đại sư, đã thành thói quen với tư cách thích khách phương thức chiến đấu.
-
-Nhưng người nào không muốn đóng vai một tên cao cao tại thượng pháp gia đâu?
+Lâm Trạch lần nữa cười to, quả nhiên cường giả khắp nơi là kinh hỉ nha! Mặc dù hắn thu hoạch được cái thứ nhất dòng vàng là Ám Ảnh đại sư, đã thành thói quen với tư cách thích khách phương thức chiến đấu. Nhưng người nào không muốn đóng vai một tên cao cao tại thượng pháp gia đâu?
 
 . . .

@@ -1,20 +1,12 @@
 # Chương 75. Thâm uyên Hỗn Độn tế đàn, thần thoại cấp dược tề!
 
-Chương 75; Thâm uyên Hỗn Độn tế đàn, thần thoại cấp dược tề!
-
 "Mục nát bản nguyên đối với tiến hành hạn chế, tử thần chi nhãn dùng để tăng tổn thương."
 
 "Đây một trước một sau hai kiện dị thường vật phẩm thế mà còn có phối hợp, lại thêm vật phẩm thời gian cooldown đều như thế, thời gian trục có thể hoàn mỹ an bài."
 
 "Đây cũng là vận khí một bộ phận sao?"
 
-Lâm Trạch xem hết kiện thứ hai thần thoại cấp đạo cụ, thâm uyên tử thần chi nhãn.
-
-Cảm giác trận chiến đấu này đã nắm chắc phần thắng.
-
-Hai cái này debuff đồng thời đập lên, Arkham mạnh hơn cũng phải bị trọng.
-
-Ngoại trừ hai kiện dị thường vật phẩm, hắn còn thuận tay hợp cái kiến trúc bản vẽ, thâm uyên Hỗn Độn tế đàn.
+Lâm Trạch xem hết kiện thứ hai thần thoại cấp đạo cụ, thâm uyên tử thần chi nhãn. Cảm giác trận chiến đấu này đã nắm chắc phần thắng. Hai cái này debuff đồng thời đập lên, Arkham mạnh hơn cũng phải bị trọng. Ngoại trừ hai kiện dị thường vật phẩm, hắn còn thuận tay hợp cái kiến trúc bản vẽ, thâm uyên Hỗn Độn tế đàn.
 
 . . .
 
@@ -36,21 +28,13 @@ Có thể nghiên cứu hắc ám ma pháp; Ngọn gió tử vong, tận thế �
 
 . . .
 
-Ma pháp kiến trúc là dùng tại chiến tranh kiến trúc, mỗi tuần sẽ tự động bổ sung năng lượng chơi miễn phí ma pháp, nhưng phí tổn là đồng phẩm cấp binh chủng cùng khoa kỹ kiến trúc mấy lần.
+Ma pháp kiến trúc là dùng tại chiến tranh kiến trúc, mỗi tuần sẽ tự động bổ sung năng lượng chơi miễn phí ma pháp, nhưng phí tổn là đồng phẩm cấp binh chủng cùng khoa kỹ kiến trúc mấy lần. Cũng bởi vì tạo thành sau có thể một cái chơi miễn phí, cho nên tiền kỳ cần đầu nhập đại giới cao hơn. Bất quá, ma pháp kiến trúc có một cái khuyết điểm, đó chính là chỉ thích hợp dùng để thủ hộ lãnh địa, không thích hợp dùng cho tiến công, bởi vì ma pháp kiến trúc thi pháp khoảng cách có hạn, tựa như pháo đài đồng dạng.
 
-Cũng bởi vì tạo thành sau có thể một cái chơi miễn phí, cho nên tiền kỳ cần đầu nhập đại giới cao hơn.
-
-Bất quá, ma pháp kiến trúc có một cái khuyết điểm, đó chính là chỉ thích hợp dùng để thủ hộ lãnh địa, không thích hợp dùng cho tiến công, bởi vì ma pháp kiến trúc thi pháp khoảng cách có hạn, tựa như pháo đài đồng dạng.
-
-Cho nên, ma pháp kiến trúc đồng dạng đều là đặt ở lãnh địa hạch tâm khu kiến trúc phụ cận, dùng để thủ thành.
-
-Nhưng Lâm Trạch với tư cách thuyền trưởng liền không đồng dạng, hắn đem ma pháp kiến trúc tạo trên thuyền, tựa như trên thuyền an một cái ma pháp pháo đài, chân chính trên ý nghĩa pháo đài!
+Cho nên, ma pháp kiến trúc đồng dạng đều là đặt ở lãnh địa hạch tâm khu kiến trúc phụ cận, dùng để thủ thành. Nhưng Lâm Trạch với tư cách thuyền trưởng liền không đồng dạng, hắn đem ma pháp kiến trúc tạo trên thuyền, tựa như trên thuyền an một cái ma pháp pháo đài, chân chính trên ý nghĩa pháo đài!
 
 "Cái này kiến trúc xác thực hữu dụng, nhưng đáng tiếc kiến tạo cần thời gian, ta tạm thời không dùng được a."
 
-Lâm Trạch tiếc nuối thở dài, đem phần này quý giá bản vẽ trước để vào ba lô.
-
-Hợp xong tất cả dị thường vật phẩm, Lâm Trạch cũng không tính dừng tay, mà là tiếp tục hợp thành còn lại dược tề, nguyên liệu nấu ăn, cùng với khác đạo cụ.
+Lâm Trạch tiếc nuối thở dài, đem phần này quý giá bản vẽ trước để vào ba lô. Hợp xong tất cả dị thường vật phẩm, Lâm Trạch cũng không tính dừng tay, mà là tiếp tục hợp thành còn lại dược tề, nguyên liệu nấu ăn, cùng với khác đạo cụ.
 
 . . .
 
@@ -62,17 +46,11 @@ Hợp xong tất cả dị thường vật phẩm, Lâm Trạch cũng không tí
 
 . . .
 
-Đem cuối cùng này ba món đồ hợp xong sau, hắn thịt thối cự long thi thể mò ra chiến lợi phẩm, vẫn như cũ còn lại một phần dự bị truyền thuyết cấp chiến lợi phẩm!
-
-Có thể thấy được, chuyện tốt thành 3 tăng thêm tự nhiên dung hợp đến cùng có bao nhiêu biến thái, hoàn toàn thuyết minh cái gì gọi là lượng biến đã dẫn phát chất biến.
+Đem cuối cùng này ba món đồ hợp xong sau, hắn thịt thối cự long thi thể mò ra chiến lợi phẩm, vẫn như cũ còn lại một phần dự bị truyền thuyết cấp chiến lợi phẩm! Có thể thấy được, chuyện tốt thành 3 tăng thêm tự nhiên dung hợp đến cùng có bao nhiêu biến thái, hoàn toàn thuyết minh cái gì gọi là lượng biến đã dẫn phát chất biến.
 
 "Long Hoàng hiếm máu bí dược, nghe danh tự dùng lượng liền rất vững chắc, không cần lo lắng khối lượng không qua quan."
 
-Lâm Trạch mang trên mặt một vệt cổ quái nụ cười.
-
-Nói lên đến, hắn giết rõ ràng là đói khát thiên sứ hình chiếu cũng điều khiển thịt thối cự long, nhưng cuối cùng được đến chiến lợi phẩm, lại tất cả đều là Long Hoàng liên quan trang bị cùng đạo cụ.
-
-Không biết còn tưởng rằng hắn thật đem độc nhất vô nhị Long Hoàng cho đánh giết, đó mới là thật đem Thiên Đô đâm xuyên, dù sao đây chính là cùng vị diện chân thần xoay cổ tay tồn tại.
+Lâm Trạch mang trên mặt một vệt cổ quái nụ cười. Nói lên đến, hắn giết rõ ràng là đói khát thiên sứ hình chiếu cũng điều khiển thịt thối cự long, nhưng cuối cùng được đến chiến lợi phẩm, lại tất cả đều là Long Hoàng liên quan trang bị cùng đạo cụ. Không biết còn tưởng rằng hắn thật đem độc nhất vô nhị Long Hoàng cho đánh giết, đó mới là thật đem Thiên Đô đâm xuyên, dù sao đây chính là cùng vị diện chân thần xoay cổ tay tồn tại.
 
 « Long Hoàng hiếm máu bí dược, nắm giữ số lượng; 6 »
 
@@ -88,17 +66,11 @@ Không biết còn tưởng rằng hắn thật đem độc nhất vô nhị Lon
 
 "Ngọa tào, như vậy đỉnh cấp tiêu hao đạo cụ, ta một hơi không giữ quy tắc đi ra sáu bình? Lần này thật muốn trở thành Long tộc chính thống."
 
-Lâm Trạch xem hết Long Hoàng hiếm máu bí dược thuộc tính, cũng không thể không sợ hãi thán phục, cái này đạo cụ chỗ cường đại.
-
-Chỉ tiếc, loại này cực phẩm đạo cụ không chỉ có dùng một kiện thiếu một kiện, lặp lại giá trị sử dụng còn biết giảm bớt đi nhiều, bởi vì không có cách nào một mực thu hoạch được vĩnh cửu thuộc tính tăng thêm.
-
-Bằng không, Lâm Trạch một hơi uống xong sáu bình con mắt đều không mang theo nháy một chút.
+Lâm Trạch xem hết Long Hoàng hiếm máu bí dược thuộc tính, cũng không thể không sợ hãi thán phục, cái này đạo cụ chỗ cường đại. Chỉ tiếc, loại này cực phẩm đạo cụ không chỉ có dùng một kiện thiếu một kiện, lặp lại giá trị sử dụng còn biết giảm bớt đi nhiều, bởi vì không có cách nào một mực thu hoạch được vĩnh cửu thuộc tính tăng thêm. Bằng không, Lâm Trạch một hơi uống xong sáu bình con mắt đều không mang theo nháy một chút.
 
 "Không có cách, chỉ có thể lưu cho ta sau này trung thành nhất bộ hạ."
 
-Lâm Trạch bất đắc dĩ lắc đầu, đem một bình Long Huyết bí dược đặt ở tiêu hao cột đệ nhất ô, tùy thời chuẩn bị sử dụng đề cao thuộc tính, cùng thủ hộ giả Arkham khai chiến.
-
-Tiếp tục xem cái tiếp theo đạo cụ, nói đúng ra là nguyên liệu nấu ăn.
+Lâm Trạch bất đắc dĩ lắc đầu, đem một bình Long Huyết bí dược đặt ở tiêu hao cột đệ nhất ô, tùy thời chuẩn bị sử dụng đề cao thuộc tính, cùng thủ hộ giả Arkham khai chiến. Tiếp tục xem cái tiếp theo đạo cụ, nói đúng ra là nguyên liệu nấu ăn.
 
 . . .
 

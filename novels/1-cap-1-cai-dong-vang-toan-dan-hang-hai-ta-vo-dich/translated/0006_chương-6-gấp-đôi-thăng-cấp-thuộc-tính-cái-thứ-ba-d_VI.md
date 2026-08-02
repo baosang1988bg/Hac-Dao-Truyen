@@ -1,34 +1,14 @@
 # Chương 6. Gấp đôi thăng cấp thuộc tính, cái thứ ba dòng vàng!
 
-Chương 6; Gấp đôi thăng cấp thuộc tính, cái thứ ba dòng vàng!
-
 Cùng lúc đó, thế giới thông báo tuyên bố.
 
 « keng! Thế giới thông báo; Hạ quốc người chơi " Lâm Trạch " trở thành cái thứ nhất thăng cấp người chơi, hệ thống đem khen thưởng thêm hắn 10 điểm tự do thuộc tính. »
 
 « keng! Thế giới thông báo, Hạ quốc người chơi " Lâm Trạch " thành công. . . »
 
-Thông báo âm thanh tại mỗi một cái người chơi trong đầu vang lên, liên tục phát ra ba lần mới dừng lại.
+Thông báo âm thanh tại mỗi một cái người chơi trong đầu vang lên, liên tục phát ra ba lần mới dừng lại. Phải biết, toàn dân hàng hải kỷ nguyên từ xuyên việt đến nay, vẫn chưa tới một giờ. Rất nhiều người vẫn là một mặt mộng bức trạng thái, bất lực tại kênh bên trên cầu cứu. Đột nhiên toát ra một người đột nhiên tăng mạnh, đó là tương đương làm người khác chú ý sự tình. Giờ khắc này, 20 tỷ người chơi toàn đều dừng tay lại đầu chuyện khẩn yếu, trong mắt tràn đầy ngạc nhiên.
 
-Phải biết, toàn dân hàng hải kỷ nguyên từ xuyên việt đến nay, vẫn chưa tới một giờ.
-
-Rất nhiều người vẫn là một mặt mộng bức trạng thái, bất lực tại kênh bên trên cầu cứu.
-
-Đột nhiên toát ra một người đột nhiên tăng mạnh, đó là tương đương làm người khác chú ý sự tình.
-
-Giờ khắc này, 20 tỷ người chơi toàn đều dừng tay lại đầu chuyện khẩn yếu, trong mắt tràn đầy ngạc nhiên.
-
-Đây mẹ nó mới bao nhiêu lớn lập tức đã có người thăng cấp?
-
-Thế nhưng, tân thủ bảo hộ kỳ không có quái vật sẽ chủ động công kích bọn hắn thuyền.
-
-Người này lại là đi nơi nào đánh quái thăng cấp?
-
-Chẳng lẽ đối phương chủ động đi trêu chọc những cái kia du đãng ở trên biển quái vật?
-
-So thuyền còn lớn bạch tuộc, xoay mình liền có thể nhấc lên sóng lớn Hải Xà, thành quần kết đội tóc rắn hải yêu. . .
-
-Ngươi xác định đó là đi thăng cấp, mà không phải đi tìm chết sao?
+Đây mẹ nó mới bao nhiêu lớn lập tức đã có người thăng cấp? Thế nhưng, tân thủ bảo hộ kỳ không có quái vật sẽ chủ động công kích bọn hắn thuyền. Người này lại là đi nơi nào đánh quái thăng cấp? Chẳng lẽ đối phương chủ động đi trêu chọc những cái kia du đãng ở trên biển quái vật? So thuyền còn lớn bạch tuộc, xoay mình liền có thể nhấc lên sóng lớn Hải Xà, thành quần kết đội tóc rắn hải yêu. . . Ngươi xác định đó là đi thăng cấp, mà không phải đi tìm chết sao?
 
 Các quốc gia đỉnh cấp cao thủ bắt đầu hoài nghi nhân sinh, kênh một cột trực tiếp nổ tung!
 
@@ -72,29 +52,15 @@ Hạ quốc.
 
 "Đại lão tại kênh sao? Ngươi còn thu tiểu đệ sao? Ta có cái gọi Liễu Như Yên biểu muội, tặc xinh đẹp!"
 
-Hạ quốc người chơi cũng có khiếp sợ cùng chất vấn, nhưng càng nhiều vẫn là cảm thấy tự hào cùng muốn ôm bắp đùi.
-
-Đều toàn dân hàng hải, đương nhiên là cẩu mệnh quan trọng.
+Hạ quốc người chơi cũng có khiếp sợ cùng chất vấn, nhưng càng nhiều vẫn là cảm thấy tự hào cùng muốn ôm bắp đùi. Đều toàn dân hàng hải, đương nhiên là cẩu mệnh quan trọng.
 
 . . .
 
-Xảy ra bất ngờ hệ thống thông báo, Lâm Trạch cũng cảm thấy có chút giật mình.
-
-Hắn nguyên bản còn muốn phát triển khiêm tốn, yên lặng trước hướng cái cấp 10, chủ đánh một cái buồn bực phát đại tài.
-
-Hiện tại mọi người đều biết tăng cấp có ban thưởng, áp lực một chút lớn hơn rất nhiều.
+Xảy ra bất ngờ hệ thống thông báo, Lâm Trạch cũng cảm thấy có chút giật mình. Hắn nguyên bản còn muốn phát triển khiêm tốn, yên lặng trước hướng cái cấp 10, chủ đánh một cái buồn bực phát đại tài. Hiện tại mọi người đều biết tăng cấp có ban thưởng, áp lực một chút lớn hơn rất nhiều.
 
 "Xem ra cần phải tăng tốc độ, tranh thủ người thứ nhất xông tới cấp 10!"
 
-Lâm Trạch quả quyết đóng lại kém chút bạo tạc thư riêng công năng cùng tăng thêm hảo hữu thỉnh cầu.
-
-Thuận tay đem vừa thu hoạch được mười điểm tự do thuộc tính, lần nữa phân phối đến nhanh nhẹn bên trên.
-
-Sau đó chuyên chú vào trước mắt thăm dò, tiếp tục hướng phòng thuyền trưởng tiến lên!
-
-Lâm Trạch đi bộ hơn mười mét, lại gặp phải ba đầu tuần tra khô lâu quái vật.
-
-Có lần trước kinh nghiệm chiến đấu, hắn hiện tại một điểm đều không hoảng hốt.
+Lâm Trạch quả quyết đóng lại kém chút bạo tạc thư riêng công năng cùng tăng thêm hảo hữu thỉnh cầu. Thuận tay đem vừa thu hoạch được mười điểm tự do thuộc tính, lần nữa phân phối đến nhanh nhẹn bên trên. Sau đó chuyên chú vào trước mắt thăm dò, tiếp tục hướng phòng thuyền trưởng tiến lên! Lâm Trạch đi bộ hơn mười mét, lại gặp phải ba đầu tuần tra khô lâu quái vật. Có lần trước kinh nghiệm chiến đấu, hắn hiện tại một điểm đều không hoảng hốt.
 
 "Lần này chiến thuật hơi làm chút điều chỉnh."
 
@@ -102,41 +68,15 @@ Có lần trước kinh nghiệm chiến đấu, hắn hiện tại một điể
 
 "Còn lại khô lâu xé rách giả chúng ta cùng tiến lên."
 
-Lâm Trạch đánh ra tác chiến thủ thế, cùng ảnh phân thân đồng thời trốn vào Ám Ảnh, lặng lẽ sờ đến quái vật sau lưng.
-
-Một giây sau, ảnh phân thân dẫn đầu động thủ, đem khô lâu chiến sĩ miểu sát.
-
-Khô lâu chiến sĩ chết, khô lâu pháp sư cùng khô lâu xé rách giả trong nháy mắt đưa nó khóa chặt.
+Lâm Trạch đánh ra tác chiến thủ thế, cùng ảnh phân thân đồng thời trốn vào Ám Ảnh, lặng lẽ sờ đến quái vật sau lưng. Một giây sau, ảnh phân thân dẫn đầu động thủ, đem khô lâu chiến sĩ miểu sát. Khô lâu chiến sĩ chết, khô lâu pháp sư cùng khô lâu xé rách giả trong nháy mắt đưa nó khóa chặt.
 
 "Chết cho ta!"
 
-Lâm Trạch nắm lấy cơ hội, đánh lén đang tại thi pháp khô lâu pháp sư.
-
-Tân đổi vũ khí bạch cốt dao găm trong nháy mắt không có vào nó thân thể.
-
-568!
-
-Phá ẩn một kích tổn thương phi thường kinh người!
-
-Ba!
-
-Một tiếng vang giòn.
-
-Khô lâu pháp sư bộ xương rầm rầm không ngừng tan ra thành từng mảnh, trực tiếp hóa thành bột mịn.
-
-Cuối cùng trên mặt đất lưu lại một đoàn tái nhợt tro cốt.
-
-Lên tới cấp 2 cùng đổi mới vũ khí về sau, Lâm Trạch bạo phát trở nên cao hơn.
-
-Chỉ là da giòn pháp sư, vượt cấp chiến đấu làm theo có thể miểu sát!
+Lâm Trạch nắm lấy cơ hội, đánh lén đang tại thi pháp khô lâu pháp sư. Tân đổi vũ khí bạch cốt dao găm trong nháy mắt không có vào nó thân thể. 568! Phá ẩn một kích tổn thương phi thường kinh người! Ba! Một tiếng vang giòn. Khô lâu pháp sư bộ xương rầm rầm không ngừng tan ra thành từng mảnh, trực tiếp hóa thành bột mịn. Cuối cùng trên mặt đất lưu lại một đoàn tái nhợt tro cốt. Lên tới cấp 2 cùng đổi mới vũ khí về sau, Lâm Trạch bạo phát trở nên cao hơn. Chỉ là da giòn pháp sư, vượt cấp chiến đấu làm theo có thể miểu sát!
 
 "Cuối cùng còn lại cái hài cốt xé rách giả, không cho nó cơ hội."
 
-Lâm Trạch đang chuẩn bị xuất thủ, liền thấy tiên cơ ảnh phân thân, lần nữa vượt lên trước một bước.
-
-Một cái Ám Ảnh tập kích quấn sau đem bạo cúc, đẫm máu thủy thủ loan đao, liên tục không có vào loại chó khô lâu thân thể.
-
-Đao thứ ba rơi xuống về sau, đối phương đồng dạng biến thành một đoàn tro cốt.
+Lâm Trạch đang chuẩn bị xuất thủ, liền thấy tiên cơ ảnh phân thân, lần nữa vượt lên trước một bước. Một cái Ám Ảnh tập kích quấn sau đem bạo cúc, đẫm máu thủy thủ loan đao, liên tục không có vào loại chó khô lâu thân thể. Đao thứ ba rơi xuống về sau, đối phương đồng dạng biến thành một đoàn tro cốt.
 
 « hệ thống; Vượt cấp đánh giết quái bình thường vật; Khô lâu chiến sĩ, tính gộp lại thu hoạch được kinh nghiệm +10! »
 
@@ -148,13 +88,7 @@ Một cái Ám Ảnh tập kích quấn sau đem bạo cúc, đẫm máu thủy 
 
 . . .
 
-Thăng cấp về sau, vượt cấp chiến đấu lợi ích thấp xuống không ít.
-
-Nhưng có hảo sự thành đôi cái này dòng vàng tại, kết toán kinh nghiệm ban thưởng ngược lại trở nên càng thêm phong phú.
-
-Để hắn thanh kinh nghiệm trực tiếp đã tăng tới 80%!
-
-Lại đến một đợt trách hắn liền có thể thăng cấp, đây luyện cấp hiệu suất cùng hỏa tiễn đồng dạng nhanh!
+Thăng cấp về sau, vượt cấp chiến đấu lợi ích thấp xuống không ít. Nhưng có hảo sự thành đôi cái này dòng vàng tại, kết toán kinh nghiệm ban thưởng ngược lại trở nên càng thêm phong phú. Để hắn thanh kinh nghiệm trực tiếp đã tăng tới 80%! Lại đến một đợt trách hắn liền có thể thăng cấp, đây luyện cấp hiệu suất cùng hỏa tiễn đồng dạng nhanh!
 
 "Làm rất tốt, càng ngày càng thành thục."
 
@@ -188,41 +122,11 @@ Rất nhanh, Lâm Trạch nghe được quen thuộc tiếng vang.
 
 "Chẳng lẽ những trang bị này thật sự là tất bạo?"
 
-Lâm Trạch nhìn qua trong ba lô trang bị, biểu lộ có chút khó có thể tin.
+Lâm Trạch nhìn qua trong ba lô trang bị, biểu lộ có chút khó có thể tin. Đây trang bị tỉ lệ rơi đồ có chút quá bất hợp lí, lần đầu tiên còn có thể nói là vận khí tốt. Lần thứ hai cũng không phải là vận khí. Hắn càng muốn tin tưởng đây là đánh giết " tất ra " trang bị. Chẳng lẽ đây là địa ngục độ khó ẩn tàng phúc lợi? Lâm Trạch ở trong lòng âm thầm phỏng đoán, loại này phỏng đoán hợp lý nhất. Nếu như cùng hắn đoán đồng dạng, mỗi lần gặp phải tuần tra quái vật, đều có thể tuôn ra một kiện chưa nắm giữ bộ vị.
 
-Đây trang bị tỉ lệ rơi đồ có chút quá bất hợp lí, lần đầu tiên còn có thể nói là vận khí tốt.
+Hắn lập tức liền có thể gom góp một bộ tiền tố tên là " bạch cốt " trang bị trang phục. Nói không chừng còn có thể kích hoạt trang phục ẩn tàng hiệu quả đâu, đáng để mong chờ. Lâm Trạch vui cười đem tân phòng cụ mặc vào, tiếp tục hướng phòng thuyền trưởng phương hướng tiến lên. Trên đường, hắn lại tao ngộ một đợt tuần tra khô lâu tổ ba người. Trải qua trước đó hai trận chiến đấu, Lâm Trạch cùng ảnh phân thân đã có thể tự xưng thuần thục công. Phân công hợp tác, phi thường nhẹ nhõm liền đem ba cái khô lâu quái vật toàn bộ đánh giết.
 
-Lần thứ hai cũng không phải là vận khí.
-
-Hắn càng muốn tin tưởng đây là đánh giết " tất ra " trang bị.
-
-Chẳng lẽ đây là địa ngục độ khó ẩn tàng phúc lợi?
-
-Lâm Trạch ở trong lòng âm thầm phỏng đoán, loại này phỏng đoán hợp lý nhất.
-
-Nếu như cùng hắn đoán đồng dạng, mỗi lần gặp phải tuần tra quái vật, đều có thể tuôn ra một kiện chưa nắm giữ bộ vị.
-
-Hắn lập tức liền có thể gom góp một bộ tiền tố tên là " bạch cốt " trang bị trang phục.
-
-Nói không chừng còn có thể kích hoạt trang phục ẩn tàng hiệu quả đâu, đáng để mong chờ.
-
-Lâm Trạch vui cười đem tân phòng cụ mặc vào, tiếp tục hướng phòng thuyền trưởng phương hướng tiến lên.
-
-Trên đường, hắn lại tao ngộ một đợt tuần tra khô lâu tổ ba người.
-
-Trải qua trước đó hai trận chiến đấu, Lâm Trạch cùng ảnh phân thân đã có thể tự xưng thuần thục công.
-
-Phân công hợp tác, phi thường nhẹ nhõm liền đem ba cái khô lâu quái vật toàn bộ đánh giết.
-
-Lâm Trạch liên tục chiến đấu cùng không gián đoạn sử dụng tiềm hành kỹ năng, trên đường đi thể lực tiêu hao không ít.
-
-Vững vàng một điểm có thể lựa chọn tại chỗ nghỉ ngơi, khôi phục thể lực.
-
-Nhưng Lâm Trạch liên tục vượt cấp đánh giết, giết hết đợt thứ ba quái liền thành công lên tới cấp 3.
-
-Trước đó tiêu hao thể lực cùng lý trí tự động quay về đầy.
-
-Lại có thể tiếp tục chiến đấu, sảng!
+Lâm Trạch liên tục chiến đấu cùng không gián đoạn sử dụng tiềm hành kỹ năng, trên đường đi thể lực tiêu hao không ít. Vững vàng một điểm có thể lựa chọn tại chỗ nghỉ ngơi, khôi phục thể lực. Nhưng Lâm Trạch liên tục vượt cấp đánh giết, giết hết đợt thứ ba quái liền thành công lên tới cấp 3. Trước đó tiêu hao thể lực cùng lý trí tự động quay về đầy. Lại có thể tiếp tục chiến đấu, sảng!
 
 . . .
 
@@ -236,16 +140,4 @@ Lại có thể tiếp tục chiến đấu, sảng!
 
 . . .
 
-Thăng cấp tin tức xuất hiện lần nữa.
-
-Lâm Trạch chỉ là nhìn sang, cả người đều sảng bay.
-
-Hắn vẻn vẹn thăng cấp một cấp, liền thu hoạch được cố định thuộc tính +70, tự do thuộc tính +20.
-
-Tổng cộng 90 cái điểm thuộc tính, gấp bội!
-
-Những người khác thăng cấp chỉ có thể thu hoạch được không đến 20 tổng điểm thuộc tính.
-
-Tiếp cận gấp năm lần chênh lệch!
-
-Dùng bốn chữ để hình dung, xa xa dẫn trước!
+Thăng cấp tin tức xuất hiện lần nữa. Lâm Trạch chỉ là nhìn sang, cả người đều sảng bay. Hắn vẻn vẹn thăng cấp một cấp, liền thu hoạch được cố định thuộc tính +70, tự do thuộc tính +20. Tổng cộng 90 cái điểm thuộc tính, gấp bội! Những người khác thăng cấp chỉ có thể thu hoạch được không đến 20 tổng điểm thuộc tính. Tiếp cận gấp năm lần chênh lệch! Dùng bốn chữ để hình dung, xa xa dẫn trước!

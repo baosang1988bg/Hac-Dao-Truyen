@@ -1,7 +1,5 @@
 # Chương 18. Dòng vàng hợp thành, Phong Lâm Hỏa Sơn!
 
-Chương 18; Dòng vàng hợp thành, Phong Lâm Hỏa Sơn!
-
 « keng! Thiên phú; Hảo sự thành đôi phát động, ngài thu hoạch được gấp đôi thuộc tính trưởng thành! »
 
 « keng! Ngài kinh nghiệm trị đã đủ, ngài đẳng cấp đề thăng đến; Cấp 6! »
@@ -20,13 +18,7 @@ Lâm Trạch thăng liền hai cấp về sau, thanh kinh nghiệm tiếp tục 
 
 "Đáng tiếc, nếu là thăng liền ba cấp. . . Tiếp xuống chiến đấu ta thì càng có nắm chắc."
 
-Lâm Trạch nắm chặt trong tay vũ khí, trước mắt cương thi thủ lĩnh chỉ là món ăn khai vị, còn có càng cường đại địch nhân tại phòng thuyền trưởng bên trong.
-
-Thế là, ánh mắt cấp tốc nhìn về phía thiên phú, thăng liền hai cấp rống hắn lại có tân dòng vàng!
-
-Có thể nhanh chóng như vậy đánh giết ác độc ôn dịch cương thi, hắn kinh tế loại dòng vàng; Hảo sự thành đôi không thể bỏ qua công lao.
-
-Nếu là lại xoát ra một cái kinh tế loại dòng, kia liền càng sướng rồi!
+Lâm Trạch nắm chặt trong tay vũ khí, trước mắt cương thi thủ lĩnh chỉ là món ăn khai vị, còn có càng cường đại địch nhân tại phòng thuyền trưởng bên trong. Thế là, ánh mắt cấp tốc nhìn về phía thiên phú, thăng liền hai cấp rống hắn lại có tân dòng vàng! Có thể nhanh chóng như vậy đánh giết ác độc ôn dịch cương thi, hắn kinh tế loại dòng vàng; Hảo sự thành đôi không thể bỏ qua công lao. Nếu là lại xoát ra một cái kinh tế loại dòng, kia liền càng sướng rồi!
 
 . . .
 
@@ -50,11 +42,7 @@ Nhắc nhở; Nếu như đối với đạo cụ, trang bị, kiến trúc sử
 
 "Nhị tinh sau đó có thể hay không còn có tam tinh?"
 
-Lâm Trạch còn là lần đầu tiên nghe được thuyết pháp này, không khỏi có chút hiếu kỳ.
-
-Đã có thể hợp thành, hắn tự nhiên là muốn thử vừa thử, dù sao đều là muốn cho mình dùng.
-
-Thế là, Lâm Trạch không chút do dự đem từ mới đầu giao phó mình, hợp thành nhị tinh dòng vàng!
+Lâm Trạch còn là lần đầu tiên nghe được thuyết pháp này, không khỏi có chút hiếu kỳ. Đã có thể hợp thành, hắn tự nhiên là muốn thử vừa thử, dù sao đều là muốn cho mình dùng. Thế là, Lâm Trạch không chút do dự đem từ mới đầu giao phó mình, hợp thành nhị tinh dòng vàng!
 
 « hệ thống; Keng! Dòng vàng; Nhanh như điện chớp giao phó thành công! »
 
@@ -72,17 +60,9 @@ Thế là, Lâm Trạch không chút do dự đem từ mới đầu giao phó m�
 
 "Đây dòng vàng hợp thành sau đó, thật có điểm thái quá a?"
 
-Lâm Trạch xem hết Phong Lâm Hỏa Sơn thuộc tính cùng giao phó hiệu quả, nhịn không được cảm khái một tiếng.
+Lâm Trạch xem hết Phong Lâm Hỏa Sơn thuộc tính cùng giao phó hiệu quả, nhịn không được cảm khái một tiếng. Giờ khắc này lên, hắn rốt cuộc không phải cạo gió sư phó, mà là một chiếc cối xay thịt! Gấp ba cơ sở tốc độ đánh, tốc độ di chuyển, công kích lực, ngươi đổi pháp gia đến, đều có thể một khuỷu tay làm nát dám cận thân thích khách, nhất côn gõ chết một đầu heo rừng. Pháp thuật tùy tiện học cái đóng băng cùng cuồng bạo là được rồi, hỏa cầu thuật đều dư thừa, không bằng vung mạnh đại bổng giết đến nhanh.
 
-Giờ khắc này lên, hắn rốt cuộc không phải cạo gió sư phó, mà là một chiếc cối xay thịt!
-
-Gấp ba cơ sở tốc độ đánh, tốc độ di chuyển, công kích lực, ngươi đổi pháp gia đến, đều có thể một khuỷu tay làm nát dám cận thân thích khách, nhất côn gõ chết một đầu heo rừng.
-
-Pháp thuật tùy tiện học cái đóng băng cùng cuồng bạo là được rồi, hỏa cầu thuật đều dư thừa, không bằng vung mạnh đại bổng giết đến nhanh.
-
-Lâm Trạch hợp xong cái thứ nhất dòng vàng, ánh mắt tiếp tục xem hướng cái thứ hai dòng vàng.
-
-Hắn thăng liền hai cấp, còn có một cái dòng vàng đợi thu hàng.
+Lâm Trạch hợp xong cái thứ nhất dòng vàng, ánh mắt tiếp tục xem hướng cái thứ hai dòng vàng. Hắn thăng liền hai cấp, còn có một cái dòng vàng đợi thu hàng.
 
 « keng! Ngài thành công thăng cấp, thiên phú; 1 cấp 1 cái dòng vàng, tự động rút ra tân dòng vàng. »
 
@@ -100,17 +80,11 @@ Như giao phó vật phẩm, mang theo ở trên người đồng dạng có tr�
 
 "Với lại, dùng để đối phó quỷ dị sinh vật phương diện nói không chừng có hiệu quả."
 
-Lâm Trạch như có điều suy nghĩ bình luận.
-
-Không có gì dễ nói, tiếp tục đem tân dòng vàng giao phó mình.
-
-Chủ yếu là trên tay đồ rác rưởi căn bản không xứng với dòng vàng.
+Lâm Trạch như có điều suy nghĩ bình luận. Không có gì dễ nói, tiếp tục đem tân dòng vàng giao phó mình. Chủ yếu là trên tay đồ rác rưởi căn bản không xứng với dòng vàng.
 
 « hệ thống; Keng! Dòng vàng; Chân thực chi nhãn giao phó thành công! »
 
-Đem thăng liền hai cấp thu hoạch được dòng phân phối hoàn tất.
-
-Lâm Trạch mở ra bảng thuộc tính, kiểm tra một chút thực lực biến hóa.
+Đem thăng liền hai cấp thu hoạch được dòng phân phối hoàn tất. Lâm Trạch mở ra bảng thuộc tính, kiểm tra một chút thực lực biến hóa.
 
 . . .
 
@@ -148,21 +122,9 @@ Lâm Trạch mở ra bảng thuộc tính, kiểm tra một chút thực lực b
 
 "Quả nhiên, dòng vàng mới là thực lực của ta đề thăng mấu chốt, bao nhiêu trang bị đều không đổi!"
 
-Lâm Trạch xem hết mình thuộc tính biến hóa, cũng không nhịn được cảm khái.
+Lâm Trạch xem hết mình thuộc tính biến hóa, cũng không nhịn được cảm khái. Cái gì dị thường đạo cụ, trang bị đều là cặn bã, vẫn là truyền thuyết cấp dòng vàng càng ra sức! Một cái nhị tinh dòng vàng so với hắn trên thân bốn kiện dị thường vật phẩm, cộng thêm tất cả trang bị tổng cộng tăng thêm đều cao! Cho nên hắn phải nhanh một chút thăng cấp, đẳng cấp càng cao dòng vàng càng nhiều! Bây giờ, Lâm Trạch lại quay đầu đánh cương thi thủ lĩnh, có tự tin tại ba giây đồng hồ bên trong giải quyết chiến đấu, đánh giết đối phương.
 
-Cái gì dị thường đạo cụ, trang bị đều là cặn bã, vẫn là truyền thuyết cấp dòng vàng càng ra sức!
-
-Một cái nhị tinh dòng vàng so với hắn trên thân bốn kiện dị thường vật phẩm, cộng thêm tất cả trang bị tổng cộng tăng thêm đều cao!
-
-Cho nên hắn phải nhanh một chút thăng cấp, đẳng cấp càng cao dòng vàng càng nhiều!
-
-Bây giờ, Lâm Trạch lại quay đầu đánh cương thi thủ lĩnh, có tự tin tại ba giây đồng hồ bên trong giải quyết chiến đấu, đánh giết đối phương.
-
-Hiện tại, Hắc Thạch Hào bên trên hắc ám sinh vật mới là khiêu chiến giả, hắn mới là lớn BOSS!
-
-Phân phối xong dòng vàng, Lâm Trạch ánh mắt một lần nữa trở lại trong khoang thuyền.
-
-Trên mặt đất có một đoàn cương thi thủ lĩnh phong tục giáo hóa màu đen tro cốt cùng nó chết không nhắm mắt thủ cấp.
+Hiện tại, Hắc Thạch Hào bên trên hắc ám sinh vật mới là khiêu chiến giả, hắn mới là lớn BOSS! Phân phối xong dòng vàng, Lâm Trạch ánh mắt một lần nữa trở lại trong khoang thuyền. Trên mặt đất có một đoàn cương thi thủ lĩnh phong tục giáo hóa màu đen tro cốt cùng nó chết không nhắm mắt thủ cấp.
 
 "Trên mặt đất những cái kia đen xám sẽ không phải cũng có thể ăn đi? Muốn hay không nặng như vậy khẩu vị."
 
@@ -184,8 +146,4 @@ Lâm Trạch hít sâu một hơi, chịu đựng buồn nôn đưa tay chạm �
 
 "Tuôn ra trang bị! Chờ chút. . . Cư nhiên là một kiện dị thường vật phẩm?"
 
-Lâm Trạch thần sắc giật mình, dị thường vật phẩm so cái khác bất kỳ bộ vị trang bị đều trân quý hơn.
-
-Nếu không Hắc Thạch Hào cũng sẽ không chuyên môn vận chuyển, sau đó tao ngộ một cấp đen tai.
-
-Lâm Trạch không kịp chờ đợi mở ra ba lô, trước nhìn quấn vải liệm thuộc tính!
+Lâm Trạch thần sắc giật mình, dị thường vật phẩm so cái khác bất kỳ bộ vị trang bị đều trân quý hơn. Nếu không Hắc Thạch Hào cũng sẽ không chuyên môn vận chuyển, sau đó tao ngộ một cấp đen tai. Lâm Trạch không kịp chờ đợi mở ra ba lô, trước nhìn quấn vải liệm thuộc tính!

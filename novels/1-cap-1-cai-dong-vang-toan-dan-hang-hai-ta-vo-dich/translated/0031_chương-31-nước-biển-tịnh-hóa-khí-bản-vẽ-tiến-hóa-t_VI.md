@@ -1,7 +1,5 @@
 # Chương 31. Nước biển tịnh hóa khí bản vẽ, tiến hóa truyền thuyết cấp Hắc Thạch Hào!
 
-Chương 31; Nước biển tịnh hóa khí bản vẽ, tiến hóa truyền thuyết cấp Hắc Thạch Hào!
-
 Lâm Trạch nhặt cùng kiểm tra chiến lợi phẩm đồng thời, hệ thống thông báo vang lên lần nữa.
 
 « thế giới thông báo; Hạ quốc người chơi " Lâm Trạch " trở thành cái thứ nhất đánh giết thủ lĩnh cấp quái vật người chơi, thu hoạch được khen thưởng thêm; Tự do thuộc tính +40, Vong Giả hải vực danh vọng +1000, hàng hải tệ +10000, lãnh chúa cấp bản vẽ một phần. »
@@ -28,17 +26,9 @@ Lâm Trạch nhặt cùng kiểm tra chiến lợi phẩm đồng thời, hệ t
 
 . . .
 
-Lần nữa xoát màn hình hệ thống thông báo, tại toàn bộ Hạ Hạ quốc phạm vi, lại một lần nhấc lên sóng to gió lớn.
+Lần nữa xoát màn hình hệ thống thông báo, tại toàn bộ Hạ Hạ quốc phạm vi, lại một lần nhấc lên sóng to gió lớn. Bất quá, so với mấy lần trước thông báo thời điểm khiếp sợ. Lần này tuyệt đại đa số người chơi đã cảm thấy có chút chết lặng, đây mẹ nó chênh lệch quá xa a, liền tính muốn so sánh đều không cách nào so. Bọn hắn còn tại trên thuyền làm Robinson phiêu lưu, đói bụng cầu nguyện ngày mai câu cá không cần không quân, sau đó con ruồi không đầu đồng dạng tìm kiếm biển bên trên thổi qua tài nguyên rương, có thể nói là nước sôi lửa bỏng.
 
-Bất quá, so với mấy lần trước thông báo thời điểm khiếp sợ.
-
-Lần này tuyệt đại đa số người chơi đã cảm thấy có chút chết lặng, đây mẹ nó chênh lệch quá xa a, liền tính muốn so sánh đều không cách nào so.
-
-Bọn hắn còn tại trên thuyền làm Robinson phiêu lưu, đói bụng cầu nguyện ngày mai câu cá không cần không quân, sau đó con ruồi không đầu đồng dạng tìm kiếm biển bên trên thổi qua tài nguyên rương, có thể nói là nước sôi lửa bỏng.
-
-Cái này gọi Lâm Trạch người chơi đi lên liền Vương Tạc, các loại BOSS lần đầu tiên giết căn bản không dừng được, điều này cũng không biết là lần thứ mấy toàn bộ server thông báo!
-
-Giữa người và người chênh lệch, làm sao lại như vậy lớn?
+Cái này gọi Lâm Trạch người chơi đi lên liền Vương Tạc, các loại BOSS lần đầu tiên giết căn bản không dừng được, điều này cũng không biết là lần thứ mấy toàn bộ server thông báo! Giữa người và người chênh lệch, làm sao lại như vậy lớn?
 
 . . .
 
@@ -74,11 +64,7 @@ Lãnh chúa cấp; Tiêu hao 100 vật liệu gỗ chuyển hóa 30 đơn vị n
 
 "Trước làm được đi, có thể kiếm lời là được."
 
-Lâm Trạch đem tịnh thủy khí bản vẽ thu vào ba lô, phòng thuyền trưởng bàn làm việc đang ở trước mắt.
-
-Cùng lúc đó,
-
-Lâm Trạch đánh giết vong linh pháp sư Kony trong nháy mắt, cứu vớt Hắc Thạch Hào thuyền lớn nhiệm vụ, cuối cùng xuất hiện tân tiến triển.
+Lâm Trạch đem tịnh thủy khí bản vẽ thu vào ba lô, phòng thuyền trưởng bàn làm việc đang ở trước mắt. Cùng lúc đó, Lâm Trạch đánh giết vong linh pháp sư Kony trong nháy mắt, cứu vớt Hắc Thạch Hào thuyền lớn nhiệm vụ, cuối cùng xuất hiện tân tiến triển.
 
 « hệ thống; Keng! Ngài thành công đánh giết chiếm lĩnh phòng thuyền trưởng ẩn tàng BOSS vong linh pháp sư Kony, đoạt lại phòng thuyền trưởng quyền khống chế, ngài tại Hắc Thạch Hào bên trên khảo nghiệm xuất hiện tân tiến triển!
 
@@ -112,26 +98,12 @@ Hai cái dòng vàng đập xuống, vốn là thiên phú dị bẩm Hắc Th�
 
 . . .
 
-Lâm Trạch giao phó dòng vàng trong nháy mắt, Hắc Thạch Hào khổng lồ thân thuyền dâng lên một vệt kim quang, rực rỡ hẳn lên!
-
-Có lẽ là trò chơi tiến trình an bài, xây xong Hắc Thạch Hào Hậu Chu vây khí tượng, lập tức phát sinh nghiêng trời lệch đất biến hóa.
-
-Lâm Trạch đứng tại phòng thuyền trưởng có thể rõ ràng nhìn thấy chân trời mây đen quyển tịch, cuồng phong gào thét, sóng biển cuồn cuộn!
+Lâm Trạch giao phó dòng vàng trong nháy mắt, Hắc Thạch Hào khổng lồ thân thuyền dâng lên một vệt kim quang, rực rỡ hẳn lên! Có lẽ là trò chơi tiến trình an bài, xây xong Hắc Thạch Hào Hậu Chu vây khí tượng, lập tức phát sinh nghiêng trời lệch đất biến hóa. Lâm Trạch đứng tại phòng thuyền trưởng có thể rõ ràng nhìn thấy chân trời mây đen quyển tịch, cuồng phong gào thét, sóng biển cuồn cuộn!
 
 "Đây là bức ta lên đường tiết tấu a."
 
-Lâm Trạch liếc nhìn khí tượng, đâu còn có thể không biết tình huống.
+Lâm Trạch liếc nhìn khí tượng, đâu còn có thể không biết tình huống. Nhưng đã Hắc Thạch Hào đã chữa trị hoàn tất, bên ngoài bão táp tới vừa đúng, chính là Dương Phàm xuất phát thời cơ tốt! Lâm Trạch đi qua vài chục năm trong đời, không có cái gì giương buồm ra biển kinh nghiệm, nhiều lắm là liền chơi qua điểm du lịch đệm khí thuyền hạng mục. Lúc này, Lâm Trạch hoàn toàn là bằng vào bản năng đi lên trước, bắt lấy phảng phất tại Vi Vi rung động bánh lái.
 
-Nhưng đã Hắc Thạch Hào đã chữa trị hoàn tất, bên ngoài bão táp tới vừa đúng, chính là Dương Phàm xuất phát thời cơ tốt!
-
-Lâm Trạch đi qua vài chục năm trong đời, không có cái gì giương buồm ra biển kinh nghiệm, nhiều lắm là liền chơi qua điểm du lịch đệm khí thuyền hạng mục.
-
-Lúc này, Lâm Trạch hoàn toàn là bằng vào bản năng đi lên trước, bắt lấy phảng phất tại Vi Vi rung động bánh lái.
-
-Mặc dù hệ thống nói chỉ cần khống chế phòng thuyền trưởng, liền có thể điều khiển một chiếc thuyền lớn.
-
-Nhưng hắn trống không trong ý nghĩ thậm chí không còn kịp suy tư nữa cùng ý nghĩ, nên như thế nào lấy lực lượng một người đi chấp chưởng một chiếc chỉ có một người thuyền lớn, tựa như tiểu hài mở xe ngựa đồng dạng khoa trương, rút kiếm tứ cố tâm mờ mịt a.
-
-Bỗng nhiên, boong thuyền ba cây thô to cột buồm đồng loạt cởi ra cánh buồm, chỉ nghe " phanh " một tiếng bạo hưởng! Từ cột buồm rơi xuống vải bạt bị cuồng phong ép thành phiến phiến màu trắng bán nguyệt cung.
+Mặc dù hệ thống nói chỉ cần khống chế phòng thuyền trưởng, liền có thể điều khiển một chiếc thuyền lớn. Nhưng hắn trống không trong ý nghĩ thậm chí không còn kịp suy tư nữa cùng ý nghĩ, nên như thế nào lấy lực lượng một người đi chấp chưởng một chiếc chỉ có một người thuyền lớn, tựa như tiểu hài mở xe ngựa đồng dạng khoa trương, rút kiếm tứ cố tâm mờ mịt a. Bỗng nhiên, boong thuyền ba cây thô to cột buồm đồng loạt cởi ra cánh buồm, chỉ nghe " phanh " một tiếng bạo hưởng! Từ cột buồm rơi xuống vải bạt bị cuồng phong ép thành phiến phiến màu trắng bán nguyệt cung.
 
 Hắc Thạch Hào thân thuyền hổ khu chấn động, hướng về phía trước chậm rãi vận chuyển, phảng phất lịch sử bánh xe bắt đầu lần đầu tiên chuyển động.

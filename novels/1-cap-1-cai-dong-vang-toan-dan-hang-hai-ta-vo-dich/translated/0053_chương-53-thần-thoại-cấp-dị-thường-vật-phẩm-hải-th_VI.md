@@ -1,7 +1,5 @@
 # Chương 53. Thần thoại cấp dị thường vật phẩm, Hải Thần quyền trượng
 
-Chương 53; Thần thoại cấp dị thường vật phẩm, Hải Thần quyền trượng
-
 "Tốt tốt tốt, lại một cái trần nhà cấp bậc truyền thuyết cấp bản vẽ, tinh linh này tộc khoa kỹ bản vẽ không thể so với tinh khiết tổ rồng kém."
 
 "Nếu như nói tinh khiết tổ rồng là ấp trứng binh chủng, cung cấp siêu cường chiến lực đơn vị trần nhà, Druid sinh mệnh nông trường chính là xây dựng lãnh địa nhiều công năng phụ trợ tay."
@@ -10,13 +8,7 @@ Chương 53; Thần thoại cấp dị thường vật phẩm, Hải Thần quy�
 
 "Cái này mới là ta muốn kiến trúc bản vẽ, quá ngưu bức!"
 
-Lâm Trạch kích động đến trái tim đập bịch bịch.
-
-Hai cái này trần nhà cấp bậc kiến trúc, một khi tại hắn trên thuyền hoặc lãnh địa Kiến Thành bám rễ sinh chồi, hắn mỗi tuần đều có thể tích lũy to lớn ưu thế.
-
-Phần này ưu thế còn biết theo thời gian không ngừng trưởng thành, gần như không có khả năng có người có thể dao động cùng siêu việt.
-
-Không hổ là cấp cao nhất ban thưởng, so dòng vàng còn hăng hái a!
+Lâm Trạch kích động đến trái tim đập bịch bịch. Hai cái này trần nhà cấp bậc kiến trúc, một khi tại hắn trên thuyền hoặc lãnh địa Kiến Thành bám rễ sinh chồi, hắn mỗi tuần đều có thể tích lũy to lớn ưu thế. Phần này ưu thế còn biết theo thời gian không ngừng trưởng thành, gần như không có khả năng có người có thể dao động cùng siêu việt. Không hổ là cấp cao nhất ban thưởng, so dòng vàng còn hăng hái a!
 
 . . .
 
@@ -38,25 +30,9 @@ Hệ thống cho ra phần thứ hai ban thưởng, đồng dạng là trọng l
 
 "Tất ra đỉnh cấp SSR, thậm chí còn có thể góp cái ràng buộc!"
 
-Lâm Trạch cười ha ha.
+Lâm Trạch cười ha ha. Hắn dòng vàng « may mắn chi xúc xắc » cuối cùng có đất dụng võ! Mỗi ngày một lần khuynh hướng hắn cực đoan may mắn kết quả! Nếu như dùng game mobile rút thẻ nêu ví dụ, không riêng gì mười ngay cả mười vàng, còn muốn mười ngay cả không lệch ra! Không sai biệt lắm chính là cái này trình độ. Cho nên, Lâm Trạch nhìn thấy cái này rút thưởng, thật sự một điểm đều không mang theo sợ. Hắn đã chuẩn bị kỹ càng muốn nghênh đón hai vị cự long thời đại cường đại nhất anh hùng.
 
-Hắn dòng vàng « may mắn chi xúc xắc » cuối cùng có đất dụng võ!
-
-Mỗi ngày một lần khuynh hướng hắn cực đoan may mắn kết quả!
-
-Nếu như dùng game mobile rút thẻ nêu ví dụ, không riêng gì mười ngay cả mười vàng, còn muốn mười ngay cả không lệch ra!
-
-Không sai biệt lắm chính là cái này trình độ.
-
-Cho nên, Lâm Trạch nhìn thấy cái này rút thưởng, thật sự một điểm đều không mang theo sợ.
-
-Hắn đã chuẩn bị kỹ càng muốn nghênh đón hai vị cự long thời đại cường đại nhất anh hùng.
-
-Gia nhập hắn đội tàu cùng thế lực!
-
-Thứ ba phân ban thưởng, đồng dạng là trọng lượng cấp.
-
-Thần thoại cấp dị thường vật phẩm!
+Gia nhập hắn đội tàu cùng thế lực! Thứ ba phân ban thưởng, đồng dạng là trọng lượng cấp. Thần thoại cấp dị thường vật phẩm!
 
 . . .
 
@@ -80,13 +56,7 @@ Thần thoại cấp dị thường vật phẩm!
 
 "Trọng điểm là ta còn mang không lên đây vật phẩm a, lần này thua thiệt lớn!"
 
-Lâm Trạch nuốt ngụm nước bọt, Hải Thần thần khí hắn đương nhiên rất trông mà thèm.
-
-Nhưng không dùng đến chính là một kiện phỏng tay khoai lang, đặt ở trên tay không riêng vô dụng.
-
-Còn biết khai ra Hải Thần cùng hải tộc căm thù.
-
-Nói không chừng, hắn tân thủ bảo hộ kỳ vừa kết thúc, liền sẽ lập tức lọt vào hải tộc vòng vây truy sát.
+Lâm Trạch nuốt ngụm nước bọt, Hải Thần thần khí hắn đương nhiên rất trông mà thèm. Nhưng không dùng đến chính là một kiện phỏng tay khoai lang, đặt ở trên tay không riêng vô dụng. Còn biết khai ra Hải Thần cùng hải tộc căm thù. Nói không chừng, hắn tân thủ bảo hộ kỳ vừa kết thúc, liền sẽ lập tức lọt vào hải tộc vòng vây truy sát.
 
 "Chờ một chút, nếu có một tuần thời gian chuẩn bị. . ."
 
@@ -104,17 +74,9 @@ Nói không chừng, hắn tân thủ bảo hộ kỳ vừa kết thúc, liền 
 
 "Chỉ cần có thể khống chế ở thanh quyền trượng này, ta chính là phiến này biển cả bên trên thần!"
 
-Lâm Trạch trong đầu toát ra rất nhiều ý nghĩ, chủ đánh một cái gan lớn chết no, gan nhỏ chết đói.
+Lâm Trạch trong đầu toát ra rất nhiều ý nghĩ, chủ đánh một cái gan lớn chết no, gan nhỏ chết đói. Hắn đặt quyết tâm phải dùng thanh này thần khí, hệ thống cho đồ vật hắn mới sẽ không chắp tay nhường cho người, dù là đối phương là thần linh cũng không được. Dù sao, hắn cũng tự tay thí thần qua một lần, tương lai lại giết một cái thần, có cái gì không được? Thông quan ban thưởng ba vị trí đầu dạng ban thưởng xem hết, sau ba loại ban thưởng là phổ biến các loại tài nguyên, kinh nghiệm, danh vọng.
 
-Hắn đặt quyết tâm phải dùng thanh này thần khí, hệ thống cho đồ vật hắn mới sẽ không chắp tay nhường cho người, dù là đối phương là thần linh cũng không được.
-
-Dù sao, hắn cũng tự tay thí thần qua một lần, tương lai lại giết một cái thần, có cái gì không được?
-
-Thông quan ban thưởng ba vị trí đầu dạng ban thưởng xem hết, sau ba loại ban thưởng là phổ biến các loại tài nguyên, kinh nghiệm, danh vọng.
-
-Đồng thời, những phần thưởng này tại hảo sự thành đôi tăng thêm bên dưới lần nữa gấp bội!
-
-Lâm Trạch mở ra tài nguyên rương liếc nhìn, lập tức hít sâu một hơi.
+Đồng thời, những phần thưởng này tại hảo sự thành đôi tăng thêm bên dưới lần nữa gấp bội! Lâm Trạch mở ra tài nguyên rương liếc nhìn, lập tức hít sâu một hơi.
 
 « tài nguyên rương; Đồ ăn; 202000, vật liệu gỗ; 252040, Thạch Đầu; 221520, cương thiết; 222470, thủy tinh; 23210, bảo thạch; 20150, hàng hải tệ; 151790 »
 
@@ -124,9 +86,7 @@ Lâm Trạch mở ra tài nguyên rương liếc nhìn, lập tức hít sâu m�
 
 "Thay ta bớt đi không ít phiền phức, sau khi trở về trên tay tất cả kiến trúc, ta đều có thể lập tức bắt đầu thi công kiến tạo."
 
-Lâm Trạch cảm giác mình trên mặt nụ cười liền ngừng qua, tiền đồ xán lạn a.
-
-Cuối cùng một phần ban thưởng, cũng chính là thứ bảy phân chiến lợi phẩm, là thâm uyên cấp thí luyện thông quan xưng hào cùng thành tựu.
+Lâm Trạch cảm giác mình trên mặt nụ cười liền ngừng qua, tiền đồ xán lạn a. Cuối cùng một phần ban thưởng, cũng chính là thứ bảy phân chiến lợi phẩm, là thâm uyên cấp thí luyện thông quan xưng hào cùng thành tựu.
 
 . . .
 
@@ -144,17 +104,7 @@ Thâm uyên chinh phục giả, một cái đơn giản thô bạo, mạnh ngo�
 
 "Thuộc tính không sai, dạng này ta khoảng cách sử dụng Hải Thần quyền trượng lại tiến hơn một bước!"
 
-Lâm Trạch nhãn tình sáng lên, cao hứng hung hăng phất tay.
-
-Hắn phi thường trọng thị thể lực cùng lý trí hạn mức cao nhất đề thăng.
-
-Đây hai hạng thuộc tính thật là cầu mà không được.
-
-Chỉ có thể thông qua hoàn thành các loại độ khó cực cao sự kiện.
-
-Lại hoặc là cướp được quý giá lần đầu tiên giết ghi chép.
-
-Mới có thể thu hoạch được phương diện này đề thăng.
+Lâm Trạch nhãn tình sáng lên, cao hứng hung hăng phất tay. Hắn phi thường trọng thị thể lực cùng lý trí hạn mức cao nhất đề thăng. Đây hai hạng thuộc tính thật là cầu mà không được. Chỉ có thể thông qua hoàn thành các loại độ khó cực cao sự kiện. Lại hoặc là cướp được quý giá lần đầu tiên giết ghi chép. Mới có thể thu hoạch được phương diện này đề thăng.
 
 . . .
 
