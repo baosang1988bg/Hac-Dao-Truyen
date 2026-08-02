@@ -138,7 +138,7 @@ def process_single_epub(args_tuple):
 def main():
     parser = argparse.ArgumentParser(description="Tách hàng loạt kho EPUB (28,000+ file) sang Markdown Chapters")
     parser.add_argument("--dir", default=r"D:\epub_library\epubs", help="Thư mục chứa kho file .epub")
-    parser.add_argument("--output", default=r"novels", help="Thư mục xuất kết quả (mặc định: novels)")
+    parser.add_argument("--output", default=r"G:\novels", help="Thư mục xuất kết quả (mặc định: G:\\novels)")
     parser.add_argument("--workers", type=int, default=0, help="Số luồng CPU (0 = tự động theo số nhân CPU)")
     parser.add_argument("--overwrite", action="store_true", help="Ghi đè nếu truyện đã tồn tại")
     parser.add_argument("--limit", type=int, default=0, help="Giới hạn số file xử lý (0 = toàn bộ)")
@@ -180,8 +180,11 @@ def main():
     total_chapters = 0
 
     error_log_path = output_dir / "batch_errors.log"
-    if error_log_path.exists():
-        error_log_path.unlink()
+    try:
+        if error_log_path.exists():
+            error_log_path.unlink()
+    except Exception:
+        pass
 
     print(f"\n▶️  Bắt đầu xử lý với {workers} luồng song song...\n")
 
@@ -198,8 +201,11 @@ def main():
                 empty_cnt += 1
             elif st == 'error':
                 error_cnt += 1
-                with open(error_log_path, 'a', encoding='utf-8') as ef:
-                    ef.write(f"[{res['file']}] {res.get('error')}\n")
+                try:
+                    with open(error_log_path, 'a', encoding='utf-8') as ef:
+                        ef.write(f"[{res['file']}] {res.get('error')}\n")
+                except Exception:
+                    pass
 
             # Báo cáo tiến độ thời gian thực mỗi 50 file hoặc ở file cuối cùng
             if i % 50 == 0 or i == len(tasks):
