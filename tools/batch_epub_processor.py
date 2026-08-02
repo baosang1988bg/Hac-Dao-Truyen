@@ -249,7 +249,7 @@ def main():
     print(f"⚠️  Truyện rỗng/không nội dung: {empty_cnt:,}")
     print(f"❌ Truyện bị lỗi:           {error_cnt:,}")
     if error_cnt > 0:
-        print(f"📄 Chi tiết lỗi lưu tại:     {error_log_path.resolve()}")
+        print(f"📄 Chi tiết lỗi lưu tại:     {issues_cache_path.resolve()}")
     print("=" * 70)
 
 
