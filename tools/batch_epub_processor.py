@@ -89,7 +89,7 @@ def process_single_epub(args_tuple):
             num = c['number']
             title = c['title']
             content = c['content']
-            c_slug = slugify(title)
+            c_slug = slugify(title)[:80].rstrip('-')
             fname = f"{num:04d}_{c_slug}_VI.md"
             c_path = trans_dir / fname
             
@@ -138,7 +138,7 @@ def process_single_epub(args_tuple):
 def main():
     parser = argparse.ArgumentParser(description="Tách hàng loạt kho EPUB (28,000+ file) sang Markdown Chapters")
     parser.add_argument("--dir", default=r"D:\epub_library\epubs", help="Thư mục chứa kho file .epub")
-    parser.add_argument("--output", default=r"G:\novels", help="Thư mục xuất kết quả (mặc định: G:\\novels)")
+    parser.add_argument("--output", default=r"D:\novels", help="Thư mục xuất kết quả (mặc định: D:\\novels)")
     parser.add_argument("--workers", type=int, default=0, help="Số luồng CPU (0 = tự động theo số nhân CPU)")
     parser.add_argument("--overwrite", action="store_true", help="Ghi đè nếu truyện đã tồn tại")
     parser.add_argument("--limit", type=int, default=0, help="Giới hạn số file xử lý (0 = toàn bộ)")
@@ -154,12 +154,12 @@ def main():
 
     workers = args.workers if args.workers > 0 else max(1, cpu_count())
 
-    print("=" * 70)
-    print(f"🚀 HỆ THỐNG BATCH EPUB PROCESSOR — HẮC ĐẠO TRUYỆN")
+    print("=" * 75)
+    print(f"🚀 HỆ THỐNG BATCH EPUB PROCESSOR (TÁCH HÀNG LOẠT TRUYỆN)")
     print(f"📁 Thư mục EPUB nguồn: {epub_dir}")
     print(f"📂 Thư mục đầu ra:     {output_dir.resolve()}")
     print(f"⚡ Số luồng CPU:        {workers} workers")
-    print("=" * 70)
+    print("=" * 75)
 
     print("\n🔍 Đang quét danh sách file .epub...")
     all_epubs = [p for p in epub_dir.glob("*.epub") if not p.name.startswith("._") and not p.name.startswith(".")]
@@ -179,14 +179,21 @@ def main():
     error_cnt = 0
     total_chapters = 0
 
-    error_log_path = output_dir / "batch_errors.log"
-    try:
-        if error_log_path.exists():
-            error_log_path.unlink()
-    except Exception:
-        pass
+    issues_cache_path = output_dir / ".split_issues.json"
+    issues_cache = {}
+    if issues_cache_path.exists():
+        try:
+            issues_cache = json.loads(issues_cache_path.read_text(encoding='utf-8'))
+        except Exception:
+            issues_cache = {}
 
-    print(f"\n▶️  Bắt đầu xử lý với {workers} luồng song song...\n")
+    def save_issues_cache():
+        try:
+            issues_cache_path.write_text(json.dumps(issues_cache, ensure_ascii=False, indent=2), encoding='utf-8')
+        except Exception:
+            pass
+
+    print(f"\n▶️  Bắt đầu tách truyện với {workers} luồng song song...\n")
 
     with Pool(processes=workers) as pool:
         # Sử dụng imap_unordered để nhận kết quả ngay khi 1 worker xong
@@ -199,13 +206,20 @@ def main():
                 skipped_cnt += 1
             elif st == 'empty':
                 empty_cnt += 1
+                issues_cache[res['file']] = {
+                    'slug': res.get('slug', ''),
+                    'error': 'Nội dung rỗng',
+                    'timestamp': datetime.now().isoformat()
+                }
+                save_issues_cache()
             elif st == 'error':
                 error_cnt += 1
-                try:
-                    with open(error_log_path, 'a', encoding='utf-8') as ef:
-                        ef.write(f"[{res['file']}] {res.get('error')}\n")
-                except Exception:
-                    pass
+                issues_cache[res['file']] = {
+                    'slug': res.get('slug', ''),
+                    'error': res.get('error', 'Lỗi không xác định'),
+                    'timestamp': datetime.now().isoformat()
+                }
+                save_issues_cache()
 
             # Báo cáo tiến độ thời gian thực mỗi 50 file hoặc ở file cuối cùng
             if i % 50 == 0 or i == len(tasks):

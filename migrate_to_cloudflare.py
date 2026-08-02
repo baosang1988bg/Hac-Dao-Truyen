@@ -541,9 +541,14 @@ def main():
     ap.add_argument('--set-synced', action='store_true', dest='set_synced',
                     help='Đánh dấu toàn bộ local files là đã synced (dùng khi đã sync thủ công trước đó)')
     ap.add_argument('--limit', type=int, help='Giới hạn số file (để test)')
+    ap.add_argument('--novels-dir', help='Thư mục chứa novels (mặc định: novels)')
     ap.add_argument('--synopsis', action='store_true',
                     help='Sync synopsis.md lên R2 + D1 (dùng sau khi chạy epub_to_chapters.py)')
     args = ap.parse_args()
+
+    if args.novels_dir:
+        global NOVELS_DIR
+        NOVELS_DIR = Path(args.novels_dir)
 
     if args.dry_run:
         print("🔍 DRY RUN\n")

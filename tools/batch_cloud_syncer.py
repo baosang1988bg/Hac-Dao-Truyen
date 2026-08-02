@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 def main():
     parser = argparse.ArgumentParser(description="Daemon đồng bộ ngầm Cloudflare D1/R2 song song")
-    parser.add_argument("--dir", default=r"G:\novels", help="Thư mục chứa novels local")
+    parser.add_argument("--dir", default=r"D:\novels", help="Thư mục chứa novels local (mặc định: D:\\novels)")
     parser.add_argument("--delay", type=float, default=2.0, help="Thời gian nghỉ giữa các vòng quét (giây)")
     parser.add_argument("--workers", type=int, default=4, help="Số luồng uploader đồng thời")
     args = parser.parse_args()
@@ -40,7 +40,10 @@ def main():
         sys.exit(1)
 
     state_file = novels_dir / ".cloud_sync_state.json"
+    issues_file = novels_dir / ".sync_issues.json"
+
     synced_slugs = set()
+    sync_issues = {}
 
     if state_file.exists():
         try:
@@ -49,11 +52,17 @@ def main():
         except Exception:
             pass
 
-    print("=" * 70)
-    print(f"☁️  HỆ THỐNG CLOUDFLARE BATCH REAL-TIME SYNCER")
+    if issues_file.exists():
+        try:
+            sync_issues = json.loads(issues_file.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+
+    print("=" * 75)
+    print(f"☁️  HỆ THỐNG CLOUDFLARE REAL-TIME SYNCER (ĐỒNG BỘ SERVER SONG SONG)")
     print(f"📂 Giám sát thư mục local: {novels_dir.resolve()}")
     print(f"✅ Đã đồng bộ trước đó:    {len(synced_slugs):,} bộ truyện")
-    print("=" * 70)
+    print("=" * 75)
 
     python_exe = sys.executable
 
@@ -67,15 +76,19 @@ def main():
         except Exception:
             pass
 
+    def save_issues():
+        try:
+            issues_file.write_text(json.dumps(sync_issues, ensure_ascii=False, indent=2), encoding='utf-8')
+        except Exception:
+            pass
+
     uploaded_session = 0
     start_time = time.time()
 
     while True:
         try:
-            # Lấy tất cả thư mục truyện trong G:\novels
             all_folders = [d for d in novels_dir.iterdir() if d.is_dir() and not d.name.startswith(".")]
 
-            # Lọc các truyện chưa sync nhưng có đủ novel.json và translated/
             pending = []
             for d in all_folders:
                 slug = d.name
@@ -94,31 +107,47 @@ def main():
                 cmd = [
                     python_exe, "-u", "migrate_to_cloudflare.py",
                     "--slug", slug,
-                    "--novel-dir", str(novels_dir / slug)
+                    "--novels-dir", str(novels_dir)
                 ]
                 
                 try:
                     res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
                     if res.returncode == 0:
                         synced_slugs.add(slug)
+                        if slug in sync_issues:
+                            del sync_issues[slug]
+                            save_issues()
                         uploaded_session += 1
                         save_state()
                         
                         elapsed = time.time() - start_time
                         speed = uploaded_session / elapsed if elapsed > 0 else 0
                         sys.stdout.write(
-                            f"\r☁️  [Synced: {len(synced_slugs):,} | Session: +{uploaded_session}] "
+                            f"\r☁️  [Synced Server: {len(synced_slugs):,} | Session: +{uploaded_session}] "
                             f"✅ {slug} (⚡ {speed:.2f} novel/s)"
                         )
                         sys.stdout.flush()
                     else:
-                        sys.stderr.write(f"\n❌ Sync lỗi {slug}: {res.stderr[:200]}\n")
+                        err_text = (res.stderr or res.stdout or 'Lỗi đồng bộ').strip()
+                        sync_issues[slug] = {
+                            'error': err_text[:300],
+                            'timestamp': datetime.now().isoformat()
+                        }
+                        save_issues()
+                        sys.stderr.write(f"\n❌ Sync lỗi [{slug}]: {err_text[:120]}\n")
                 except Exception as e:
-                    sys.stderr.write(f"\n❌ Exception khi sync {slug}: {str(e)}\n")
+                    err_msg = str(e)
+                    sync_issues[slug] = {
+                        'error': err_msg,
+                        'timestamp': datetime.now().isoformat()
+                    }
+                    save_issues()
+                    sys.stderr.write(f"\n❌ Exception khi sync [{slug}]: {err_msg}\n")
 
         except KeyboardInterrupt:
             print("\n🛑 Đã dừng Daemon Cloudflare Syncer.")
             save_state()
+            save_issues()
             break
         except Exception as e:
             time.sleep(args.delay)
