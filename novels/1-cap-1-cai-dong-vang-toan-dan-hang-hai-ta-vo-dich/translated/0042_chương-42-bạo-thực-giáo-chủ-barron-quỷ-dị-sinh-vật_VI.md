@@ -160,8 +160,6 @@ Lâm Trạch trong đầu quanh quẩn mình tiếng lòng, hậu trường than
 
 « hệ thống; Cảnh cáo, ngươi chịu đến bạo thực giáo chủ Barron mê hoặc, nguyên sơ đói khát tinh thần ô nhiễm đang thay đổi ngươi nhận biết, ngươi ý chí chống cự phán định thất bại, lý trí 20! »
 
-« hệ thống; Cảnh cáo, ngươi chịu đến bạo thực giáo chủ Barron mê hoặc, nguyên sơ đói khát tinh thần ô nhiễm đang thay đổi ngươi nhận biết, ngươi ý chí chống cự phán định thất bại, lý trí 20! »
-
 « hệ thống; Cảnh cáo, ngươi chịu đến bạo thực giáo chủ Barron mê hoặc, nguyên sơ đói khát tinh thần ô nhiễm đang thay đổi ngươi nhận biết, ngươi ý chí chống cự phán định thành công! »
 
 Trong nháy mắt, Lâm Trạch lý trí đầu liền rơi mất một phần sáu, so tại hư không chi hải vẫy vùng còn khoa trương!

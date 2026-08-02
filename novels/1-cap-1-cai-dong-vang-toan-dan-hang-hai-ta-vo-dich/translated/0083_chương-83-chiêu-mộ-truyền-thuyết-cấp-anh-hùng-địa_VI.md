@@ -246,8 +246,6 @@ Lâm Trạch nhìn thấy Avna như vậy có lễ phép, trong lòng gọi là 
 
 « thần tuyển tinh linh thiếu nữ Avna »
 
-« đẳng cấp; 20(ấu niên kỳ ) »
-
 « độ trung thành; 70(hữu hảo ) »
 
 « loại hình; Truyền thuyết cấp, tinh linh thế lực anh hùng đơn vị »

@@ -122,8 +122,6 @@ Lâm Trạch hít sâu một hơi bình tĩnh, ánh mắt nhìn về phía màu 
 
 « thu hoạch được; Thủy tinh \*50 »
 
-« thu hoạch được; Hàng hải tệ \*500 »
-
 « thu hoạch được; Tinh lương cấp bản vẽ, cỡ nhỏ kình xạ nỏ máy bản thiết kế \*2! »
 
 . . .

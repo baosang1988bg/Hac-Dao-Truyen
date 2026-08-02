@@ -76,8 +76,6 @@ Lâm Trạch lộ ra nụ cười, tiếp tục xem kế tiếp dòng.
 
 . . .
 
-« keng! Ngươi thành công thăng cấp, thiên phú; 1 cấp 1 cái dòng vàng, tự động rút ra tân dòng vàng. »
-
 « ngài thu hoạch được dòng vàng vì; Cổ mộc che trời (phụ trợ )! »
 
 « vĩnh hằng trưởng thành; Phụ trợ loại dòng, cành lá rậm rạp, cổ mộc che trời, đem nên dòng giao phó người chơi, anh hùng, binh chủng chờ đơn vị, khiến cho mỗi ngày toàn thuộc tính +1, sinh mệnh trị +100, phòng ngự +10.
@@ -125,8 +123,6 @@ Một chiếc có thể hấp thu kinh nghiệm không ngừng trưởng thành 
 Cuối cùng, cái thứ ba dòng vàng.
 
 . . .
-
-« keng! Ngươi thành công thăng cấp, thiên phú; 1 cấp 1 cái dòng vàng, tự động rút ra tân dòng vàng. »
 
 « ngài thu hoạch được dòng vàng vì; Pháp sư khắc tinh (chiến lực )! »
 

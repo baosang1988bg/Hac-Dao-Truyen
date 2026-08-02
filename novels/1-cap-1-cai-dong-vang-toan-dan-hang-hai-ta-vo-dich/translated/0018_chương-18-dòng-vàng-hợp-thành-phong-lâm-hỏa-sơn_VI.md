@@ -12,13 +12,7 @@ Chương 18; Dòng vàng hợp thành, Phong Lâm Hỏa Sơn!
 
 . . .
 
-« keng! Thiên phú; Hảo sự thành đôi phát động, ngài thu hoạch được gấp đôi thuộc tính trưởng thành! »
-
 « keng! Ngài kinh nghiệm trị đã đủ, ngài đẳng cấp đề thăng đến; Cấp 7! »
-
-« ngài thuộc tính thu hoạch được đề thăng; Lực lượng +10, thể chất +10, nhanh nhẹn +40, tinh thần +10! »
-
-« tự do điểm thuộc tính +20, điểm kỹ năng +4 »
 
 . . .
 

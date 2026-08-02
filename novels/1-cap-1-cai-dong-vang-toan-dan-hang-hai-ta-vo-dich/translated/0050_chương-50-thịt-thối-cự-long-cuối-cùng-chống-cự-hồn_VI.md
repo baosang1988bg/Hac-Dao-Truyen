@@ -139,5 +139,3 @@ Lâm Trạch giơ cao kẻ bất tử chi nắm, âm thanh trầm thấp bắt �
 "Kêu rên a! Hồn chi vãn ca!"
 
 Lâm Trạch lần đầu sử dụng cái này sử thi cấp vũ khí, cần cooldown 6 giờ kèm theo kỹ năng!
-
-Nguồn: audio truyện full chấm org

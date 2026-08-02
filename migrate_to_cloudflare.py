@@ -441,6 +441,10 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
 
     ok_n = skip_n = fail_n = 0
 
+    # Nếu sync toàn bộ (không resume, không --from-chapter), tự động xóa chapters cũ trong D1 để né rác filename
+    if from_chapter is None and not resume and not skip_d1:
+        d1_file(f"DELETE FROM chapters WHERE novel_slug={q(slug)};", dry_run)
+
     for i in range(0, total, BATCH_SIZE):
         batch = files[i : i + BATCH_SIZE]
         sql_lines = []

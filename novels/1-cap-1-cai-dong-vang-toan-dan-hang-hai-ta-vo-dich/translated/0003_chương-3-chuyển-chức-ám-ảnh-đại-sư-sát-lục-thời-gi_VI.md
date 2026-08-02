@@ -234,15 +234,11 @@ Lâm Trạch trước mặt tự động xuất hiện ba đầu quái vật b�
 
 « khô lâu pháp sư (Lv5 ) »
 
-« loại hình; Phổ thông cấp, hắc ám sinh vật »
-
 « kỹ năng; Cốt thứ »
 
 . . .
 
 « khô lâu xé rách giả (Lv5 ) »
-
-« loại hình; Phổ thông cấp, hắc ám sinh vật »
 
 « kỹ năng; Tập kích »
 

@@ -115,5 +115,3 @@ Chỉ là tới này cái thế giới quá sớm, còn chưa làm tốt cùng q
 Cho nên cũng không có gì không có ý tứ, đánh không lại chúng ta liền rút lui, ra tay trước dục một đợt lại giết trở lại đến!
 
 Loại này trên chiến trường tới lui tự nhiên năng lực, cũng là hắn dám một mình khiêu chiến Arkham lực lượng!
-
-Nguồn: audio truyện full chấm org

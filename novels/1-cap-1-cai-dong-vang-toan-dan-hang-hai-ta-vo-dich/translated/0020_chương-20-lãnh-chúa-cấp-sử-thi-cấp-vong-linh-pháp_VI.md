@@ -211,5 +211,3 @@ Cái kia rõ ràng là nhuốm máu tóc đen.
 "Câm miệng cho ta đi, tà ác tử linh pháp sư!"
 
 Lâm Trạch đem trong ba lô tất cả sợi tóc màu đen chồng chất sử dụng, toàn bộ đánh tới hướng vong linh pháp sư Rais.
-
-Nguồn: audio truyện full chấm org

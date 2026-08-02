@@ -38,8 +38,6 @@ Thần tốc mị ảnh; Trang bị giả tốc độ đánh đề cao 50% mỗi
 
 Long hồn chi lực; Công kích thì,15% xác suất tạo thành " vỡ nát " hiệu quả, khiến cho cố định lực phòng ngự hạ xuống 100, tiếp tục 15 giây, hiệu quả có thể chồng chất.
 
-Trang bị đẳng cấp; Cấp 20, lực lượng; 2000, thể chất; 1500, thể lực; 300, lý trí; 300. »
-
 . . .
 
 Hộ thủ là tất cả phòng cụ bên trong, kèm theo công kích thuộc tính tối cao bộ kiện.

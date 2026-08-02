@@ -64,10 +64,6 @@ Chỉ dùng mười giây đồng hồ liền có thể cắt sửa xong một c
 
 « hệ thống; Keng! Hắc Thạch Hào lọt vào cấp tám gió lốc tập kích, đang cùng siêu cường gió lốc chống lại, độ bền 1000, ngài kinh nghiệm trị +10000, Hắc Thạch Hào kinh nghiệm +4000! »
 
-« hệ thống; Keng! Hắc Thạch Hào lọt vào cấp tám gió lốc tập kích, đang cùng siêu cường gió lốc chống lại, độ bền 1000, ngài kinh nghiệm trị +10000, Hắc Thạch Hào kinh nghiệm +4000! »
-
-« hệ thống; Keng! Hắc Thạch Hào lọt vào cấp tám gió lốc tập kích, đang cùng siêu cường gió lốc chống lại, độ bền 1000, ngài kinh nghiệm trị +10000, Hắc Thạch Hào kinh nghiệm +4000! »
-
 Tiến vào cấp tám gió lốc phạm vi bao trùm, mỗi vượt qua đi một lần tập kích, đều sẽ đạt được tương đương với bị một đạo thiểm điện bổ trúng ban thưởng.
 
 . . .

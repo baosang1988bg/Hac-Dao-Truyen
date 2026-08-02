@@ -119,5 +119,3 @@ Màu đen vô diện cự nhân hành tẩu tại hư không chi hải, không c
 Hắc Thạch Hào cùng màu đen cự nhân so với đến, tựa như hài tử cùng trong bồn tắm vịt vàng.
 
 Phảng phất đưa tay liền có thể đem Hắc Thạch Hào một phát bắt được, khoảng cách luyện hóa.
-
-Nguồn: audio truyện full chấm org

@@ -149,5 +149,3 @@ Sau đó phát ra một đạo sợ hãi thán phục; "Tự nhiên dung hợp c
 "Tự nhiên dung hợp sau vũ khí, không riêng gì phẩm chất tấn thăng."
 
 "Có đôi khi, thậm chí ngay cả vũ khí thuộc tính đều biết hoàn toàn thay đổi, từ hắc ám hệ biến thành thánh quang hệ, đơn giản quá bất hợp lí!"
-
-Nguồn: audio truyện full chấm org

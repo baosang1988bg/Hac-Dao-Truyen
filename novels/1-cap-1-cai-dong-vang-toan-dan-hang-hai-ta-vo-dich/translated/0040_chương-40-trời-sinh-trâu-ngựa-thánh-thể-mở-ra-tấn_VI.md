@@ -265,5 +265,3 @@ Lâm Trạch hít sâu một hơi, dứt khoát mở ra tấn thăng thí luyệ
 "Không phải mỗi cái thuyền trưởng đều có năng lực chiêu mộ binh chủng, chỉ sợ phần lớn người đều biết chọn một mình chiến dịch."
 
 Lâm Trạch trong lòng hiểu rõ về sau, quả quyết mở ra một mình chiến dịch tấn thăng thí luyện!
-
-Nguồn: audio truyện full chấm org

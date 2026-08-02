@@ -88,8 +88,6 @@ Còn lại kiện vật phẩm cuối cùng, Lâm Trạch tiếp tục xem xét 
 
 « cương thi bệnh biến ước số, nắm giữ số lượng \*2 »
 
-« phẩm chất; Màu lam đạo cụ, vật liệu »
-
 « công dụng; Phụ ma, đem màu đen bột phấn hỗn hợp nước biển ép thành chất lỏng, bôi lên tại vũ khí bên trên tiến hành phụ ma, khiến cho thu hoạch được " thi độc " đặc hiệu, giảm xuống mục tiêu 10% tốc độ đánh tốc độ di chuyển, tạo thành 10 điểm cố định độc tố tổn thương, tiếp tục 10 giây. »
 
 « nói rõ; Ta cây đao này thế nhưng là thoa khắp kịch độc, thử trượt ~ »

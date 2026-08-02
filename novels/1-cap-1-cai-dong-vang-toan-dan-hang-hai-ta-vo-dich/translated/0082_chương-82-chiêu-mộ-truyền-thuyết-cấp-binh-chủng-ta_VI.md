@@ -114,10 +114,6 @@ Lâm Trạch đầu toát ra mấy hắc nhân dấu hỏi, sau đó mở ra b�
 
 « Phỉ Thúy Long »
 
-« đẳng cấp; 10(đẳng cấp hạn mức cao nhất; 99, có thể đột phá ) »
-
-« loại hình; Long tộc đơn vị, ấu long hình thái, truyền thuyết cấp binh chủng »
-
 « kỹ năng; Phỉ thúy hơi thở (truyền thuyết ) tự nhiên chi nộ (truyền thuyết ) tự nhiên chi phong (truyền thuyết ) đại địa rung động (truyền thuyết ) Long tộc truyền thừa (truyền thuyết ) »
 
 « nói rõ; Phỉ Thúy Long lấy khống chế nguyên tố tự nhiên năng lực mà nghe tiếng, có thể triệu hoán bão táp cùng dẫn phát địa chấn, cùng chữa trị minh hữu. »
@@ -125,10 +121,6 @@ Lâm Trạch đầu toát ra mấy hắc nhân dấu hỏi, sau đó mở ra b�
 . . .
 
 « Tiên Nữ Long »
-
-« đẳng cấp; 10(đẳng cấp hạn mức cao nhất; 99, có thể đột phá ) »
-
-« loại hình; Long tộc đơn vị, ấu long hình thái, truyền thuyết cấp binh chủng »
 
 « kỹ năng; Mộng cảnh quấn quanh (truyền thuyết ) chân thật phân thân (truyền thuyết ) tinh thần chi vũ (truyền thuyết ) lưu tinh vẫn lạc (truyền thuyết ) Long tộc truyền thừa (truyền thuyết ) »
 

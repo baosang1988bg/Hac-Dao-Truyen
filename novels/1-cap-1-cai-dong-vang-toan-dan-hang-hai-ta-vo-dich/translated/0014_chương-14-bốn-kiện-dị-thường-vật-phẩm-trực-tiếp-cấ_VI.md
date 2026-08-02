@@ -88,13 +88,9 @@ Cái này mấu chốt nhiệm vụ đạo cụ thuộc tính lập tức biểu
 
 « mặt trời hung châm, nắm giữ số lượng \*2 »
 
-« phẩm chất; Một cấp màu tím dị thường vật phẩm »
-
 « thuộc tính; Mang theo nên dị thường vật phẩm, đem lấy mình làm trung tâm tiếp tục chiếu sáng trong phạm vi mười thước, tiếp tục thiêu đốt cùng tịnh hóa xung quanh tà ác lực lượng, miễn dịch sợ hãi cùng dịch bệnh, đối với xung quanh tạo thành 20 điểm sinh mệnh trị mỗi giây ma pháp tổn thương, là hắc ám sinh vật, quỷ dị chờ bất tử sinh vật khắc tinh, hiệu quả gấp bội! »
 
 « đại giới; Sử dụng nên vật phẩm, ngươi đem thân ở nóng bức nhiệt độ cao bên trong, mỗi phút khấu trừ 10 điểm thể lực, tại chiến đấu bên trong ngươi có lẽ sẽ so địch nhân trước một bước ngã xuống. »
-
-« trang bị yêu cầu; Không có »
 
 « nói rõ; Đeo mặt trời hung châm, ngươi chính là hắc ám bên trong nhất lóng lánh mặt trời nhỏ! »
 

@@ -56,10 +56,6 @@ Một bên khác, bởi vì Lâm Trạch tham dự chiến đấu lại cung c�
 
 « hệ thống; Ngươi kinh nghiệm ao đã đủ, đẳng cấp đề thăng đến; Cấp 27! »
 
-« ngài thuộc tính thu hoạch được đề thăng; Lực lượng + 345, thể chất + 345, nhanh nhẹn + 405, tinh thần + 345 »
-
-« tự do điểm thuộc tính +30, điểm kỹ năng +6 »
-
 . . .
 
 Vượt cấp đánh giết 50 cấp sử thi cấp thủ lĩnh kinh nghiệm ban thưởng mười phần phong phú.

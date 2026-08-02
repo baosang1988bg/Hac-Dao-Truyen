@@ -250,6 +250,59 @@ def _extract_chapter_number_from_title(title: str) -> int | None:
     return None
 
 
+_WATERMARK_PATTERNS = [
+    re.compile(r'^Nguồn\s*:.*', re.IGNORECASE),
+    re.compile(r'^Epub\s+tạo\s+bởi\s*:.*', re.IGNORECASE),
+    re.compile(r'^Tác\s+giả\s*:.*', re.IGNORECASE),
+    re.compile(r'^Thể\s+loại\s*:.*', re.IGNORECASE),
+    re.compile(r'^Trạng\s+thái\s*:.*', re.IGNORECASE),
+    re.compile(r'^Truyện\s+được\s+đăng\s+tại.*', re.IGNORECASE),
+]
+
+
+def _clean_chapter_text(text: str, title: str) -> str:
+    """Loại bỏ watermark rác, dòng thông tin thừa và trùng lặp đoạn văn."""
+    if not text:
+        return ''
+
+    paragraphs = text.split('\n\n')
+    cleaned_paras = []
+    seen_paras = set()
+
+    for p in paragraphs:
+        p_strip = p.strip()
+        if not p_strip:
+            continue
+
+        # Lọc watermark/quảng cáo
+        is_watermark = False
+        for pat in _WATERMARK_PATTERNS:
+            if pat.match(p_strip):
+                is_watermark = True
+                break
+        if is_watermark:
+            continue
+
+        # Khử trùng lặp dòng/đoạn văn lặp lại hoàn toàn
+        # Giữ lại các đoạn ngắn đặc biệt hoặc phân cách ---
+        if p_strip != '---' and len(p_strip) > 15:
+            p_key = p_strip.lower()
+            if p_key in seen_paras:
+                continue
+            seen_paras.add(p_key)
+
+        cleaned_paras.append(p_strip)
+
+    # Loại bỏ dòng tiêu đề lặp lại ở 2 dòng đầu (vd dòng 1: # Chương 1, dòng 2: Chương 1)
+    if len(cleaned_paras) >= 2:
+        h1 = cleaned_paras[0].lstrip('#').strip().lower()
+        h2 = cleaned_paras[1].lstrip('#').strip().lower()
+        if h1 and h2 and (h1 == h2 or h1 in h2 or h2 in h1):
+            cleaned_paras.pop(1)
+
+    return '\n\n'.join(cleaned_paras).strip()
+
+
 def parse_epub(epub_path: str) -> dict:
     """
     Parse EPUB và trả về dict gồm:
@@ -309,6 +362,10 @@ def parse_epub(epub_path: str) -> dict:
         raw_title = toc_title or first_line
         clean_title = _clean_chapter_title(raw_title)
 
+        # Bỏ qua các item chỉ là trang Mục Lục thuần túy trong spine
+        if _looks_like_toc_marker(clean_title):
+            continue
+
         docs.append({
             'title': clean_title,
             'text': text,
@@ -346,12 +403,20 @@ def parse_epub(epub_path: str) -> dict:
         chapter_docs = docs
 
     for d in chapter_docs:
+        # Bỏ qua item là Mục Lục
+        if _looks_like_toc_marker(d['title']):
+            continue
+
+        clean_text = _clean_chapter_text(d['text'], d['title'])
+        if not clean_text:
+            continue
+
         chap_counter += 1
         chap_num = d['chap_num'] or chap_counter
         chapters.append({
             'number': chap_num,
             'title': d['title'] or f'Chương {chap_num}',
-            'content': d['text'],
+            'content': clean_text,
         })
 
     # Sắp xếp theo số chương

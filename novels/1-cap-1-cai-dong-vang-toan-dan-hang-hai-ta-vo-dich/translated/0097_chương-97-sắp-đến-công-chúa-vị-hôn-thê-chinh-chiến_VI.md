@@ -109,5 +109,3 @@ Lúc này đại bộ phận quý tộc nhao nhao lộ ra kinh sợ, mới ý th
 Cách hắn cưới các tộc công chúa, thống ngự vạn tộc, phản công hư không còn rất dài đường muốn đi, hắn đem lấy Rutland quốc làm ván nhảy, bằng nhanh nhất tốc độ chinh chiến toàn bộ thế giới!
 
 (hết trọn bộ! Cảm tạ quan sát )
-
-Epub tạo bởi: audiotruyenfull.org

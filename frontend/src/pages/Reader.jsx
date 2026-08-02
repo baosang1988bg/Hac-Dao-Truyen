@@ -192,8 +192,10 @@ export default function Reader() {
   }
 
   const isNumberParam = /^\d+$/.test(chapter)
+  const targetNum = isNumberParam ? parseInt(chapter) : null
+
   const currentChapterIndex = isNumberParam
-    ? chapters.findIndex(c => getChapNum(c.title) === chapter)
+    ? chapters.findIndex(c => c.chapter_number === targetNum || getChapNum(c.title) === String(targetNum))
     : chapters.findIndex(c => c.filename === chapter)
 
   const isAuthorNote = !isNumberParam && chapters.some(c => c.filename === chapter && !getChapNum(c.title))
@@ -202,8 +204,8 @@ export default function Reader() {
 
   const getChapterUrl = (c) => {
     if (!c) return '#'
-    const num = getChapNum(c.title)
-    return `/novel/${slug}/read/${num ? num : encodeURIComponent(c.filename)}`
+    const num = c.chapter_number || getChapNum(c.title)
+    return `/novel/${slug}/read/${num != null ? num : encodeURIComponent(c.filename)}`
   }
 
   const goNext = useCallback(() => {
@@ -426,9 +428,9 @@ export default function Reader() {
                   }} {...props} />
                 ),
                 p: ({ node, ...props }) => (
-                  <p style={{
+                  <p className="reader-p" style={{
                     marginBottom: '1.6em', textIndent: '1.2em',
-                    textAlign: 'justify'
+                    wordBreak: 'break-word', overflowWrap: 'break-word'
                   }} {...props} />
                 ),
                 hr: ({ node, ...props }) => (
@@ -660,11 +662,12 @@ export default function Reader() {
         }
 
         @media (max-width: 800px) {
-          .reader-container { max-width: 100% !important; padding: 0 1rem !important; }
+          .reader-container { max-width: 100% !important; padding: 0 0.85rem !important; }
         }
         @media (max-width: 600px) {
-          .hide-mobile { display: none; }
-          .reader-content { padding: 1rem 0 3rem !important; }
+          .hide-mobile { display: none !important; }
+          .reader-content { padding: 0.75rem 0 2.5rem !important; }
+          .reader-p { text-align: left !important; text-indent: 0.6em !important; }
         }
       `}</style>
 

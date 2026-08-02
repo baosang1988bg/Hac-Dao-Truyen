@@ -120,17 +120,9 @@ Thăng liền ba cấp!
 
 « keng! Ngươi kinh nghiệm trị đã đủ, ngài đẳng cấp đề thăng đến; Cấp 9! »
 
-« ngài thuộc tính thu hoạch được đề thăng; Lực lượng +30, thể chất +30, nhanh nhẹn +70, tinh thần +10! »
-
-« tự do điểm thuộc tính +20, điểm kỹ năng +4 »
-
 . . .
 
 « keng! Ngươi kinh nghiệm trị đã đủ, ngài đẳng cấp đề thăng đến; Cấp 10! »
-
-« ngài thuộc tính thu hoạch được đề thăng; Lực lượng +30, thể chất +30, nhanh nhẹn +70, tinh thần +10! »
-
-« tự do điểm thuộc tính +20, điểm kỹ năng +4 »
 
 . . .
 

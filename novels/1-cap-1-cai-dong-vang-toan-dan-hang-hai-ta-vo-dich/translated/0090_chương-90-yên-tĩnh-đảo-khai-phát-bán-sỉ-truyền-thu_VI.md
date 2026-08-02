@@ -217,5 +217,3 @@ Bảo thạch thánh điện, cùng loại vô hạn hoàng kim ốc, là sản 
 Lãng quên thần điện là ma pháp liên quan truyền thuyết cấp kiến trúc, cung cấp các loại chiến tranh ma pháp, có điểm giống thâm uyên Hỗn Độn tế đàn, cũng có thể cung cấp ma pháp chuyển chức liên quan nội dung.
 
 Trở lên chính là Lâm Trạch dự định tại yên tĩnh đảo kiến tạo truyền thuyết cấp kiến trúc.
-
-Nguồn: audio truyện full chấm org

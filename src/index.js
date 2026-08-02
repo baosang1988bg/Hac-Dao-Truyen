@@ -497,6 +497,7 @@ async function getChapters(env, slug) {
     SELECT filename, title, chapter_number
     FROM chapters
     WHERE novel_slug = ?
+    GROUP BY chapter_number
     ORDER BY chapter_number ASC
   `).bind(slug).all();
 
@@ -509,12 +510,13 @@ async function getChapterContent(env, slug, identifier) {
 
   let rows = [];
   if (isNumber) {
-    const { results } = await env.DB.prepare(
+    const row = await env.DB.prepare(
       `SELECT filename, r2_key FROM chapters
        WHERE novel_slug = ? AND chapter_number = ?
-       ORDER BY filename ASC`
-    ).bind(slug, parseInt(identifier)).all();
-    rows = results;
+       ORDER BY LENGTH(filename) DESC, id DESC
+       LIMIT 1`
+    ).bind(slug, parseInt(identifier)).first();
+    if (row) rows = [row];
   } else {
     const row = await env.DB.prepare(
       `SELECT filename, r2_key FROM chapters

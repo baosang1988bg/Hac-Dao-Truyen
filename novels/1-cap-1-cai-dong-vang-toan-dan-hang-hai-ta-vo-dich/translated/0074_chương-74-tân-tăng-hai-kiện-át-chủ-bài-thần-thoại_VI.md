@@ -114,15 +114,11 @@ Thâm uyên tử thần chi nhãn!
 
 « thâm uyên tử thần chi nhãn »
 
-« phẩm chất; Thần thoại cấp dị thường vật phẩm (bị mục nát ) »
-
 « thuộc tính; Tử thần chi nhãn, có thể đem địch nhân linh hồn kéo vào vực sâu không đáy, bổ sung thần thoại cấp ma pháp " tử thần nhìn chăm chú " đem mục tiêu xếp vào tử thần sổ đen, trong lúc đó mục tiêu chịu đến tất cả tổn thương gia tăng 500% chịu đến hiệu quả trị liệu giảm ít 80% lại mục tiêu vô pháp thông qua bất kỳ thủ đoạn nào phục sinh.
 
 Mỗi lần sử dụng tiêu hao 100 lý trí, dị thường vật phẩm tiến vào 30 phút đồng hồ cooldown, nên vật phẩm đối với thần thoại cấp cùng trở lên đơn vị hiệu quả giảm phân nửa! »
 
 « đại giới; Nên vật phẩm vô pháp đối với truyền thuyết cấp phía dưới đơn vị sử dụng, tử thần chi nhãn không giết hạng người vô danh, trên thân có treo " tử thần nhìn chăm chú " đơn vị tử vong, linh hồn đều đem thuộc về tử thần! »
-
-« trang bị yêu cầu; Cấp 20, tinh thần; 1500, lý trí; 300, thể lực; 300 »
 
 « nói rõ; Thâm uyên tử thần chi nhãn lại xưng tử thần mắt phải, tử thần sẽ đem mình mắt phải giữ lại, đưa cho cường đại nhất địa ngục cầm hình quan, để bọn hắn làm thay thu thập cường giả linh hồn tiến hành hưởng dụng. »
 

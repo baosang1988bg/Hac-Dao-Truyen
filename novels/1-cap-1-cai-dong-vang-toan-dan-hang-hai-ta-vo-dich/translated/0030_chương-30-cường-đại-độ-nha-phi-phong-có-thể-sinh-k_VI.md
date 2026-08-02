@@ -66,8 +66,6 @@ Kiện thứ hai chiến lợi phẩm.
 
 « đặc hiệu; Độ Nha triệu hoán, triệu hoán ba cái cấp 10 tinh anh nguyên tố sinh vật, ma pháp Độ Nha đối với một tên địch nhân phát động công kích, ma pháp Độ Nha tiếp tục tồn tại 3 phút chuông lại sẽ hiệp đồng chiến đấu, đặc hiệu cooldown 1 giờ. »
 
-« trang bị yêu cầu; Đẳng cấp 10, chức nghiệp; Không có yêu cầu »
-
 « nói rõ; Không ai có thể cự tuyệt một kiện không có đại giới ma pháp phi phong. »
 
 . . .
@@ -195,5 +193,3 @@ Chết còn muốn tiếp tục nô dịch ngươi!
 "Cái này kêu là lấy ác chế ác, ở dưới tay ta hảo hảo hối cải, trừng ác dương thiện a."
 
 Lâm Trạch vui vẻ nhận lấy phần này linh hồn, tựa như nhận lấy một kiện công đức.
-
-Nguồn: audio truyện full chấm org

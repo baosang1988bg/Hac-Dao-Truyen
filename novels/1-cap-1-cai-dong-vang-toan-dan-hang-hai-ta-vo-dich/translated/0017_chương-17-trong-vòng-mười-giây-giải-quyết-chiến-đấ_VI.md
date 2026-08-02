@@ -134,8 +134,6 @@ Cùng lúc đó, mặt trời hung châm tịnh hóa chi quang, cùng Liệt Dư
 
 Cương thi thủ lĩnh bị dao găm xé rách da chảy ra tanh hôi thi dịch, rơi vào mộc sàn nhà tư tư rung động, bốn vị cạo gió sư phó đao đao thấy máu!
 
-Tạch tạch tạch két!
-
 Lại là liên tiếp tổn thương bay lên, cơ hồ là trong nháy mắt lấp đầy tầm mắt.
 
 Ngắn ngủi hai giây, chỉ làm thành hơn trăm lần tổn thương!

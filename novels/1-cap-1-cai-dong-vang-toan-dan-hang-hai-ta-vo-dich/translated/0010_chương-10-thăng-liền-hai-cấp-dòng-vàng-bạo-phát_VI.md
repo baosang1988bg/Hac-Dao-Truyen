@@ -92,13 +92,7 @@ Liên tục vượt cấp đánh giết năm đầu tinh anh quái mang đến p
 
 . . .
 
-« keng! Thiên phú; Hảo sự thành đôi phát động, ngài thu hoạch được gấp đôi thuộc tính trưởng thành! »
-
 « keng! Ngươi kinh nghiệm trị đã đủ, ngài đẳng cấp đề thăng đến; Cấp 5 (30/ 2000 )! »
-
-« ngài thuộc tính thu hoạch được đề thăng; Lực lượng +10, thể chất +10, nhanh nhẹn +40, tinh thần +10! »
-
-« tự do điểm thuộc tính +20, điểm kỹ năng +4 »
 
 . . .
 
@@ -178,12 +172,8 @@ Lâm Trạch không hài lòng lắm thở dài, hắn càng ưa thích trực t
 
 Tiếp theo, hắn ánh mắt nhìn về phía thăng cấp xoát đi ra cái thứ hai dòng vàng.
 
-« keng! Ngươi thành công thăng cấp, thiên phú; 1 cấp 1 cái dòng vàng, tự động rút ra tân dòng vàng. »
-
 « ngài thu hoạch được dòng vàng vì; Địa ngục phán quan (chiến lực )! »
 
 « địa ngục phán quan; Chiến lực loại dòng vàng, ngươi tạo thành bất cứ thương tổn gì sẽ cho mục tiêu thực hiện " phán quyết " đánh dấu, bị truyền đạt phán quyết mục tiêu, hiệu quả trị liệu 50% tiếp nhận tổn thương +50% lượng máu về 0 sau vô pháp thông qua bất kỳ thủ đoạn nào phục sinh, đánh dấu tiếp tục bảy ngày. »
 
 . . .
-
-Nguồn: audio truyện full chấm org

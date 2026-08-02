@@ -156,12 +156,6 @@ Lâm Trạch mang theo hai đầu cao cấp binh chủng đơn vị, phi thườ
 
 « hệ thống; Ngươi kinh nghiệm ao đã đủ, đẳng cấp đề thăng đến; Cấp 29! »
 
-« keng! Thiên phú; Chuyện tốt thành 3 phát động, ngài thu hoạch được gấp ba thuộc tính trưởng thành! »
-
-« ngài thuộc tính thu hoạch được đề thăng; Lực lượng + 345, thể chất + 345, nhanh nhẹn + 405, tinh thần + 345 »
-
-« tự do điểm thuộc tính +30, điểm kỹ năng +6 »
-
 . . .
 
 Chiến đấu trong lúc đó, Lâm Trạch đồng dạng không nhìn hậu trường tin tức, chờ sau khi kết thúc lại thống nhất xem xét.

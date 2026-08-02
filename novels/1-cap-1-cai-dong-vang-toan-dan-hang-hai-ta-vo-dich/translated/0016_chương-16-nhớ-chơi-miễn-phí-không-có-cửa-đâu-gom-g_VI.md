@@ -138,21 +138,13 @@ Như cũ, nhìn thấy liền giây, kinh nghiệm cùng trang bị song thu!
 
 « bạch cốt chi khôi, nắm giữ số lượng; 2 »
 
-« phẩm chất; Màu trắng phòng cụ »
-
 « hiệu quả; Sinh mệnh +100, phòng ngự +1 »
-
-« trang bị yêu cầu; Cấp 2 »
 
 . . .
 
 « bạch cốt chi ngoa, nắm giữ số lượng; 2 »
 
-« phẩm chất; Màu trắng phòng cụ »
-
 « hiệu quả; Sinh mệnh +50, tốc độ di chuyển +1% »
-
-« trang bị yêu cầu; Cấp 2 »
 
 . . .
 

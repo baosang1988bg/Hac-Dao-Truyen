@@ -253,5 +253,3 @@ Lâm Trạch dở khóc dở cười, bên tai bỗng nhiên vang lên thanh âm
 « 1 cấp 1 cái dòng vàng; Ngươi mỗi cấp đều biết tự động thu hoạch được một cái dòng vàng, dòng có thể giao phó thế gian vạn vật, nếu là vật sống được trao cho nên dòng, mục tiêu đem vĩnh viễn không bao giờ phản bội, đến chết cũng không đổi. »
 
 Lâm Trạch biểu lộ sững sờ nửa ngày, mới phát ra một tiếng kinh hô; "Ta siêu, có treo!"
-
-Nguồn: audio truyện full chấm org
