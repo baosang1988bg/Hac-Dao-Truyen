@@ -280,6 +280,8 @@ export default function EpubCatalogPage() {
 // ── EpubCard ─────────────────────────────────────────────────────────────────
 
 function EpubCard({ novel }) {
+  const hasChapters = (novel.chapter_count > 0 || novel.total_chapters > 0);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', borderRadius: '14px', overflow: 'hidden', background: 'var(--glass-bg)', border: '1px solid var(--border)', transition: 'transform 0.18s, box-shadow 0.18s' }}
       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.25)' }}
@@ -288,7 +290,11 @@ function EpubCard({ novel }) {
       {/* Cover */}
       <Link to={`/novel/${novel.slug}`} style={{ position: 'relative', display: 'block', aspectRatio: '2/3', overflow: 'hidden' }}>
         <NovelCover novel={novel} size="lg" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        {(novel.has_epub || (novel.chapter_count > 0)) ? (
+        {hasChapters ? (
+          <span style={{ position: 'absolute', top: '8px', left: '8px', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', fontSize: '0.65rem', fontWeight: 700, padding: '3px 7px', borderRadius: '6px', letterSpacing: '0.05em' }}>
+            TRỰC TIẾP
+          </span>
+        ) : novel.has_epub ? (
           <span style={{ position: 'absolute', top: '8px', left: '8px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontSize: '0.65rem', fontWeight: 700, padding: '3px 7px', borderRadius: '6px', letterSpacing: '0.05em' }}>
             EPUB
           </span>
@@ -333,7 +339,21 @@ function EpubCard({ novel }) {
 
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: '6px', marginTop: 'auto' }}>
-          {(novel.has_epub || (novel.chapter_count > 0)) ? (
+          {hasChapters ? (
+            <Link
+              to={`/novel/${novel.slug}`}
+              style={{
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                padding: '7px 4px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                color: '#fff', borderRadius: '8px', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 600,
+                transition: 'opacity 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >
+              <BookOpen size={13} /> Đọc truyện
+            </Link>
+          ) : (
             <Link
               to={`/novel/${novel.slug}/epub-reader`}
               style={{
@@ -346,17 +366,6 @@ function EpubCard({ novel }) {
               onMouseLeave={e => e.currentTarget.style.opacity = '1'}
             >
               <BookMarked size={13} /> Đọc EPUB
-            </Link>
-          ) : (
-            <Link
-              to={`/novel/${novel.slug}`}
-              style={{
-                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                padding: '7px 4px', background: 'var(--glass-bg)', border: '1px solid var(--border)',
-                color: 'var(--text-muted)', borderRadius: '8px', textDecoration: 'none', fontSize: '0.78rem',
-              }}
-            >
-              <BookOpen size={13} /> Đọc chương
             </Link>
           )}
         </div>
