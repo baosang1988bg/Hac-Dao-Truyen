@@ -2,11 +2,11 @@
 """
 tools/batch_cloud_syncer.py
 
-Hệ thống đồng bộ Cloudflare D1/R2 Tốc Độ Cao Đa Luồng (16 Parallel Workers):
-- Khởi chạy 16 luồng song song đẩy trực tiếp lên Cloudflare Worker High-Speed API
-- Xử lý mượt mà ~10-15 truyện / giây
-- Tự động lưu vết trạng thái vào D:\novels\.cloud_sync_state.json
-- Tự động cache tất cả các lỗi nếu có vào D:\novels\.sync_issues.json
+Hệ thống đồng bộ Cloudflare D1/R2 Tốc Độ Cao (6 Parallel Workers, 30 chapters/chunk):
+- Tối ưu hóa chuẩn Cloudflare Free Tier (dưới 50 subrequests & 10ms CPU/request)
+- Tránh hoàn toàn lỗi HTTP 503 Error Code 1102 (Worker CPU Time Exceeded)
+- Tự động retry khi gặp lỗi tạm thời
+- Lưu vết vào D:\novels\.cloud_sync_state.json và .sync_issues.json
 """
 
 import sys
@@ -30,8 +30,45 @@ WORKER_SYNC_URL = "https://hac-dao-truyen.nguyenbaosang1998.workers.dev/api/admi
 SYNC_KEY = "hacdao-secret-2026"
 
 
+def send_chunk_with_retry(payload: dict, max_retries: int = 3) -> dict:
+    """Gửi 1 chunk (30 chương) tới Cloudflare API với cơ chế retry khi bị 503/429/1102."""
+    body_bytes = json.dumps(payload).encode('utf-8')
+    
+    for attempt in range(1, max_retries + 1):
+        req = urllib.request.Request(
+            WORKER_SYNC_URL,
+            data=body_bytes,
+            headers={
+                'x-sync-key': SYNC_KEY,
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) HacDaoBatchSyncer/4.0'
+            }
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=30) as res:
+                res_body = res.read().decode('utf-8')
+                res_json = json.loads(res_body)
+                if res_json.get('success'):
+                    return {'success': True}
+                else:
+                    return {'success': False, 'error': res_json.get('error', 'API error')}
+        except urllib.error.HTTPError as e:
+            err_text = e.read().decode('utf-8', errors='replace')
+            if e.code in (503, 429, 502, 504) and attempt < max_retries:
+                time.sleep(1.2 * attempt)  # Backoff
+                continue
+            return {'success': False, 'error': f"HTTP {e.code}: {err_text[:120]}"}
+        except Exception as e:
+            if attempt < max_retries:
+                time.sleep(1.0 * attempt)
+                continue
+            return {'success': False, 'error': str(e)}
+            
+    return {'success': False, 'error': 'Max retries exceeded'}
+
+
 def sync_single_novel(novel_dir: Path) -> dict:
-    """Hàm đồng bộ 1 novel qua High-Speed API (được gọi bởi ThreadPoolWorker)."""
+    """Đồng bộ 1 novel với chunk size 30 chương để tương thích hoàn toàn giới hạn Cloudflare."""
     slug = novel_dir.name
     novel_json = novel_dir / "novel.json"
     trans_dir = novel_dir / "translated"
@@ -58,7 +95,8 @@ def sync_single_novel(novel_dir: Path) -> dict:
         if not all_chapters:
             return {'slug': slug, 'success': False, 'error': 'Thư mục translated/ trống'}
 
-        CHUNK_SIZE = 250
+        # CHUNK_SIZE = 30 để số subrequest R2 trong 1 request luôn < 50 và CPU time < 10ms
+        CHUNK_SIZE = 30
         total_chapters = len(all_chapters)
         chunks = [all_chapters[i:i + CHUNK_SIZE] for i in range(0, total_chapters, CHUNK_SIZE)]
 
@@ -75,36 +113,20 @@ def sync_single_novel(novel_dir: Path) -> dict:
                 'total_chapter_count': total_chapters
             }
 
-            req = urllib.request.Request(
-                WORKER_SYNC_URL,
-                data=json.dumps(payload).encode('utf-8'),
-                headers={
-                    'x-sync-key': SYNC_KEY,
-                    'Content-Type': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) HacDaoMultiWorkerSyncer/3.0'
-                }
-            )
-
-            with urllib.request.urlopen(req, timeout=60) as res:
-                res_body = res.read().decode('utf-8')
-                res_json = json.loads(res_body)
-                if not res_json.get('success'):
-                    err_msg = res_json.get('error', 'API error')
-                    return {'slug': slug, 'success': False, 'error': f"Chunk {idx+1}/{len(chunks)} lỗi: {err_msg}"}
+            res = send_chunk_with_retry(payload)
+            if not res['success']:
+                return {'slug': slug, 'success': False, 'error': f"Chunk {idx+1}/{len(chunks)} lỗi: {res['error']}"}
 
         return {'slug': slug, 'success': True, 'chapters': total_chapters}
 
-    except urllib.error.HTTPError as e:
-        body = e.read().decode('utf-8', errors='replace')
-        return {'slug': slug, 'success': False, 'error': f"HTTP {e.code}: {body[:150]}"}
     except Exception as e:
         return {'slug': slug, 'success': False, 'error': str(e)}
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Hệ thống đồng bộ Cloudflare D1/R2 Đa Luồng Song Song (16 Workers)")
+    parser = argparse.ArgumentParser(description="Daemon Cloudflare Syncer tối ưu hóa (6 Workers, 30 chaps/chunk)")
     parser.add_argument("--dir", default=r"D:\novels", help="Thư mục chứa novels local (mặc định: D:\\novels)")
-    parser.add_argument("--workers", type=int, default=16, help="Số luồng đồng bộ song song (mặc định: 16)")
+    parser.add_argument("--workers", type=int, default=6, help="Số luồng đồng bộ song song (mặc định: 6)")
     parser.add_argument("--delay", type=float, default=1.0, help="Thời gian nghỉ giữa các đợt quét (giây)")
     args = parser.parse_args()
 
@@ -133,7 +155,7 @@ def main():
             pass
 
     print("=" * 80)
-    print(f"🚀 HỆ THỐNG CLOUDFLARE MULTI-WORKER REAL-TIME SYNCER")
+    print(f"🚀 HỆ THỐNG CLOUDFLARE SYNCER (TỐI ƯU 6 WORKERS - 30 CHAPS/CHUNK)")
     print(f"📂 Thư mục local:       {novels_dir.resolve()}")
     print(f"⚡ Số luồng uploader:    {args.workers} workers song song")
     print(f"✅ Đã đồng bộ trước đó:  {len(synced_slugs):,} bộ truyện")
@@ -176,8 +198,8 @@ def main():
                 time.sleep(args.delay)
                 continue
 
-            # Lấy 64 folder cho mỗi đợt xử lý
-            batch_folders = pending_folders[:64]
+            # Lấy 32 folder cho mỗi đợt xử lý
+            batch_folders = pending_folders[:32]
 
             with ThreadPoolExecutor(max_workers=args.workers) as executor:
                 futures = {executor.submit(sync_single_novel, folder): folder.name for folder in batch_folders}
