@@ -274,10 +274,9 @@ async function getNovels(env, params = new URLSearchParams()) {
              n.updated_at, n.views, n.has_epub, n.drive_file_id,
              CASE WHEN n.rating_count > 0 THEN ROUND(CAST(n.rating_sum AS REAL) / n.rating_count, 1) ELSE 0.0 END AS rating,
              n.rating_count,
-             (SELECT COUNT(*) FROM chapters c WHERE c.novel_slug = n.slug) AS chapter_count,
-             (SELECT c.title FROM chapters c WHERE c.novel_slug = n.slug
-               ORDER BY c.chapter_number DESC LIMIT 1) AS latest_chapter_title,
-             (SELECT MAX(c.created_at) FROM chapters c WHERE c.novel_slug = n.slug) AS last_created_at,
+             COALESCE(n.total_chapters, 0) AS chapter_count,
+             '' AS latest_chapter_title,
+             n.updated_at AS last_created_at,
              n.glossary_count
       FROM novels n
       WHERE ${whereStr}
@@ -380,20 +379,24 @@ async function getNovel(env, slug, request) {
 
   if (!novel) return jsonResponse({ error: 'Novel not found' }, 404);
 
-  // Thống kê từ bảng chapters — cùng ngữ nghĩa _translated_stats() của FastAPI
-  const stats = await env.DB.prepare(`
-    SELECT COUNT(*) AS chapter_count,
-           MAX(created_at) AS last_created_at,
-           (SELECT title FROM chapters WHERE novel_slug = ?1
-             ORDER BY chapter_number DESC LIMIT 1) AS latest_chapter_title
-    FROM chapters WHERE novel_slug = ?1
-  `).bind(slug).first();
+  let chapter_count = novel.total_chapters || 0;
+  let latest_chapter_title = null;
+  try {
+    const catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
+    if (catObj) {
+      const catalog = await catObj.json();
+      chapter_count = catalog.length;
+      if (catalog.length > 0) {
+        latest_chapter_title = catalog[catalog.length - 1].title || null;
+      }
+    }
+  } catch {}
 
   const common = {
-    chapter_count: stats?.chapter_count || 0,
-    latest_chapter_title: stats?.latest_chapter_title || null,
-    last_translated_at: stats?.last_created_at
-      ? Math.floor(Date.parse(stats.last_created_at.replace(' ', 'T') + 'Z') / 1000)
+    chapter_count,
+    latest_chapter_title,
+    last_translated_at: novel.updated_at
+      ? Math.floor(Date.parse(novel.updated_at.replace(' ', 'T') + 'Z') / 1000)
       : null,
     glossary_count: novel.glossary_count || 0,
   };
