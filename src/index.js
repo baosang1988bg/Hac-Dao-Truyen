@@ -41,6 +41,11 @@ async function handleApi(request, url, env) {
   const path = url.pathname;
   const method = request.method;
 
+  // POST /api/admin/sync-novel — high-speed batch sync endpoint
+  if (path === '/api/admin/sync-novel' && method === 'POST') {
+    return syncNovelBatch(env, request);
+  }
+
   // GET /api/proxy-cover?url=...
   if (path === '/api/proxy-cover' && method === 'GET') {
     return proxyCover(url);
@@ -124,11 +129,9 @@ async function handleApi(request, url, env) {
     return updateGlossary(env, glossaryMatch[1], request);
   }
 
+
+
   // GET /api/novels/:slug/health
-  const healthMatch = path.match(/^\/api\/novels\/([^/]+)\/health$/);
-  if (healthMatch && method === 'GET') {
-    return getHealth(env, healthMatch[1]);
-  }
 
   // ── User account routes (roadmap 3.1–3.4) ───────────────────────────
   // Đặt TRƯỚC block proxy. Lưu ý: /api/user/* vốn không match proxy
@@ -199,7 +202,7 @@ async function handleApi(request, url, env) {
     return proxyToBackend(request, url, env);
   }
 
-  return jsonResponse({ error: 'Not found' }, 404);
+  return jsonResponse({ error: 'Not found', received_path: path, received_method: method }, 404);
 }
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
@@ -582,6 +585,63 @@ async function getHealth(env, slug) {
     },
     issues: [],
   });
+}
+
+async function syncNovelBatch(env, request) {
+  try {
+    const authHeader = request.headers.get('x-sync-key');
+    if (authHeader !== 'hacdao-secret-2026') {
+      return jsonResponse({ error: 'Unauthorized sync key' }, 401);
+    }
+
+    const data = await request.json();
+    const { slug, title, original_title, author, genre, synopsis, chapters, is_first_chunk = true, total_chapter_count } = data;
+
+    if (!slug || !chapters) {
+      return jsonResponse({ error: 'Missing slug or chapters' }, 400);
+    }
+
+    const totalCount = total_chapter_count || chapters.length;
+
+    if (is_first_chunk) {
+      const preview = (synopsis || '').slice(0, 2000).replace(/'/g, "''");
+      await env.DB.prepare(`
+        INSERT INTO novels (slug, title, original_title, author, genre, source_url, last_translated_url, last_chapter_number, total_chapters, glossary, glossary_count, translation_style, notes, updated_at, synopsis)
+        VALUES (?, ?, ?, ?, ?, '', '', ?, ?, '{}', 0, 'văn học', '', ?, ?)
+        ON CONFLICT(slug) DO UPDATE SET
+          title=excluded.title, last_chapter_number=excluded.last_chapter_number, total_chapters=excluded.total_chapters, updated_at=excluded.updated_at, synopsis=excluded.synopsis
+      `).bind(
+        slug, title || slug, original_title || '', author || 'Unknown', genre || 'Khác',
+        totalCount, totalCount, new Date().toISOString(), preview
+      ).run();
+
+      if (synopsis) {
+        await env.CHAPTERS.put(`${slug}/synopsis.md`, synopsis);
+      }
+
+      await env.DB.prepare(`DELETE FROM chapters WHERE novel_slug = ?`).bind(slug).run();
+    }
+
+    const r2Puts = chapters.map(c => {
+      const encoded = btoa(unescape(encodeURIComponent(c.filename))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      const r2_key = `${slug}/b64_${encoded}`;
+      const body = c.content.startsWith('#') ? c.content : `# ${c.title}\n\n${c.content}`;
+      return env.CHAPTERS.put(r2_key, body).then(() => ({ c, r2_key }));
+    });
+
+    const uploaded = await Promise.all(r2Puts);
+
+    const stmt = env.DB.prepare(`INSERT OR REPLACE INTO chapters (novel_slug, filename, r2_key, title, chapter_number) VALUES (?, ?, ?, ?, ?)`);
+    const batchStatements = uploaded.map(({ c, r2_key }) => stmt.bind(slug, c.filename, r2_key, c.title, c.number));
+
+    for (let i = 0; i < batchStatements.length; i += 50) {
+      await env.DB.batch(batchStatements.slice(i, i + 50));
+    }
+
+    return jsonResponse({ success: true, slug, chapters_synced: chapters.length });
+  } catch (err) {
+    return jsonResponse({ error: err.message, stack: err.stack }, 500);
+  }
 }
 
 // ── User account system (roadmap 3.1–3.4) ────────────────────────────────────
