@@ -32,6 +32,13 @@ from datetime import datetime
 import socket
 socket.setdefaulttimeout(60)
 
+if sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 try:
     from googleapiclient.discovery import build
     from googleapiclient.http import MediaFileUpload
@@ -210,10 +217,13 @@ def upload_novel(credentials_file, token_file, slug, epub_dir, root_folder_id, s
     epubs_dir  = epub_dir / "epubs"
     covers_dir = epub_dir / "covers"
     meta_dir   = epub_dir / "meta"
-    epub_path  = epubs_dir / f"{slug}.epub"
+    
+    novel_subfolder = epub_dir / slug
+    epub_path  = novel_subfolder / "book.epub" if (novel_subfolder / "book.epub").exists() else epubs_dir / f"{slug}.epub"
+    novel_json_path = novel_subfolder / "novel.json"
 
-    if not epub_path.exists():
-        return "skip"  # Chưa có EPUB local
+    if not epub_path.exists() and not novel_json_path.exists():
+        return "skip"  # Chưa có data local
 
     try:
         service = get_thread_service(credentials_file, token_file)
@@ -222,20 +232,29 @@ def upload_novel(credentials_file, token_file, slug, epub_dir, root_folder_id, s
 
         uploaded_files = {}
 
-        # Upload EPUB
-        fid, status = upload_file(service, epub_path, novel_folder_id)
-        uploaded_files["epub"] = {"id": fid, "status": status}
+        # Upload EPUB (nếu có)
+        if epub_path.exists():
+            fid, status = upload_file(service, epub_path, novel_folder_id)
+            uploaded_files["epub"] = {"id": fid, "status": status}
 
         # Upload cover (nếu có)
+        cover_found = None
         for ext in [".jpg", ".jpeg", ".png", ".webp"]:
-            cov = covers_dir / f"{slug}{ext}"
+            cov = novel_subfolder / f"cover{ext}" if novel_subfolder.exists() else covers_dir / f"{slug}{ext}"
             if cov.exists():
-                fid2, st2 = upload_file(service, cov, novel_folder_id)
-                uploaded_files["cover"] = {"id": fid2, "status": st2}
+                cover_found = cov
+                break
+            cov2 = covers_dir / f"{slug}{ext}"
+            if cov2.exists():
+                cover_found = cov2
                 break
 
+        if cover_found:
+            fid2, st2 = upload_file(service, cover_found, novel_folder_id)
+            uploaded_files["cover"] = {"id": fid2, "status": st2}
+
         # Upload metadata JSON
-        meta_path = meta_dir / f"{slug}.json"
+        meta_path = novel_subfolder / "novel.json" if (novel_subfolder / "novel.json").exists() else meta_dir / f"{slug}.json"
         if meta_path.exists():
             fid3, st3 = upload_file(service, meta_path, novel_folder_id)
             uploaded_files["meta"] = {"id": fid3, "status": st3}
@@ -312,9 +331,12 @@ def main():
                     pass
         slugs = [s for s in slugs if s]
     else:
-        # Fallback: dùng files có trong epubs/
+        # Fallback: Quét các thư mục novel trong D:\novels hoặc epubs/
         epubs_dir = epub_dir / "epubs"
-        slugs = [p.stem for p in epubs_dir.glob("*.epub")] if epubs_dir.exists() else []
+        if epubs_dir.exists():
+            slugs = [p.stem for p in epubs_dir.glob("*.epub")]
+        else:
+            slugs = [d.name for d in epub_dir.iterdir() if d.is_dir() and not d.name.startswith(".")]
 
     print(f"\n[scan] Tổng catalog: {len(slugs):,} slug")
 
@@ -329,10 +351,10 @@ def main():
         work  = [s for s in slugs if s not in done]
         print(f"[filter] Resume: Bỏ qua {len(done):,} đã upload trên Drive, còn lại {len(work):,} cần kiểm tra/upload")
 
-    # Chỉ tải những slug đã có EPUB local
+    # Chỉ tải những slug đã có EPUB hoặc data local
     epubs_dir = epub_dir / "epubs"
-    work = [s for s in work if (epubs_dir / f"{s}.epub").exists()]
-    print(f"[scan] Có EPUB local: {len(work):,}")
+    work = [s for s in work if (epubs_dir / f"{s}.epub").exists() or (epub_dir / s / "book.epub").exists() or (epub_dir / s / "novel.json").exists()]
+    print(f"[scan] Có data local: {len(work):,}")
 
     if args.limit > 0:
         work = work[:args.limit]
