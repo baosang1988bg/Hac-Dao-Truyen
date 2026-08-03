@@ -469,33 +469,17 @@ async function getEpub(env, slug) {
     },
   });
 }
-
-/**
- * GET /api/novels/:slug/synopsis
- * Trả về full synopsis text. Ưu tiên D1, fallback R2 key <slug>/synopsis.md
- */
-async function getSynopsis(env, slug) {
-  // 1. Thử lấy từ D1 (synopsis đã được index khi migrate)
-  const row = await env.DB.prepare(`SELECT synopsis FROM novels WHERE slug = ?`).bind(slug).first();
-  if (row && row.synopsis && row.synopsis.trim()) {
-    return jsonResponse({ slug, synopsis: row.synopsis, source: 'd1' });
-  }
-
-  // 2. Fallback: đọc từ R2 key <slug>/synopsis.md
-  const obj = await env.CHAPTERS.get(`${slug}/synopsis.md`);
-  if (obj) {
-    const text = await obj.text();
-    // Ghi ngược lại D1 để cache cho lần sau (fire-and-forget)
-    if (text.trim()) {
-      env.DB.prepare(`UPDATE novels SET synopsis = ? WHERE slug = ?`).bind(text.slice(0, 2000), slug).run().catch(() => {});
-    }
-    return jsonResponse({ slug, synopsis: text, source: 'r2' });
-  }
-
-  return jsonResponse({ slug, synopsis: '', source: 'none' });
-}
-
 async function getChapters(env, slug) {
+  // 1. Ưu tiên đọc catalog.json từ R2 (Store không giới hạn dung lượng)
+  try {
+    const catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
+    if (catObj) {
+      const catalog = await catObj.json();
+      return jsonResponse(catalog);
+    }
+  } catch { /* fallback */ }
+
+  // 2. Fallback: đọc từ D1 chapters nếu R2 catalog chưa có
   const { results } = await env.DB.prepare(`
     SELECT filename, title, chapter_number
     FROM chapters
@@ -508,9 +492,36 @@ async function getChapters(env, slug) {
 }
 
 async function getChapterContent(env, slug, identifier) {
-  // identifier có thể là filename (từ frontend) hoặc số chương
   const isNumber = /^\d+$/.test(identifier);
 
+  let targetFilename = identifier;
+
+  // Nếu identifier là số chương (ví dụ "1"): Đọc catalog.json từ R2 để tìm filename tương ứng
+  if (isNumber) {
+    const num = parseInt(identifier);
+    try {
+      const catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
+      if (catObj) {
+        const catalog = await catObj.json();
+        const ch = catalog.find(c => (c.chapter_number === num || c.number === num));
+        if (ch && ch.filename) {
+          targetFilename = ch.filename;
+        }
+      }
+    } catch { /* fallback */ }
+  }
+
+  // Lấy content trực tiếp từ R2 theo key `b64_${encoded}`
+  const encoded = btoa(unescape(encodeURIComponent(targetFilename))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const r2Key = `${slug}/b64_${encoded}`;
+
+  const obj = await env.CHAPTERS.get(r2Key);
+  if (obj) {
+    const text = await obj.text();
+    return jsonResponse({ content: text });
+  }
+
+  // Fallback: tra cứu từ D1 nếu R2 key theo mã b64 không khớp
   let rows = [];
   if (isNumber) {
     const row = await env.DB.prepare(
@@ -528,29 +539,15 @@ async function getChapterContent(env, slug, identifier) {
     if (row) rows = [row];
   }
 
-  if (rows.length === 0) {
-    return jsonResponse({ error: 'Chapter not found in database', identifier, slug }, 404);
-  }
-
-  // Lấy content từ R2 — r2_key đã được lưu đúng từ migration script
-  let fullContent = '';
-  for (const row of rows) {
-    const obj = await env.CHAPTERS.get(row.r2_key);
-    if (obj) {
-      const text = await obj.text();
-      fullContent += (fullContent ? '\n\n' : '') + text;
-    } else {
-      // Debug: trả về thông tin để trace lỗi
-      return jsonResponse({
-        error: 'Content not found in R2',
-        r2_key: row.r2_key,
-        filename: row.filename,
-      }, 404);
+  if (rows.length > 0) {
+    const d1Obj = await env.CHAPTERS.get(rows[0].r2_key);
+    if (d1Obj) {
+      const text = await d1Obj.text();
+      return jsonResponse({ content: text });
     }
   }
 
-  if (!fullContent) return jsonResponse({ error: 'Empty content' }, 404);
-  return jsonResponse({ content: fullContent });
+  return jsonResponse({ error: 'Chapter content not found in R2', identifier, slug }, 404);
 }
 
 async function updateGlossary(env, slug, request) {
@@ -570,9 +567,14 @@ async function updateGlossary(env, slug, request) {
 }
 
 async function getHealth(env, slug) {
-  const { results: chapters } = await env.DB.prepare(`
-    SELECT filename, chapter_number FROM chapters WHERE novel_slug = ?
-  `).bind(slug).all();
+  let totalTranslated = 0;
+  try {
+    const catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
+    if (catObj) {
+      const catalog = await catObj.json();
+      totalTranslated = catalog.length;
+    }
+  } catch {}
 
   const novel = await env.DB.prepare(
     `SELECT total_chapters FROM novels WHERE slug = ?`
@@ -580,7 +582,7 @@ async function getHealth(env, slug) {
 
   return jsonResponse({
     summary: {
-      total_translated: chapters.length,
+      total_translated: totalTranslated,
       total_raw: novel?.total_chapters || 0,
     },
     issues: [],
@@ -603,13 +605,14 @@ async function syncNovelBatch(env, request) {
 
     const totalCount = total_chapter_count || chapters.length;
 
+    // 1. Lưu/Cập nhật thông tin truyện duy nhất 1 dòng vào D1 `novels` table
     if (is_first_chunk) {
       const preview = (synopsis || '').slice(0, 2000).replace(/'/g, "''");
       await env.DB.prepare(`
-        INSERT INTO novels (slug, title, original_title, author, genre, source_url, last_translated_url, last_chapter_number, total_chapters, glossary, glossary_count, translation_style, notes, updated_at, synopsis)
-        VALUES (?, ?, ?, ?, ?, '', '', ?, ?, '{}', 0, 'văn học', '', ?, ?)
+        INSERT INTO novels (slug, title, original_title, author, genre, source_url, last_translated_url, last_chapter_number, total_chapters, glossary, glossary_count, translation_style, notes, updated_at, synopsis, has_epub)
+        VALUES (?, ?, ?, ?, ?, '', '', ?, ?, '{}', 0, 'văn học', '', ?, ?, 1)
         ON CONFLICT(slug) DO UPDATE SET
-          title=excluded.title, last_chapter_number=excluded.last_chapter_number, total_chapters=excluded.total_chapters, updated_at=excluded.updated_at, synopsis=excluded.synopsis
+          title=excluded.title, last_chapter_number=excluded.total_chapters, total_chapters=excluded.total_chapters, updated_at=excluded.updated_at, synopsis=excluded.synopsis, has_epub=1
       `).bind(
         slug, title || slug, original_title || '', author || 'Unknown', genre || 'Khác',
         totalCount, totalCount, new Date().toISOString(), preview
@@ -618,25 +621,38 @@ async function syncNovelBatch(env, request) {
       if (synopsis) {
         await env.CHAPTERS.put(`${slug}/synopsis.md`, synopsis);
       }
-
-      await env.DB.prepare(`DELETE FROM chapters WHERE novel_slug = ?`).bind(slug).run();
     }
 
+    // 2. Upload các file chương lên Cloudflare R2 (lưu trữ vô hạn)
     const r2Puts = chapters.map(c => {
       const encoded = btoa(unescape(encodeURIComponent(c.filename))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
       const r2_key = `${slug}/b64_${encoded}`;
       const body = c.content.startsWith('#') ? c.content : `# ${c.title}\n\n${c.content}`;
-      return env.CHAPTERS.put(r2_key, body).then(() => ({ c, r2_key }));
+      return env.CHAPTERS.put(r2_key, body);
     });
 
-    const uploaded = await Promise.all(r2Puts);
+    await Promise.all(r2Puts);
 
-    const stmt = env.DB.prepare(`INSERT OR REPLACE INTO chapters (novel_slug, filename, r2_key, title, chapter_number) VALUES (?, ?, ?, ?, ?)`);
-    const batchStatements = uploaded.map(({ c, r2_key }) => stmt.bind(slug, c.filename, r2_key, c.title, c.number));
-
-    for (let i = 0; i < batchStatements.length; i += 50) {
-      await env.DB.batch(batchStatements.slice(i, i + 50));
+    // 3. Cập nhật catalog.json lên R2
+    let catalog = [];
+    if (!is_first_chunk) {
+      try {
+        const existingCat = await env.CHAPTERS.get(`${slug}/catalog.json`);
+        if (existingCat) {
+          catalog = await existingCat.json();
+        }
+      } catch {}
     }
+
+    const newEntries = chapters.map(c => ({
+      filename: c.filename,
+      title: c.title,
+      chapter_number: c.number || 0
+    }));
+
+    catalog.push(...newEntries);
+
+    await env.CHAPTERS.put(`${slug}/catalog.json`, JSON.stringify(catalog));
 
     return jsonResponse({ success: true, slug, chapters_synced: chapters.length });
   } catch (err) {
