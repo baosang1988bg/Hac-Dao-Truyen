@@ -27,6 +27,7 @@ import os
 import sys
 import time
 from pathlib import Path
+import io
 from datetime import datetime
 
 import socket
@@ -41,7 +42,7 @@ if sys.stdout.encoding != 'utf-8':
 
 try:
     from googleapiclient.discovery import build
-    from googleapiclient.http import MediaFileUpload
+    from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
     from google_auth_oauthlib.flow import InstalledAppFlow
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
@@ -192,6 +193,33 @@ def upload_file(service, local_path, parent_id, filename=None, retry=RETRY_COUNT
                 meta  = {"name": fname, "parents": [parent_id]}
     raise RuntimeError(f"Upload failed: {last_err}")
 
+
+def upload_bytes(service, data_bytes, parent_id, filename, mime_type="application/json", retry=RETRY_COUNT):
+    """Upload byte stream trực tiếp từ bộ nhớ RAM lên Drive (không ghi đĩa local)."""
+    local_md5 = hashlib.md5(data_bytes).hexdigest()
+    existing  = file_exists_on_drive(service, filename, parent_id, local_md5)
+    if existing:
+        return existing, "skip"
+
+    media = MediaIoBaseUpload(io.BytesIO(data_bytes), mimetype=mime_type, chunksize=CHUNK_SIZE, resumable=True)
+    meta  = {"name": filename, "parents": [parent_id]}
+
+    last_err = None
+    for attempt in range(retry):
+        try:
+            req = service.files().create(body=meta, media_body=media, fields="id,md5Checksum")
+            resp = None
+            while resp is None:
+                _, resp = req.next_chunk()
+            return resp["id"], "uploaded"
+        except Exception as e:
+            last_err = e
+            if attempt < retry - 1:
+                time.sleep(RETRY_DELAY * (attempt + 1))
+                media = MediaIoBaseUpload(io.BytesIO(data_bytes), mimetype=mime_type, chunksize=CHUNK_SIZE, resumable=True)
+                meta  = {"name": filename, "parents": [parent_id]}
+    raise RuntimeError(f"Upload failed: {last_err}")
+
 # ─── State ────────────────────────────────────────────────────────────────────
 
 def load_upload_state(path):
@@ -266,26 +294,22 @@ def upload_novel(credentials_file, token_file, slug, epub_dir, root_folder_id, s
             fid_syn, st_syn = upload_file(service, syn_path, novel_folder_id)
             uploaded_files["synopsis"] = {"id": fid_syn, "status": st_syn}
 
-        # Upload chapters.json (chứa nội dung toàn bộ các chương translated/)
+        # Upload chapters.json (stream trực tiếp từ RAM, không ghi file local)
         trans_dir = novel_subfolder / "translated"
         if trans_dir.exists():
-            chapters_json_path = novel_subfolder / "chapters.json"
-            if not chapters_json_path.exists():
-                all_chaps = []
-                for f in sorted(trans_dir.glob("*.md")):
-                    parts = f.name.split('_')
-                    num = int(parts[0]) if parts[0].isdigit() else 0
-                    all_chaps.append({
-                        'number': num,
-                        'title': f.name.replace('_VI.md', '').replace('-', ' '),
-                        'filename': f.name,
-                        'content': f.read_text(encoding='utf-8')
-                    })
-                if all_chaps:
-                    chapters_json_path.write_text(json.dumps(all_chaps, ensure_ascii=False, indent=2), encoding='utf-8')
-
-            if chapters_json_path.exists():
-                fid_chaps, st_chaps = upload_file(service, chapters_json_path, novel_folder_id)
+            all_chaps = []
+            for f in sorted(trans_dir.glob("*.md")):
+                parts = f.name.split('_')
+                num = int(parts[0]) if parts[0].isdigit() else 0
+                all_chaps.append({
+                    'number': num,
+                    'title': f.name.replace('_VI.md', '').replace('-', ' '),
+                    'filename': f.name,
+                    'content': f.read_text(encoding='utf-8')
+                })
+            if all_chaps:
+                chaps_bytes = json.dumps(all_chaps, ensure_ascii=False, indent=2).encode('utf-8')
+                fid_chaps, st_chaps = upload_bytes(service, chaps_bytes, novel_folder_id, "chapters.json")
                 uploaded_files["chapters"] = {"id": fid_chaps, "status": st_chaps}
 
         with state_lock:
