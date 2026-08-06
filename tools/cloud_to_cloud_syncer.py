@@ -44,6 +44,10 @@ except ImportError:
     sys.exit(1)
 
 
+import threading
+
+thread_local = threading.local()
+
 def get_drive_service():
     creds = None
     if Path(TOKEN_FILE).exists():
@@ -51,6 +55,11 @@ def get_drive_service():
     if creds and creds.expired and creds.refresh_token:
         creds.refresh(Request())
     return build("drive", "v3", credentials=creds)
+
+def get_thread_service():
+    if not hasattr(thread_local, "service"):
+        thread_local.service = get_drive_service()
+    return thread_local.service
 
 
 def send_chunk_persistent(conn: http.client.HTTPSConnection, payload: dict, max_retries: int = 5) -> tuple[dict, http.client.HTTPSConnection]:
@@ -112,7 +121,7 @@ def fetch_file_content_from_drive(service, file_id: str) -> bytes:
     return request.execute()
 
 
-def sync_novel_from_drive(slug: str, novel_data: dict, service) -> dict:
+def sync_novel_from_drive(slug: str, novel_data: dict) -> dict:
     files_info = novel_data.get('files', {})
     chaps_file_id = files_info.get('chapters', {}).get('id')
     meta_file_id = files_info.get('meta', {}).get('id')
@@ -123,6 +132,7 @@ def sync_novel_from_drive(slug: str, novel_data: dict, service) -> dict:
 
     conn = None
     try:
+        service = get_thread_service()
         # Lấy nội dung chapters.json từ Google Drive
         chaps_bytes = fetch_file_content_from_drive(service, chaps_file_id)
         all_chapters = json.loads(chaps_bytes.decode('utf-8'))
@@ -240,7 +250,7 @@ def main():
 
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
         futures = {
-            executor.submit(sync_novel_from_drive, slug, uploaded_novels[slug], service): slug
+            executor.submit(sync_novel_from_drive, slug, uploaded_novels[slug]): slug
             for slug in pending_slugs
         }
 
