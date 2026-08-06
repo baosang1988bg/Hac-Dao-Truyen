@@ -376,9 +376,10 @@ def main():
         work   = [s for s in slugs if s in failed]
         print(f"[filter] Retry {len(work)} slug lỗi")
     elif resume_active:
-        done  = set(ustate.get("uploaded", {}).keys())
-        work  = [s for s in slugs if s not in done]
-        print(f"[filter] Resume: Bỏ qua {len(done):,} đã upload trên Drive, còn lại {len(work):,} cần kiểm tra/upload")
+        uploaded_map = ustate.get("uploaded", {})
+        done = {s for s, v in uploaded_map.items() if "chapters" in v.get("files", {})}
+        work = [s for s in slugs if s not in done]
+        print(f"[filter] Resume: Bỏ qua {len(done):,} đã upload đầy đủ chapters.json trên Drive, còn lại {len(work):,} cần kiểm tra/bổ sung/upload")
 
     # Chỉ tải những slug đã có EPUB hoặc data local
     epubs_dir = epub_dir / "epubs"
