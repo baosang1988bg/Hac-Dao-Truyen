@@ -210,8 +210,12 @@ def main():
 
     state_path = Path(args.state_file)
     if not state_path.exists():
-        print(f"❌ Không tìm thấy state file: {state_path}")
-        sys.exit(1)
+        fallback_path = Path(__file__).parent / "upload_state.json"
+        if fallback_path.exists():
+            state_path = fallback_path
+        else:
+            print(f"❌ Không tìm thấy state file: {state_path}")
+            sys.exit(1)
 
     state_data = json.loads(state_path.read_text(encoding='utf-8'))
     uploaded_novels = state_data.get('uploaded', {})

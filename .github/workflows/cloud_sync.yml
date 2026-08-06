@@ -1,0 +1,42 @@
+name: Cloud-to-Cloud Sync (Google Drive to Cloudflare R2)
+
+on:
+  schedule:
+    - cron: '*/30 * * * *' # Run every 30 minutes
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          pip install google-api-python-client google-auth-oauthlib google-auth-httplib2
+
+      - name: Create Credentials & Token Files
+        env:
+          GDRIVE_CREDENTIALS: ${{ secrets.GDRIVE_CREDENTIALS }}
+          GDRIVE_TOKEN: ${{ secrets.GDRIVE_TOKEN }}
+        run: |
+          echo "$GDRIVE_CREDENTIALS" > tools/credentials.json
+          echo "$GDRIVE_TOKEN" > tools/token.json
+
+      - name: Execute Cloud-to-Cloud Sync
+        run: |
+          python tools/cloud_to_cloud_syncer.py --state-file tools/remote_state.json --workers 4 || true
+
+      - name: Commit & Push Progress State
+        run: |
+          git config --global user.name 'CloudSync Bot'
+          git config --global user.email 'bot@hacdaotruyen.local'
+          git add tools/remote_state.json .cloud_sync_state.json || true
+          git commit -m "auto(sync): update cloud-to-cloud sync progress" || true
+          git push origin main || true
