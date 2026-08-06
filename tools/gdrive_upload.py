@@ -211,7 +211,8 @@ def save_upload_state(path, state):
 def upload_novel(credentials_file, token_file, slug, epub_dir, root_folder_id, state, state_path):
     """Upload EPUB + cover + meta cho 1 truyện. Trả về 'ok'|'skip'|'fail'."""
     with state_lock:
-        if slug in state.get("uploaded", {}):
+        uploaded_info = state.get("uploaded", {}).get(slug)
+        if uploaded_info and "chapters" in uploaded_info.get("files", {}):
             return "skip"
 
     epubs_dir  = epub_dir / "epubs"
@@ -258,6 +259,34 @@ def upload_novel(credentials_file, token_file, slug, epub_dir, root_folder_id, s
         if meta_path.exists():
             fid3, st3 = upload_file(service, meta_path, novel_folder_id)
             uploaded_files["meta"] = {"id": fid3, "status": st3}
+
+        # Upload synopsis.md (nếu có)
+        syn_path = novel_subfolder / "synopsis.md"
+        if syn_path.exists():
+            fid_syn, st_syn = upload_file(service, syn_path, novel_folder_id)
+            uploaded_files["synopsis"] = {"id": fid_syn, "status": st_syn}
+
+        # Upload chapters.json (chứa nội dung toàn bộ các chương translated/)
+        trans_dir = novel_subfolder / "translated"
+        if trans_dir.exists():
+            chapters_json_path = novel_subfolder / "chapters.json"
+            if not chapters_json_path.exists():
+                all_chaps = []
+                for f in sorted(trans_dir.glob("*.md")):
+                    parts = f.name.split('_')
+                    num = int(parts[0]) if parts[0].isdigit() else 0
+                    all_chaps.append({
+                        'number': num,
+                        'title': f.name.replace('_VI.md', '').replace('-', ' '),
+                        'filename': f.name,
+                        'content': f.read_text(encoding='utf-8')
+                    })
+                if all_chaps:
+                    chapters_json_path.write_text(json.dumps(all_chaps, ensure_ascii=False, indent=2), encoding='utf-8')
+
+            if chapters_json_path.exists():
+                fid_chaps, st_chaps = upload_file(service, chapters_json_path, novel_folder_id)
+                uploaded_files["chapters"] = {"id": fid_chaps, "status": st_chaps}
 
         with state_lock:
             state.setdefault("uploaded", {})[slug] = {
