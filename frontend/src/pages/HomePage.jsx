@@ -6,25 +6,23 @@ import api from '../api'
 import SearchSection from './homepage/SearchSection'
 import RecentlyReadSection from './homepage/RecentlyReadSection'
 import HeroSection from './homepage/HeroSection'
-import InProgressSection from './homepage/InProgressSection'
 import UpdatesSection from './homepage/UpdatesSection'
+import InProgressSection from './homepage/InProgressSection'
 import CompletedSection from './homepage/CompletedSection'
 import AllNovelsSection from './homepage/AllNovelsSection'
 import StatsSection from './homepage/StatsSection'
 
 /**
  * HomePage – Orchestrator trang chủ.
- * Chỉ chịu trách nhiệm: fetch data + tính toán datasets + sắp xếp layout.
- * Mọi UI/UX đều được delegate xuống section components trong /homepage/.
- *
- * Layout Phase 3 (truyentrung.com inspired):
- *   [Search]
- *   [Recently Read]
- *   [Hero Banner – truyện nổi bật]
- *   [InProgress Grid – 5 cột]
- *   [2-col: Updates | Completed]
- *   [AllNovels với tabs]
- *   [Stats]
+ * Sắp xếp thứ tự các section:
+ *   1. SearchSection
+ *   2. RecentlyReadSection (Vừa đọc gần đây)
+ *   3. HeroSection (Truyện nổi bật)
+ *   4. UpdatesSection (Truyện mới cập nhật - cuộn ngang)
+ *   5. InProgressSection (Đang dịch - demo 12 truyện)
+ *   6. CompletedSection (Hoàn thành - demo 6 truyện + xem tất cả)
+ *   7. AllNovelsSection (Tất cả truyện với tabs)
+ *   8. StatsSection (Thống kê tổng)
  */
 export default function HomePage() {
   const [novels, setNovels] = useState([])
@@ -34,7 +32,7 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState(null)
   const [searchLoading, setSearchLoading] = useState(false)
 
-  // Nạp danh sách truyện trang chủ (limit=200 để hiển thị phong phú)
+  // Nạp danh sách truyện trang chủ (limit=200)
   useEffect(() => {
     let alive = true
     api.get('/novels?limit=200')
@@ -112,11 +110,11 @@ export default function HomePage() {
   const inProgress = visible.filter(n =>
     (n.chapter_count || 0) > 0 && (n.total_chapters === 0 || n.chapter_count < n.total_chapters)
   )
-  // Mới nhất – tăng lên 8 để đủ cho 2-col layout
   const recentlyUpdated = visible
     .filter(n => n.last_translated_at && (n.chapter_count || 0) > 0)
     .sort((a, b) => b.last_translated_at - a.last_translated_at)
-    .slice(0, 8)
+    .slice(0, 15) // 15 truyện mới cập nhật để cuộn ngang mượt mà
+
   const completed = visible.filter(n =>
     n.total_chapters > 0 && n.chapter_count >= n.total_chapters && (n.chapter_count || 0) > 0
   )
@@ -136,27 +134,25 @@ export default function HomePage() {
       {/* Các section chính – ẩn khi đang tìm kiếm */}
       {!isSearching && (
         <>
-          {/* Vừa đọc */}
+          {/* Vừa đọc gần đây */}
           <RecentlyReadSection novels={visible} />
 
-          {/* Hero banner */}
+          {/* Banner truyện nổi bật */}
           <HeroSection novel={featured} />
 
-          {/* Đang dịch – grid 5 cột */}
+          {/* Session riêng: Truyện mới cập nhật (cuộn ngang) */}
+          <UpdatesSection novels={recentlyUpdated} />
+
+          {/* Truyện đang dịch (grid 6 cột compact) */}
           <InProgressSection novels={inProgress} nowSec={nowSec} />
 
-          {/* 2-column: Updates | Completed */}
-          {(recentlyUpdated.length > 0 || completed.length > 0) && (
-            <div className="hp-two-col">
-              <UpdatesSection novels={recentlyUpdated} />
-              <CompletedSection novels={completed} />
-            </div>
-          )}
+          {/* Truyện hoàn thành (demo 6 truyện + nút Xem tất cả) */}
+          <CompletedSection novels={completed} />
 
           {/* Tất cả truyện với tab filter */}
           <AllNovelsSection novels={visible} />
 
-          {/* Stats */}
+          {/* Thống kê tổng */}
           <StatsSection novels={visible} />
         </>
       )}

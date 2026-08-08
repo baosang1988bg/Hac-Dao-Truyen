@@ -38,3 +38,24 @@ export function fmtTokens(n) {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`
   return String(n)
 }
+
+/** Chuẩn hóa tiêu đề truyện nếu là slug chưa format (ví dụ bat-dau-dung-hop -> Bắt Đầu Dùng Hợp / Bat Dau...). */
+export function fmtNovelTitle(title, slug) {
+  if (!title && slug) {
+    return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  }
+  if (!title) return ''
+  const t = str(title).trim()
+  if (t.includes('-') && !t.includes(' ')) {
+    return t.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  }
+  if (slug && t === slug) {
+    return t.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  }
+  return t
+}
+
+function str(val) {
+  return val == null ? '' : String(val)
+}
+

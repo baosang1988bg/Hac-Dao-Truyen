@@ -2,17 +2,14 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import NovelCover from '../NovelCover'
 import Badge from './Badge'
-import { fmtNumber } from '../../utils/format'
+import { fmtNumber, fmtNovelTitle } from '../../utils/format'
 
 /**
  * NovelGrid – Grid truyện responsive dùng chung.
- * Props:
- *   novels  – array of novel objects
- *   cols    – { mobile, tablet, desktop } số cột (mặc định 2/3/4)
- *   getBadge – fn(novel) → { variant, label } hoặc null
+ * Default cols: 3 mobile, 5 tablet, 6 desktop (gọn nhỏ).
  */
 export default function NovelGrid({ novels, cols, getBadge }) {
-  const { mobile = 2, tablet = 3, desktop = 4 } = cols ?? {}
+  const { mobile = 3, tablet = 5, desktop = 6 } = cols ?? {}
 
   return (
     <div
@@ -20,7 +17,7 @@ export default function NovelGrid({ novels, cols, getBadge }) {
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${mobile}, 1fr)`,
-        gap: '12px',
+        gap: '10px',
       }}
       data-cols-mobile={mobile}
       data-cols-tablet={tablet}
@@ -28,6 +25,7 @@ export default function NovelGrid({ novels, cols, getBadge }) {
     >
       {novels.map(n => {
         const badge = getBadge ? getBadge(n) : null
+        const titleFormatted = fmtNovelTitle(n.title, n.slug)
         return (
           <Link
             key={n.slug}
@@ -43,7 +41,7 @@ export default function NovelGrid({ novels, cols, getBadge }) {
               )}
             </div>
             <div className="novel-grid__info">
-              <span className="novel-grid__title">{n.title}</span>
+              <span className="novel-grid__title" title={titleFormatted}>{titleFormatted}</span>
               {(n.chapter_count || 0) > 0 && (
                 <span className="novel-grid__count">
                   {fmtNumber(n.chapter_count)} ch.

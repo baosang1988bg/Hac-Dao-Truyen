@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import api from '../api'
 import NovelCover from '../components/NovelCover'
-import { fmtNumber, fmtTimeAgo } from '../utils/format'
+import { fmtNumber, fmtTimeAgo, fmtNovelTitle } from '../utils/format'
 
 const LIMIT = 24
 
@@ -238,7 +238,7 @@ export default function EpubCatalogPage() {
 
       {/* ── Grid ── */}
       {loading && novels.length === 0 ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '14px' }}>
           {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : novels.length === 0 ? (
@@ -254,7 +254,7 @@ export default function EpubCatalogPage() {
         </div>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '14px' }}>
             {novels.map(n => <EpubCard key={n.slug} novel={n} />)}
           </div>
 
@@ -309,8 +309,8 @@ export function EpubCard({ novel }) {
       {/* Info */}
       <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 }}>
         <Link to={`/novel/${novel.slug}`} style={{ color: 'var(--text-main)', textDecoration: 'none' }}>
-          <div style={{ fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            {novel.title}
+          <div style={{ fontWeight: 600, fontSize: '0.82rem', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {fmtNovelTitle(novel.title, novel.slug)}
           </div>
         </Link>
 

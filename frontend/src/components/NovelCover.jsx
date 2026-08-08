@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { coverGradient } from '../utils/coverColors'
+import { fmtNovelTitle } from '../utils/format'
 
 /**
  * Bìa truyện tỉ lệ 2/3.
@@ -11,12 +12,13 @@ import { coverGradient } from '../utils/coverColors'
 export default function NovelCover({ novel, size = 'md', badge }) {
   const [imgError, setImgError] = useState(false)
   const gradient = coverGradient(novel?.slug || '')
-  const title = novel?.title || '?'
+  const title = fmtNovelTitle(novel?.title, novel?.slug) || '?'
   let coverSrc = novel?.cover_url || ''
   if (coverSrc && coverSrc.includes('audiotruyenfull.org')) {
     coverSrc = `/api/proxy-cover?url=${encodeURIComponent(coverSrc)}`
   }
   const showImg = Boolean(coverSrc) && !imgError
+
 
   return (
     <div className={`novel-cover novel-cover--${size}`}>

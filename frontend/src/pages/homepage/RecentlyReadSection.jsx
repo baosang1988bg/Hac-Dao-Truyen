@@ -2,8 +2,9 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { History, Clock, BookOpen, BookMarked } from 'lucide-react'
 import NovelCover from '../../components/NovelCover'
+import SectionHeader from '../../components/ui/SectionHeader'
 import { getAllHistory, fmtChapterLabel } from '../../utils/readingHistory'
-import { fmtTimeAgo } from '../../utils/format'
+import { fmtTimeAgo, fmtNovelTitle } from '../../utils/format'
 
 /**
  * RecentlyReadSection – Truyện vừa đọc gần đây từ localStorage (Web + EPUB).
@@ -24,15 +25,12 @@ export default function RecentlyReadSection({ novels }) {
   if (items.length === 0) return null
 
   return (
-    <section className="home-section animate-fade-in" style={{ marginBottom: '2rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-        <h2 className="home-section__title" style={{ margin: 0 }}>
-          <History size={18} style={{ color: 'var(--accent)' }} /> Vừa đọc gần đây
-        </h2>
-        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          Lưu trên thiết bị ({items.length})
-        </span>
-      </div>
+    <section className="home-section animate-fade-in" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
+      <SectionHeader
+        icon={<History size={16} style={{ color: 'var(--accent)' }} />}
+        title="Vừa Đọc Gần Đây"
+        count={items.length}
+      />
 
       <div className="section-row-scroll" style={{ paddingBottom: '0.5rem' }}>
         {items.map(item => {
@@ -41,46 +39,42 @@ export default function RecentlyReadSection({ novels }) {
             ? `/novel/${item.slug}/epub-reader`
             : `/novel/${item.slug}/read/${item.chapter}`
 
+          const formattedTitle = fmtNovelTitle(item.novel.title, item.slug)
+
           return (
             <div
               key={item.slug}
-              className="glass-panel"
+              className="rr-card"
               style={{
-                minWidth: '240px',
-                maxWidth: '280px',
-                padding: '12px',
-                borderRadius: '12px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                flexShrink: 0,
+                minWidth: '200px',
+                maxWidth: '240px',
               }}
             >
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                 <NovelCover novel={item.novel} size="sm" />
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <Link
                     to={`/novel/${item.slug}`}
                     style={{
                       display: 'block',
-                      fontWeight: 700,
-                      fontSize: '0.92rem',
+                      fontWeight: 600,
+                      fontSize: '0.85rem',
                       color: 'var(--text-main)',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                       lineHeight: 1.3,
                     }}
-                    title={item.novel.title}
+                    title={formattedTitle}
                   >
-                    {item.novel.title}
+                    {formattedTitle}
                   </Link>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 600, marginTop: '4px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600, marginTop: '3px' }}>
                     {isEpub ? 'File EPUB' : `Đã đọc: ${fmtChapterLabel(item.chapter)}`}
                   </div>
                   {item.timestamp > 0 && (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Clock size={12} /> {fmtTimeAgo(Math.floor(item.timestamp / 1000))}
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Clock size={11} /> {fmtTimeAgo(Math.floor(item.timestamp / 1000))}
                     </div>
                   )}
                 </div>
@@ -92,13 +86,13 @@ export default function RecentlyReadSection({ novels }) {
                 style={{
                   width: '100%',
                   padding: '6px 12px',
-                  fontSize: '0.82rem',
-                  minHeight: '36px',
+                  fontSize: '0.8rem',
+                  minHeight: '34px',
                   justifyContent: 'center',
                   borderRadius: '8px',
                 }}
               >
-                {isEpub ? <BookMarked size={14} /> : <BookOpen size={14} />}
+                {isEpub ? <BookMarked size={13} /> : <BookOpen size={13} />}
                 {isEpub ? ' Đọc EPUB' : ' Đọc tiếp →'}
               </Link>
             </div>

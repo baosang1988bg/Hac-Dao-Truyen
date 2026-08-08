@@ -1,18 +1,19 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { BookOpen, Play, Info, BookMarked, Flame } from 'lucide-react'
+import { Play, Info, BookMarked, Flame } from 'lucide-react'
 import NovelCover from '../../components/NovelCover'
 import SectionHeader from '../../components/ui/SectionHeader'
-import { fmtNumber } from '../../utils/format'
+import { fmtNumber, fmtNovelTitle } from '../../utils/format'
 
 /**
- * HeroSection – Truyện nổi bật, banner hero redesign (Phase 3).
+ * HeroSection – Truyện nổi bật, banner hero redesign.
  * Props:
  *   novel – novel object (truyện có nhiều chương nhất)
  */
 export default function HeroSection({ novel }) {
   if (!novel) return null
   const hasChapters = (novel.chapter_count || 0) > 0
+  const formattedTitle = fmtNovelTitle(novel.title, novel.slug)
 
   return (
     <section style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
@@ -28,7 +29,7 @@ export default function HeroSection({ novel }) {
           <span className="hp-hero__eyebrow">
             {hasChapters ? '⚡ Đang cập nhật' : '📚 EPUB Độc Quyền'}
           </span>
-          <h2 className="hp-hero__title">{novel.title}</h2>
+          <h2 className="hp-hero__title">{formattedTitle}</h2>
           {novel.author && (
             <div className="hp-hero__author">✍️ {novel.author}</div>
           )}
