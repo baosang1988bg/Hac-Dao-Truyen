@@ -1323,3 +1323,375 @@ a:hover {
 /* Spinner dùng chung (Loader2 của lucide) */
 .spin { animation: spin-rotate 0.9s linear infinite; }
 @keyframes spin-rotate { to { transform: rotate(360deg); } }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 3 – HOMEPAGE REDESIGN (truyentrung.com inspired)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Design tokens bổ sung ── */
+:root {
+  --card-radius: 10px;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --section-gap: 2.25rem;
+  --section-header-size: 0.95rem;
+  --hp-max-width: 1100px;
+}
+
+/* ── Homepage container (rộng hơn 1 chút so với reader) ── */
+.hp-container {
+  max-width: var(--hp-max-width);
+  margin: 0 auto;
+  padding: 1.25rem 1rem 2rem;
+}
+@media (min-width: 768px) {
+  .hp-container { padding: 1.5rem 1.5rem 2.5rem; }
+}
+
+/* ── SectionHeader ── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.875rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.section-header__title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--section-header-size);
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+.section-header__icon { display: inline-flex; align-items: center; }
+.section-header__count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent);
+  margin-left: 4px;
+}
+.section-header__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.section-header__link:hover { color: var(--accent); }
+
+/* ── NovelGrid – responsive cover grid ── */
+.novel-grid {
+  /* Columns overridden by JS via style prop, responsive via CSS below */
+  display: grid;
+  gap: 12px;
+}
+@media (min-width: 520px) {
+  .novel-grid[data-cols-tablet="3"] { grid-template-columns: repeat(3, 1fr); }
+  .novel-grid[data-cols-tablet="4"] { grid-template-columns: repeat(4, 1fr); }
+}
+@media (min-width: 900px) {
+  .novel-grid[data-cols-desktop="4"] { grid-template-columns: repeat(4, 1fr); }
+  .novel-grid[data-cols-desktop="5"] { grid-template-columns: repeat(5, 1fr); }
+  .novel-grid[data-cols-desktop="6"] { grid-template-columns: repeat(6, 1fr); }
+}
+
+.novel-grid__card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-decoration: none;
+  color: var(--text-main);
+  border-radius: var(--card-radius);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@media (hover: hover) {
+  .novel-grid__card:hover { transform: translateY(-3px); }
+  .novel-grid__card:hover .novel-grid__title { color: var(--accent); }
+}
+.novel-grid__card:active { transform: scale(0.97); }
+
+.novel-grid__cover-wrap {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  background: #1e293b;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.novel-grid__badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+}
+
+.novel-grid__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.novel-grid__title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-main);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 0.15s;
+}
+.novel-grid__count {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* ── HP Hero Banner redesign (Phase 3) ── */
+.hp-hero {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(139,92,246,0.06) 100%);
+  border: 1px solid rgba(59,130,246,0.15);
+  padding: 1.25rem;
+}
+@media (min-width: 600px) {
+  .hp-hero {
+    grid-template-columns: 160px 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+}
+@media (min-width: 900px) {
+  .hp-hero { grid-template-columns: 200px 1fr; }
+}
+
+.hp-hero__cover {
+  aspect-ratio: 2/3;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  flex-shrink: 0;
+  max-width: 200px;
+  width: 100%;
+}
+
+.hp-hero__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.hp-hero__eyebrow {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(59,130,246,0.12);
+  padding: 3px 10px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 10px;
+  width: fit-content;
+}
+.hp-hero__title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1.28;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@media (min-width: 600px) {
+  .hp-hero__title { font-size: 1.6rem; -webkit-line-clamp: 2; }
+}
+.hp-hero__author {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.hp-hero__stats {
+  font-size: 0.82rem;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.hp-hero__latest {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 8px;
+}
+.hp-hero__actions {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* ── HP two-column layout for Updates + Completed ── */
+.hp-two-col {
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: var(--section-gap);
+}
+@media (min-width: 900px) {
+  .hp-two-col { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── AllNovels section tabs ── */
+.hp-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.hp-tabs::-webkit-scrollbar { display: none; }
+
+.hp-tab {
+  padding: 8px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border: none;
+  background: none;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+.hp-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+@media (hover: hover) {
+  .hp-tab:hover:not(.active) { color: var(--text-main); }
+}
+
+/* ── UpdatesSection List redesign ── */
+.update-row-v2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 6px;
+  min-height: 52px;
+  border-radius: 8px;
+  color: var(--text-main);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+@media (hover: hover) {
+  .update-row-v2:hover { background: rgba(255, 255, 255, 0.05); }
+}
+.update-row-v2:active { background: rgba(255, 255, 255, 0.08); }
+.update-row-v2__cover {
+  flex-shrink: 0;
+  width: 36px;
+  border-radius: 5px;
+  overflow: hidden;
+  aspect-ratio: 2/3;
+  background: #1e293b;
+}
+.update-row-v2__body { flex: 1; min-width: 0; }
+.update-row-v2__title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-main);
+  display: block;
+}
+.update-row-v2__chapter {
+  font-size: 0.75rem;
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+  display: block;
+}
+.update-row-v2__ago {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Stats redesign ── */
+.hp-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: var(--section-gap);
+}
+.hp-stats__item {
+  background: rgba(59,130,246,0.06);
+  border: 1px solid rgba(59,130,246,0.12);
+  border-radius: 12px;
+  padding: 1.1rem 0.5rem;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+@media (hover: hover) {
+  .hp-stats__item:hover { border-color: rgba(59,130,246,0.3); }
+}
+.hp-stats__value {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+.hp-stats__label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+  letter-spacing: 0.02em;
+}
+
+/* ── RecentlyRead card v2 ── */
+.rr-card {
+  background: rgba(30,41,59,0.5);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 220px;
+  max-width: 260px;
+  flex-shrink: 0;
+  transition: border-color 0.2s;
+}
+@media (hover: hover) {
+  .rr-card:hover { border-color: rgba(59,130,246,0.25); }
+}
+
+/* ── InProgress section: use novel-grid instead of scroll ── */
+.hp-in-progress { margin-bottom: var(--section-gap); }
+
