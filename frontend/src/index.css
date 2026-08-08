@@ -1757,6 +1757,81 @@ a:hover {
   .hp-genre-chip:not(.active):hover { border-color: rgba(255,255,255,0.25); color: var(--text-main); }
 }
 
+/* ── NovelTable (chế độ xem bảng, chỉ desktop) ── */
+.hp-view-toggle {
+  display: none;
+  gap: 6px;
+  margin-left: auto;
+}
+@media (min-width: 768px) {
+  .hp-view-toggle { display: inline-flex; }
+}
+.hp-view-toggle button {
+  padding: 6px 12px;
+  min-height: 32px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+}
+.hp-view-toggle button.active {
+  color: #000;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.hp-novel-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+}
+.hp-novel-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.hp-novel-table th, .hp-novel-table td {
+  padding: 10px 14px;
+  text-align: left;
+  white-space: nowrap;
+}
+.hp-novel-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.hp-novel-table tbody tr {
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.hp-novel-table tbody tr:last-child { border-bottom: none; }
+@media (hover: hover) {
+  .hp-novel-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+}
+.hp-novel-table__title-link {
+  color: var(--text-main);
+  font-weight: 600;
+  text-decoration: none;
+}
+.hp-novel-table__title-link:hover { color: var(--accent); }
+.hp-novel-table__status {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.hp-novel-table__status.is-done { color: var(--success, #22c55e); }
+
+/* Bảng chỉ hợp lý ở màn hình rộng — dưới 768px luôn hiện lại Grid dù state là 'table' */
+.hp-only-desktop-table { display: none; }
+.hp-only-mobile-grid { display: block; }
+@media (min-width: 768px) {
+  .hp-only-desktop-table { display: block; }
+  .hp-only-mobile-grid { display: none; }
+}
+
 /* ── RecentlyRead card v2 ── */
 .rr-card {
   background: rgba(30,41,59,0.5);
