@@ -110,9 +110,10 @@ async def fetch_and_merge_paginated_chapter_async(scraper, url: str, logger) -> 
     if not content:
         return title, content, prev_url, next_url
 
-    # Check for pagination (e.g. "第...章 ... (1/2)")
+    # Check for pagination (e.g. "第...章 ... (1/2)", "(1/3)", "(1/4)")
     import re as _re_page
-    m_page = _re_page.search(r'[\(\（]\s*1\s*/\s*(\d+)\s*[\)\）]', title)
+    search_text = (title or "") + " " + (content[:500] if content else "") + " " + (content[-300:] if content else "")
+    m_page = _re_page.search(r'[\(\（]\s*1\s*/\s*(\d+)\s*[\)\）]', search_text)
     if m_page:
         total_pages = int(m_page.group(1))
         current_page = 1
@@ -132,8 +133,8 @@ async def fetch_and_merge_paginated_chapter_async(scraper, url: str, logger) -> 
             logger.info(f"[*] Crawling page {current_page + 1}/{total_pages}: {current_url}")
             next_html = await scraper.fetch_html(current_url)
             if not next_html:
-                logger.error(f"[!] Lỗi cào trang {current_page + 1} từ: {current_url}")
-                break
+                logger.error(f"[!] Lỗi cào trang {current_page + 1}/{total_pages} từ: {current_url}")
+                raise RuntimeError(f"Lỗi cào trang {current_page + 1}/{total_pages} của chương phân trang: {current_url}")
             next_title, next_content, _, next_url = scraper.parse_content(next_html, current_url)
             if next_content and "Could not find" not in next_content:
                 content += "\n\n" + next_content
@@ -252,19 +253,23 @@ def merge_translated_parts(profile: NovelProfile, original_title: str, num_parts
     bằng cách tra cứu catalog.
     Returns True nếu ghép thành công.
     """
-    # 1. Tra cứu chapter number trong catalog
+    # 1. Tra cứu chapter number bằng regex hoặc catalog
     chap_num = None
-    try:
-        catalog_path = os.path.join("novels", profile.slug, "catalog.json")
-        if os.path.exists(catalog_path):
-            with open(catalog_path, "r", encoding="utf-8") as f:
-                catalog = json.load(f)
-            for item in catalog:
-                if item.get("title") == original_title or item.get("original_title") == original_title:
-                    chap_num = item.get("number")
-                    break
-    except Exception:
-        pass
+    m_num = re.search(r'(?:第|\bChương\s*)(\d+)', original_title, re.IGNORECASE)
+    if m_num:
+        chap_num = int(m_num.group(1))
+    if chap_num is None:
+        try:
+            catalog_path = os.path.join("novels", profile.slug, "catalog.json")
+            if os.path.exists(catalog_path):
+                with open(catalog_path, "r", encoding="utf-8") as f:
+                    catalog = json.load(f)
+                for item in catalog:
+                    if item.get("title") == original_title or item.get("original_title") == original_title:
+                        chap_num = item.get("number") or item.get("chapter_number")
+                        break
+        except Exception:
+            pass
 
     # 2. Tìm kiếm đường dẫn các file phần dịch
     parts_paths = []
@@ -274,7 +279,7 @@ def merge_translated_parts(profile: NovelProfile, original_title: str, num_parts
             if os.path.isdir(profile.translated_dir):
                 for f in os.listdir(profile.translated_dir):
                     if f.lower().startswith(f"chương {chap_num} "):
-                        if re.search(rf"-{i}_vi\.md$", f, re.IGNORECASE):
+                        if re.search(rf"-{i}(-\d+)?_vi\.md$", f, re.IGNORECASE):
                             found_path = os.path.join(profile.translated_dir, f)
                             break
         if not found_path:
@@ -282,6 +287,11 @@ def merge_translated_parts(profile: NovelProfile, original_title: str, num_parts
             part_path = os.path.join(profile.translated_dir, f"{part_stem}_VI.md")
             if os.path.exists(part_path):
                 found_path = part_path
+            else:
+                for f in os.listdir(profile.translated_dir):
+                    if re.search(rf"{re.escape(safe_filename(original_title))}-{i}(-\d+)?_vi\.md$", f, re.IGNORECASE):
+                        found_path = os.path.join(profile.translated_dir, f)
+                        break
 
         if not found_path or os.path.getsize(found_path) == 0:
             return False  # Chưa đủ phần hoặc file trống

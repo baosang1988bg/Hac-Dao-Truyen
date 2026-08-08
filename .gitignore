@@ -104,7 +104,7 @@ build/
 # PROJECT DATA — TRÁNH COMMIT DỮ LIỆU TRUYỆN
 # ─────────────────────────────────────────────
 # Bỏ comment dòng dưới nếu bạn muốn exclude toàn bộ data truyện
-# novels/
+novels/
 logs/
 discover_results/
 # Database người dùng (SQLite) — không commit dữ liệu tài khoản

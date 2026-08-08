@@ -15,7 +15,7 @@ Cấu trúc:
 import os
 import json
 import re
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, fields, asdict
 from typing import Optional
 
 
@@ -155,7 +155,9 @@ def load_novel(slug: str) -> NovelProfile:
         )
     with open(profile_path, "r", encoding="utf-8") as f:
         data = json.load(f)
-    return NovelProfile(**data)
+    valid_fields = {f.name for f in fields(NovelProfile)}
+    filtered_data = {k: v for k, v in data.items() if k in valid_fields}
+    return NovelProfile(**filtered_data)
 
 
 def list_novel_slugs() -> list[str]:

@@ -139,29 +139,31 @@ class NovelScraper:
                 is_blocked = True
             if (is_chapter_page and not content_check) or is_blocked:
                 print(f"[*] Content not found or blocked (title: {title_check.get_text(strip=True) if title_check else 'None'}), trying Jina Reader fallback...")
-                try:
-                    import urllib.request
-                    jina_url = f"https://r.jina.ai/{url}"
-                    req = urllib.request.Request(
-                        jina_url, 
-                        headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
-                    )
-                    with urllib.request.urlopen(req, timeout=15) as resp:
-                        jina_md = resp.read().decode("utf-8")
-                        # Format Jina Markdown into a mock HTML structure that parser can read
-                        lines = jina_md.split("\n")
-                        title_val = ""
-                        for line in lines:
-                            if line.startswith("Title:"):
-                                title_val = line.replace("Title:", "").strip()
-                                break
-                        # Wrap content in a div with id="content" and title in h1
-                        content_body = jina_md
-                        mock_html = f"<html><body><h1>{title_val}</h1><div id='content'>{content_body}</div></body></html>"
-                        await page.close()
-                        return mock_html
-                except Exception as je:
-                    print(f"[!] Jina Reader fallback failed: {je}")
+                for jina_attempt in range(1, 4):
+                    try:
+                        import urllib.request
+                        jina_url = f"https://r.jina.ai/{url}"
+                        req = urllib.request.Request(
+                            jina_url, 
+                            headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+                        )
+                        with urllib.request.urlopen(req, timeout=30) as resp:
+                            jina_md = resp.read().decode("utf-8")
+                            if jina_md and len(jina_md) > 100:
+                                lines = jina_md.split("\n")
+                                title_val = ""
+                                for line in lines:
+                                    if line.startswith("Title:"):
+                                        title_val = line.replace("Title:", "").strip()
+                                        break
+                                content_body = jina_md
+                                mock_html = f"<html><body><h1>{title_val}</h1><div id='content'>{content_body}</div></body></html>"
+                                await page.close()
+                                return mock_html
+                    except Exception as je:
+                        print(f"[!] Jina Reader fallback attempt {jina_attempt}/3 failed: {je}")
+                        if jina_attempt < 3:
+                            await asyncio.sleep(2)
                 
                 if is_blocked or "qidian.com" in url or "novel543.com" in url:
                     await page.close()

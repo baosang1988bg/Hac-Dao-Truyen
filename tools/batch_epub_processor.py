@@ -64,9 +64,8 @@ def process_single_epub(args_tuple):
 
     # Kiểm tra nếu đã xử lý và không overwrite -> Bỏ qua
     if not overwrite and trans_dir.exists() and synopsis_path.exists() and novel_json_path.exists():
-        chaps = list(trans_dir.glob("*.md"))
-        if len(chaps) > 0:
-            return {'status': 'skipped', 'slug': slug, 'chapters': len(chaps), 'file': epub_path.name}
+        if len(list(trans_dir.glob("*.md"))) > 0:
+            return {'status': 'skipped', 'slug': slug, 'chapters': len(list(trans_dir.glob("*.md"))), 'file': epub_path.name}
 
     try:
         res = parse_epub(str(epub_path))
