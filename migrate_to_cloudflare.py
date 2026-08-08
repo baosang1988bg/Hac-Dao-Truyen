@@ -53,7 +53,7 @@ def get_novel_sync_info(slug: str) -> dict:
 
 def get_synced_filenames(slug: str) -> set:
     """Query D1 để lấy danh sách filenames đã có — dùng để detect author notes mới."""
-    sql = f"SELECT filename FROM chapters WHERE novel_slug='{slug}';"
+    sql = f"SELECT filename FROM chapters WHERE novel_slug={q(slug)};"
     with tempfile.NamedTemporaryFile(mode='w', suffix='.sql', encoding='utf-8', delete=False) as f:
         f.write(sql)
         tmp = f.name

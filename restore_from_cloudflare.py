@@ -7,6 +7,8 @@ import tempfile
 from pathlib import Path
 from datetime import datetime
 
+from security_utils import validate_slug, safe_join, safe_novel_dir
+
 # Set output encoding to UTF-8
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -16,12 +18,31 @@ D1_DB_NAME = "hacdao-db"
 R2_BUCKET = "hacdao-chapters"
 SYNC_STATE_PATH = Path(".sync_state.json")
 
+
+def q(s) -> str:
+    """Escape chuỗi cho SQL literal (nhân đôi dấu nháy đơn) — dùng cho slug ghép trực tiếp."""
+    return "'" + str(s).replace("'", "''") + "'"
+
+
+def get_wrangler():
+    """Đường dẫn wrangler an toàn, không qua shell (giống migrate_to_cloudflare.py)."""
+    ext = '.cmd' if os.name == 'nt' else ''
+    local = os.path.join(os.getcwd(), 'node_modules', '.bin', f'wrangler{ext}')
+    if os.path.exists(local):
+        return [local]
+    return [f'npx{ext}', 'wrangler']
+
+
 def run_command(cmd_list):
-    """Run command via cmd.exe on Windows to bypass PowerShell execution policy."""
-    cmd_str = " ".join(cmd_list)
+    """
+    Chạy lệnh trực tiếp KHÔNG qua shell — tránh command injection nếu
+    r2_key/filename lấy từ D1 chứa ký tự đặc biệt. Trước đây dùng
+    `cmd /c " ".join(cmd_list)` với shell=True để né PowerShell execution
+    policy trên Windows; thay bằng gọi thẳng wrangler.cmd/npx.cmd (get_wrangler)
+    vẫn chạy được trên Windows mà không cần shell.
+    """
     result = subprocess.run(
-        f"cmd /c {cmd_str}",
-        shell=True,
+        cmd_list,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -37,8 +58,8 @@ def query_d1(sql):
         tmp_name = f.name
 
     try:
-        cmd = [
-            "npx", "wrangler", "d1", "execute", D1_DB_NAME,
+        cmd = get_wrangler() + [
+            "d1", "execute", D1_DB_NAME,
             "--remote", f"--file={tmp_name}", "--json"
         ]
         res = run_command(cmd)
@@ -73,44 +94,54 @@ def download_r2_object(r2_key, local_path):
     """Download an object from Cloudflare R2 bucket."""
     local_path = Path(local_path)
     local_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    cmd = [
-        "npx", "wrangler", "r2", "object", "get",
-        f"{R2_BUCKET}/{r2_key}", f'--file="{local_path}"', "--remote"
+
+    # Không dùng shell nên không cần tự quote path — subprocess truyền
+    # nguyên argv, path có khoảng trắng vẫn hoạt động đúng.
+    cmd = get_wrangler() + [
+        "r2", "object", "get",
+        f"{R2_BUCKET}/{r2_key}", f"--file={local_path}", "--remote"
     ]
     res = run_command(cmd)
     return res.returncode == 0
 
 def restore():
     print("=== STARTING RESTORE FROM CLOUDFLARE D1 + R2 ===")
-    
+
     # 1. Fetch all novels from D1
     print("Fetching novels list from Cloudflare D1...")
     novels = query_d1("SELECT * FROM novels;")
     if novels is None:
         print("[-] Could not retrieve novels. Please make sure wrangler is authenticated.")
         return
-    
+
     if not novels:
         print("[!] No novels found in Cloudflare D1 database.")
         return
 
     print(f"[+] Found {len(novels)} novels in database.")
-    
+
     sync_state = {}
-    
+
     for novel in novels:
         slug = novel['slug']
         title = novel['title']
         print(f"\nRestoring novel: {title} ({slug})...")
-        
-        novel_dir = NOVELS_BASE_DIR / slug
+
+        # slug đến từ D1 (dữ liệu remote) — validate trước khi ghép path để
+        # chặn traversal nếu D1 từng bị chèn dữ liệu bất thường.
+        try:
+            validate_slug(slug)
+        except Exception as e:
+            print(f"  [-] Bỏ qua novel có slug không hợp lệ ({slug!r}): {e}")
+            continue
+
+        novel_dir = Path(safe_novel_dir(slug))
         trans_dir = novel_dir / "translated"
         raw_dir = novel_dir / "text_raw"
-        
+
         trans_dir.mkdir(parents=True, exist_ok=True)
         raw_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # 2. Download glossary from R2
         glossary = {}
         glossary_key = f"{slug}/glossary.json"
@@ -153,7 +184,7 @@ def restore():
         
         # 4. Fetch chapters list from D1
         print("  -> Fetching chapters list from D1...")
-        chapters = query_d1(f"SELECT filename, title, chapter_number, r2_key FROM chapters WHERE novel_slug='{slug}';")
+        chapters = query_d1(f"SELECT filename, title, chapter_number, r2_key FROM chapters WHERE novel_slug={q(slug)};")
         if chapters is None:
             print("  [-] Failed to fetch chapters list from D1.")
             continue
@@ -178,12 +209,19 @@ def restore():
                 max_chap_num = chap_num
                 last_filename = filename
                 
-            local_chap_path = trans_dir / filename
-            
+            # filename đến từ D1 — safe_join chặn traversal ('../', path tuyệt
+            # đối, null byte) trước khi ghi ra đĩa.
+            try:
+                local_chap_path = Path(safe_join(str(trans_dir), filename))
+            except Exception as e:
+                print(f"    [-] Bỏ qua chapter có filename không hợp lệ ({filename!r}): {e}")
+                failed_count += 1
+                continue
+
             if local_chap_path.exists():
                 skipped_count += 1
                 continue
-                
+
             # print(f"    [{idx}/{len(chapters)}] Downloading {filename}...")
             if download_r2_object(r2_key, local_chap_path):
                 downloaded_count += 1
