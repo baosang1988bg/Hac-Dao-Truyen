@@ -116,9 +116,23 @@ def send_chunk_persistent(conn: http.client.HTTPSConnection, payload: dict, max_
     return {'success': False, 'error': f"Max retries exceeded ({last_error})"}, conn
 
 
-def fetch_file_content_from_drive(service, file_id: str) -> bytes:
-    request = service.files().get_media(fileId=file_id)
-    return request.execute()
+def fetch_file_content_from_drive(service, file_id: str, retries: int = 5) -> bytes:
+    """Tự động retry & khôi phục socket kết nối khi gặp WinError 10054/10053 mạng chập chờn."""
+    last_err = None
+    for attempt in range(1, retries + 1):
+        try:
+            request = service.files().get_media(fileId=file_id)
+            return request.execute()
+        except Exception as e:
+            last_err = e
+            if hasattr(thread_local, "service"):
+                try:
+                    delattr(thread_local, "service")
+                except Exception:
+                    pass
+            time.sleep(3.0 * attempt)
+            service = get_thread_service()
+    raise RuntimeError(f"Fetch Drive file {file_id} failed: {last_err}")
 
 
 def sync_novel_from_drive(slug: str, novel_data: dict) -> dict:
@@ -238,7 +252,6 @@ def main():
     print(f"⏳ Cần đồng bộ tiếp:                {len(pending_slugs):,} bộ")
     print("=" * 80)
 
-    service = get_drive_service()
     uploaded_session = 0
     start_time = time.time()
 
@@ -252,30 +265,43 @@ def main():
         except Exception:
             pass
 
-    with ThreadPoolExecutor(max_workers=args.workers) as executor:
-        futures = {
-            executor.submit(sync_novel_from_drive, slug, uploaded_novels[slug]): slug
-            for slug in pending_slugs
-        }
+    while True:
+        pending_slugs = [s for s in uploaded_novels.keys() if s not in synced_slugs]
+        if not pending_slugs:
+            print("\n🎉 DỮ LIỆU CLOUD-TO-CLOUD ĐÃ ĐỒNG BỘ BẢO TOÀN 100% SANG CLOUDFLARE R2!")
+            break
 
-        for future in as_completed(futures):
-            res = future.result()
-            slug = res['slug']
+        batch = pending_slugs[:24]
 
-            if res['success']:
-                synced_slugs.add(slug)
-                uploaded_session += 1
-                save_cloud_state()
+        try:
+            with ThreadPoolExecutor(max_workers=args.workers) as executor:
+                futures = {
+                    executor.submit(sync_novel_from_drive, slug, uploaded_novels[slug]): slug
+                    for slug in batch
+                }
 
-                elapsed = time.time() - start_time
-                speed = uploaded_session / elapsed if elapsed > 0 else 0
-                sys.stdout.write(
-                    f"\r☁️  [R2 Synced: {len(synced_slugs):,} | Session: +{uploaded_session}] "
-                    f"✅ {slug[:40]} ({res['chapters']} chaps - ⚡ {speed:.2f} novel/s)       "
-                )
-                sys.stdout.flush()
-            else:
-                sys.stderr.write(f"\n❌ Lỗi sync [{slug}]: {res.get('error')}\n")
+                for future in as_completed(futures):
+                    res = future.result()
+                    slug = res['slug']
+
+                    if res['success']:
+                        synced_slugs.add(slug)
+                        uploaded_session += 1
+                        save_cloud_state()
+
+                        elapsed = time.time() - start_time
+                        speed = uploaded_session / elapsed if elapsed > 0 else 0
+                        sys.stdout.write(
+                            f"\r☁️  [R2 Synced: {len(synced_slugs):,} | Session: +{uploaded_session}] "
+                            f"✅ {slug[:40]} ({res['chapters']} chaps - ⚡ {speed:.2f} novel/s)       "
+                        )
+                        sys.stdout.flush()
+                    else:
+                        sys.stderr.write(f"\n❌ Lỗi sync [{slug}]: {res.get('error')}\n")
+
+        except Exception as e:
+            sys.stderr.write(f"\n⚠️ Mạng tạm ngắt kết nối ({e}), tự động khôi phục sau 3 giây...\n")
+            time.sleep(3.0)
 
 
 if __name__ == '__main__':
