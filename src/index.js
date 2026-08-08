@@ -472,6 +472,29 @@ async function getEpub(env, slug) {
     },
   });
 }
+function sortAndDeduplicateCatalog(catalog) {
+  if (!Array.isArray(catalog)) return [];
+  const seen = new Set();
+  const unique = [];
+
+  for (const item of catalog) {
+    if (!item || !item.filename) continue;
+    if (!seen.has(item.filename)) {
+      seen.add(item.filename);
+      unique.push(item);
+    }
+  }
+
+  unique.sort((a, b) => {
+    const numA = a.chapter_number != null ? a.chapter_number : (a.number != null ? a.number : 0);
+    const numB = b.chapter_number != null ? b.chapter_number : (b.number != null ? b.number : 0);
+    if (numA !== numB) return numA - numB;
+    return (a.filename || '').localeCompare(b.filename || '', undefined, { numeric: true });
+  });
+
+  return unique;
+}
+
 async function getChaptersFromDriveFallback(env, slug, ctx) {
   try {
     const stateObj = await env.CHAPTERS.get('upload_state.json');
@@ -493,28 +516,19 @@ async function getChaptersFromDriveFallback(env, slug, ctx) {
     const allChaps = await res.json();
     if (!Array.isArray(allChaps)) return null;
 
-    const catalog = allChaps.map(c => ({
+    const catalog = sortAndDeduplicateCatalog(allChaps.map(c => ({
       filename: c.filename,
       title: c.title,
       chapter_number: c.number || 0
-    }));
+    })));
 
     if (ctx && ctx.waitUntil) {
       ctx.waitUntil(env.CHAPTERS.put(`${slug}/catalog.json`, JSON.stringify(catalog)));
-      ctx.waitUntil((async () => {
-        const puts = allChaps.map(c => {
-          const encoded = btoa(unescape(encodeURIComponent(c.filename))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-          const r2Key = `${slug}/b64_${encoded}`;
-          const body = c.content.startsWith('#') ? c.content : `# ${c.title}\n\n${c.content}`;
-          return env.CHAPTERS.put(r2Key, body);
-        });
-        await Promise.all(puts);
-      })());
     } else {
       await env.CHAPTERS.put(`${slug}/catalog.json`, JSON.stringify(catalog));
     }
 
-    return catalog;
+    return { catalog, allChaps };
   } catch (e) {
     return null;
   }
@@ -526,14 +540,14 @@ async function getChapters(env, slug, ctx) {
     const catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
     if (catObj) {
       const catalog = await catObj.json();
-      return jsonResponse(catalog);
+      return jsonResponse(sortAndDeduplicateCatalog(catalog));
     }
   } catch { /* fallback */ }
 
   // 2. Dynamic Fallback: Nạp trực tiếp từ Google Drive 5TB nếu R2 chưa kịp sync
-  const driveCatalog = await getChaptersFromDriveFallback(env, slug, ctx);
-  if (driveCatalog) {
-    return jsonResponse(driveCatalog);
+  const driveResult = await getChaptersFromDriveFallback(env, slug, ctx);
+  if (driveResult && driveResult.catalog) {
+    return jsonResponse(driveResult.catalog);
   }
 
   // 3. Fallback cũ: đọc từ D1 chapters
@@ -545,7 +559,7 @@ async function getChapters(env, slug, ctx) {
     ORDER BY chapter_number ASC
   `).bind(slug).all();
 
-  return jsonResponse(results || []);
+  return jsonResponse(sortAndDeduplicateCatalog(results || []));
 }
 
 async function getChapterContent(env, slug, identifier, ctx) {
@@ -553,7 +567,7 @@ async function getChapterContent(env, slug, identifier, ctx) {
 
   let targetFilename = identifier;
 
-  // Nếu identifier là số chương (ví dụ "1"): Đọc catalog.json từ R2 để tìm filename tương ứng
+  // Nếu identifier là số chương (ví dụ "1339"): Đọc catalog.json từ R2 để tìm filename tương ứng
   if (isNumber) {
     const num = parseInt(identifier);
     try {
@@ -562,7 +576,8 @@ async function getChapterContent(env, slug, identifier, ctx) {
       if (catObj) {
         catalog = await catObj.json();
       } else {
-        catalog = await getChaptersFromDriveFallback(env, slug, ctx);
+        const driveRes = await getChaptersFromDriveFallback(env, slug, ctx);
+        if (driveRes) catalog = driveRes.catalog;
       }
       if (catalog) {
         const ch = catalog.find(c => (c.chapter_number === num || c.number === num));
@@ -578,15 +593,25 @@ async function getChapterContent(env, slug, identifier, ctx) {
   const r2Key = `${slug}/b64_${encoded}`;
 
   let obj = await env.CHAPTERS.get(r2Key);
-  if (!obj) {
-    // Dynamic Fallback: Nếu R2 chưa có chương này, kích hoạt nạp từ Google Drive 5TB
-    await getChaptersFromDriveFallback(env, slug, ctx);
-    obj = await env.CHAPTERS.get(r2Key);
-  }
-
   if (obj) {
     const text = await obj.text();
     return jsonResponse({ content: text });
+  }
+
+  // Dynamic Fallback: Nếu R2 chưa có chương này, nạp từ Google Drive 5TB và cache duy nhất chương này
+  const driveResult = await getChaptersFromDriveFallback(env, slug, ctx);
+  if (driveResult && driveResult.allChaps) {
+    const num = isNumber ? parseInt(identifier) : 0;
+    const targetChap = driveResult.allChaps.find(c => c.filename === targetFilename || c.number === num);
+    if (targetChap && targetChap.content) {
+      const body = targetChap.content.startsWith('#') ? targetChap.content : `# ${targetChap.title}\n\n${targetChap.content}`;
+      if (ctx && ctx.waitUntil) {
+        ctx.waitUntil(env.CHAPTERS.put(r2Key, body));
+      } else {
+        await env.CHAPTERS.put(r2Key, body);
+      }
+      return jsonResponse({ content: body });
+    }
   }
 
   return jsonResponse({ error: 'Chapter content not found', identifier, slug }, 404);
@@ -693,8 +718,9 @@ async function syncNovelBatch(env, request) {
     }));
 
     catalog.push(...newEntries);
+    const cleanCatalog = sortAndDeduplicateCatalog(catalog);
 
-    await env.CHAPTERS.put(`${slug}/catalog.json`, JSON.stringify(catalog));
+    await env.CHAPTERS.put(`${slug}/catalog.json`, JSON.stringify(cleanCatalog));
 
     return jsonResponse({ success: true, slug, chapters_synced: chapters.length });
   } catch (err) {

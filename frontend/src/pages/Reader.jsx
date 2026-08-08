@@ -126,7 +126,24 @@ export default function Reader() {
   }, [slug, chapter, saveReadProgress])
 
   useEffect(() => {
-    api.get(`/novels/${slug}/chapters`).then(res => setChapters(res.data))
+    api.get(`/novels/${slug}/chapters`).then(res => {
+      const list = res.data || []
+      const seen = new Set()
+      const unique = []
+      for (const c of list) {
+        if (c && c.filename && !seen.has(c.filename)) {
+          seen.add(c.filename)
+          unique.push(c)
+        }
+      }
+      unique.sort((a, b) => {
+        const numA = a.chapter_number != null ? a.chapter_number : (a.number != null ? a.number : 0)
+        const numB = b.chapter_number != null ? b.chapter_number : (b.number != null ? b.number : 0)
+        if (numA !== numB) return numA - numB
+        return (a.filename || '').localeCompare(b.filename || '', undefined, { numeric: true })
+      })
+      setChapters(unique)
+    })
   }, [slug])
 
   // ── Khôi phục vị trí cuộn (sessionStorage, theo slug + chương) ─────────────
