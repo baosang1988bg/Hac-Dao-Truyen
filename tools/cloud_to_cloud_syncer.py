@@ -174,7 +174,7 @@ def sync_novel_from_drive(slug: str, novel_data: dict) -> dict:
             except Exception:
                 pass
 
-        CHUNK_SIZE = 25
+        CHUNK_SIZE = 150
         total_chapters = len(all_chapters)
         chunks = [all_chapters[i:i + CHUNK_SIZE] for i in range(0, total_chapters, CHUNK_SIZE)]
 
@@ -199,9 +199,6 @@ def sync_novel_from_drive(slug: str, novel_data: dict) -> dict:
                 if conn:
                     conn.close()
                 return {'slug': slug, 'success': False, 'error': f"Chunk {idx+1}/{len(chunks)} lỗi: {res['error']}"}
-
-            if len(chunks) > 1:
-                time.sleep(0.35)
 
         if conn:
             conn.close()
@@ -271,7 +268,7 @@ def main():
             print("\n🎉 DỮ LIỆU CLOUD-TO-CLOUD ĐÃ ĐỒNG BỘ BẢO TOÀN 100% SANG CLOUDFLARE R2!")
             break
 
-        batch = pending_slugs[:24]
+        batch = pending_slugs[:args.workers * 4]
 
         try:
             with ThreadPoolExecutor(max_workers=args.workers) as executor:

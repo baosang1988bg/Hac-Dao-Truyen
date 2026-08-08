@@ -20,7 +20,7 @@ export default {
     // ── API routes ──────────────────────────────────────────────────────
     if (url.pathname.startsWith('/api/')) {
       try {
-        const res = await handleApi(request, url, env);
+        const res = await handleApi(request, url, env, ctx);
         return corsResponse(res);
       } catch (err) {
         return corsResponse(jsonResponse({ error: err.message }, 500));
@@ -37,7 +37,7 @@ export default {
 };
 
 // ── Router ────────────────────────────────────────────────────────────────────
-async function handleApi(request, url, env) {
+async function handleApi(request, url, env, ctx) {
   const path = url.pathname;
   const method = request.method;
 
@@ -114,13 +114,13 @@ async function handleApi(request, url, env) {
   // GET /api/novels/:slug/chapters
   const chaptersMatch = path.match(/^\/api\/novels\/([^/]+)\/chapters$/);
   if (chaptersMatch && method === 'GET') {
-    return getChapters(env, chaptersMatch[1]);
+    return getChapters(env, chaptersMatch[1], ctx);
   }
 
   // GET /api/novels/:slug/chapters/:filename
   const chapterMatch = path.match(/^\/api\/novels\/([^/]+)\/chapters\/(.+)$/);
   if (chapterMatch && method === 'GET') {
-    return getChapterContent(env, chapterMatch[1], decodeURIComponent(chapterMatch[2]));
+    return getChapterContent(env, chapterMatch[1], decodeURIComponent(chapterMatch[2]), ctx);
   }
 
   // POST /api/novels/:slug/glossary
@@ -472,7 +472,55 @@ async function getEpub(env, slug) {
     },
   });
 }
-async function getChapters(env, slug) {
+async function getChaptersFromDriveFallback(env, slug, ctx) {
+  try {
+    const stateObj = await env.CHAPTERS.get('upload_state.json');
+    if (!stateObj) return null;
+    const state = await stateObj.json();
+    const novelData = state.uploaded ? state.uploaded[slug] : null;
+    if (!novelData) return null;
+
+    const chapsFileId = novelData.files && novelData.files.chapters ? novelData.files.chapters.id : null;
+    if (!chapsFileId) return null;
+
+    const driveUrl = `https://drive.usercontent.google.com/download?id=${chapsFileId}&export=download`;
+    const res = await fetch(driveUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+      redirect: 'follow'
+    });
+    if (!res.ok) return null;
+
+    const allChaps = await res.json();
+    if (!Array.isArray(allChaps)) return null;
+
+    const catalog = allChaps.map(c => ({
+      filename: c.filename,
+      title: c.title,
+      chapter_number: c.number || 0
+    }));
+
+    if (ctx && ctx.waitUntil) {
+      ctx.waitUntil(env.CHAPTERS.put(`${slug}/catalog.json`, JSON.stringify(catalog)));
+      ctx.waitUntil((async () => {
+        const puts = allChaps.map(c => {
+          const encoded = btoa(unescape(encodeURIComponent(c.filename))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+          const r2Key = `${slug}/b64_${encoded}`;
+          const body = c.content.startsWith('#') ? c.content : `# ${c.title}\n\n${c.content}`;
+          return env.CHAPTERS.put(r2Key, body);
+        });
+        await Promise.all(puts);
+      })());
+    } else {
+      await env.CHAPTERS.put(`${slug}/catalog.json`, JSON.stringify(catalog));
+    }
+
+    return catalog;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function getChapters(env, slug, ctx) {
   // 1. Ưu tiên đọc catalog.json từ R2 (Store không giới hạn dung lượng)
   try {
     const catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
@@ -482,7 +530,13 @@ async function getChapters(env, slug) {
     }
   } catch { /* fallback */ }
 
-  // 2. Fallback: đọc từ D1 chapters nếu R2 catalog chưa có
+  // 2. Dynamic Fallback: Nạp trực tiếp từ Google Drive 5TB nếu R2 chưa kịp sync
+  const driveCatalog = await getChaptersFromDriveFallback(env, slug, ctx);
+  if (driveCatalog) {
+    return jsonResponse(driveCatalog);
+  }
+
+  // 3. Fallback cũ: đọc từ D1 chapters
   const { results } = await env.DB.prepare(`
     SELECT filename, title, chapter_number
     FROM chapters
@@ -491,10 +545,10 @@ async function getChapters(env, slug) {
     ORDER BY chapter_number ASC
   `).bind(slug).all();
 
-  return jsonResponse(results);
+  return jsonResponse(results || []);
 }
 
-async function getChapterContent(env, slug, identifier) {
+async function getChapterContent(env, slug, identifier, ctx) {
   const isNumber = /^\d+$/.test(identifier);
 
   let targetFilename = identifier;
@@ -503,9 +557,14 @@ async function getChapterContent(env, slug, identifier) {
   if (isNumber) {
     const num = parseInt(identifier);
     try {
-      const catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
+      let catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
+      let catalog = null;
       if (catObj) {
-        const catalog = await catObj.json();
+        catalog = await catObj.json();
+      } else {
+        catalog = await getChaptersFromDriveFallback(env, slug, ctx);
+      }
+      if (catalog) {
         const ch = catalog.find(c => (c.chapter_number === num || c.number === num));
         if (ch && ch.filename) {
           targetFilename = ch.filename;
@@ -518,39 +577,19 @@ async function getChapterContent(env, slug, identifier) {
   const encoded = btoa(unescape(encodeURIComponent(targetFilename))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const r2Key = `${slug}/b64_${encoded}`;
 
-  const obj = await env.CHAPTERS.get(r2Key);
+  let obj = await env.CHAPTERS.get(r2Key);
+  if (!obj) {
+    // Dynamic Fallback: Nếu R2 chưa có chương này, kích hoạt nạp từ Google Drive 5TB
+    await getChaptersFromDriveFallback(env, slug, ctx);
+    obj = await env.CHAPTERS.get(r2Key);
+  }
+
   if (obj) {
     const text = await obj.text();
     return jsonResponse({ content: text });
   }
 
-  // Fallback: tra cứu từ D1 nếu R2 key theo mã b64 không khớp
-  let rows = [];
-  if (isNumber) {
-    const row = await env.DB.prepare(
-      `SELECT filename, r2_key FROM chapters
-       WHERE novel_slug = ? AND chapter_number = ?
-       ORDER BY LENGTH(filename) DESC, id DESC
-       LIMIT 1`
-    ).bind(slug, parseInt(identifier)).first();
-    if (row) rows = [row];
-  } else {
-    const row = await env.DB.prepare(
-      `SELECT filename, r2_key FROM chapters
-       WHERE novel_slug = ? AND filename = ?`
-    ).bind(slug, identifier).first();
-    if (row) rows = [row];
-  }
-
-  if (rows.length > 0) {
-    const d1Obj = await env.CHAPTERS.get(rows[0].r2_key);
-    if (d1Obj) {
-      const text = await d1Obj.text();
-      return jsonResponse({ content: text });
-    }
-  }
-
-  return jsonResponse({ error: 'Chapter content not found in R2', identifier, slug }, 404);
+  return jsonResponse({ error: 'Chapter content not found', identifier, slug }, 404);
 }
 
 async function updateGlossary(env, slug, request) {
