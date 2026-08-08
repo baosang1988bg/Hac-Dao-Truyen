@@ -14,16 +14,16 @@ export default {
 
     // ── CORS preflight ──────────────────────────────────────────────────
     if (request.method === 'OPTIONS') {
-      return corsResponse(new Response(null, { status: 204 }));
+      return corsResponse(new Response(null, { status: 204 }), request, env);
     }
 
     // ── API routes ──────────────────────────────────────────────────────
     if (url.pathname.startsWith('/api/')) {
       try {
         const res = await handleApi(request, url, env, ctx);
-        return corsResponse(res);
+        return corsResponse(res, request, env);
       } catch (err) {
-        return corsResponse(jsonResponse({ error: err.message }, 500));
+        return corsResponse(jsonResponse({ error: err.message }, 500), request, env);
       }
     }
 
@@ -67,8 +67,12 @@ async function handleApi(request, url, env, ctx) {
   }
 
   // GET /api/debug/chapter/:slug/:num — kiểm tra D1 + R2 cho 1 chapter cụ thể
+  // Chỉ admin: lộ r2_key + preview nội dung nội bộ, không để khách xem được.
   const debugMatch = path.match(/^\/api\/debug\/chapter\/([^/]+)\/(\d+)$/);
   if (debugMatch && method === 'GET') {
+    if (!(await isAdminRequest(request, env))) {
+      return jsonResponse({ error: 'Unauthorized' }, 401);
+    }
     const [, dSlug, dNum] = debugMatch;
     const row = await env.DB.prepare(
       `SELECT filename, r2_key, chapter_number FROM chapters
@@ -96,7 +100,7 @@ async function handleApi(request, url, env, ctx) {
   // POST /api/novels/:slug/view — tăng lượt xem
   const viewMatch = path.match(/^\/api\/novels\/([^/]+)\/view$/);
   if (viewMatch && method === 'POST') {
-    return trackView(env, viewMatch[1]);
+    return trackView(env, viewMatch[1], request);
   }
 
   // POST /api/novels/:slug/rate — đánh giá truyện (1-5 sao)
@@ -207,9 +211,38 @@ async function handleApi(request, url, env, ctx) {
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
+// Chặn scheme không phải http/https và các host trỏ vào mạng nội bộ/loopback/
+// link-local (bao gồm 169.254.169.254 — địa chỉ metadata cloud hay bị lợi dụng
+// SSRF). Không giải quyết được DNS rebinding (Workers không cho kiểm soát IP
+// kết nối thật của fetch), nhưng chặn được phần lớn payload SSRF phổ biến.
+function isSafeCoverUrl(targetUrl) {
+  let u;
+  try {
+    u = new URL(targetUrl);
+  } catch {
+    return false;
+  }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+  const host = u.hostname.toLowerCase();
+  if (host === 'localhost' || host === '0.0.0.0' || host === '::1' || host === '') return false;
+  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4) {
+    const a = parseInt(ipv4[1], 10);
+    const b = parseInt(ipv4[2], 10);
+    if (a === 127) return false;                     // loopback
+    if (a === 10) return false;                       // private
+    if (a === 172 && b >= 16 && b <= 31) return false; // private
+    if (a === 192 && b === 168) return false;          // private
+    if (a === 169 && b === 254) return false;          // link-local / metadata
+    if (a === 0) return false;                         // "this network"
+  }
+  return true;
+}
+
 async function proxyCover(url) {
   const targetUrl = url.searchParams.get('url');
   if (!targetUrl) return new Response('Missing url', { status: 400 });
+  if (!isSafeCoverUrl(targetUrl)) return new Response('URL không hợp lệ', { status: 400 });
   try {
     const imgRes = await fetch(targetUrl, {
       headers: {
@@ -217,9 +250,13 @@ async function proxyCover(url) {
         'Referer': 'https://audiotruyenfull.org/',
       },
     });
-    if (imgRes.ok) {
+    // Một số CDN ảnh trả Content-Type chung chung/thiếu — chỉ chặn khi rõ ràng
+    // KHÔNG phải ảnh (html/json/text), để không làm gãy bìa đang chạy tốt.
+    const contentType = imgRes.headers.get('Content-Type') || '';
+    const looksLikeNonImage = /^(text\/|application\/json|application\/xml)/i.test(contentType);
+    if (imgRes.ok && !looksLikeNonImage) {
       const headers = new Headers();
-      headers.set('Content-Type', imgRes.headers.get('Content-Type') || 'image/jpeg');
+      headers.set('Content-Type', contentType || 'image/jpeg');
       headers.set('Access-Control-Allow-Origin', '*');
       headers.set('Cache-Control', 'public, max-age=604800, s-maxage=604800');
       return new Response(imgRes.body, { status: 200, headers });
@@ -317,7 +354,32 @@ async function getGenres(env) {
   });
 }
 
-async function trackView(env, slug) {
+// Rate-limit nhẹ theo IP, best-effort trong bộ nhớ của 1 isolate (không cần
+// thêm KV/D1 mới). Reset khi Worker khởi động lại isolate — chấp nhận được vì
+// mục tiêu chỉ là chặn spam tự động, không phải giới hạn cứng tuyệt đối.
+const _rateLimitMap = new Map(); // key `${loại}:${ip}:${slug}` → timestamp ms lần gần nhất
+
+function checkRateLimit(key, windowMs) {
+  const now = Date.now();
+  const last = _rateLimitMap.get(key);
+  if (last && now - last < windowMs) return false;
+  _rateLimitMap.set(key, now);
+  if (_rateLimitMap.size > 5000) {
+    const cutoff = now - windowMs;
+    for (const [k, t] of _rateLimitMap) if (t < cutoff) _rateLimitMap.delete(k);
+  }
+  return true;
+}
+
+function clientIp(request) {
+  return request.headers.get('CF-Connecting-IP') || 'unknown';
+}
+
+async function trackView(env, slug, request) {
+  // 1 lượt xem / IP / truyện / 10 giây — chặn spam nhưng không cản người đọc thật
+  if (!checkRateLimit(`view:${clientIp(request)}:${slug}`, 10_000)) {
+    return jsonResponse({ ok: true, throttled: true });
+  }
   await env.DB.prepare(`
     UPDATE novels SET views = views + 1 WHERE slug = ?
   `).bind(slug).run();
@@ -329,6 +391,12 @@ async function rateNovel(env, slug, request) {
   try { body = await request.json(); } catch { return jsonResponse({ error: 'Invalid JSON' }, 400); }
   const stars = parseInt(body.stars);
   if (!stars || stars < 1 || stars > 5) return jsonResponse({ error: 'stars must be 1-5' }, 400);
+
+  // 1 lượt đánh giá / IP / truyện / 5 giây — chỉ chặn double-submit/spam script,
+  // không cản người dùng thật đổi ý đánh giá lại sau vài giây.
+  if (!checkRateLimit(`rate:${clientIp(request)}:${slug}`, 5_000)) {
+    return jsonResponse({ error: 'Vui lòng thử lại sau vài giây' }, 429);
+  }
 
   await env.DB.prepare(`
     UPDATE novels SET rating_sum = rating_sum + ?, rating_count = rating_count + 1 WHERE slug = ?
@@ -616,6 +684,11 @@ async function getChapterContent(env, slug, identifier, ctx) {
 }
 
 async function updateGlossary(env, slug, request) {
+  // Ghi glossary là hành động quản trị — phải qua isAdminRequest như các route
+  // ghi khác (vd commentDelete), tránh khách ghi đè glossary của bất kỳ truyện nào.
+  if (!(await isAdminRequest(request, env))) {
+    return jsonResponse({ error: 'Unauthorized' }, 401);
+  }
   const body = await request.json();
   const glossary = body.glossary || {};
 
@@ -1074,9 +1147,31 @@ function jsonResponse(data, status = 200, customHeaders = {}) {
   });
 }
 
-function corsResponse(response) {
+// Domain thật của site — có thể override qua secret ALLOWED_ORIGINS (danh sách
+// cách nhau bởi dấu phẩy) mà không cần sửa code, giống ALLOWED_ORIGINS bên
+// FastAPI. Frontend gọi API bằng URL tương đối (baseURL: '/api') nên đây là
+// same-origin với đa số request thật — allowlist chỉ ảnh hưởng request
+// cross-origin (vd gọi thẳng từ domain khác), không làm gãy site chính.
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://hacdaotruyen.com',
+  'https://www.hacdaotruyen.com',
+  'https://nguyenbaosang1998.workers.dev',
+];
+
+function getAllowedOrigins(env) {
+  if (env && typeof env.ALLOWED_ORIGINS === 'string' && env.ALLOWED_ORIGINS.trim()) {
+    return env.ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return DEFAULT_ALLOWED_ORIGINS;
+}
+
+function corsResponse(response, request, env) {
   const res = new Response(response.body, response);
-  res.headers.set('Access-Control-Allow-Origin', '*');
+  const origin = request && request.headers.get('Origin');
+  if (origin && getAllowedOrigins(env).includes(origin)) {
+    res.headers.set('Access-Control-Allow-Origin', origin);
+    res.headers.append('Vary', 'Origin');
+  }
   res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   return res;
