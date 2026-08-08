@@ -10,6 +10,7 @@ import UpdatesSection from './homepage/UpdatesSection'
 import InProgressSection from './homepage/InProgressSection'
 import CompletedSection from './homepage/CompletedSection'
 import AllNovelsSection from './homepage/AllNovelsSection'
+import TopListSection from './homepage/TopListSection'
 import StatsSection from './homepage/StatsSection'
 
 /**
@@ -22,7 +23,8 @@ import StatsSection from './homepage/StatsSection'
  *   5. InProgressSection (Đang dịch - demo 12 truyện)
  *   6. CompletedSection (Hoàn thành - demo 6 truyện + xem tất cả)
  *   7. AllNovelsSection (Tất cả truyện với tabs)
- *   8. StatsSection (Thống kê tổng)
+ *   8. TopListSection (Bảng xếp hạng lượt xem/đánh giá — dữ liệu thật)
+ *   9. StatsSection (Thống kê tổng)
  */
 export default function HomePage() {
   const [novels, setNovels] = useState([])
@@ -151,6 +153,9 @@ export default function HomePage() {
 
           {/* Tất cả truyện với tab filter */}
           <AllNovelsSection novels={visible} />
+
+          {/* Bảng xếp hạng lượt xem/đánh giá — chỉ dùng số liệu thật */}
+          <TopListSection novels={visible} />
 
           {/* Thống kê tổng */}
           <StatsSection novels={visible} />

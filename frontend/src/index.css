@@ -1674,6 +1674,56 @@ a:hover {
   letter-spacing: 0.02em;
 }
 
+/* ── TopListSection (bảng xếp hạng views/rating) ── */
+.hp-toplist {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hp-toplist__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 6px;
+  min-height: 52px;
+  border-radius: 8px;
+  color: var(--text-main);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+@media (hover: hover) {
+  .hp-toplist__item:hover { background: rgba(255, 255, 255, 0.05); }
+}
+.hp-toplist__item:active { background: rgba(255, 255, 255, 0.08); }
+.hp-toplist__rank {
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+.hp-toplist__rank.is-top3 {
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+.hp-toplist__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.hp-toplist__title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-main);
+}
+.hp-toplist__metric {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
 /* ── RecentlyRead card v2 ── */
 .rr-card {
   background: rgba(30,41,59,0.5);
