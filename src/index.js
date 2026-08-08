@@ -729,8 +729,12 @@ async function getHealth(env, slug) {
 
 async function syncNovelBatch(env, request) {
   try {
-    const authHeader = request.headers.get('x-sync-key');
-    if (authHeader !== 'hacdao-secret-2026') {
+    const authHeader = request.headers.get('x-sync-key') || '';
+    // SYNC_KEY phải set qua `wrangler secret put SYNC_KEY` — KHÔNG có giá trị
+    // mặc định/fallback về 'hacdao-secret-2026' vì secret đó đã lộ công khai
+    // trong lịch sử git (repo public). Nếu env.SYNC_KEY chưa được set, từ chối
+    // toàn bộ (fail-closed) thay vì âm thầm chấp nhận secret cũ đã bị lộ.
+    if (!env.SYNC_KEY || !timingSafeEqualStr(authHeader, env.SYNC_KEY)) {
       return jsonResponse({ error: 'Unauthorized sync key' }, 401);
     }
 

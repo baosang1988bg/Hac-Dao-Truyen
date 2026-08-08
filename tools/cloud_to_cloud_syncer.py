@@ -28,7 +28,16 @@ if sys.stdout.encoding != 'utf-8':
 
 HOST = "hac-dao-truyen.nguyenbaosang1998.workers.dev"
 PATH = "/api/admin/sync-novel"
-SYNC_KEY = "hacdao-secret-2026"
+# SYNC_KEY đọc từ biến môi trường — KHÔNG hardcode nữa vì giá trị cũ
+# 'hacdao-secret-2026' đã lộ công khai trong lịch sử git (repo public).
+# Set biến này TRƯỚC khi chạy: export HACDAO_SYNC_KEY="<giá-trị-mới-đã-rotate>"
+SYNC_KEY = os.environ.get("HACDAO_SYNC_KEY", "")
+if not SYNC_KEY:
+    print("[FATAL] Thiếu biến môi trường HACDAO_SYNC_KEY.")
+    print("        Set giá trị secret MỚI (đã rotate qua `wrangler secret put SYNC_KEY`")
+    print("        trên Cloudflare) rồi chạy lại, ví dụ:")
+    print('        export HACDAO_SYNC_KEY="giá-trị-mới"')
+    sys.exit(1)
 SSL_CTX = ssl.create_default_context()
 
 SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]

@@ -30,6 +30,11 @@ jobs:
           echo "$GDRIVE_TOKEN" > tools/token.json
 
       - name: Execute Cloud-to-Cloud Sync
+        env:
+          # Secret mới sau khi rotate — set trong GitHub repo Settings → Secrets
+          # → Actions → HACDAO_SYNC_KEY. KHÔNG dùng giá trị cũ 'hacdao-secret-2026'
+          # (đã lộ công khai trong lịch sử git repo public này).
+          HACDAO_SYNC_KEY: ${{ secrets.HACDAO_SYNC_KEY }}
         run: |
           python tools/cloud_to_cloud_syncer.py --state-file tools/remote_state.json --workers 4 || true
 
