@@ -8,6 +8,7 @@ File này là checklist deploy sống — mỗi lần chuẩn bị deploy hoặc
 - [ ] Sau khi rotate, thêm secret `HACDAO_SYNC_KEY` (giá trị **giống hệt** bước trên) vào GitHub repo → Settings → Secrets and variables → Actions, để workflow `cloud_sync.yml` không bị 401.
 - [ ] Nếu chạy `tools/cloud_to_cloud_syncer.py` / `tools/batch_cloud_syncer.py` thủ công trên máy: `export HACDAO_SYNC_KEY="<giá-trị-mới>"` trước khi chạy — thiếu biến này script tự dừng ngay với thông báo rõ.
 - [ ] Nếu có domain nào khác ngoài `hacdaotruyen.com` / `www.hacdaotruyen.com` / `nguyenbaosang1998.workers.dev` gọi thẳng API: `wrangler secret put ALLOWED_ORIGINS` (danh sách domain cách nhau bởi dấu phẩy).
+- [ ] Deploy 5 giai đoạn nâng cấp trang chủ (A-E, xem `KE_HOACH_HOC_HOI_TRUYENTRUNG_2026-08-08.md`) — cần `npm run build` frontend **và** `wrangler deploy` (Giai đoạn D thêm route mới `GET /api/comments/recent` trong Worker, không phải chỉ đổi frontend). Không cần secret/biến môi trường mới cho 5 giai đoạn này.
 
 ## Quy trình deploy chuẩn
 
@@ -45,6 +46,8 @@ curl -X POST https://hacdaotruyen.com/api/admin/sync-novel \
 
 Kiểm tra bằng mắt: trang chủ tải bình thường (không lỗi CORS trong Console), bìa ảnh hiển thị bình thường, đọc 1 chương thấy lượt xem vẫn +1, đánh giá sao vẫn lưu được, admin sửa glossary vẫn thành công (vì đã có Bearer token), pipeline sync 24/7 (`cloud_sync.yml`) chạy job thủ công (workflow_dispatch) một lần để xác nhận không bị 401 sau khi đổi secret.
 
+Riêng cho 5 giai đoạn nâng cấp trang chủ: mục "Bảng Xếp Hạng" tự ẩn nếu chưa có truyện nào có view/rating thật (không phải lỗi); chip thể loại dưới ô tìm kiếm bấm lọc được `AllNovelsSection`; nút chuyển Grid/Bảng chỉ hiện trên desktop (≥768px), thu nhỏ trình duyệt xuống dưới 768px phải tự quay lại Grid; mục "Đang Thảo Luận" tự ẩn nếu site chưa có bình luận nào — nếu đã có bình luận mà mục này không hiện, kiểm tra `curl https://hacdaotruyen.com/api/comments/recent` xem Worker đã deploy route mới chưa.
+
 Thay `<slug>` bằng slug một truyện thật đang có trên site. PowerShell trên Windows dùng `curl.exe` thay vì `curl` (alias mặc định trỏ `Invoke-WebRequest`, cú pháp khác).
 
 ## Nếu có gì gãy sau deploy
@@ -63,9 +66,11 @@ wrangler deploy
 - `BAO_CAO_BAN_GIAO_NANG_CAP_BAO_MAT_2026-08-08.md` — bàn giao đợt vá đầu
 - `BAO_CAO_KIEM_TRA_LAI_SAU_MERGE_2026-08-08.md` — audit lại sau khi merge 37 commit upstream (phát hiện secret `hacdao-secret-2026`)
 - `KE_HOACH_NANG_CAP_2026-08-08.md` — kế hoạch nâng cấp 5 giai đoạn (giai đoạn 0 đã thực thi, 1-5 còn lại)
+- `KE_HOACH_HOC_HOI_TRUYENTRUNG_2026-08-08.md` — kế hoạch học hỏi trang chủ truyentrung.com, 5 giai đoạn A-E (cả 5 đã thực thi)
 
 ## Lịch sử deploy
 
 | Ngày | Commit tới (HEAD) | Đã deploy? | Ghi chú |
 |---|---|---|---|
 | 2026-08-08 | `7d0000f` | Chưa xác nhận | 6 commit vá bảo mật Worker + Python + rotate SYNC_KEY (code xong, secret thật trên Cloudflare chưa xác nhận đã đổi) |
+| 2026-08-09 | `4240edd` | Chưa xác nhận | 5 commit Giai đoạn A-E nâng cấp trang chủ (bảng xếp hạng, chip thể loại, chế độ bảng, bình luận mới nhất, thông báo cập nhật). Cần cả `npm run build` lẫn `wrangler deploy` vì Giai đoạn D có route Worker mới. |
