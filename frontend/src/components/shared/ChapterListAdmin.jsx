@@ -313,7 +313,7 @@ export default function ChapterListAdmin({ chapters, slug }) {
             return (
               <Link
                 key={chap.filename}
-                to={`/novel/${slug}/read/${encodeURIComponent(chap.filename)}`}
+                to={`/novel/${slug}/read/${num ? num : encodeURIComponent(chap.filename)}`}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '10px', minHeight: '44px',
                   padding: '0.55rem 0.75rem', borderRadius: '8px',

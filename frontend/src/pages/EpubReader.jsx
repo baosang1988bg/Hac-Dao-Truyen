@@ -94,6 +94,9 @@ export default function EpubReader() {
         rendition.on('locationChanged', (loc) => {
           if (loc?.start?.cfi) {
             localStorage.setItem(`epub_cfi_${slug}`, loc.start.cfi)
+            localStorage.setItem('last_read_novel', slug)
+            localStorage.setItem(`last_read_chapter_${slug}`, 'EPUB')
+            localStorage.setItem(`last_read_time_${slug}`, String(Date.now()))
             setCurrentHref(loc.start.href || '')
           }
           // Calculate progress

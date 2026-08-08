@@ -279,7 +279,7 @@ export default function EpubCatalogPage() {
 
 // ── EpubCard ─────────────────────────────────────────────────────────────────
 
-function EpubCard({ novel }) {
+export function EpubCard({ novel }) {
   const hasChapters = Number(novel.chapter_count) > 0;
 
   return (

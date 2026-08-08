@@ -57,7 +57,8 @@ export function getAllHistory() {
       if (key && key.startsWith(CHAPTER_PREFIX)) {
         const slug = key.slice(CHAPTER_PREFIX.length)
         const chapter = localStorage.getItem(key)
-        if (slug && chapter) map.set(slug, chapter)
+        const timestamp = parseInt(localStorage.getItem(`last_read_time_${slug}`) || '0', 10)
+        if (slug && chapter) map.set(slug, { chapter, timestamp })
       }
     }
   } catch { /* localStorage bị chặn — bỏ qua */ }
@@ -71,19 +72,20 @@ export function getAllHistory() {
       const slug = key.slice(CHAPTER_PREFIX.length)
       if (slug && !map.has(slug)) {
         try {
-          map.set(slug, decodeURIComponent(part.slice(eq + 1)))
+          map.set(slug, { chapter: decodeURIComponent(part.slice(eq + 1)), timestamp: 0 })
         } catch { /* giá trị cookie hỏng — bỏ qua */ }
       }
     }
   })
 
   const current = getLastRead()?.slug || null
-  const list = [...map.entries()].map(([slug, chapter]) => ({
+  const list = [...map.entries()].map(([slug, data]) => ({
     slug,
-    chapter,
+    chapter: data.chapter,
+    timestamp: data.timestamp,
     isCurrent: slug === current,
   }))
-  list.sort((a, b) => (b.isCurrent ? 1 : 0) - (a.isCurrent ? 1 : 0))
+  list.sort((a, b) => b.timestamp - a.timestamp)
   return list
 }
 

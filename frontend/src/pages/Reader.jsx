@@ -92,6 +92,7 @@ export default function Reader() {
       // 2. Lưu localStorage
       localStorage.setItem('last_read_novel', novelSlug);
       localStorage.setItem(`last_read_chapter_${novelSlug}`, chapId);
+      localStorage.setItem(`last_read_time_${novelSlug}`, String(Date.now()));
 
       // 3. Đánh dấu chương đã đọc (helper dùng chung với mục lục NovelPage)
       markChapterRead(novelSlug, chapId);
@@ -223,7 +224,8 @@ export default function Reader() {
 
   const getChapterUrl = (c) => {
     if (!c) return '#'
-    return `/novel/${slug}/read/${encodeURIComponent(c.filename || c.chapter_number || c.title)}`
+    const num = c.number || c.chapter_number || getChapNum(c.title || '') || getChapNum(c.filename || '')
+    return `/novel/${slug}/read/${num || encodeURIComponent(c.filename)}`
   }
 
   const goNext = useCallback(() => {

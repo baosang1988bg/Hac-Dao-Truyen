@@ -9,12 +9,18 @@ import { fmtTimeAgo } from '../utils/format'
  */
 export default function NovelCard({ novel, size = 'md', badge }) {
   const ago = fmtTimeAgo(novel.last_translated_at)
+  const chapLabel = (novel.chapter_count || 0) > 0
+    ? `${novel.chapter_count} chương`
+    : (novel.has_epub ? 'EPUB' : `${novel.total_chapters || 0} chương`)
+
+  const effectiveBadge = badge || (novel.has_epub ? 'EPUB' : undefined)
+
   return (
     <Link to={`/novel/${novel.slug}`} className="novel-card-v2">
-      <NovelCover novel={novel} size={size} badge={badge} />
+      <NovelCover novel={novel} size={size} badge={effectiveBadge} />
       <span className="novel-card-v2__title">{novel.title}</span>
       <span className="novel-card-v2__meta">
-        {novel.chapter_count || 0} chương
+        {chapLabel}
         {ago && <> · {ago}</>}
       </span>
     </Link>
