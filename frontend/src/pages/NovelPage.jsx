@@ -20,8 +20,7 @@ const getChapNum = (title) => {
 }
 
 const chapterUrl = (slug, chap) => {
-  const num = getChapNum(chap.title)
-  return `/novel/${slug}/read/${num ? num : encodeURIComponent(chap.filename)}`
+  return `/novel/${slug}/read/${encodeURIComponent(chap.filename || chap.chapter_number || chap.title)}`
 }
 
 const cleanTitle = (title) =>

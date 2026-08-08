@@ -194,9 +194,11 @@ export default function Reader() {
   const isNumberParam = /^\d+$/.test(chapter)
   const targetNum = isNumberParam ? parseInt(chapter) : null
 
-  const currentChapterIndex = isNumberParam
-    ? chapters.findIndex(c => c.chapter_number === targetNum || getChapNum(c.title) === String(targetNum))
-    : chapters.findIndex(c => c.filename === chapter)
+  const currentChapterIndex = chapters.findIndex(c =>
+    c.filename === chapter ||
+    decodeURIComponent(chapter) === c.filename ||
+    (isNumberParam && (c.chapter_number === targetNum || c.number === targetNum || getChapNum(c.title) === String(targetNum)))
+  )
 
   const isAuthorNote = !isNumberParam && chapters.some(c => c.filename === chapter && !getChapNum(c.title))
   const prevChapter = currentChapterIndex > 0 ? chapters[currentChapterIndex - 1] : null
@@ -204,8 +206,7 @@ export default function Reader() {
 
   const getChapterUrl = (c) => {
     if (!c) return '#'
-    const num = c.chapter_number || getChapNum(c.title)
-    return `/novel/${slug}/read/${num != null ? num : encodeURIComponent(c.filename)}`
+    return `/novel/${slug}/read/${encodeURIComponent(c.filename || c.chapter_number || c.title)}`
   }
 
   const goNext = useCallback(() => {
