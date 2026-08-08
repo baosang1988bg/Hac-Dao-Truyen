@@ -4,6 +4,7 @@ import api from '../api'
 
 // ── Section components (mỗi file độc lập, cập nhật riêng biệt) ──
 import SearchSection from './homepage/SearchSection'
+import GenreChips from './homepage/GenreChips'
 import RecentlyReadSection from './homepage/RecentlyReadSection'
 import HeroSection from './homepage/HeroSection'
 import UpdatesSection from './homepage/UpdatesSection'
@@ -33,6 +34,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState(null)
   const [searchLoading, setSearchLoading] = useState(false)
+  const [activeGenre, setActiveGenre] = useState('')
 
   // Nạp danh sách truyện trang chủ (limit=200)
   useEffect(() => {
@@ -136,6 +138,9 @@ export default function HomePage() {
       {/* Các section chính – ẩn khi đang tìm kiếm */}
       {!isSearching && (
         <>
+          {/* Chip lọc thể loại nhanh */}
+          <GenreChips activeGenre={activeGenre} onSelect={setActiveGenre} />
+
           {/* Vừa đọc gần đây */}
           <RecentlyReadSection novels={visible} />
 
@@ -152,7 +157,7 @@ export default function HomePage() {
           <CompletedSection novels={completed} />
 
           {/* Tất cả truyện với tab filter */}
-          <AllNovelsSection novels={visible} />
+          <AllNovelsSection novels={visible} activeGenre={activeGenre} />
 
           {/* Bảng xếp hạng lượt xem/đánh giá — chỉ dùng số liệu thật */}
           <TopListSection novels={visible} />

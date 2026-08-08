@@ -14,12 +14,14 @@ const TABS = [
  * AllNovelsSection – Grid toàn bộ truyện với tab filter.
  * Dùng kiểu tab giống truyentrung.com.
  * Props:
- *   novels – toàn bộ visible novels
+ *   novels      – toàn bộ visible novels
+ *   activeGenre – string ('' nghĩa là không lọc), đến từ GenreChips ở HomePage
  */
-export default function AllNovelsSection({ novels }) {
+export default function AllNovelsSection({ novels, activeGenre = '' }) {
   const [activeTab, setActiveTab] = useState('all')
 
   const filtered = novels.filter(n => {
+    if (activeGenre && n.genre !== activeGenre) return false
     if (activeTab === 'all') return true
     if (activeTab === 'ongoing')   return (n.chapter_count || 0) > 0 && (n.total_chapters === 0 || n.chapter_count < n.total_chapters)
     if (activeTab === 'completed') return n.total_chapters > 0 && n.chapter_count >= n.total_chapters

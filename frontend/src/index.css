@@ -1724,6 +1724,39 @@ a:hover {
   color: var(--accent);
 }
 
+/* ── GenreChips ── */
+.hp-genre-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.hp-genre-chips::-webkit-scrollbar { display: none; }
+.hp-genre-chip {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  min-height: 36px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.hp-genre-chip.active {
+  color: #000;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+@media (hover: hover) {
+  .hp-genre-chip:not(.active):hover { border-color: rgba(255,255,255,0.25); color: var(--text-main); }
+}
+
 /* ── RecentlyRead card v2 ── */
 .rr-card {
   background: rgba(30,41,59,0.5);
