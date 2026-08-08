@@ -236,18 +236,17 @@ async function getNovels(env, params = new URLSearchParams()) {
   const status  = params.get('status') || '';           // ongoing | completed
   const hasEpub = params.get('has_epub');               // '1' | 'true' | ''
   const page    = Math.max(1, parseInt(params.get('page') || '1'));
-  const limit   = Math.min(100, Math.max(1, parseInt(params.get('limit') || '48')));
+  const limit   = Math.min(200, Math.max(1, parseInt(params.get('limit') || '48')));
   const offset  = (page - 1) * limit;
 
-  // D1/SQLite không cho ORDER BY alias của subquery trực tiếp → wrap trong CTE
   const SORT_COLS = {
-    updated_at:    'updated_at',
-    chapter_count: 'chapter_count',
-    views:         'views',
+    updated_at:    'n.updated_at',
+    chapter_count: 'n.total_chapters',
+    views:         'n.views',
     rating:        'rating',
-    title:         'title',
+    title:         'n.title',
   };
-  const sortCol = SORT_COLS[sort] || 'updated_at';
+  const sortCol = SORT_COLS[sort] || 'n.updated_at';
 
   // Build WHERE clauses
   const where = ['1=1'];
@@ -264,51 +263,36 @@ async function getNovels(env, params = new URLSearchParams()) {
   if (hasEpub === '1' || hasEpub === 'true') {
     where.push("n.has_epub = 1");
   }
+  if (q) {
+    where.push("(LOWER(n.title) LIKE ? OR LOWER(n.slug) LIKE ? OR LOWER(n.author) LIKE ? OR LOWER(n.original_title) LIKE ?)");
+    const qLike = `%${q}%`;
+    binds.push(qLike, qLike, qLike, qLike);
+  }
 
   const whereStr = where.join(' AND ');
 
+  // Count total matching records using index
+  const countRes = await env.DB.prepare(`SELECT COUNT(*) as cnt FROM novels n WHERE ${whereStr}`).bind(...binds).first();
+  const total = countRes ? countRes.cnt : 0;
+
+  // Fetch only requested page (LIMIT & OFFSET in SQL)
   const { results } = await env.DB.prepare(`
-    WITH base AS (
-      SELECT n.slug, n.title, n.original_title, n.author, n.genre, n.notes,
-             n.total_chapters, n.cover_url, n.translation_style, n.status,
-             n.updated_at, n.views, n.has_epub, n.drive_file_id,
-             CASE WHEN n.rating_count > 0 THEN ROUND(CAST(n.rating_sum AS REAL) / n.rating_count, 1) ELSE 0.0 END AS rating,
-             n.rating_count,
-             COALESCE(n.total_chapters, 0) AS chapter_count,
-             '' AS latest_chapter_title,
-             n.updated_at AS last_created_at,
-             n.glossary_count
-      FROM novels n
-      WHERE ${whereStr}
-    )
-    SELECT * FROM base
+    SELECT n.slug, n.title, n.original_title, n.author, n.genre, n.notes,
+           n.total_chapters, n.cover_url, n.translation_style, n.status,
+           n.updated_at, n.views, n.has_epub, n.drive_file_id,
+           CASE WHEN n.rating_count > 0 THEN ROUND(CAST(n.rating_sum AS REAL) / n.rating_count, 1) ELSE 0.0 END AS rating,
+           n.rating_count,
+           COALESCE(n.total_chapters, 0) AS chapter_count,
+           '' AS latest_chapter_title,
+           n.updated_at AS last_created_at,
+           n.glossary_count
+    FROM novels n
+    WHERE ${whereStr}
     ORDER BY ${sortCol} ${order}
-  `).bind(...binds).all();
+    LIMIT ? OFFSET ?
+  `).bind(...binds, limit, offset).all();
 
-  // Client-side text search (D1 không có FTS)
-  function removeAccents(str) {
-    if (!str) return '';
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
-  }
-
-  let filtered = results;
-  if (q) {
-    const qClean = removeAccents(q);
-    filtered = results.filter(n =>
-      removeAccents(n.title).includes(qClean) ||
-      removeAccents(n.original_title).includes(qClean) ||
-      removeAccents(n.author).includes(qClean) ||
-      removeAccents(n.slug).includes(qClean)
-    );
-  }
-
-  // Chỉ truyện có chương dịch (trừ khi sort catalog toàn bộ)
-  const total = filtered.length;
-
-  // Phân trang
-  const paged = filtered.slice(offset, offset + limit);
-
-  const novels = paged.map(({ last_created_at, ...n }) => ({
+  const novels = (results || []).map(({ last_created_at, ...n }) => ({
     ...n,
     last_translated_at: last_created_at
       ? Math.floor(Date.parse(last_created_at.replace(' ', 'T') + 'Z') / 1000)
@@ -316,8 +300,11 @@ async function getNovels(env, params = new URLSearchParams()) {
     glossary_count: n.glossary_count || 0,
   }));
 
-  return jsonResponse({ novels, total, page, limit, pages: Math.ceil(total / limit) });
+  return jsonResponse({ novels, total, page, limit, pages: Math.ceil(total / limit) }, 200, {
+    'Cache-Control': 'public, max-age=60, s-maxage=120'
+  });
 }
+
 
 async function getGenres(env) {
   const { results } = await env.DB.prepare(`
@@ -325,7 +312,9 @@ async function getGenres(env) {
     WHERE genre IS NOT NULL AND genre != ''
     ORDER BY genre ASC
   `).all();
-  return jsonResponse(results.map(r => r.genre));
+  return jsonResponse(results.map(r => r.genre), 200, {
+    'Cache-Control': 'public, max-age=600, s-maxage=600'
+  });
 }
 
 async function trackView(env, slug) {
@@ -1078,10 +1067,10 @@ async function proxyToBackend(request, url, env) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function jsonResponse(data, status = 200) {
+function jsonResponse(data, status = 200, customHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    headers: { 'Content-Type': 'application/json; charset=utf-8', ...customHeaders },
   });
 }
 
