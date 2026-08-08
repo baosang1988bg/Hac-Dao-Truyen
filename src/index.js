@@ -286,12 +286,19 @@ async function getNovels(env, params = new URLSearchParams()) {
   `).bind(...binds).all();
 
   // Client-side text search (D1 không có FTS)
+  function removeAccents(str) {
+    if (!str) return '';
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
+  }
+
   let filtered = results;
   if (q) {
+    const qClean = removeAccents(q);
     filtered = results.filter(n =>
-      (n.title || '').toLowerCase().includes(q) ||
-      (n.original_title || '').toLowerCase().includes(q) ||
-      (n.author || '').toLowerCase().includes(q)
+      removeAccents(n.title).includes(qClean) ||
+      removeAccents(n.original_title).includes(qClean) ||
+      removeAccents(n.author).includes(qClean) ||
+      removeAccents(n.slug).includes(qClean)
     );
   }
 
@@ -539,80 +546,82 @@ async function getChapters(env, slug, ctx) {
   try {
     const catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
     if (catObj) {
-      const catalog = await catObj.json();
-      return jsonResponse(sortAndDeduplicateCatalog(catalog));
+      let text = await catObj.text();
+      text = text.replace(/^\uFEFF/, '').trim();
+      const catalog = JSON.parse(text);
+      const cleaned = sortAndDeduplicateCatalog(catalog);
+      if (cleaned.length > 0) {
+        return jsonResponse(cleaned);
+      }
+    }
+  } catch (e) { /* fallback */ }
+
+  // 2. Tra cứu từ D1 database
+  try {
+    const { results } = await env.DB.prepare(`
+      SELECT filename, title, chapter_number
+      FROM chapters
+      WHERE novel_slug = ?
+      ORDER BY chapter_number ASC
+    `).bind(slug).all();
+
+    if (results && results.length > 0) {
+      return jsonResponse(sortAndDeduplicateCatalog(results));
     }
   } catch { /* fallback */ }
 
-  // 2. Dynamic Fallback: Nạp trực tiếp từ Google Drive 5TB nếu R2 chưa kịp sync
+  // 3. Dynamic Fallback: Nạp trực tiếp từ Google Drive 5TB nếu R2 & D1 chưa có
   const driveResult = await getChaptersFromDriveFallback(env, slug, ctx);
   if (driveResult && driveResult.catalog) {
     return jsonResponse(driveResult.catalog);
   }
 
-  // 3. Fallback cũ: đọc từ D1 chapters
-  const { results } = await env.DB.prepare(`
-    SELECT filename, title, chapter_number
-    FROM chapters
-    WHERE novel_slug = ?
-    GROUP BY chapter_number
-    ORDER BY chapter_number ASC
-  `).bind(slug).all();
-
-  return jsonResponse(sortAndDeduplicateCatalog(results || []));
+  return jsonResponse([]);
 }
 
 async function getChapterContent(env, slug, identifier, ctx) {
-  const isNumber = /^\d+$/.test(identifier);
+  let num = /^\d+$/.test(identifier) ? parseInt(identifier) : 0;
+  if (!num) {
+    const m = identifier.match(/(?:Chương|第)\s*(\d+)/i) || identifier.match(/(\d+)/);
+    if (m) num = parseInt(m[1]);
+  }
 
-  let targetFilename = identifier;
+  // 1. Ưu tiên tra cứu r2_key trực tiếp từ D1 Database (nhanh & 100% chuẩn xác)
+  try {
+    const row = await env.DB.prepare(`
+      SELECT r2_key FROM chapters
+      WHERE novel_slug = ? AND (chapter_number = ? OR filename = ?)
+      LIMIT 1
+    `).bind(slug, num, identifier).first();
 
-  // Nếu identifier là số chương (ví dụ "1339"): Đọc catalog.json từ R2 để tìm filename tương ứng
-  if (isNumber) {
-    const num = parseInt(identifier);
-    try {
-      let catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
-      let catalog = null;
-      if (catObj) {
-        catalog = await catObj.json();
-      } else {
-        const driveRes = await getChaptersFromDriveFallback(env, slug, ctx);
-        if (driveRes) catalog = driveRes.catalog;
+    if (row && row.r2_key) {
+      const obj = await env.CHAPTERS.get(row.r2_key);
+      if (obj) {
+        const text = await obj.text();
+        return jsonResponse({ content: text });
       }
-      if (catalog) {
-        const ch = catalog.find(c => (c.chapter_number === num || c.number === num));
-        if (ch && ch.filename) {
-          targetFilename = ch.filename;
+    }
+  } catch { /* fallback */ }
+
+  // 2. Fallback: tra cứu từ catalog.json R2
+  try {
+    const catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
+    if (catObj) {
+      let rawText = await catObj.text();
+      rawText = rawText.replace(/^\uFEFF/, '').trim();
+      const catalog = JSON.parse(rawText);
+      const ch = catalog.find(c => (c.chapter_number === num || c.number === num || c.filename === identifier));
+      if (ch && ch.filename) {
+        const encoded = btoa(unescape(encodeURIComponent(ch.filename))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const r2Key = `${slug}/b64_${encoded}`;
+        const obj = await env.CHAPTERS.get(r2Key);
+        if (obj) {
+          const text = await obj.text();
+          return jsonResponse({ content: text });
         }
       }
-    } catch { /* fallback */ }
-  }
-
-  // Lấy content trực tiếp từ R2 theo key `b64_${encoded}`
-  const encoded = btoa(unescape(encodeURIComponent(targetFilename))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  const r2Key = `${slug}/b64_${encoded}`;
-
-  let obj = await env.CHAPTERS.get(r2Key);
-  if (obj) {
-    const text = await obj.text();
-    return jsonResponse({ content: text });
-  }
-
-  // Dynamic Fallback: Nếu R2 chưa có chương này, nạp từ Google Drive 5TB và cache duy nhất chương này
-  const driveResult = await getChaptersFromDriveFallback(env, slug, ctx);
-  if (driveResult && driveResult.allChaps) {
-    const num = isNumber ? parseInt(identifier) : 0;
-    const targetChap = driveResult.allChaps.find(c => c.filename === targetFilename || c.number === num);
-    if (targetChap && targetChap.content) {
-      const body = targetChap.content.startsWith('#') ? targetChap.content : `# ${targetChap.title}\n\n${targetChap.content}`;
-      if (ctx && ctx.waitUntil) {
-        ctx.waitUntil(env.CHAPTERS.put(r2Key, body));
-      } else {
-        await env.CHAPTERS.put(r2Key, body);
-      }
-      return jsonResponse({ content: body });
     }
-  }
+  } catch { /* fallback */ }
 
   return jsonResponse({ error: 'Chapter content not found', identifier, slug }, 404);
 }
@@ -969,25 +978,38 @@ async function commentsList(env, slug, url) {
   if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
   const chapterParam = url.searchParams.get('chapter');
 
-  // Public: JOIN users lấy tên hiển thị, mới nhất trước, tối đa 100
-  let stmt;
-  if (chapterParam !== null && /^\d+$/.test(chapterParam)) {
-    stmt = env.DB.prepare(`
-      SELECT c.id, u.name AS user_name, c.chapter, c.content, c.created_at
-      FROM comments c JOIN users u ON u.id = c.user_id
-      WHERE c.slug = ? AND c.chapter = ?
-      ORDER BY c.id DESC LIMIT 100
-    `).bind(slug, parseInt(chapterParam));
-  } else {
-    stmt = env.DB.prepare(`
-      SELECT c.id, u.name AS user_name, c.chapter, c.content, c.created_at
-      FROM comments c JOIN users u ON u.id = c.user_id
-      WHERE c.slug = ?
-      ORDER BY c.id DESC LIMIT 100
-    `).bind(slug);
+  let chapNum = null;
+  if (chapterParam !== null) {
+    if (/^\d+$/.test(chapterParam)) {
+      chapNum = parseInt(chapterParam);
+    } else {
+      const m = chapterParam.match(/(?:Chương|第)\s*(\d+)/i) || chapterParam.match(/(\d+)/);
+      if (m) chapNum = parseInt(m[1]);
+    }
   }
-  const { results } = await stmt.all();
-  return jsonResponse(results);
+
+  try {
+    let stmt;
+    if (chapNum !== null) {
+      stmt = env.DB.prepare(`
+        SELECT c.id, u.name AS user_name, c.chapter, c.content, c.created_at
+        FROM comments c JOIN users u ON u.id = c.user_id
+        WHERE c.slug = ? AND c.chapter = ?
+        ORDER BY c.id DESC LIMIT 100
+      `).bind(slug, chapNum);
+    } else {
+      stmt = env.DB.prepare(`
+        SELECT c.id, u.name AS user_name, c.chapter, c.content, c.created_at
+        FROM comments c JOIN users u ON u.id = c.user_id
+        WHERE c.slug = ?
+        ORDER BY c.id DESC LIMIT 100
+      `).bind(slug);
+    }
+    const { results } = await stmt.all();
+    return jsonResponse(results || []);
+  } catch (err) {
+    return jsonResponse([]);
+  }
 }
 
 async function commentCreate(request, env, slug) {

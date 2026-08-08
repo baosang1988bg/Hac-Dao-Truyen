@@ -479,9 +479,15 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
         d1_ok = True if skip_d1 else d1_file("\n".join(sql_lines), dry_run)
 
         r2_ok_all = True
-        if not skip_r2:
-            for fp, r2key in r2_batch:
-                if not r2_put(fp, r2key, dry_run):
+        if not skip_r2 and r2_batch:
+            from concurrent.futures import ThreadPoolExecutor
+            def _upload(item):
+                fp, r2key = item
+                return r2_put(fp, r2key, dry_run)
+
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                results = list(executor.map(_upload, r2_batch))
+                if not all(results):
                     r2_ok_all = False
 
         if d1_ok and r2_ok_all:
