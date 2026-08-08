@@ -190,6 +190,11 @@ async function handleApi(request, url, env, ctx) {
     return commentCreate(request, env, commentsMatch[1]);
   }
 
+  // GET /api/comments/recent?limit=5 — bình luận mới nhất toàn site (trang chủ)
+  if (path === '/api/comments/recent' && method === 'GET') {
+    return recentComments(env, url);
+  }
+
   // DELETE /api/comments/:id
   const commentDelMatch = path.match(/^\/api\/comments\/(\d+)$/);
   if (commentDelMatch && method === 'DELETE') {
@@ -1072,6 +1077,25 @@ async function commentsList(env, slug, url) {
       `).bind(slug);
     }
     const { results } = await stmt.all();
+    return jsonResponse(results || []);
+  } catch (err) {
+    return jsonResponse([]);
+  }
+}
+
+// Bình luận mới nhất TOÀN SITE cho trang chủ — dữ liệu vốn đã công khai qua
+// GET /api/novels/:slug/comments (không auth), chỉ gộp lại theo thời gian nên
+// không phát sinh rò rỉ thông tin mới.
+async function recentComments(env, url) {
+  const limit = Math.min(20, Math.max(1, parseInt(url.searchParams.get('limit') || '5', 10) || 5));
+  try {
+    const { results } = await env.DB.prepare(`
+      SELECT c.id, c.slug, n.title AS novel_title, u.name AS user_name, c.chapter, c.content, c.created_at
+      FROM comments c
+      JOIN users u ON u.id = c.user_id
+      LEFT JOIN novels n ON n.slug = c.slug
+      ORDER BY c.id DESC LIMIT ?
+    `).bind(limit).all();
     return jsonResponse(results || []);
   } catch (err) {
     return jsonResponse([]);

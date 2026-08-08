@@ -6,6 +6,7 @@ import api from '../api'
 import SearchSection from './homepage/SearchSection'
 import GenreChips from './homepage/GenreChips'
 import RecentlyReadSection from './homepage/RecentlyReadSection'
+import RecentCommentsSection from './homepage/RecentCommentsSection'
 import HeroSection from './homepage/HeroSection'
 import UpdatesSection from './homepage/UpdatesSection'
 import InProgressSection from './homepage/InProgressSection'
@@ -19,6 +20,7 @@ import StatsSection from './homepage/StatsSection'
  * Sắp xếp thứ tự các section:
  *   1. SearchSection
  *   2. RecentlyReadSection (Vừa đọc gần đây)
+ *   2b. RecentCommentsSection (Đang thảo luận — bình luận mới nhất toàn site)
  *   3. HeroSection (Truyện nổi bật)
  *   4. UpdatesSection (Truyện mới cập nhật - cuộn ngang)
  *   5. InProgressSection (Đang dịch - demo 12 truyện)
@@ -143,6 +145,9 @@ export default function HomePage() {
 
           {/* Vừa đọc gần đây */}
           <RecentlyReadSection novels={visible} />
+
+          {/* Bình luận mới nhất toàn site — tự ẩn nếu chưa có bình luận nào */}
+          <RecentCommentsSection />
 
           {/* Banner truyện nổi bật */}
           <HeroSection novel={featured} />

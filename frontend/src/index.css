@@ -1832,6 +1832,41 @@ a:hover {
   .hp-only-mobile-grid { display: none; }
 }
 
+/* ── RecentCommentsSection ── */
+.hp-comment-row {
+  display: block;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--text-main);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+@media (hover: hover) {
+  .hp-comment-row:hover { background: rgba(255, 255, 255, 0.05); }
+}
+.hp-comment-row:active { background: rgba(255, 255, 255, 0.08); }
+.hp-comment-row__head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+.hp-comment-row__user { font-weight: 700; font-size: 0.82rem; }
+.hp-comment-row__novel { font-size: 0.78rem; color: var(--accent); }
+.hp-comment-row__ago { font-size: 0.7rem; color: var(--text-muted); margin-left: auto; }
+.hp-comment-row__content {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
 /* ── RecentlyRead card v2 ── */
 .rr-card {
   background: rgba(30,41,59,0.5);
