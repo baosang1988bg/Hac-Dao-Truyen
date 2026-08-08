@@ -5,6 +5,7 @@ import api from '../api'
 // ── Section components (mỗi file độc lập, cập nhật riêng biệt) ──
 import SearchSection from './homepage/SearchSection'
 import GenreChips from './homepage/GenreChips'
+import AnnouncementsSection from './homepage/AnnouncementsSection'
 import RecentlyReadSection from './homepage/RecentlyReadSection'
 import RecentCommentsSection from './homepage/RecentCommentsSection'
 import HeroSection from './homepage/HeroSection'
@@ -19,6 +20,8 @@ import StatsSection from './homepage/StatsSection'
  * HomePage – Orchestrator trang chủ.
  * Sắp xếp thứ tự các section:
  *   1. SearchSection
+ *   1b. AnnouncementsSection (Thông báo cập nhật ngắn, tĩnh từ announcements.json)
+ *   1c. GenreChips (chip lọc thể loại)
  *   2. RecentlyReadSection (Vừa đọc gần đây)
  *   2b. RecentCommentsSection (Đang thảo luận — bình luận mới nhất toàn site)
  *   3. HeroSection (Truyện nổi bật)
@@ -140,6 +143,9 @@ export default function HomePage() {
       {/* Các section chính – ẩn khi đang tìm kiếm */}
       {!isSearching && (
         <>
+          {/* Thông báo cập nhật ngắn (admin tự sửa announcements.json) */}
+          <AnnouncementsSection />
+
           {/* Chip lọc thể loại nhanh */}
           <GenreChips activeGenre={activeGenre} onSelect={setActiveGenre} />
 

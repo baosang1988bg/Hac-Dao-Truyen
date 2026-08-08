@@ -1867,6 +1867,41 @@ a:hover {
   -webkit-box-orient: vertical;
 }
 
+/* ── AnnouncementsSection ── */
+.hp-announcements {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(59,130,246,0.06);
+  border: 1px solid rgba(59,130,246,0.15);
+}
+.hp-announcements__icon {
+  flex-shrink: 0;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  padding-top: 2px;
+}
+.hp-announcements__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.hp-announcements__item {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.hp-announcements__date {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
 /* ── RecentlyRead card v2 ── */
 .rr-card {
   background: rgba(30,41,59,0.5);
