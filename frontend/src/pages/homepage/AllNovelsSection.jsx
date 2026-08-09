@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { BookOpen, LayoutGrid, List } from 'lucide-react'
+import { BookOpen, LayoutGrid, List, AlignJustify } from 'lucide-react'
 import SectionHeader from '../../components/ui/SectionHeader'
 import NovelGrid from '../../components/ui/NovelGrid'
 import NovelTable from '../../components/ui/NovelTable'
+import NovelList from '../../components/ui/NovelList'
 
 const TABS = [
   { key: 'all',       label: 'Tất cả' },
@@ -12,15 +13,12 @@ const TABS = [
 ]
 
 /**
- * AllNovelsSection – Grid toàn bộ truyện với tab filter.
- * Dùng kiểu tab giống truyentrung.com.
- * Props:
- *   novels      – toàn bộ visible novels
- *   activeGenre – string ('' nghĩa là không lọc), đến từ GenreChips ở HomePage
+ * AllNovelsSection – Danh sách toàn bộ truyện với tab filter & 3 chế độ xem.
+ * Hỗ trợ Dạng Danh Sách (List Compact - Mặc định) | Dạng Lưới (Grid) | Dạng Bảng (Table).
  */
 export default function AllNovelsSection({ novels, activeGenre = '' }) {
   const [activeTab, setActiveTab] = useState('all')
-  const [viewMode, setViewMode] = useState('grid') // 'grid' | 'table' — table chỉ hiện ở desktop
+  const [viewMode, setViewMode] = useState('list') // 'list' (default) | 'grid' | 'table'
 
   const filtered = novels.filter(n => {
     if (activeGenre && n.genre !== activeGenre) return false
@@ -41,8 +39,8 @@ export default function AllNovelsSection({ novels, activeGenre = '' }) {
         count={filtered.length}
       />
 
-      {/* Tabs + toggle Grid/Bảng (toggle chỉ hiện ở desktop qua CSS) */}
-      <div style={{ display: 'flex', alignItems: 'center' }}>
+      {/* Tabs + Toggle View Mode */}
+      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
         <div className="hp-tabs" style={{ flex: 1, marginBottom: 0, borderBottom: 'none' }}>
           {TABS.map(tab => (
             <button
@@ -54,7 +52,15 @@ export default function AllNovelsSection({ novels, activeGenre = '' }) {
             </button>
           ))}
         </div>
-        <div className="hp-view-toggle">
+
+        <div className="hp-view-toggle" style={{ display: 'flex', gap: '4px' }}>
+          <button
+            className={viewMode === 'list' ? 'active' : ''}
+            onClick={() => setViewMode('list')}
+            title="Dạng danh sách gọn"
+          >
+            <AlignJustify size={14} />
+          </button>
           <button
             className={viewMode === 'grid' ? 'active' : ''}
             onClick={() => setViewMode('grid')}
@@ -71,27 +77,18 @@ export default function AllNovelsSection({ novels, activeGenre = '' }) {
           </button>
         </div>
       </div>
-      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '1rem' }} />
+      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '1rem', marginTop: '0.5rem' }} />
 
-      {/* Grid hoặc Bảng — trên mobile luôn hiện Grid dù state là 'table' (CSS ẩn nút chuyển) */}
+      {/* Render View theo ViewMode */}
       {filtered.length > 0 ? (
-        viewMode === 'table' ? (
-          <>
-            <div className="hp-only-desktop-table">
-              <NovelTable novels={filtered} />
-            </div>
-            <div className="hp-only-mobile-grid">
-              <NovelGrid
-                novels={filtered}
-                cols={{ mobile: 3, tablet: 4, desktop: 5 }}
-                getBadge={(n) => {
-                  if (n.has_epub === 1 || n.has_epub === true) return { variant: 'epub', label: 'EPUB' }
-                  if (n.total_chapters > 0 && n.chapter_count >= n.total_chapters) return { variant: 'full', label: 'FULL' }
-                  return null
-                }}
-              />
-            </div>
-          </>
+        viewMode === 'list' ? (
+          <div className="glass-panel" style={{ padding: '0.75rem', borderRadius: '14px' }}>
+            <NovelList novels={filtered} showViews={true} showRating={true} />
+          </div>
+        ) : viewMode === 'table' ? (
+          <div className="glass-panel" style={{ borderRadius: '14px', overflow: 'hidden' }}>
+            <NovelTable novels={filtered} />
+          </div>
         ) : (
           <NovelGrid
             novels={filtered}
