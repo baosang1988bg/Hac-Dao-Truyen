@@ -254,6 +254,111 @@ class NovelScraper:
             cleaned.append(line)
         return "\n".join(cleaned)
 
+    # ── Novel Metadata Extraction (1-Click Import) ───────────────────────────
+
+    async def fetch_novel_metadata(self, url: str) -> dict | None:
+        """
+        Trích xuất thông tin metadata và mục lục từ Qidian / 69shuba / novel543 / Fanqie / Faloo.
+        
+        Trả về dict:
+        {
+            "title": str,
+            "original_title": str,
+            "author": str,
+            "cover_url": str,
+            "genre": str,
+            "synopsis": str,
+            "chapters": [ {"number": int, "title": str, "url": str}, ... ]
+        }
+        """
+        html = await self.fetch_html(url)
+        if not html:
+            # Fallback dùng Jina Reader nếu bị rào cản bot
+            import urllib.request
+            try:
+                jina_url = f"https://r.jina.ai/{url}"
+                req = urllib.request.Request(
+                    jina_url,
+                    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+                )
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    html = resp.read().decode("utf-8")
+            except Exception as e:
+                print(f"[!] Error fetching Jina fallback for metadata: {e}")
+                return None
+
+        if not html:
+            return None
+
+        soup = BeautifulSoup(html, "html.parser")
+        meta = {
+            "title": "",
+            "original_title": "",
+            "author": "",
+            "cover_url": "",
+            "genre": "Tiên Hiệp, Hệ Thống",
+            "synopsis": "",
+            "chapters": []
+        }
+
+        # 1. Title & Original Title
+        title_elem = soup.select_one("h1, .book-name, .book-info h1, .title, meta[property='og:title']")
+        if title_elem:
+            meta["title"] = title_elem.get("content") if title_elem.name == "meta" else title_elem.get_text(strip=True)
+            meta["original_title"] = meta["title"]
+
+        # 2. Author
+        author_elem = soup.select_one(".writer, .author, meta[property='og:novel:author'], a[href*='author'], a[href*='tac-gia']")
+        if author_elem:
+            meta["author"] = author_elem.get("content") if author_elem.name == "meta" else author_elem.get_text(strip=True)
+
+        # 3. Cover URL
+        cover_elem = soup.select_one("img[src*='qdbimg'], img[src*='cover'], img[src*='thumb'], meta[property='og:image']")
+        if cover_elem:
+            src = cover_elem.get("content") if cover_elem.name == "meta" else (cover_elem.get("src") or cover_elem.get("data-src"))
+            meta["cover_url"] = self._resolve_url(src, url) or ""
+
+        # 4. Genre
+        genre_elem = soup.select_one(".tag, .sort, .category, meta[property='og:novel:category']")
+        if genre_elem:
+            meta["genre"] = genre_elem.get("content") if genre_elem.name == "meta" else genre_elem.get_text(strip=True)
+
+        # 5. Synopsis
+        syn_elem = soup.select_one(".intro, .book-intro, .synopsis, #intro, meta[property='og:description']")
+        if syn_elem:
+            meta["synopsis"] = syn_elem.get("content") if syn_elem.name == "meta" else syn_elem.get_text(strip=True)
+
+        # 6. Chapters catalog links
+        chap_links = soup.select("a[href*='read'], a[href*='.html'], a[href*='/txt/'], .catalog a, .volume a")
+        chapters = []
+        seen_urls = set()
+        ch_idx = 1
+
+        for a in chap_links:
+            href = self._resolve_url(a.get("href"), url)
+            text = a.get_text(strip=True)
+            if not href or href in seen_urls or not text:
+                continue
+
+            # Match chapter title pattern (第N章 or Chapter N or Chương N)
+            m = re.search(r'第(\d+)章|Chapter\s*(\d+)|Chương\s*(\d+)', text)
+            if m:
+                ch_num = int(m.group(1) or m.group(2) or m.group(3))
+            else:
+                ch_num = ch_idx
+
+            seen_urls.add(href)
+            chapters.append({
+                "number": ch_num,
+                "title": text,
+                "url": href
+            })
+            ch_idx += 1
+
+        meta["chapters"] = chapters
+        return meta
+
+
 
 # ── Quick test ────────────────────────────────────────────────────────────────
 

@@ -459,6 +459,74 @@ def cmd_retranslate(args):
     print(f"{'─'*50}\n")
 
 
+async def async_import_novel(url: str, slug: str = ""):
+    from scraper import NovelScraper
+    from slugify import slugify
+    import json
+    from pathlib import Path
+
+    scraper = NovelScraper()
+    print(f"🔍 Đang tự động bóc tách thông tin từ URL: {url}...")
+    meta = await scraper.fetch_novel_metadata(url)
+    await scraper.close()
+
+    if not meta or not meta.get("title"):
+        print("❌ Không thể lấy thông tin truyện từ URL cung cấp.")
+        return
+
+    novel_slug = slug or slugify(meta["title"])
+    novel_dir = Path("novels") / novel_slug
+    novel_dir.mkdir(parents=True, exist_ok=True)
+    (novel_dir / "raw").mkdir(exist_ok=True)
+    (novel_dir / "translated").mkdir(exist_ok=True)
+
+    # 1. novel.json
+    novel_info = {
+        "slug": novel_slug,
+        "title": meta["title"],
+        "original_title": meta["original_title"],
+        "author": meta["author"],
+        "source_url": url,
+        "genre": meta["genre"],
+        "last_translated_url": meta["chapters"][0]["url"] if meta["chapters"] else url,
+        "last_chapter_number": 0,
+        "total_chapters": len(meta["chapters"]),
+        "glossary": {}
+    }
+    with open(novel_dir / "novel.json", "w", encoding="utf-8") as f:
+        json.dump(novel_info, f, ensure_ascii=False, indent=2)
+
+    # 2. catalog.json
+    catalog = []
+    for item in meta["chapters"]:
+        ch_num = item["number"]
+        catalog.append({
+            "number": ch_num,
+            "title": f"Chương {ch_num}",
+            "original_title": item["title"],
+            "url": item["url"],
+            "original_chapter_number": ch_num,
+            "filename": f"Chương {ch_num}_VI.md"
+        })
+    with open(novel_dir / "catalog.json", "w", encoding="utf-8") as f:
+        json.dump(catalog, f, ensure_ascii=False, indent=2)
+
+    # 3. synopsis.md
+    if meta.get("synopsis"):
+        with open(novel_dir / "synopsis.md", "w", encoding="utf-8") as f:
+            f.write(meta["synopsis"])
+
+    print(f"\n🎉 Nhập truyện 1-Click thành công!")
+    print(f"  📖 Tên truyện: {meta['title']}")
+    print(f"  ✍️ Tác giả: {meta['author']}")
+    print(f"  📚 Tổng số chương tìm thấy: {len(meta['chapters'])}")
+    print(f"  📁 Thư mục lưu: novels/{novel_slug}")
+    print(f"  👉 Chạy dịch tiếp: python main.py translate --novel {novel_slug} --chapters 10\n")
+
+def cmd_import(args):
+    asyncio.run(async_import_novel(args.url, args.slug))
+
+
 # ── CLI setup ─────────────────────────────────────────────────────────────────
 
 def main():
@@ -477,6 +545,14 @@ def main():
     # ── info ──
     p_info = subparsers.add_parser("info", help="Xem chi tiết 1 truyện")
     p_info.add_argument("--novel", required=True, metavar="SLUG", help="Slug của truyện")
+
+    # ── import ──
+    p_import = subparsers.add_parser(
+        "import",
+        help="Nhập truyện mới 1-Click tự động từ URL (Qidian, 69shuba, novel543...)",
+    )
+    p_import.add_argument("--url", required=True, type=str, help="URL của trang truyện bên Trung")
+    p_import.add_argument("--slug", type=str, default="", help="Tùy chọn slug riêng")
 
     # ── glossary ──
     p_glossary = subparsers.add_parser("glossary", help="Xem và chỉnh sửa glossary của truyện")
@@ -518,6 +594,7 @@ def main():
         "glossary": cmd_glossary,
         "translate": cmd_translate,
         "retranslate": cmd_retranslate,
+        "import": cmd_import,
     }
 
     if args.command in commands:
