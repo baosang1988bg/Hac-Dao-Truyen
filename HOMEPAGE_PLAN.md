@@ -1,6 +1,6 @@
 # Homepage Redesign & Optimization – Implementation Plan & Progress Report
 
-Tài liệu này ghi lại toàn bộ tiến độ, kiến trúc và kết quả thực thi của dự án nâng cấp Trang chủ `hacdaotruyen.com` theo phong cách **truyentrung.com**.
+Tài liệu này ghi lại toàn bộ tiến độ, kiến trúc và kết quả thực thi của dự án nâng cấp Trang chủ `hacdaotruyen.com` theo phong cách **truyentrung.com** & **Qidian (起点中文网)**.
 
 ---
 
@@ -8,12 +8,13 @@ Tài liệu này ghi lại toàn bộ tiến độ, kiến trúc và kết quả
 
 | Hạng mục / Phase | Trạng thái | Chi tiết |
 |---|---|---|
-| **Phase 1: Foundation** | ✅ Complete | Tạo skill `.agents/skills/homepage-redesign`, UI atoms (`SectionHeader`, `Badge`, `NovelGrid`). |
-| **Phase 2: Component Extraction** | ✅ Complete | Tách các section từ `HomePage.jsx` ra 8 component độc lập trong `frontend/src/pages/homepage/`. |
-| **Phase 3: Visual Redesign** | ✅ Complete | Phối lại layout theo phong cách truyentrung.com: Hero banner 2 cột, Grid gọn 6 cột, Tabs filter, Cuộn ngang mới cập nhật. |
+| **Phase 1: Foundation** | ✅ Complete | Tạo skill `.agents/skills/homepage-redesign`, UI atoms (`SectionHeader`, `Badge`, `NovelGrid`, `NovelList`). |
+| **Phase 2: Component Extraction** | ✅ Complete | Tách các section từ `HomePage.jsx` ra các component độc lập trong `frontend/src/pages/homepage/`. |
+| **Phase 3: Visual & Portal Redesign** | ✅ Complete | Phối lại layout 2 Cột Portal (Main Left + Sidebar Right): Khung thông báo chương mới, Bảng xếp hạng Qidian, Tin tức & thông báo, Thảo luận mới. |
+| **Compact List Row View** | ✅ Complete | Chuyển đổi thẻ truyện to thành dạng danh sách dòng compact (`~52px` height) hiển thị 15-20 truyện gọn gàng trên 1 màn hình. |
+| **Qidian Rankings System** | ✅ Complete | Xây dựng Bảng Xếp Hạng chuẩn Qidian (Phong Vân Bảng, Đọc Nhiều, Đề Cử Bảng, Tân Thư Bảng) với thứ tự #1, #2, #3 mạ vàng/bạc/đồng. |
 | **Performance Optimization** | ✅ Complete | Tạo 5 D1 SQL Indexes + SQL `LIMIT/OFFSET` + CDN Caching (giảm thời gian load từ ~2.5s xuống ~15ms). |
 | **Title Sanitization** | ✅ Complete | Fix toàn bộ 3,927 tên truyện dính slug/chưa viết hoa trong D1 + bổ sung `fmtNovelTitle` utility. |
-| **Phase 4: Filter Page** | ⏳ Optional | Đã tích hợp bộ lọc `/epub?status=completed` & `/epub?status=ongoing`. |
 
 ---
 
@@ -25,6 +26,7 @@ E:\AOO\HacDaoTruyen\
 │   └── skills\
 │       └── homepage-redesign\
 │           ├── SKILL.md            ← Hướng dẫn phát triển & bảo trì homepage
+│           ├── HOMEPAGE_PLAN.md    ← Bản sao lưu plan cho agent khác
 │           └── DEVELOPMENT_LOG.md  ← Nhật ký công việc & lịch sử commit
 │
 ├── frontend\src\
@@ -33,19 +35,25 @@ E:\AOO\HacDaoTruyen\
 │   │   └── ui\
 │   │       ├── SectionHeader.jsx   ← Header section với title, count, link "Xem tất cả"
 │   │       ├── Badge.jsx           ← Chip hiển thị MỚI / FULL / EPUB
-│   │       └── NovelGrid.jsx       ← Grid truyện responsive gọn (3/5/6 cột)
+│   │       ├── NovelGrid.jsx       ← Grid truyện responsive gọn (3/5/6 cột)
+│   │       └── NovelList.jsx       ← Danh sách truyện dạng Row List Compact (~52px dòng)
 │   │
 │   ├── pages\
-│   │   ├── HomePage.jsx            ← Orchestrator (Data fetching + Layout composition)
+│   │   ├── HomePage.jsx            ← Orchestrator Portal 2 cột (Main Content + Sidebar Right)
 │   │   └── homepage\
-│   │       ├── SearchSection.jsx       ← Live search bar & results
-│   │       ├── RecentlyReadSection.jsx ← Truyện vừa đọc từ LocalStorage
-│   │       ├── HeroSection.jsx         ← Banner truyện nổi bật 2 cột
-│   │       ├── UpdatesSection.jsx      ← Truyện mới cập nhật (cuộn ngang)
-│   │       ├── InProgressSection.jsx   ← Truyện đang dịch (demo grid)
-│   │       ├── CompletedSection.jsx    ← Truyện hoàn thành (demo grid + link Xem tất cả)
-│   │       ├── AllNovelsSection.jsx    ← Tất cả truyện với tab (Tất cả/Đang dịch/Hoàn thành/EPUB)
-│   │       └── StatsSection.jsx        ← Thống kê tổng số truyện/chương/glossary
+│   │       ├── SearchSection.jsx           ← Live search bar & results
+│   │       ├── GenreChips.jsx              ← Dải chip lọc thể loại nhanh
+│   │       ├── RecentlyReadSection.jsx     ← Truyện vừa đọc từ LocalStorage
+│   │       ├── HeroSection.jsx             ← Banner truyện nổi bật
+│   │       ├── UpdatesSection.jsx          ← Truyện mới cập nhật (dạng List Compact)
+│   │       ├── InProgressSection.jsx       ← Truyện đang dịch (grid compact)
+│   │       ├── CompletedSection.jsx        ← Truyện hoàn thành (demo grid + link Xem tất cả)
+│   │       ├── AllNovelsSection.jsx        ← Tất cả truyện (Chế độ xem List default, Grid, Table)
+│   │       ├── NewChapterWidget.jsx        ← Khung thông báo chương mới vừa dịch (nút "Đọc ngay")
+│   │       ├── QidianRankingsWidget.jsx    ← Bảng xếp hạng Qidian (Phong Vân/Đọc Nhiều/Đề Cử/Tân Thư)
+│   │       ├── NewsAnnouncementsWidget.jsx ← Khung Tin Tức & Thông Báo phong cách truyentrung
+│   │       ├── RecentCommentsSection.jsx   ← Bình luận mới nhất toàn site
+│   │       └── StatsSection.jsx            ← Thống kê tổng số truyện/chương/glossary
 │   │
 │   └── utils\
 │       └── format.js               ← fmtNovelTitle, fmtNumber, fmtTimeAgo
@@ -56,52 +64,21 @@ E:\AOO\HacDaoTruyen\
 
 ---
 
-## ⚡ Giải pháp Tối ưu Tốc độ (Performance Optimization Details)
+## 🔍 Chi tiết các nâng cấp UX/UI mới nhất
 
-### 1. Nguyên nhân gây chậm trước đây
-- Trước đây API `GET /api/novels` tải toàn bộ **28,498 bản ghi** từ Cloudflare D1 vào bộ nhớ Worker JS để phân trang và filter ở phía JS client.
-- Bảng `novels` trong D1 chưa có index ngoại trừ `PRIMARY KEY (slug)`.
+1. **Giao diện Danh sách Compact (`NovelList.jsx`)**:
+   - Thay thế các thẻ truyện dọc quá to bằng danh sách hàng ngang gọn gàng.
+   - Mỗi hàng gồm: Bìa nhỏ 36x50px, Tên viết hoa đẹp, Chip thể loại, Tác giả, Số chương, Lượt xem và thời gian cập nhật.
+   - Giúp người đọc dễ dàng cuộn lướt 15-20 truyện liên tục chỉ trong 1 màn hình.
 
-### 2. Giải pháp đã triển khai
-1. **D1 SQL Indexes**:
-   - `idx_novels_status` ON `novels(status)`
-   - `idx_novels_updated_at` ON `novels(updated_at DESC)`
-   - `idx_novels_has_epub` ON `novels(has_epub)`
-   - `idx_novels_total_chapters` ON `novels(total_chapters DESC)`
-   - `idx_novels_views` ON `novels(views DESC)`
+2. **Bảng Xếp Hạng chuẩn Qidian (`QidianRankingsWidget.jsx`)**:
+   - Tích hợp 4 bảng xếp hạng chính của Qidian/Truyentrung:
+     - 🌟 **Phong Vân Bảng**: Bảng xếp hạng tổng hợp.
+     - 👁️ **Đọc Nhiều**: Top lượt xem cao nhất.
+     - ⭐ **Đề Cử Bảng**: Top đánh giá 5 sao.
+     - 🆕 **Tân Thư Bảng**: Top sách mới ra mắt/mới cập nhật.
+   - Thiết kế huy hiệu thứ tự #1 (Vàng), #2 (Bạc), #3 (Đồng) nổi bật.
 
-2. **D1 Direct SQL Pagination & Filter**:
-   - Đẩy trực tiếp `WHERE`, `LOWER(title) LIKE %q%`, `LIMIT ? OFFSET ?` vào SQL Query.
-   - `SELECT COUNT(*) as cnt` tính tổng trang nhanh chóng nhờ index.
-   - Trả về đúng số bản ghi trang hiện tại (ví dụ 24 hoặc 48 bản ghi) thay vì 28,498 bản ghi.
-
-3. **Cloudflare CDN Cache-Control Headers**:
-   - `GET /api/novels`: `Cache-Control: public, max-age=60, s-maxage=120`
-   - `GET /api/novels/genres`: `Cache-Control: public, max-age=600, s-maxage=600`
-
----
-
-## 🔍 Chi tiết các thay đổi gần nhất podľa yêu cầu của người dùng
-
-1. **Chuẩn hóa Tên truyện EPUB**:
-   - Xử lý 3,927 dòng dữ liệu dính slug/không cách/viết thường trong D1 (`UPDATE novels SET title = ...`).
-   - Tạo helper `fmtNovelTitle` để format tự động nếu gặp slug không cách.
-
-2. **Session riêng cho Truyện Mới Cập Nhật**:
-   - `UpdatesSection.jsx` được chuyển sang dạng hàng cuộn ngang (`section-row-scroll`).
-   - Hiển thị badge `MỚI`, tên chương mới nhất và thời gian cập nhật.
-
-3. **Format thu nhỏ thẻ truyện trên trang chủ**:
-   - Cấu hình lại `NovelGrid` hiển thị 3 cột trên mobile, 5 cột trên tablet, 6 cột trên desktop.
-   - Kích thước card gọn hơn, chữ title vừa đủ (0.8rem), giúp hiển thị phong phú hơn.
-
-4. **Giới hạn Truyện Hoàn Thành & Nút Xem Tất Cả**:
-   - `CompletedSection.jsx` giới hạn hiển thị demo 6 truyện tiêu biểu.
-   - Tiêu đề section có nút **"Xem tất cả"** điều hướng trực tiếp đến `/epub?status=completed`.
-
----
-
-## 🚀 Đã Deploy & Commit
-
-- **Cloudflare Worker & Pages**: Deployed thành công (`hac-dao-truyen.nguyenbaosang1998.workers.dev`).
-- **Git Commit**: `a6c723d` -> `fc3bea8` -> `bd6835f`.
+3. **Bố cục 2 Cột Portal (Main Left 68% + Sidebar Right 32%)**:
+   - Main Left: Dành riêng cho trải nghiệm duyệt và đọc danh sách truyện chính.
+   - Sidebar Right: Dành cho các widget thông báo, xếp hạng, tin tức, bình luận mới và thống kê.
