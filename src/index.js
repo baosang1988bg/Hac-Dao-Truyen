@@ -41,6 +41,11 @@ async function handleApi(request, url, env, ctx) {
   const path = url.pathname;
   const method = request.method;
 
+  // Global Rate Limiting: Chống DDoS/Spam - Tối đa 120 API request / 1 phút / IP
+  if (!checkRateLimit(`api:${clientIp(request)}`, 60_000, 120)) {
+    return jsonResponse({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau 1 phút.' }, 429);
+  }
+
   // POST /api/admin/sync-novel — high-speed batch sync endpoint
   if (path === '/api/admin/sync-novel' && method === 'POST') {
     return syncNovelBatch(env, request);
@@ -362,18 +367,20 @@ async function getGenres(env) {
 // Rate-limit nhẹ theo IP, best-effort trong bộ nhớ của 1 isolate (không cần
 // thêm KV/D1 mới). Reset khi Worker khởi động lại isolate — chấp nhận được vì
 // mục tiêu chỉ là chặn spam tự động, không phải giới hạn cứng tuyệt đối.
-const _rateLimitMap = new Map(); // key `${loại}:${ip}:${slug}` → timestamp ms lần gần nhất
+const _rateLimitMap = new Map(); // key -> { count, resetAt }
 
-function checkRateLimit(key, windowMs) {
+function checkRateLimit(key, windowMs, maxRequests = 1) {
   const now = Date.now();
-  const last = _rateLimitMap.get(key);
-  if (last && now - last < windowMs) return false;
-  _rateLimitMap.set(key, now);
-  if (_rateLimitMap.size > 5000) {
-    const cutoff = now - windowMs;
-    for (const [k, t] of _rateLimitMap) if (t < cutoff) _rateLimitMap.delete(k);
+  let entry = _rateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 0, resetAt: now + windowMs };
   }
-  return true;
+  entry.count++;
+  _rateLimitMap.set(key, entry);
+  if (_rateLimitMap.size > 5000) {
+    for (const [k, v] of _rateLimitMap) if (now > v.resetAt) _rateLimitMap.delete(k);
+  }
+  return entry.count <= maxRequests;
 }
 
 function clientIp(request) {
