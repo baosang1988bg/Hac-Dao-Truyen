@@ -1,59 +1,27 @@
-# Kế Hoạch Giai Đoạn 1: Sao Chép Toàn Bộ UI/UX & Component Của Truyentrung.com
+# Kế Hoạch Nghiên Cứu Nguồn Dữ Liệu Truyentrung.com & Nâng Cấp Hắc Đạo Truyện
 
-Dự án nâng cấp Trang chủ `hacdaotruyen.com` tái hiện **100% cấu trúc giao diện (UI Layout)** và **trải nghiệm người dùng (UX)** của `https://truyentrung.com/`. Sau khi hoàn thành bản chuẩn của Truyentrung, người dùng sẽ tự điều chỉnh/custom lại sau theo ý muốn.
-
----
-
-## 🔍 Đánh Giá Độ Khả Thi (Feasibility Assessment)
-
-- **Kết luận**: **100% HOÀN TOÀN KHẢ THI**.
-- **Kiến trúc Hiện Tại**: HacDaoTruyen đã được mô-đun hóa thành các section React riêng biệt trong `frontend/src/pages/homepage/`, rất thuận tiện để ghép/thay đổi layout theo đúng Truyentrung.
-- **Dữ liệu D1**: Cơ sở dữ liệu D1 đã hỗ trợ đầy đủ các trường `views`, `rating`, `rating_count`, `chapter_count`, `updated_at`, `genre`, `status` để nạp dữ liệu thật vào các Bảng Xếp Hạng.
-- **Flexibility**: Sử dụng React + Vanilla CSS chuẩn (không bị giới hạn bởi framework UI phụ thuộc).
+Tài liệu này tổng hợp kết quả nghiên cứu cách thức **truyentrung.com** thu thập dữ liệu và đề xuất kế hoạch nâng cấp toàn diện cho hệ thống cào/dịch truyện của **HacDaoTruyen**.
 
 ---
 
-## 📐 Danh Sách Các Section & Component Cần Thiết Của Truyentrung.com
+## 🔍 Kết Quả Nghiên Cứu Nguồn Dữ Liệu Của Truyentrung.com
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│  1. Top Notice Bar: Khung Truy Thư Lệnh & Thông Báo Tìm Truyện          │
-├────────────────────────────────────────────────────────────────────────┤
-│  2. Monthly Popular Hero: Section "Nhân Khí Tháng" (Card nổi bật lớn)  │
-├──────────────────────────────┬─────────────────────────────────────────┤
-│  3. Recently Updated Table   │  4. Multi-Ranking Widgets (Sidebar)     │
-│     (Bảng Mới Cập Nhật dạng  │     - BXH Nguyệt Phiếu / Phong Vân     │
-│      bảng Table chuẩn)       │     - BXH Bán Chạy / Lượt Đọc           │
-│                              │     - BXH Sách Mới                      │
-│                              │     - BXH Tu Vi / Đánh Giá              │
-├──────────────────────────────┼─────────────────────────────────────────┤
-│  5. All Novels Tabbed List   │  6. Live Chatbox & Online Ranking       │
-│     (Tất cả truyện dạng Tab) │     (Khung chat & thành viên online)    │
-└──────────────────────────────┴─────────────────────────────────────────┘
-```
+Truyentrung.com quản lý hơn **86,222+ bộ truyện**. Hệ thống của họ lấy dữ liệu từ 5 nguồn chính:
+
+### 1. Nguồn Dữ Liệu Gốc (Data Sources)
+- **Qidian (起点中文网 - qidian.com)**: Nguồn metadata chính (Tiêu đề, Tác giả, Ảnh bìa Yuewen `bookcover.yuewen.com`, Thể loại, Tóm tắt, Mục lục gốc).
+- **69shuba (69书吧 - 69shuba.cx / 69shu.me)**: Nguồn crawl văn bản thô (raw Chinese text) miễn phí tốc độ cao nhất (thường có chương mới chỉ sau 5-10 phút so với Qidian).
+- **Fanqie (番茄小说 - fanqienovel.com)**: Nguồn truyện Đô thị, Hệ thống, Giải trí từ ByteDance.
+- **Faloo (飞卢小说网 - b.faloo.com)**: Nguồn truyện Đồng nhân, Sảng văn, Vô địch lưu.
+- **Novel543 / Biquge (novel543.com, biquge.biz)**: Nguồn dự phòng (fallback) khi 69shuba bị chặn Cloudflare hoặc gián đoạn.
 
 ---
 
-## 🛠️ Danh Sách Công Việc Chi Tiết Cho Các Component
+## 🚀 Kế Hoạch Nâng Cấp Hệ Thống Cho Hắc Đạo Truyện
 
-### 1. `index.css`
-- Định nghĩa lại Design Tokens & Color Palette chuẩn theo Truyentrung (`#0f172a`, `#1e293b`, `#3b82f6`, `#10b981`).
-- Styling cho Bảng Table `Truyện Mới Cập Nhật` (Thể loại | Tên truyện | Tác giả | Tình trạng | Số chương).
+Chúng ta sẽ nâng cấp HacDaoTruyen thành **Hệ thống Cào & Dịch Tự Động Đa Nguồn (Multi-Source Automated Novel Engine)** theo 4 giai đoạn:
 
-### 2. `TruyThuNoticeSection.jsx`
-- Khung bài đăng tìm truyện / Truy thư lệnh ở vị trí trên cùng.
-
-### 3. `MonthlyPopularSection.jsx`
-- Section *"Nhân Khí Tháng"* (Card truyện hot nhất tháng với bìa 180px, tóm tắt, lượt đọc).
-
-### 4. `UpdatesSection.jsx`
-- Chuyển đổi thành Bảng Table chuẩn 5 cột của Truyentrung + link *"Xem thêm truyện nguồn Qidian →"*.
-
-### 5. `TruyenTrungRankings.jsx`
-- Khối 5 Bảng Xếp Hạng: *Nguyệt Phiếu, Bán Chạy, Lượt Đọc, Sách Mới, Đánh Giá & Bình Luận*.
-
-### 6. `TruyenTrungChatboxWidget.jsx`
-- Khung Chatbox trực tuyến & BXH Thành viên Tu Vi / Online.
-
-### 7. `HomePage.jsx`
-- Điều phối tổng thể các section theo đúng thứ tự 1 ➔ 6 của Truyentrung.com.
+- **Giai Đoạn 1 — Đa Nguồn Crawl (`scraper.py`)**: Nhận diện & cào 5 nguồn (Qidian, 69shuba, Novel543, Fanqie, Faloo).
+- **Giai Đoạn 2 — CLI Import 1-Click (`main.py import --url <URL>`)**: Tự động bóc tách thông tin, tạo `novel.json`, `catalog.json` và lưu ảnh bìa lên R2.
+- **Giai Đoạn 3 — Auto Multi-Novel Watcher (`cloud_to_cloud_syncer.py`)**: Tự động theo dõi và cập nhật tất cả truyện đang ra trên đám mây.
+- **Giai Đoạn 4 — Yêu Cầu Truyện Mới (`RequestNovelModal.jsx`)**: Cho phép độc giả gửi URL truyện bên Trung để tự động đưa vào hàng chờ dịch.
