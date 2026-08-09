@@ -1920,6 +1920,18 @@ a:hover {
   .rr-card:hover { border-color: rgba(59,130,246,0.25); }
 }
 
+/* ── HP Top grid (Hero + NewChapterWidget) ── */
+.hp-top-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin-bottom: var(--section-gap, 2.25rem);
+}
+@media (min-width: 900px) {
+  .hp-top-grid {
+    grid-template-columns: 1.7fr 1fr;
+  }
+}
+
 /* ── InProgress section: use novel-grid instead of scroll ── */
 .hp-in-progress { margin-bottom: var(--section-gap); }
-

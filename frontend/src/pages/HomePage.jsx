@@ -15,6 +15,7 @@ import CompletedSection from './homepage/CompletedSection'
 import AllNovelsSection from './homepage/AllNovelsSection'
 import TopListSection from './homepage/TopListSection'
 import StatsSection from './homepage/StatsSection'
+import NewChapterWidget from './homepage/NewChapterWidget'
 
 /**
  * HomePage – Orchestrator trang chủ.
@@ -155,8 +156,11 @@ export default function HomePage() {
           {/* Bình luận mới nhất toàn site — tự ẩn nếu chưa có bình luận nào */}
           <RecentCommentsSection />
 
-          {/* Banner truyện nổi bật */}
-          <HeroSection novel={featured} />
+          {/* Banner truyện nổi bật + Khung thông báo chương mới (cột bên phải) */}
+          <div className="hp-top-grid">
+            <HeroSection novel={featured} />
+            <NewChapterWidget />
+          </div>
 
           {/* Session riêng: Truyện mới cập nhật (cuộn ngang) */}
           <UpdatesSection novels={recentlyUpdated} />
