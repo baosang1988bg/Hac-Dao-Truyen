@@ -411,6 +411,12 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
     if synopsis_path.exists() and not skip_r2:
         migrate_synopsis(slug, dry_run=dry_run, skip_r2=skip_r2, skip_d1=skip_d1)
 
+    # ── 2d. catalog.json → R2 ──────────────────────────────────────────
+    catalog_path = novel_dir / "catalog.json"
+    if catalog_path.exists() and not skip_r2:
+        ok_c = r2_put(catalog_path, f"{slug}/catalog.json", dry_run)
+        print(f"  {'✅' if ok_c else '❌'} Catalog → R2")
+
     # ── 3. Chapters ──────────────────────────────────────────────────────
     if not trans_dir.exists():
         print(f"  ⚠️  Không có translated/")
