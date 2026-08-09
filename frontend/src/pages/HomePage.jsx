@@ -2,26 +2,28 @@ import React, { useEffect, useState } from 'react'
 import { AlertCircle } from 'lucide-react'
 import api from '../api'
 
-// ── Section & Widget components ──
+// ── Truyentrung.com UI Components ──
 import SearchSection from './homepage/SearchSection'
 import GenreChips from './homepage/GenreChips'
 import RecentlyReadSection from './homepage/RecentlyReadSection'
-import RecentCommentsSection from './homepage/RecentCommentsSection'
-import HeroSection from './homepage/HeroSection'
+import TruyThuNoticeSection from './homepage/TruyThuNoticeSection'
+import MonthlyPopularSection from './homepage/MonthlyPopularSection'
 import UpdatesSection from './homepage/UpdatesSection'
-import InProgressSection from './homepage/InProgressSection'
-import CompletedSection from './homepage/CompletedSection'
+import TruyenTrungRankings from './homepage/TruyenTrungRankings'
+import TruyenTrungChatboxWidget from './homepage/TruyenTrungChatboxWidget'
 import AllNovelsSection from './homepage/AllNovelsSection'
+import RecentCommentsSection from './homepage/RecentCommentsSection'
 import StatsSection from './homepage/StatsSection'
-import NewChapterWidget from './homepage/NewChapterWidget'
-import QidianRankingsWidget from './homepage/QidianRankingsWidget'
-import NewsAnnouncementsWidget from './homepage/NewsAnnouncementsWidget'
 
 /**
- * HomePage – Orchestrator trang chủ HacDaoTruyen.
- * Bố cục 2 Cột Portal (Main Left + Sidebar Right) lấy cảm hứng từ Qidian & Truyentrung:
- *   - Main Left (68%): Search, Genre Chips, Recently Read, Hero, Updates (List view), In Progress, Completed, All Novels (List default).
- *   - Sidebar Right (32%): New Chapter Alert, Qidian Rankings (Phong Vân/Views/Rating/Newest), News & Announcements, Recent Comments, Stats.
+ * HomePage – Orchestrator trang chủ HacDaoTruyen (Bản Clone 100% UI Truyentrung.com Giai đoạn 1).
+ * Cấu trúc 6 Section chính:
+ *   1. Top Notice Bar: Khung Truy Thư Lệnh & Thông Báo Tìm Truyện
+ *   2. Monthly Popular Hero: Section "Nhân Khí Tháng" (Card nổi bật lớn)
+ *   3. Recently Updated Table: Bảng Mới Cập Nhật dạng Table chuẩn 5 cột
+ *   4. Multi-Ranking Widgets: 5 BXH Nguyệt Phiếu / Bán Chạy / Lượt Đọc / Sách Mới / Đánh Giá
+ *   5. All Novels Tabbed List: Tất cả truyện dạng Tab
+ *   6. Live Chatbox & Online Ranking: Khung chatbox & thành viên online
  */
 export default function HomePage() {
   const [novels, setNovels] = useState([])
@@ -76,7 +78,7 @@ export default function HomePage() {
   if (loading) {
     return (
       <div className="container" style={{ paddingTop: '3rem', color: 'var(--text-muted)' }}>
-        Đang tải trang chủ...
+        Đang tải trang chủ Truyện Trung...
       </div>
     )
   }
@@ -92,26 +94,17 @@ export default function HomePage() {
   }
 
   const visible = novels.filter(n => (n.chapter_count || 0) > 0 || n.total_chapters > 0)
-  const featured = visible.find(n => n.cover_url) || visible[0]
-  const nowSec = Math.floor(Date.now() / 1000)
+  const popularMonthly = visible.find(n => n.views && n.views > 0) || visible[0]
 
-  const inProgress = visible.filter(n =>
-    (n.chapter_count || 0) > 0 && (n.total_chapters === 0 || n.chapter_count < n.total_chapters)
-  )
   const recentlyUpdated = visible
     .filter(n => n.last_translated_at && (n.chapter_count || 0) > 0)
     .sort((a, b) => b.last_translated_at - a.last_translated_at)
-    .slice(0, 15)
-
-  const completed = visible.filter(n =>
-    n.total_chapters > 0 && n.chapter_count >= n.total_chapters && (n.chapter_count || 0) > 0
-  )
 
   const isSearching = searchQuery.trim().length > 0
 
   return (
     <div className="container animate-fade-in" style={{ paddingTop: '1rem' }}>
-      {/* 🔍 Search – luôn hiển thị */}
+      {/* 🔍 Search Bar – luôn hiển thị ở trên cùng */}
       <SearchSection
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -122,47 +115,41 @@ export default function HomePage() {
       {/* Các section chính – ẩn khi đang tìm kiếm */}
       {!isSearching && (
         <>
+          {/* 1. Top Notice Bar: Khung Truy Thư Lệnh & Thông Báo Tìm Truyện */}
+          <TruyThuNoticeSection />
+
           {/* Chip lọc thể loại nhanh */}
           <GenreChips activeGenre={activeGenre} onSelect={setActiveGenre} />
 
           {/* Vừa đọc gần đây */}
           <RecentlyReadSection novels={visible} />
 
-          {/* Bố cục 2 Cột Portal (Main Left + Sidebar Right) */}
-          <div className="hp-portal-layout" style={{ marginTop: '1rem' }}>
+          {/* Bố cục 2 Cột Portal chuẩn Truyentrung.com */}
+          <div className="hp-portal-layout" style={{ marginTop: '1.25rem' }}>
             {/* ── Cột Trái: Main Content (68%) ── */}
             <div className="hp-main-col">
-              {/* Banner truyện nổi bật */}
-              <HeroSection novel={featured} />
+              {/* 2. Monthly Popular Hero: Section "Nhân Khí Tháng" */}
+              <MonthlyPopularSection novel={popularMonthly} />
 
-              {/* Truyện mới cập nhật (dạng List Compact gọn gàng) */}
+              {/* 3. Recently Updated Table: Bảng Mới Cập Nhật dạng Table chuẩn 5 cột */}
               <UpdatesSection novels={recentlyUpdated} />
 
-              {/* Truyện đang dịch */}
-              <InProgressSection novels={inProgress} nowSec={nowSec} />
-
-              {/* Truyện hoàn thành */}
-              <CompletedSection novels={completed} />
-
-              {/* Tất cả truyện (Mặc định dạng List Compact + hỗ trợ Grid/Table) */}
+              {/* 5. All Novels Tabbed List: Tất cả truyện dạng Tab */}
               <AllNovelsSection novels={visible} activeGenre={activeGenre} />
             </div>
 
             {/* ── Cột Phải: Sidebar Widgets (32%) ── */}
             <div className="hp-sidebar-col">
-              {/* ⚡ Khung Thông Báo Chương Mới */}
-              <NewChapterWidget />
+              {/* 4. Multi-Ranking Widgets: 5 BXH Nguyệt Phiếu/Bán Chạy/Lượt Đọc/Sách Mới/Đánh Giá */}
+              <TruyenTrungRankings novels={visible} />
 
-              {/* 🏆 Bảng Xếp Hạng Qidian (Phong Vân / Đọc Nhiều / Đề Cử / Tân Thư) */}
-              <QidianRankingsWidget novels={visible} />
+              {/* 6. Live Chatbox & Online Ranking: Khung chat & thành viên online */}
+              <TruyenTrungChatboxWidget />
 
-              {/* 📰 Khung Tin Tức & Thông Báo */}
-              <NewsAnnouncementsWidget />
-
-              {/* 💬 Bình Luận Mới Nhất */}
+              {/* Thảo luận / Bình luận mới nhất */}
               <RecentCommentsSection />
 
-              {/* 📊 Thống Kê Tổng */}
+              {/* Thống kê hệ thống */}
               <StatsSection novels={visible} />
             </div>
           </div>
