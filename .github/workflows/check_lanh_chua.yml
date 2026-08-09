@@ -1,9 +1,7 @@
-name: Auto Check & Translate Lanh Chua (Daily 12:00 AM VN Time)
+name: Auto Check & Translate Lanh Chua (Manual Trigger Only)
 
 on:
-  schedule:
-    - cron: '0 17 * * *' # Chạy đúng 12:00 AM đêm (00:00 GMT+7) mỗi ngày
-  workflow_dispatch: # Cho phép bấm chạy thủ công trên GitHub
+  workflow_dispatch: # Cho phép bấm chạy thủ công trên GitHub — KHÔNG tự động cron
 
 jobs:
   check_and_translate:
