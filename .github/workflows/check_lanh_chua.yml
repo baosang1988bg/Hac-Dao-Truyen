@@ -1,0 +1,39 @@
+name: Auto Check & Translate Lanh Chua (Daily 12:00 AM VN Time)
+
+on:
+  schedule:
+    - cron: '0 17 * * *' # Chạy đúng 12:00 AM đêm (00:00 GMT+7) mỗi ngày
+  workflow_dispatch: # Cho phép bấm chạy thủ công trên GitHub
+
+jobs:
+  check_and_translate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          pip install requests beautifulsoup4 google-generativeai
+
+      - name: Run Auto Check & Translate
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python tools/auto_check_lanh_chua.py || true
+
+      - name: Commit & Push Changes
+        run: |
+          git config --global user.name 'AutoTranslator Bot'
+          git config --global user.email 'bot@hacdaotruyen.local'
+          git add novels/lanh-chua-cau-sinh-thien-phu-hop-thanh/ frontend/src/content/announcements.json || true
+          git commit -m "auto(translate): cập nhật chương mới cho Lãnh Chúa Cầu Sinh" || true
+          git push origin main || true
