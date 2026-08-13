@@ -112,9 +112,19 @@ plans/
 3. **Code Splitting Frontend** — ✅ **Đã xong** (commit `c12a9aa`). React.lazy() cho Admin/
    EpubReader/EpubCatalogPage/Account/Login/Logs. Verify bằng `npm run build` thật: chunk
    chính giảm từ ~543KB xuống ~424KB, 8 trang phụ tách thành chunk riêng tải khi cần.
-4. **Hoàn thiện Truyentrung UI** — 📋 Chưa làm, cần bạn nêu cụ thể custom theo ý muốn (đã hỏi
-   trong phiên 2, được chọn "bỏ qua trong phiên này").
+4. **Hoàn thiện Truyentrung UI** — ✅ **Đã rà soát** (commit `b8db3b5`, phiên 3). Phát hiện phần
+   lớn UI Truyentrung (BXH, chip thể loại, comment, thông báo) đã xong ở các đợt trước —
+   plan gốc lỗi thời. Tìm và gỡ 1 vi phạm nguyên tắc "không bịa số liệu" (BXH Tu Vi/Online
+   giả trong `TruyenTrungChatboxWidget`) + dọn 2 import thừa. Không có thay đổi lớn khác vì
+   không tìm thấy vấn đề cụ thể/an toàn nào khác đáng sửa.
 
 ### Ưu Tiên Thấp
-5. **ADK Multi-Agent Pipeline** — 📋 Chưa làm, việc lớn cần lên kế hoạch riêng.
-6. **Request Novel Feature** — 📋 Chưa làm, tính năng mới cần thiết kế UX/backend riêng.
+5. **ADK Multi-Agent Pipeline** — ⚠️ **Giai đoạn 1 (Foundation) đã xong** (commit `0b176e9`,
+   phiên 3). Scaffold `agents/` (scraper_agent, translator_agent, orchestrator) mặc định TẮT
+   qua `ADK_ENABLED=false`, không đổi hành vi dịch hiện tại. Giai đoạn 2 (Pass 2 + QC tự
+   động) và Giai đoạn 3 (glossary auto-learn) CHƯA làm — theo đúng phạm vi đã thống nhất.
+6. **Request Novel Feature** — ✅ **Đã xong** (commit `8d43716`, phiên 3). Độc giả đăng nhập
+   gửi URL truyện, admin duyệt qua `/admin/requests`. Triển khai cả FastAPI (SQLite) và
+   Worker (D1) theo đúng pattern bookmarks/comments có sẵn. Duyệt CHỈ đổi trạng thái, KHÔNG
+   tự động trigger scraper (an toàn, tránh SSRF). Migration D1 `003_novel_requests.sql`
+   CHƯA áp dụng lên production — cần chạy tay khi deploy.
