@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-migrate_to_cloudflare.py — v5
+migrate_to_cloudflare.py — v6
 ==============================
 Sync novels/ lên Cloudflare D1 + R2.
 
@@ -10,10 +10,22 @@ Fix v5:
 - Filename tiếng Trung không có 第N章 → author note (num=0)
 - R2 key = base64(filename) — không collision
 
+v6 (MỚI, THỬ NGHIỆM):
+- Thêm chế độ `--batch-upload` (mặc định TẮT — hành vi chạy hàng ngày qua
+  tools/auto_check_lanh_chua.py / cron KHÔNG đổi nếu không ai chủ động bật
+  flag này). Khi bật, gộp nhiều chương liên tiếp thành 1 object JSON duy
+  nhất (`<slug>/bundles/bundle-XXXX.json`) thay vì PUT từng chương riêng lẻ,
+  giảm số lượt R2 request. Xem thêm docstring của build_and_upload_bundles().
+  ⚠️ Đường batch-upload CHƯA từng được test với R2 thật — cần bật thử
+  nghiệm thủ công trên 1 novel nhỏ và kiểm tra kỹ (vd qua
+  GET /api/debug/chapter/:slug/:num) trước khi dùng cho production.
+
 Cách dùng:
   python migrate_to_cloudflare.py --slug xich-tam-tuan-thien --limit 20
   python migrate_to_cloudflare.py --slug xich-tam-tuan-thien
   python migrate_to_cloudflare.py --slug xich-tam-tuan-thien --skip-r2
+  # Thử nghiệm batch-upload (KHÔNG dùng cho production khi chưa test kỹ):
+  python migrate_to_cloudflare.py --slug xich-tam-tuan-thien --dry-run --batch-upload --bundle-size 50
 """
 
 import os, re, json, subprocess, argparse, sys, tempfile, base64
@@ -209,12 +221,144 @@ def r2_put(local: Path, key: str, dry_run=False) -> bool:
         return False
     return True
 
+def r2_get_json(key: str) -> dict:
+    """Đọc 1 object JSON từ R2 — trả về {} nếu không tồn tại/lỗi. Dùng bởi
+    build_and_upload_bundles() (MỚI, thử nghiệm) để đọc manifest.json cũ
+    trước khi merge thêm entries mới, tránh mất mapping đã có."""
+    with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as tmp:
+        tmp_path = tmp.name
+    try:
+        r = run_safe([get_wrangler(), 'r2', 'object', 'get',
+                      f"{R2_BUCKET}/{key}", f"--file={tmp_path}", '--remote'])
+        if r.returncode == 0:
+            with open(tmp_path, encoding='utf-8') as f:
+                return json.load(f)
+        return {}
+    except Exception as e:
+        print(f"    [R2-json-ERR] Không thể đọc {key}: {e}")
+        return {}
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+def build_and_upload_bundles(slug: str, files: list, bundle_size: int, dry_run=False) -> bool:
+    """
+    [MỚI — CHẾ ĐỘ THỬ NGHIỆM, opt-in qua --batch-upload]
+    ================================================================
+    ⚠️ TÍNH NĂNG NÀY CHƯA TỪNG ĐƯỢC TEST VỚI R2 THẬT. Chỉ chạy khi ai đó
+    chủ động thêm cờ --batch-upload trên dòng lệnh (mặc định KHÔNG bật).
+    Job cron hàng ngày (tools/auto_check_lanh_chua.py) KHÔNG truyền cờ này
+    nên hành vi sync hàng ngày hiện tại không đổi.
+
+    Gộp `files` (danh sách Path đã sort theo chapter_number) thành nhiều
+    object JSON, mỗi object chứa tối đa `bundle_size` chương, thay vì PUT
+    từng chương 1 lượt request riêng như r2_put() mặc định. Mục đích: giảm
+    số lượt R2 request khi 1 novel có hàng nghìn chương (R2 tính phí/giới hạn
+    theo số request, gộp lại giúp tiết kiệm đáng kể).
+
+    Cấu trúc mỗi bundle (R2 key: "<slug>/bundles/bundle-NNNN.json"):
+        { "<b64_encoded_filename>": "<toàn bộ nội dung markdown chương>", ... }
+    Key dùng CHÍNH XÁC base64 url-safe của filename, KHÔNG kèm tiền tố
+    "b64_" (xem filename_to_bundle_key()) — phải trùng khớp với cách
+    src/index.js tự tính lại encoded key để tra cứu ngược (getChapterFromBundle).
+
+    Đồng thời ghi/merge "<slug>/bundles/manifest.json" ánh xạ
+    filename -> bundle R2 key, để Worker biết chương nằm trong bundle nào
+    mà không phải tải & quét hết mọi bundle của truyện.
+
+    Dữ liệu CŨ (upload theo r2_put từng chương, r2_key kiểu "<slug>/b64_...")
+    KHÔNG bị đụng tới — hàm này chỉ ghi thêm object mới, không xóa/sửa gì
+    trên các chương đã upload theo cách cũ.
+    """
+    manifest_key = f"{slug}/bundles/manifest.json"
+    manifest = r2_get_json(manifest_key) if not dry_run else {}
+
+    ok_bundles = 0
+    fail_bundles = 0
+    total = len(files)
+
+    for batch_index, i in enumerate(range(0, total, bundle_size)):
+        batch = files[i:i + bundle_size]
+        bundle_r2_key = f"{slug}/bundles/bundle-{batch_index:04d}.json"
+        bundle_data = {}
+
+        for fp in batch:
+            fname = fp.name
+            try:
+                content = fp.read_text(encoding='utf-8')
+            except Exception as e:
+                print(f"    [bundle-ERR] Không đọc được {fname}: {e}")
+                continue
+            bundle_data[filename_to_bundle_key(fname)] = content
+            manifest[fname] = bundle_r2_key
+
+        if dry_run:
+            names_preview = ', '.join(f.name[:30] for f in batch[:3])
+            more = '...' if len(batch) > 3 else ''
+            print(f"    [DRY-BUNDLE] {bundle_r2_key} ← {len(bundle_data)} chương "
+                  f"({names_preview}{more})")
+            ok_bundles += 1
+            continue
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', encoding='utf-8', delete=False) as f:
+            json.dump(bundle_data, f, ensure_ascii=False)
+            tmp_path = f.name
+        try:
+            ok = r2_put(Path(tmp_path), bundle_r2_key, dry_run=False)
+        finally:
+            os.unlink(tmp_path)
+
+        if ok:
+            ok_bundles += 1
+            print(f"    ✅ {bundle_r2_key} ({len(bundle_data)} chương)")
+        else:
+            fail_bundles += 1
+            print(f"    ❌ {bundle_r2_key} upload thất bại")
+
+    if dry_run:
+        print(f"    [DRY-BUNDLE] manifest.json sẽ có {len(manifest)} entries (chưa ghi)")
+    else:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', encoding='utf-8', delete=False) as f:
+            json.dump(manifest, f, ensure_ascii=False, indent=2)
+            man_tmp = f.name
+        try:
+            ok_m = r2_put(Path(man_tmp), manifest_key, dry_run=False)
+        finally:
+            os.unlink(man_tmp)
+        print(f"  {'✅' if ok_m else '❌'} manifest.json ({len(manifest)} entries) → R2")
+
+    print(f"  📦 Batch-upload (THỬ NGHIỆM): {ok_bundles} bundle(s) OK, {fail_bundles} lỗi "
+          f"(bundle_size={bundle_size})")
+    return fail_bundles == 0
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def filename_to_r2key(slug: str, filename: str) -> str:
-    """base64 url-safe encode filename — tránh ký tự đặc biệt trong R2 key."""
+    """base64 url-safe encode filename — tránh ký tự đặc biệt trong R2 key.
+    KHÔNG đổi hàm này (dùng bởi luồng upload từng-chương mặc định, đang chạy
+    production) — xem filename_to_bundle_key() bên dưới cho encoding riêng
+    của chế độ --batch-upload (MỚI, thử nghiệm)."""
     encoded = base64.urlsafe_b64encode(filename.encode('utf-8')).decode('ascii')
     return f"{slug}/b64_{encoded}"
+
+
+def filename_to_bundle_key(filename: str) -> str:
+    """
+    [MỚI — dùng riêng cho chế độ --batch-upload, KHÔNG dùng cho luồng cũ]
+    base64 url-safe encode filename, bỏ padding '=' cuối chuỗi — dùng làm key
+    bên trong bundle JSON.
+
+    QUAN TRỌNG: phải trùng khớp byte-for-byte với cách src/index.js tự tính
+    lại encoded key từ filename (hàm getChapterFromBundle) để tra cứu ngược
+    nội dung chương trong bundle. JS dùng btoa() rồi
+    .replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'') — tức LOẠI BỎ
+    padding '=' cuối, khác với base64.urlsafe_b64encode() mặc định của Python
+    (vẫn giữ '='). Vì vậy hàm này CHỦ ĐỘNG strip '=' để hai bên khớp nhau.
+    KHÔNG dùng hàm này cho filename_to_r2key() (luồng cũ, đang chạy production)
+    vì sẽ đổi giá trị r2_key hiện có.
+    """
+    encoded = base64.urlsafe_b64encode(filename.encode('utf-8')).decode('ascii')
+    return encoded.rstrip('=')
 
 def q(s) -> str:
     return "'" + str(s).replace("'", "''") + "'"
@@ -336,7 +480,8 @@ def get_effective_files(trans_dir: Path) -> list:
 
 # ── Migration ─────────────────────────────────────────────────────────────────
 
-def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=None, resume=False, from_chapter=None, extra_files=None):
+def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=None, resume=False,
+                   from_chapter=None, extra_files=None, batch_upload=False, bundle_size=50):
     novel_dir = NOVELS_DIR / slug
     nj        = novel_dir / "novel.json"
     trans_dir = novel_dir / "translated"
@@ -445,6 +590,20 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
     resume_str = " [resume mode — skip existing]" if resume else ""
     print(f"  📖 {total} files ({story} chapters + {notes} author notes){resume_str}")
 
+    # ── Batch-upload (MỚI — THỬ NGHIỆM, opt-in qua --batch-upload) ───────
+    # Gộp toàn bộ `files` thành các bundle JSON (xem build_and_upload_bundles)
+    # thay vì để vòng lặp D1 bên dưới PUT r2_put() từng chương riêng lẻ.
+    # Nhánh này CHỈ chạy khi batch_upload=True được truyền chủ động từ CLI
+    # (--batch-upload) — mặc định batch_upload=False nên job cron hiện tại
+    # (tools/auto_check_lanh_chua.py, không truyền cờ này) không đi qua đây,
+    # hành vi sync hàng ngày không đổi.
+    # ⚠️ CHƯA test với R2 thật — cần chạy thử thủ công + kiểm tra kỹ trước
+    # khi dùng cho production.
+    if batch_upload and not skip_r2:
+        print(f"  📦 [THỬ NGHIỆM] --batch-upload bật — gộp {total} chương thành "
+              f"bundle JSON (bundle_size={bundle_size})")
+        build_and_upload_bundles(slug, files, bundle_size, dry_run)
+
     ok_n = skip_n = fail_n = 0
 
     # Nếu sync toàn bộ (không resume, không --from-chapter), tự động xóa chapters cũ trong D1 để né rác filename
@@ -486,15 +645,24 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
 
         r2_ok_all = True
         if not skip_r2 and r2_batch:
-            from concurrent.futures import ThreadPoolExecutor
-            def _upload(item):
-                fp, r2key = item
-                return r2_put(fp, r2key, dry_run)
+            if batch_upload:
+                # [THỬ NGHIỆM] Đã upload gộp qua build_and_upload_bundles() ở
+                # trên — KHÔNG upload lại từng chương riêng lẻ (tránh
+                # double-upload). D1 vẫn ghi r2_key kiểu cũ (từng-file) để giữ
+                # nguyên schema/tương thích ngược, dù object đơn lẻ đó không
+                # tồn tại trên R2 trong chế độ batch — Worker sẽ fallback sang
+                # đọc từ bundle (xem getChapterFromBundle trong src/index.js).
+                pass
+            else:
+                from concurrent.futures import ThreadPoolExecutor
+                def _upload(item):
+                    fp, r2key = item
+                    return r2_put(fp, r2key, dry_run)
 
-            with ThreadPoolExecutor(max_workers=8) as executor:
-                results = list(executor.map(_upload, r2_batch))
-                if not all(results):
-                    r2_ok_all = False
+                with ThreadPoolExecutor(max_workers=8) as executor:
+                    results = list(executor.map(_upload, r2_batch))
+                    if not all(results):
+                        r2_ok_all = False
 
         if d1_ok and r2_ok_all:
             ok_n += len(r2_batch)
@@ -556,6 +724,14 @@ def main():
     ap.add_argument('--novels-dir', help='Thư mục chứa novels (mặc định: novels)')
     ap.add_argument('--synopsis', action='store_true',
                     help='Sync synopsis.md lên R2 + D1 (dùng sau khi chạy epub_to_chapters.py)')
+    ap.add_argument('--batch-upload', action='store_true', dest='batch_upload',
+                    help='[MỚI — THỬ NGHIỆM, opt-in, MẶC ĐỊNH TẮT] Gộp nhiều chương liên '
+                         'tiếp thành 1 object JSON duy nhất (R2 key: <slug>/bundles/bundle-NNNN.json) '
+                         'thay vì PUT từng chương riêng lẻ, giảm số lượt R2 request. '
+                         'KHÔNG dùng cờ này cho job cron/production khi chưa test kỹ thủ công '
+                         '(chưa từng chạy với R2 thật) — xem docstring build_and_upload_bundles().')
+    ap.add_argument('--bundle-size', type=int, default=50, dest='bundle_size',
+                    help='Số chương gộp trong 1 bundle JSON khi bật --batch-upload (mặc định 50)')
     args = ap.parse_args()
 
     if args.novels_dir:
@@ -675,7 +851,8 @@ def main():
 
         migrate_novel(slug, dry_run=args.dry_run, skip_r2=args.skip_r2,
                       skip_d1=args.skip_d1, limit=args.limit, resume=args.resume,
-                      from_chapter=from_chapter, extra_files=extra_files)
+                      from_chapter=from_chapter, extra_files=extra_files,
+                      batch_upload=args.batch_upload, bundle_size=args.bundle_size)
 
     print("\n🎉 Xong!")
     if not args.dry_run:

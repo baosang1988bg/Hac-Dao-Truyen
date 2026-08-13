@@ -648,6 +648,44 @@ async function getChapters(env, slug, ctx) {
   return jsonResponse([]);
 }
 
+// ── [MOI - THU NGHIEM] Doc chuong tu bundle JSON (che do --batch-upload) ────
+// tools/migrate_to_cloudflare.py --batch-upload (opt-in, mac dinh KHONG bat)
+// gop nhieu chuong lien tiep thanh 1 object JSON duy nhat
+// "<slug>/bundles/bundle-NNNN.json" (dang { "<b64_key>": "<noi dung>", ... })
+// thay vi PUT tung chuong rieng le, cung voi "<slug>/bundles/manifest.json"
+// anh xa filename -> bundle R2 key.
+//
+// CANH BAO: TINH NANG NAY CHUA TUNG DUOC TEST VOI R2 THAT. Chi co du lieu de
+// doc neu ai do da chu dong chay migrate voi --batch-upload. Voi toan bo du
+// lieu hien co (upload theo tung-chuong nhu cu), ham nay luon tra ve null o
+// buoc doc manifest (vi manifest.json chua ton tai) - KHONG anh huong gi toi
+// hang nghin chuong da upload theo cach cu.
+async function getChapterFromBundle(env, slug, filename) {
+  if (!filename) return null;
+  try {
+    const manifestObj = await env.CHAPTERS.get(`${slug}/bundles/manifest.json`);
+    if (!manifestObj) return null;
+    const manifest = await manifestObj.json();
+    const bundleKey = manifest[filename];
+    if (!bundleKey) return null;
+
+    const bundleObj = await env.CHAPTERS.get(bundleKey);
+    if (!bundleObj) return null;
+    const bundleData = await bundleObj.json();
+
+    // Key ben trong bundle = base64url(filename) KHONG kem tien to "b64_" va
+    // KHONG kem padding "=" - PHAI trung khop voi filename_to_bundle_key()
+    // trong tools/migrate_to_cloudflare.py (sua 1 ben thi phai sua dong bo ben kia).
+    const encoded = btoa(unescape(encodeURIComponent(filename)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const content = bundleData[encoded];
+    return typeof content === 'string' ? content : null;
+  } catch (e) {
+    // Bundle hong/khong dung dinh dang - coi nhu khong co, de cac fallback khac xu ly
+    return null;
+  }
+}
+
 async function getChapterContent(env, slug, identifier, ctx) {
   let num = /^\d+$/.test(identifier) ? parseInt(identifier) : 0;
   if (!num) {
@@ -658,7 +696,7 @@ async function getChapterContent(env, slug, identifier, ctx) {
   // 1. Ưu tiên tra cứu r2_key trực tiếp từ D1 Database (nhanh & 100% chuẩn xác)
   try {
     const row = await env.DB.prepare(`
-      SELECT r2_key FROM chapters
+      SELECT r2_key, filename FROM chapters
       WHERE novel_slug = ? AND (chapter_number = ? OR filename = ?)
       LIMIT 1
     `).bind(slug, num, identifier).first();
@@ -668,6 +706,17 @@ async function getChapterContent(env, slug, identifier, ctx) {
       if (obj) {
         const text = await obj.text();
         return jsonResponse({ content: text });
+      }
+    }
+
+    // [MOI - THU NGHIEM] Khong co object don le (vd da sync bang --batch-upload)
+    // -> thu tim trong bundle JSON bang filename tu D1. Voi du lieu cu (khong
+    // dung batch-upload), manifest.json khong ton tai nen ham nay tra null
+    // ngay, khong anh huong gi toi flow hien co.
+    if (row && row.filename) {
+      const bundleContent = await getChapterFromBundle(env, slug, row.filename);
+      if (bundleContent !== null) {
+        return jsonResponse({ content: bundleContent });
       }
     }
   } catch { /* fallback */ }
@@ -687,6 +736,12 @@ async function getChapterContent(env, slug, identifier, ctx) {
         if (obj) {
           const text = await obj.text();
           return jsonResponse({ content: text });
+        }
+
+        // [MOI - THU NGHIEM] Thu bundle JSON bang filename lay tu catalog.
+        const bundleContent = await getChapterFromBundle(env, slug, ch.filename);
+        if (bundleContent !== null) {
+          return jsonResponse({ content: bundleContent });
         }
       }
     }
