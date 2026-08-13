@@ -1,6 +1,6 @@
 import React from 'react'
 import { Search, X, Loader2 } from 'lucide-react'
-import { EpubCard } from '../EpubCatalogPage'
+import { EpubCard } from '../../components/EpubCard'
 
 /**
  * SearchSection – Thanh tìm kiếm trang chủ + hiển thị kết quả trực tiếp.

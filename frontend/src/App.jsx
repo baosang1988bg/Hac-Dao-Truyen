@@ -1,21 +1,38 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import GuestLayout from './layouts/GuestLayout'
 import AdminLayout from './layouts/AdminLayout'
 import RequireAdmin from './components/admin/RequireAdmin'
+import { SpinnerIcon } from './components/shared/ui'
+// Trang lõi (luôn cần hiển thị ngay, không lazy để tránh nháy loading với đa số người dùng)
 import HomePage from './pages/HomePage'
 import LibraryPage from './pages/LibraryPage'
 import NovelPage from './pages/NovelPage'
 import Reader from './pages/Reader'
-import AccountPage from './pages/AccountPage'
-import LoginPage from './pages/LoginPage'
-import Logs from './pages/Logs'
-import EpubReader from './pages/EpubReader'
-import EpubCatalogPage from './pages/EpubCatalogPage'
-import AdminDashboard from './pages/admin/AdminDashboard'
-import AdminNovels from './pages/admin/AdminNovels'
-import AdminNovelDetail from './pages/admin/AdminNovelDetail'
 import './index.css'
+
+// Trang phụ / ít dùng (admin, epub, tài khoản, đăng nhập, logs) → tách chunk riêng, tải khi cần
+const AccountPage = lazy(() => import('./pages/AccountPage'))
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const Logs = lazy(() => import('./pages/Logs'))
+const EpubReader = lazy(() => import('./pages/EpubReader'))
+const EpubCatalogPage = lazy(() => import('./pages/EpubCatalogPage'))
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
+const AdminNovels = lazy(() => import('./pages/admin/AdminNovels'))
+const AdminNovelDetail = lazy(() => import('./pages/admin/AdminNovelDetail'))
+
+/** Fallback tối giản khi chờ tải chunk của trang lazy. */
+function PageLoading() {
+  return (
+    <div style={{
+      minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      gap: '10px', color: 'var(--text-muted)', fontSize: '0.9rem',
+    }}>
+      <SpinnerIcon />
+      Đang tải...
+    </div>
+  )
+}
 
 /**
  * Bản đồ route:
@@ -35,6 +52,7 @@ import './index.css'
  */
 function App() {
   return (
+    <Suspense fallback={<PageLoading />}>
     <Routes>
       <Route path="/login" element={<LoginPage />} />
 
@@ -66,6 +84,7 @@ function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   )
 }
 
