@@ -294,6 +294,21 @@ async function proxyCover(url) {
   return new Response('Cover fetch failed', { status: 502 });
 }
 
+// BUG ĐÃ SỬA (2026-08-13): trước đây getNovels() trả `chapter_count` = thẳng
+// `n.total_chapters` — cột này là số chương THẤY TRÊN NGUỒN lúc scrape/discover
+// (ghi bởi migrate_to_cloudflare.py từ novel.json["total_chapters"]), KHÔNG
+// phải số chương ĐÃ THỰC SỰ đồng bộ lên D1/R2. Vì mọi nơi khác (getChapters(),
+// getChapterContent(), và toàn bộ frontend — xem AllNovelsSection.jsx,
+// NovelTable.jsx...) đều coi `chapter_count` là "số chương đọc được thật" và
+// `total_chapters` là "tổng số chương nguồn" (2 khái niệm khác nhau, dùng để
+// tính "45/120 chương" hay badge FULL), việc gán chapter_count=total_chapters
+// khiến: (1) nút "Đọc truyện" hiện ra dù truyện chưa migrate xong/chưa có
+// chương nào trong D1 → bấm vào không tải được gì; (2) mọi truyện có
+// total_chapters>0 đều bị tính nhầm là "FULL/hoàn thành" trên trang chủ dù
+// chưa dịch xong. Sửa bằng cách đếm THẬT số dòng trong bảng `chapters` (nguồn
+// dữ liệu chính mà getChapters() đọc), khớp với getNovel() (trang chi tiết)
+// vốn đã tính đúng qua catalog.json. idx_chapters_novel (schema.sql) đảm bảo
+// subquery này dùng index, không quét toàn bảng.
 async function getNovels(env, params = new URLSearchParams()) {
   const q       = (params.get('q') || '').trim().toLowerCase();
   const sort    = params.get('sort') || 'updated_at';   // updated_at | chapter_count | views | rating | title
@@ -307,7 +322,7 @@ async function getNovels(env, params = new URLSearchParams()) {
 
   const SORT_COLS = {
     updated_at:    'n.updated_at',
-    chapter_count: 'n.total_chapters',
+    chapter_count: 'chapter_count',
     views:         'n.views',
     rating:        'rating',
     title:         'n.title',
@@ -348,7 +363,7 @@ async function getNovels(env, params = new URLSearchParams()) {
            n.updated_at, n.views, n.has_epub, n.drive_file_id,
            CASE WHEN n.rating_count > 0 THEN ROUND(CAST(n.rating_sum AS REAL) / n.rating_count, 1) ELSE 0.0 END AS rating,
            n.rating_count,
-           COALESCE(n.total_chapters, 0) AS chapter_count,
+           (SELECT COUNT(*) FROM chapters c WHERE c.novel_slug = n.slug) AS chapter_count,
            '' AS latest_chapter_title,
            n.updated_at AS last_created_at,
            n.glossary_count
