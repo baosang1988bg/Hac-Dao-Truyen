@@ -39,6 +39,41 @@ class DummyArgs:
         self.url = url
 
 
+async def _run_translation_flow(args, progress_callback=None):
+    """
+    Điểm rẽ nhánh DUY NHẤT giữa luồng dịch cũ và pipeline ADK (Giai đoạn 1).
+
+    Mặc định (ADK_ENABLED không set / "false") → gọi thẳng
+    `cmd_translate_async()` y hệt trước khi có package `agents/` — KHÔNG
+    import agents.orchestrator, KHÔNG thay đổi hành vi dịch dù chỉ 1 dòng.
+
+    Chỉ khi ADK_ENABLED="true" VÀ import `agents.orchestrator` thành công
+    VÀ `ORCHESTRATOR_AVAILABLE=True` (nghĩa là google-adk đã cài đúng) thì
+    mới dùng orchestrator. Bất kỳ lỗi import/khởi tạo nào cũng tự động rơi
+    về `cmd_translate_async()` cũ — không bao giờ làm sập tác vụ dịch.
+    Xem agents/orchestrator.py để biết giới hạn của pipeline ADK Giai đoạn 1.
+    """
+    from agents import is_adk_enabled
+
+    if is_adk_enabled():
+        try:
+            from agents.orchestrator import (
+                ORCHESTRATOR_AVAILABLE,
+                run_full_translation_via_orchestrator,
+            )
+            if ORCHESTRATOR_AVAILABLE:
+                print("[ADK] ADK_ENABLED=true — dùng pipeline ADK (Giai đoạn 1).")
+                await run_full_translation_via_orchestrator(args, progress_callback=progress_callback)
+                return
+            print("[ADK] ADK_ENABLED=true nhưng orchestrator không khả dụng "
+                  "(thiếu google-adk?) — dùng lại luồng dịch cũ.")
+        except Exception as e:  # noqa: BLE001 — import/khởi tạo ADK lỗi không được phá luồng dịch
+            print(f"[ADK] Lỗi khi dùng orchestrator, fallback về luồng cũ: {e}")
+
+    # ── Luồng cũ (mặc định) — KHÔNG đổi so với trước khi có agents/ ──────────
+    await cmd_translate_async(args, progress_callback=progress_callback)
+
+
 @router.post("/api/novels/{slug}/translate", dependencies=[Depends(require_admin)])
 def start_translation(slug: str, req: TranslateRequest, background_tasks: BackgroundTasks):
     """Bắt đầu dịch N chương (chạy background). (admin)"""
@@ -122,7 +157,9 @@ def start_translation(slug: str, req: TranslateRequest, background_tasks: Backgr
             try:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
-                loop.run_until_complete(cmd_translate_async(args, progress_callback=progress_callback))
+                loop.run_until_complete(
+                    _run_translation_flow(args, progress_callback=progress_callback)
+                )
             except Exception as e:
                 print(f"[!] Background translation error: {e}")
                 if slug in translation_tasks:
