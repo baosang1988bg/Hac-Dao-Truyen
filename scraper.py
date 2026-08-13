@@ -59,6 +59,35 @@ class NovelScraper:
                 return elem
         return None
 
+    # Từ khóa xuất hiện phổ biến trong trang chặn bot / Cloudflare / captcha.
+    BLOCK_KEYWORDS = (
+        "cloudflare", "verify you are human", "attention required",
+        "access denied", "403 forbidden", "sorry, you have been blocked",
+        "unusual traffic", "enable javascript and cookies",
+    )
+
+    def _detect_block(self, html: str, status_code: int | None, url: str) -> bool:
+        """
+        Phát hiện trang có THỰC SỰ bị chặn (Cloudflare/anti-bot/captcha) hay không,
+        dựa trên tín hiệu thật thay vì set cứng True cho một domain cụ thể.
+
+        Dấu hiệu bị chặn:
+        - status code 403/503
+        - nội dung chứa các từ khóa chặn phổ biến (Cloudflare, "verify you are human"...)
+        - response ngắn bất thường (< 500 ký tự — trang lỗi/captcha thường rất ngắn)
+
+        Ngoại lệ: qidian.com dùng chống bot JS challenge rất phức tạp, không có
+        cách phát hiện đáng tin cậy qua HTML nên vẫn ép fallback Jina như cũ.
+        """
+        html_lower = (html or "").lower()
+        is_blocked_status = status_code in (403, 503)
+        is_blocked_keyword = any(k in html_lower for k in self.BLOCK_KEYWORDS)
+        is_blocked_too_short = len((html or "").strip()) < 500
+        is_blocked = is_blocked_status or is_blocked_keyword or is_blocked_too_short
+        if "qidian.com" in url:
+            is_blocked = True
+        return is_blocked
+
     # ── Fetch ─────────────────────────────────────────────────────────────────
 
     async def start(self):
@@ -109,8 +138,9 @@ class NovelScraper:
 
         print(f"[*] Navigating to {url}...")
         try:
-            await page.goto(url, wait_until="load", timeout=60000)
-            
+            nav_response = await page.goto(url, wait_until="load", timeout=60000)
+            status_code = nav_response.status if nav_response else None
+
             if "69shuba" in url:
                 print("[*] Detected 69shuba, waiting 10s for Turnstile challenge...")
                 await page.wait_for_timeout(10000)
@@ -134,9 +164,11 @@ class NovelScraper:
             
             # Only enforce content_check for chapter pages (which contain '/txt/', 'read', 'chapter', etc.)
             is_chapter_page = any(k in url for k in ["/txt/", "read", "chapter"])
-            is_blocked = False
-            if "qidian.com" in url or "novel543.com" in url:
-                is_blocked = True
+
+            # Phát hiện chặn dựa trên tín hiệu THẬT, không set cứng theo domain
+            # (trước đây "novel543.com" luôn bị set is_blocked=True vô điều kiện,
+            # khiến HTML thật fetch được luôn bị bỏ qua để dùng Jina fallback).
+            is_blocked = self._detect_block(html, status_code, url)
             if (is_chapter_page and not content_check) or is_blocked:
                 print(f"[*] Content not found or blocked (title: {title_check.get_text(strip=True) if title_check else 'None'}), trying Jina Reader fallback...")
                 for jina_attempt in range(1, 4):
@@ -157,7 +189,22 @@ class NovelScraper:
                                         title_val = line.replace("Title:", "").strip()
                                         break
                                 content_body = jina_md
-                                mock_html = f"<html><body><h1>{title_val}</h1><div id='content'>{content_body}</div></body></html>"
+                                # Jina trả về markdown thô, không có thẻ <a> — nếu trang là
+                                # mục lục chương, link dạng "[Chương 1](url)" vẫn tồn tại
+                                # trong text. Trích xuất và dựng lại thành <a href> thật để
+                                # fetch_novel_metadata (selector a[href*='read'] ...) vẫn
+                                # lấy được danh sách chương thay vì luôn trả về 0 chapter.
+                                md_link_pattern = re.compile(r'\[([^\]\[]+)\]\((https?://[^\s\)]+)\)')
+                                chapter_links_html = "".join(
+                                    f'<a href="{href}">{text}</a>'
+                                    for text, href in md_link_pattern.findall(content_body)
+                                )
+                                mock_html = (
+                                    f"<html><body><h1>{title_val}</h1>"
+                                    f"<div id='content'>{content_body}</div>"
+                                    f"<div id='jina-links'>{chapter_links_html}</div>"
+                                    f"</body></html>"
+                                )
                                 await page.close()
                                 return mock_html
                     except Exception as je:
@@ -165,7 +212,7 @@ class NovelScraper:
                         if jina_attempt < 3:
                             await asyncio.sleep(2)
                 
-                if is_blocked or "qidian.com" in url or "novel543.com" in url:
+                if is_blocked:
                     await page.close()
                     return None
                 
