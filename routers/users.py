@@ -238,7 +238,18 @@ def create_novel_request(req: NovelRequestCreate, user: dict = Depends(require_u
                 "Vui lòng đợi admin xử lý trước khi gửi thêm."
             ),
         )
-    request_id = user_store.create_novel_request(user["id"], url, note)
+    request_id, auto_rejected = user_store.create_novel_request(user["id"], url, note)
+    if auto_rejected:
+        # Race: 2 request gửi gần nhau cùng qua được check phía trên, nhưng khi
+        # insert xong đếm lại thì đã vượt giới hạn — user_store đã tự reject
+        # request vừa tạo, ở đây chỉ cần báo lỗi cho client.
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"Bạn đang có {user_store.MAX_PENDING_NOVEL_REQUESTS} yêu cầu chờ duyệt. "
+                "Vui lòng đợi admin xử lý trước khi gửi thêm."
+            ),
+        )
     return {"id": request_id}
 
 
@@ -267,7 +278,9 @@ def review_novel_request(request_id: int, req: NovelRequestReview):
             status_code=400,
             detail=f"Ghi chú admin tối đa {MAX_REQUEST_NOTE_LENGTH} ký tự",
         )
-    ok = user_store.review_novel_request(request_id, req.status, admin_note)
-    if not ok:
+    result = user_store.review_novel_request(request_id, req.status, admin_note)
+    if result is None:
         raise HTTPException(status_code=404, detail="Không tìm thấy yêu cầu")
+    if result is False:
+        raise HTTPException(status_code=409, detail="Yêu cầu này đã được xử lý trước đó")
     return {"ok": True}

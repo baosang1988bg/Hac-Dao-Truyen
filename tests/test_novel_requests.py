@@ -124,6 +124,17 @@ def test_novel_request_full_flow():
                      json={"status": "rejected"}, headers=ah)
     assert r.status_code == 404
 
+    # Duyệt lại lần 2 request đã approved ở trên → 409 (double-review), KHÔNG phải 200
+    r = client.post(f"/api/admin/novel-requests/{req_id}/review",
+                     json={"status": "rejected", "admin_note": "đổi ý"}, headers=ah)
+    assert r.status_code == 409, f"double-review phải bị chặn 409, được {r.status_code}"
+
+    # Status vẫn giữ nguyên approved (không bị ghi đè bởi lần review thứ 2)
+    r = client.get("/api/novel-requests/mine", headers=h)
+    still_approved = next(x for x in r.json() if x["id"] == req_id)
+    assert still_approved["status"] == "approved"
+    assert still_approved["admin_note"] == "OK, sẽ import"
+
 
 def test_novel_request_requires_login():
     r = client.post("/api/novel-requests", json={"url": "https://example.com/x"})

@@ -312,14 +312,38 @@ def count_pending_requests(user_id: int) -> int:
     return row["n"] if row else 0
 
 
-def create_novel_request(user_id: int, url: str, note: str = "") -> int:
-    """Tạo request mới, trả về id."""
+def create_novel_request(user_id: int, url: str, note: str = "") -> tuple[int, bool]:
+    """Tạo request mới. Router đã pre-check count_pending_requests() trước khi
+    gọi hàm này, nhưng đó là 2 thao tác tách rời (TOCTOU) — 2 request gửi gần
+    nhau vẫn có thể cùng đọc thấy count < MAX rồi cùng insert, vượt giới hạn.
+
+    Để chặn triệt để, INSERT và đếm lại COUNT pending nằm CHUNG 1 transaction
+    SQLite (`with _conn() as conn:` bao cả 2 thao tác). Nếu sau khi insert mà
+    count pending của user vượt MAX_PENDING_NOVEL_REQUESTS (nghĩa là có race),
+    tự động reject ngay request vừa tạo.
+
+    Trả về (request_id, auto_rejected) — router raise 429 nếu auto_rejected.
+    """
     with _conn() as conn:
         cur = conn.execute(
             "INSERT INTO novel_requests (user_id, url, note) VALUES (?, ?, ?)",
             (user_id, url, note),
         )
-        return cur.lastrowid
+        request_id = cur.lastrowid
+        row = conn.execute(
+            "SELECT COUNT(*) AS n FROM novel_requests WHERE user_id = ? AND status = 'pending'",
+            (user_id,),
+        ).fetchone()
+        pending_count = row["n"] if row else 0
+        auto_rejected = pending_count > MAX_PENDING_NOVEL_REQUESTS
+        if auto_rejected:
+            conn.execute(
+                "UPDATE novel_requests SET status = 'rejected', "
+                "admin_note = 'Tự động từ chối: vượt giới hạn do gửi đồng thời', "
+                "reviewed_at = datetime('now') WHERE id = ?",
+                (request_id,),
+            )
+        return request_id, auto_rejected
 
 
 def list_my_requests(user_id: int) -> list[dict]:
@@ -362,12 +386,31 @@ def get_novel_request(request_id: int) -> dict | None:
     return dict(row) if row else None
 
 
-def review_novel_request(request_id: int, status: str, admin_note: str = "") -> bool:
-    """Cập nhật status + admin_note + reviewed_at=now. Trả về False nếu không tìm thấy id."""
+def review_novel_request(request_id: int, status: str, admin_note: str = "") -> bool | None:
+    """Cập nhật status + admin_note + reviewed_at=now — CHỈ khi request đang ở
+    trạng thái 'pending' (chặn double-review: 2 admin cùng duyệt 1 request,
+    hoặc admin bấm duyệt 2 lần liên tiếp).
+
+    SELECT status hiện tại rồi UPDATE có điều kiện `AND status = 'pending'`,
+    tất cả trong CÙNG 1 transaction SQLite (`with _conn() as conn:`) nên an
+    toàn với race giữa 2 request review đồng thời.
+
+    Trả về:
+      - None  nếu id không tồn tại        → router raise 404
+      - False nếu id tồn tại nhưng đã được xử lý (không còn pending) → router raise 409
+      - True  nếu update thành công
+    """
     with _conn() as conn:
+        row = conn.execute(
+            "SELECT status FROM novel_requests WHERE id = ?", (request_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        if row["status"] != "pending":
+            return False
         cur = conn.execute(
             "UPDATE novel_requests SET status = ?, admin_note = ?, "
-            "reviewed_at = datetime('now') WHERE id = ?",
+            "reviewed_at = datetime('now') WHERE id = ? AND status = 'pending'",
             (status, admin_note, request_id),
         )
         return cur.rowcount > 0
