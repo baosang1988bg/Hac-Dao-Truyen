@@ -84,31 +84,34 @@ def start_translation(slug: str, req: TranslateRequest, background_tasks: Backgr
         profile = load_novel(slug)
         args = DummyArgs(novel=slug, chapters=req.chapters, force=req.force, url=req.url)
 
-        # Không cho chạy 2 phiên dịch song song trên cùng 1 truyện
+        # Không cho chạy 2 phiên dịch song song trên cùng 1 truyện — check "đang
+        # chạy" và khởi tạo state phải nằm CHUNG 1 khối lock, nếu không 2 request
+        # gửi gần nhau có thể cùng vượt qua check trước khi 1 trong 2 kịp ghi
+        # status "running" (race condition).
         with TASKS_LOCK:
             existing = translation_tasks.get(slug)
             if existing and existing.get("status") in ("running", "cancelling"):
                 raise HTTPException(status_code=409, detail="Truyện này đang có phiên dịch chạy")
 
-        # Initialize state
-        translation_tasks[slug] = {
-            "status":        "running",
-            "current":       0,
-            "total":         req.chapters,
-            "logs":          [],
-            "active_batches": 0,
-            "scraped_count": 0,
-            # ── Realtime admin fields ──────────────────────────
-            "current_chapter":  "",      # tên chương đang xử lý
-            "crawling_chapter": "",      # tên chương đang crawl
-            "current_model":    "",      # model AI đang dùng
-            "tokens_used":      0,       # tổng tokens tích lũy
-            "cost_so_far":      0.0,     # tổng cost tích lũy ($)
-            "chapters_ok":      [],      # danh sách chương đã dịch thành công
-            "chapters_fail":    [],      # danh sách chương thất bại
-            "batch_details":    [],      # [{id, chapters, model, status, tokens}]
-        }
-        cancel_flags[slug] = False
+            # Initialize state
+            translation_tasks[slug] = {
+                "status":        "running",
+                "current":       0,
+                "total":         req.chapters,
+                "logs":          [],
+                "active_batches": 0,
+                "scraped_count": 0,
+                # ── Realtime admin fields ──────────────────────────
+                "current_chapter":  "",      # tên chương đang xử lý
+                "crawling_chapter": "",      # tên chương đang crawl
+                "current_model":    "",      # model AI đang dùng
+                "tokens_used":      0,       # tổng tokens tích lũy
+                "cost_so_far":      0.0,     # tổng cost tích lũy ($)
+                "chapters_ok":      [],      # danh sách chương đã dịch thành công
+                "chapters_fail":    [],      # danh sách chương thất bại
+                "batch_details":    [],      # [{id, chapters, model, status, tokens}]
+            }
+            cancel_flags[slug] = False
 
         def progress_callback(current, total, status, log_msg="",
                               active_batches=None, scraped_count=None,
