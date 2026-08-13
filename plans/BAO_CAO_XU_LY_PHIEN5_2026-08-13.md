@@ -93,3 +93,21 @@ bạn thỉnh thoảng tự kiểm tra dashboard Cloudflare thật để đối 
   có cùng rủi ro chi phí, nhưng CHƯA được áp dụng cơ chế ngân sách này (yêu
   cầu lần này chỉ nói "cloud-to-cloud"). Nếu bạn vẫn dùng script đó để đồng bộ
   thủ công, nên cho biết để áp dụng cơ chế tương tự.
+
+## 3. Fix bug: truyện Lãnh Chúa có mục lục nhưng không đọc được (commit `be79d6c`)
+
+Bạn báo lỗi cụ thể: truyện `pokemon-chi-tu-lam-lanh-chua-bat-dau` có mục lục
+chương nhưng bấm vào chương thì không tải được nội dung. Kiểm tra `src/index.js`
+phát hiện `getChapters()` (mục lục) có 3 tầng dự phòng D1/R2/Drive, nhưng
+`getChapterContent()` (nội dung 1 chương) chỉ có D1/R2 — thiếu hẳn tầng Drive.
+Với truyện nhập hàng loạt từ Google Drive (28.477 truyện, commit `7c49ac7`)
+chưa từng được đồng bộ nội dung thật vào R2, mục lục tự cache được nhờ đọc
+Drive, nhưng nội dung từng chương thì không, dẫn tới 404 khi đọc.
+
+Đã thêm `getChapterContentFromDrive()`: khi D1/R2 miss, tải lại `chapters.json`
+từ Drive, lấy đúng nội dung chương, trả về ngay cho người đọc, đồng thời tự
+ghi cache vào R2 + D1 để lần đọc sau không cần gọi lại Drive. Verify bằng
+harness Node mô phỏng toàn bộ R2/D1/Drive, gọi thẳng `default.fetch()` (entrypoint
+Worker thật) — 6 kịch bản đều pass, bao gồm xác nhận Drive KHÔNG bị gọi lại ở
+lần đọc thứ 2. Chưa test được với Cloudflare/Drive thật — cần bạn tự kiểm tra
+lại đúng truyện `pokemon-chi-tu-lam-lanh-chua-bat-dau` sau khi deploy.
