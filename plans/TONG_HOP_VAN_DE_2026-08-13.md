@@ -87,16 +87,34 @@ plans/
 
 ---
 
-## 🚀 Các Bước Tiếp Theo (Chưa Thực Thi — Chờ Phê Duyệt)
+## 🚀 Các Bước Tiếp Theo
+
+> Cập nhật 2026-08-13 (phiên 2): đã khảo sát kỹ và triển khai 3/6 việc bên dưới.
+> Chi tiết đầy đủ (thiết kế, cách verify, giới hạn) xem
+> `BAO_CAO_XU_LY_2026-08-13.md`.
 
 ### Ưu Tiên Cao
-1. **Tối ưu R2 Operations** — Refactor `migrate_to_cloudflare.py` để gộp chapters thành batch upload qua Worker API, giảm 99% lượt PUT.
-2. **Hoàn thiện Multi-Source Scraper** — Kiểm tra `main.py import --url` hoạt động thực tế với 69shuba và novel543.
+1. **Tối ưu R2 Operations** — ⚠️ **Đã triển khai một phần** (commit `4271105`). Thêm chế độ
+   `--batch-upload` (opt-in, mặc định TẮT) gộp nhiều chương thành 1 object JSON thay vì
+   PUT từng chương, cùng phần đọc fallback tương ứng trong Worker. Hành vi mặc định của
+   job cron hàng ngày KHÔNG đổi. Khác với dự tính ban đầu, việc gộp batch bắt buộc phải
+   sửa cả Worker (`src/index.js`), không chỉ riêng script migrate. **Chưa test với R2/D1/
+   Worker thật** (sandbox không có quyền Cloudflare) — cần chạy thử thủ công trên 1 novel
+   nhỏ trước khi bật cho production.
+2. **Hoàn thiện Multi-Source Scraper** — ⚠️ **Đã sửa 1 bug cụ thể** (commit `baf9588`):
+   `is_blocked=True` bị set cứng cho novel543.com khiến mục lục chương luôn trả về 0 kết
+   quả. Đã sửa bằng phát hiện chặn dựa trên tín hiệu thật + parse link từ Jina fallback.
+   Có test tĩnh (fixture HTML, không gọi mạng thật) 5/5 pass. **Chưa xác minh được với
+   site thật** (sandbox không có egress internet tới novel543.com/69shuba.com) — cần
+   người có mạng ngoài chạy thử `main.py import --url` thật trước khi coi là "hoàn thiện".
 
 ### Ưu Tiên Trung Bình
-3. **Code Splitting Frontend** — Dùng `React.lazy()` cho EpubReader, Admin pages giảm bundle từ 547KB xuống ~300KB.
-4. **Hoàn thiện Truyentrung UI** — Custom lại các section Truyentrung theo ý người dùng.
+3. **Code Splitting Frontend** — ✅ **Đã xong** (commit `c12a9aa`). React.lazy() cho Admin/
+   EpubReader/EpubCatalogPage/Account/Login/Logs. Verify bằng `npm run build` thật: chunk
+   chính giảm từ ~543KB xuống ~424KB, 8 trang phụ tách thành chunk riêng tải khi cần.
+4. **Hoàn thiện Truyentrung UI** — 📋 Chưa làm, cần bạn nêu cụ thể custom theo ý muốn (đã hỏi
+   trong phiên 2, được chọn "bỏ qua trong phiên này").
 
 ### Ưu Tiên Thấp
-5. **ADK Multi-Agent Pipeline** — Triển khai Google ADK cho pipeline dịch tự đánh giá chất lượng.
-6. **Request Novel Feature** — Cho phép độc giả gửi URL truyện Trung để tự động thêm vào hàng chờ.
+5. **ADK Multi-Agent Pipeline** — 📋 Chưa làm, việc lớn cần lên kế hoạch riêng.
+6. **Request Novel Feature** — 📋 Chưa làm, tính năng mới cần thiết kế UX/backend riêng.
