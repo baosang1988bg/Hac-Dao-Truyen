@@ -27,6 +27,14 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 AUTH_TOKEN_TTL = int(os.getenv("AUTH_TOKEN_TTL", str(7 * 24 * 3600)))
 
 # ── Session store (in-memory) ─────────────────────────────────────────────────
+# CẢNH BÁO: _sessions là dict in-memory trong tiến trình (process) hiện tại,
+# nên CHỈ an toàn khi chạy đúng 1 process (vd. `uvicorn api:app` không có
+# --workers, hoặc --workers 1). Nếu sau này scale bằng nhiều worker process
+# (gunicorn -w N, hoặc `uvicorn --workers N`), mỗi process sẽ có _sessions
+# riêng biệt (không share bộ nhớ) — token đăng nhập ở worker A sẽ không tồn
+# tại ở worker B, khiến user có thể bị "logout" ngẫu nhiên khi request rơi
+# vào worker khác (load-balance round-robin). Muốn multi-worker an toàn cần
+# chuyển session store sang nơi dùng chung (Redis, DB, file có khóa, ...).
 # token → expiry_timestamp
 _sessions: dict[str, float] = {}
 _lock = threading.Lock()

@@ -10,6 +10,7 @@ Key health tracking (persist qua key_status.json — xem providers/key_manager.p
 """
 
 import os
+import threading
 
 from config import GOOGLE_API_KEYS, GEMINI_MODEL
 from providers.key_manager import (
@@ -67,6 +68,11 @@ class GeminiBackend:
         self._client        = None
         self._current_key   = None
         self._current_model = GEMINI_MODEL_POOL[0]
+        # Bảo vệ việc chọn/rotate key & model khi nhiều batch chạy song song
+        # (nhiều thread dùng chung 1 instance GeminiBackend — xem pipeline.py
+        # MAX_CONCURRENT_BATCHES). RLock vì next_available_key/next_available_model
+        # tự gọi lại _apply_key trong lúc đang giữ khóa.
+        self._lock = threading.RLock()
 
         # Chạy auto-recovery: key quota_exceeded đã qua 24h → reset về working
         self._maybe_recover_keys()
@@ -147,58 +153,62 @@ class GeminiBackend:
     # ── Key rotation ──────────────────────────────────────────────────────────
 
     def _apply_key(self, key: str):
-        self._client      = self._genai.Client(api_key=key)
-        self._current_key = key
-        print(f"  [Gemini] Using key ...{key[-6:]}")
+        # Chỉ chọn/gán key (CPU-bound, nhanh) — KHÔNG gọi mạng ở đây.
+        with self._lock:
+            self._client      = self._genai.Client(api_key=key)
+            self._current_key = key
+            print(f"  [Gemini] Using key ...{key[-6:]}")
 
     def next_available_key(self, error_type: str = "quota") -> bool:
         """
         Đánh dấu key hiện tại là lỗi và rotate sang key tiếp theo.
         error_type: 'quota' | 'invalid' | 'rate_limited'
         """
-        if error_type == "rate_limited":
-            status = "rate_limited"
-            note   = f"per-minute rate limited — skip for {_RATE_LIMIT_SKIP_HOURS}h"
-        elif error_type == "quota":
-            status = "quota_exceeded"
-            note   = "daily quota hit"
-        else:
-            status = "invalid"
-            note   = "API key invalid/revoked"
-        self._set_status(self._current_key, status, note)
-        print(f"  [Gemini] Key ...{self._current_key[-6:]} → {status}")
-        print(f"  [Key status] {self._status_summary()}")
+        with self._lock:
+            if error_type == "rate_limited":
+                status = "rate_limited"
+                note   = f"per-minute rate limited — skip for {_RATE_LIMIT_SKIP_HOURS}h"
+            elif error_type == "quota":
+                status = "quota_exceeded"
+                note   = "daily quota hit"
+            else:
+                status = "invalid"
+                note   = "API key invalid/revoked"
+            self._set_status(self._current_key, status, note)
+            print(f"  [Gemini] Key ...{self._current_key[-6:]} → {status}")
+            print(f"  [Key status] {self._status_summary()}")
 
-        next_key = self._first_working_key()
-        if next_key:
-            self._apply_key(next_key)
-            return True
-        print(f"  [Gemini] No working keys left for model {self._current_model}.")
-        return False
+            next_key = self._first_working_key()
+            if next_key:
+                self._apply_key(next_key)
+                return True
+            print(f"  [Gemini] No working keys left for model {self._current_model}.")
+            return False
 
     def next_available_model(self) -> bool:
         """
         Rotate sang model mới khi cả pool key đều hết quota cho model hiện tại.
         Reset quota_exceeded keys (chúng có quota riêng cho mỗi model).
         """
-        self._exhausted_models.add(self._current_model)
-        for model in GEMINI_MODEL_POOL:
-            if model not in self._exhausted_models:
-                print(f"  [Gemini] Model {self._current_model} exhausted → switching to {model}")
-                self._current_model = model
-                # Reset quota_exceeded và rate_limited keys cho model mới
-                for key in self._all_keys:
-                    st = self._get_status(key)
-                    if st in ("quota_exceeded", "rate_limited"):
-                        self._key_status[key]["status"] = "working"
-                        self._key_status[key]["note"] = f"reset for new model {model}"
-                _save_key_status(self._key_status)
-                first = self._first_working_key()
-                if first:
-                    self._apply_key(first)
-                return True
-        print(f"  [Gemini] All {len(GEMINI_MODEL_POOL)} model(s) exhausted.")
-        return False
+        with self._lock:
+            self._exhausted_models.add(self._current_model)
+            for model in GEMINI_MODEL_POOL:
+                if model not in self._exhausted_models:
+                    print(f"  [Gemini] Model {self._current_model} exhausted → switching to {model}")
+                    self._current_model = model
+                    # Reset quota_exceeded và rate_limited keys cho model mới
+                    for key in self._all_keys:
+                        st = self._get_status(key)
+                        if st in ("quota_exceeded", "rate_limited"):
+                            self._key_status[key]["status"] = "working"
+                            self._key_status[key]["note"] = f"reset for new model {model}"
+                    _save_key_status(self._key_status)
+                    first = self._first_working_key()
+                    if first:
+                        self._apply_key(first)
+                    return True
+            print(f"  [Gemini] All {len(GEMINI_MODEL_POOL)} model(s) exhausted.")
+            return False
 
     def all_exhausted(self) -> bool:
         """True khi không còn key nào khả dụng ngay lúc này cho bất kỳ model nào."""

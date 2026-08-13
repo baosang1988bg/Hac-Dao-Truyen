@@ -32,7 +32,14 @@ def validate_slug(slug: str) -> str:
 def safe_novel_dir(slug: str, *subdirs: str) -> str:
     """Đường dẫn an toàn tới thư mục của truyện (novels/<slug>/<subdirs...>)."""
     validate_slug(slug)
-    return os.path.join(NOVELS_DIR, slug, *subdirs)
+    path = os.path.join(NOVELS_DIR, slug, *subdirs)
+    # Containment check (giống safe_join): chặn trường hợp slug/subdirs hợp lệ
+    # về mặt ký tự nhưng resolve ra ngoài novels/ (vd. symlink độc hại).
+    candidate = os.path.realpath(path)
+    base_real = os.path.realpath(NOVELS_DIR)
+    if candidate != base_real and not candidate.startswith(base_real + os.sep):
+        raise HTTPException(status_code=400, detail="Đường dẫn không hợp lệ")
+    return path
 
 
 def safe_join(base_dir: str, filename: str) -> str:

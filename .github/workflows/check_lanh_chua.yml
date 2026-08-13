@@ -5,6 +5,10 @@ on:
     - cron: '0 17 * * *' # 12:00 AM VN Time (00:00 GMT+7) — ~5 request/ngày (100% Free)
   workflow_dispatch:
 
+concurrency:
+  group: check-lanh-chua
+  cancel-in-progress: false
+
 jobs:
   check_and_translate:
     runs-on: ubuntu-latest

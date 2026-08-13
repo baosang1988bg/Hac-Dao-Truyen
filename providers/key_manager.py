@@ -12,6 +12,7 @@ Trạng thái mỗi key:
 
 import os
 import json as _json
+import threading
 from datetime import datetime as _dt, timezone as _tz
 
 # key_status.json nằm ở thư mục gốc project (cạnh translator.py)
@@ -20,6 +21,11 @@ _KEY_STATUS_FILE = os.path.join(
 )
 _QUOTA_RESET_HOURS    = 24  # Gemini free tier quota resets every 24h
 _RATE_LIMIT_SKIP_HOURS = 1  # Bỏ qua key bị per-minute rate limit trong 1h
+
+# Khóa module-level cho thao tác đọc-sửa-ghi key_status.json — tránh 2 thread
+# (2 batch dịch chạy song song) ghi đè mất cập nhật của nhau khi cùng gọi
+# _save_key_status().
+_key_status_lock = threading.Lock()
 
 
 def _load_key_status() -> dict:
@@ -34,12 +40,13 @@ def _load_key_status() -> dict:
 
 
 def _save_key_status(status: dict):
-    """Lưu key status xuống file."""
-    try:
-        with open(_KEY_STATUS_FILE, "w", encoding="utf-8") as f:
-            _json.dump(status, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        print(f"  [!] Không thể lưu key_status.json: {e}")
+    """Lưu key status xuống file (khóa lại để tránh 2 thread ghi đè lẫn nhau)."""
+    with _key_status_lock:
+        try:
+            with open(_KEY_STATUS_FILE, "w", encoding="utf-8") as f:
+                _json.dump(status, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"  [!] Không thể lưu key_status.json: {e}")
 
 
 def _now_iso() -> str:
