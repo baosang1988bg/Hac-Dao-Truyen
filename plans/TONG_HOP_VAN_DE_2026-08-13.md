@@ -25,9 +25,14 @@
 - **Trạng thái**: ✅ **ĐÃ SỬA** — Đã thêm Node.js 20 setup, `npm ci`, và bỏ `|| true` che lỗi.
 
 ### Vấn đề 3 — Cloud-to-Cloud Sync tiêu tốn $9/tháng R2 Class A Operations
-- **Mức độ**: 🟡 **Đã xử lý trước đó**
+- **Mức độ**: 🟢 **Đã xử lý triệt để** (cập nhật phiên 5)
 - **Mô tả**: Script `cloud_to_cloud_syncer.py` chạy cron 30 phút/lần tạo 1.4M lượt PUT, vượt mốc 1M free.
-- **Trạng thái**: ✅ **ĐÃ TẮT** — Cron đã xóa, chỉ còn `workflow_dispatch` thủ công.
+- **Trạng thái**: ✅ **ĐÃ TẮT CRON + THÊM NGÂN SÁCH TỰ GIỚI HẠN** (commit `1337e52`). Cron đã
+  xóa từ trước, chỉ còn `workflow_dispatch` thủ công. Bổ sung thêm lớp phòng vệ thứ hai:
+  class `SyncBudget` tự đếm lượt ghi R2/D1 mà chính script tạo ra, dừng ngay khi chạm ngưỡng
+  (mặc định 80% free tier: R2 800.000/tháng, D1 80.000/ngày, tối đa 20.000/lần chạy), bền
+  vững qua file JSON nên không mất theo dõi giữa các lần chạy tay. Xem chi tiết
+  `BAO_CAO_XU_LY_PHIEN5_2026-08-13.md`.
 
 ### Vấn đề 4 — R2 PUT chưa được tối ưu (migrate_to_cloudflare.py)
 - **Mức độ**: 🟡 **Trung bình** (Có thể gây lại phí R2 nếu chạy sync cho nhiều truyện)
