@@ -29,7 +29,7 @@ export function EpubCard({ novel }) {
             EPUB
           </span>
         ) : null}
-        {novel.status === 'completed' && (
+        {novel.total_chapters > 0 && novel.chapter_count >= novel.total_chapters && (
           <span style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(16,185,129,0.9)', color: '#fff', fontSize: '0.6rem', fontWeight: 700, padding: '2px 6px', borderRadius: '5px' }}>
             FULL
           </span>

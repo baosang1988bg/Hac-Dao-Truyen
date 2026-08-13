@@ -50,6 +50,7 @@ export default function Reader() {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
   const [chapters, setChapters] = useState([])
+  const [chaptersLoadError, setChaptersLoadError] = useState(false)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [progress, setProgress] = useState(0)
   const [hideTopNav, setHideTopNav] = useState(false)
@@ -127,6 +128,7 @@ export default function Reader() {
   }, [slug, chapter, saveReadProgress])
 
   useEffect(() => {
+    setChaptersLoadError(false)
     api.get(`/novels/${slug}/chapters`).then(res => {
       const list = res.data || []
       const seen = new Set()
@@ -144,7 +146,7 @@ export default function Reader() {
         return (a.filename || '').localeCompare(b.filename || '', undefined, { numeric: true })
       })
       setChapters(unique)
-    })
+    }).catch(() => { setChaptersLoadError(true) })
   }, [slug])
 
   // ── Khôi phục vị trí cuộn (sessionStorage, theo slug + chương) ─────────────
@@ -308,6 +310,15 @@ export default function Reader() {
     const isBottom = position === 'bottom'
 
     return (
+      <>
+      {chaptersLoadError && (
+        <div style={{
+          textAlign: 'center', fontSize: '0.75rem', color: '#f87171',
+          padding: isBottom ? '0.5rem 1rem 0' : '0 1rem 0.5rem', opacity: 0.9
+        }}>
+          Không tải được danh sách chương, nút điều hướng có thể không chính xác
+        </div>
+      )}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: isBottom ? '2rem 0 calc(4rem + env(safe-area-inset-bottom, 0px))' : '1rem 0', gap: '12px',
@@ -384,6 +395,7 @@ export default function Reader() {
           <Settings size={24} />
         </button>
       </div>
+      </>
     )
   }
 

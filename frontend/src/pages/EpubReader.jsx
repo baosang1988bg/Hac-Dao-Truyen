@@ -219,7 +219,7 @@ export default function EpubReader() {
 
         {/* ── TOC Panel ── */}
         {showToc && (
-          <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '300px', background: panelBg, backdropFilter: 'blur(16px)', borderLeft: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}`, overflowY: 'auto', zIndex: 20, boxShadow: '-8px 0 24px rgba(0,0,0,0.3)' }}>
+          <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(300px, 85vw)', background: panelBg, backdropFilter: 'blur(16px)', borderLeft: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}`, overflowY: 'auto', zIndex: 20, boxShadow: '-8px 0 24px rgba(0,0,0,0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}` }}>
               <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Mục lục</span>
               <button onClick={() => setShowToc(false)} style={iconBtnStyle(textColor)}><X size={16} /></button>
@@ -232,7 +232,7 @@ export default function EpubReader() {
 
         {/* ── Settings Panel ── */}
         {showSettings && (
-          <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '280px', background: panelBg, backdropFilter: 'blur(16px)', borderLeft: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}`, overflowY: 'auto', zIndex: 20, boxShadow: '-8px 0 24px rgba(0,0,0,0.3)' }}>
+          <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(280px, 85vw)', background: panelBg, backdropFilter: 'blur(16px)', borderLeft: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}`, overflowY: 'auto', zIndex: 20, boxShadow: '-8px 0 24px rgba(0,0,0,0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}` }}>
               <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Tùy chỉnh</span>
               <button onClick={() => setShowSettings(false)} style={iconBtnStyle(textColor)}><X size={16} /></button>
