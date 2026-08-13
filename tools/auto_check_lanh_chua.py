@@ -144,8 +144,9 @@ def main():
 
     # 4. Rebuild frontend & deploy wrangler
     print("📦 Đang build frontend...")
+    npm_cmd = "npm.cmd" if os.name == 'nt' else "npm"
     npx_cmd = "npx.cmd" if os.name == 'nt' else "npx"
-    subprocess.run(["cmd.exe", "/c", "npm run build"], cwd=BASE_DIR / "frontend", check=True)
+    subprocess.run([npm_cmd, "run", "build"], cwd=BASE_DIR / "frontend", check=True)
 
     print("🌐 Đang deploy Cloudflare Worker & Assets...")
     subprocess.run([npx_cmd, "wrangler", "deploy"], cwd=BASE_DIR, check=True)

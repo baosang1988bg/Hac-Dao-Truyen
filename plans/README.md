@@ -1,26 +1,49 @@
-# 📂 Plans — Theo Dõi Ý Tưởng & Kế Hoạch
+# 📚 Thư Mục Kế Hoạch & Báo Cáo — HacDaoTruyen
 
-Thư mục này chứa các kế hoạch và ý tưởng cho project **Novel Translator**.
-
----
-
-## 📋 Danh Sách Kế Hoạch
-
-| Thư mục | Tiêu đề | Trạng thái | Ưu tiên |
-|---|---|---|---|
-| [adk-agents/](./adk-agents/README.md) | Tích hợp Google ADK — Multi-Agent Pipeline | ⏳ Chờ implement | 🔴 Cao |
-| [concurrency-optimization/](./concurrency-optimization/README.md) | Tối ưu tốc độ dịch đa luồng (Producer-Consumer) | ✅ Đã implement (95%) — 2 race condition nhỏ cần fix | 🟡 Trung bình |
+Tất cả kế hoạch, báo cáo, session log và roadmap được tập trung tại đây.
 
 ---
 
-## 📌 Cách Dùng
+## 📋 Mục Lục
 
-- Mỗi kế hoạch lớn có thư mục riêng với `README.md` mô tả chi tiết
-- Ghi chú kỹ thuật, research, trade-offs để trong các file `.md` con
-- Cập nhật trạng thái khi có tiến độ mới
+### Kế Hoạch Tổng Hợp (Đang Hoạt Động)
+| File | Mô tả | Trạng thái |
+|------|--------|-----------|
+| [TONG_HOP_VAN_DE_2026-08-13.md](./TONG_HOP_VAN_DE_2026-08-13.md) | Tổng hợp vấn đề tồn đọng & kế hoạch xử lý | 🟢 Mới nhất |
+| [ROADMAP-nang-cap-2026-07.md](./ROADMAP-nang-cap-2026-07.md) | Roadmap nâng cấp tổng thể tháng 7/2026 | ✅ Phase 1-3 Done |
+| [HOMEPAGE_PLAN.md](./HOMEPAGE_PLAN.md) | Nghiên cứu nguồn dữ liệu & kế hoạch multi-source scraper | 📋 Planning |
 
-**Trạng thái:**
-- ⏳ Chờ implement
-- 🔄 Đang làm
-- ✅ Hoàn thành
-- ❌ Đã bỏ (kèm lý do)
+### Kế Hoạch Chi Tiết
+| File | Mô tả | Trạng thái |
+|------|--------|-----------|
+| [KE_HOACH_NANG_CAP_2026-08-08.md](./KE_HOACH_NANG_CAP_2026-08-08.md) | Nâng cấp bảo mật (5 phases) | ✅ Done |
+| [KE_HOACH_HOC_HOI_TRUYENTRUNG_2026-08-08.md](./KE_HOACH_HOC_HOI_TRUYENTRUNG_2026-08-08.md) | Học hỏi UI truyentrung.com | ✅ Phase 1 Done |
+| [adk-agents/README.md](./adk-agents/README.md) | Google ADK multi-agent pipeline | 📋 Pending |
+| [concurrency-optimization/README.md](./concurrency-optimization/README.md) | Tối ưu đa luồng dịch thuật | ✅ 95% Done |
+
+### Báo Cáo Hoàn Thành
+| File | Mô tả |
+|------|--------|
+| [BAO_CAO.md](./BAO_CAO.md) | Báo cáo bảo mật tháng 7/2026 |
+| [BAO_CAO_BAN_GIAO_NANG_CAP_BAO_MAT_2026-08-08.md](./BAO_CAO_BAN_GIAO_NANG_CAP_BAO_MAT_2026-08-08.md) | Bàn giao nâng cấp bảo mật |
+| [BAO_CAO_EPUB_SYNOPSIS.md](./BAO_CAO_EPUB_SYNOPSIS.md) | Báo cáo EPUB synopsis extraction |
+| [BAO_CAO_KIEM_TRA_2026-08-08.md](./BAO_CAO_KIEM_TRA_2026-08-08.md) | Kiểm tra bảo mật & hiệu suất |
+| [BAO_CAO_KIEM_TRA_LAI_SAU_MERGE_2026-08-08.md](./BAO_CAO_KIEM_TRA_LAI_SAU_MERGE_2026-08-08.md) | Kiểm tra lại sau merge |
+| [BAO_CAO_UI.md](./BAO_CAO_UI.md) | Báo cáo redesign UI |
+| [BAO_CAO-giai-doan-1.md](./BAO_CAO-giai-doan-1.md) | Phase 1: Worker/sync/testing |
+| [BAO_CAO-giai-doan-2.md](./BAO_CAO-giai-doan-2.md) | Phase 2: PWA/EPUB/auto-update |
+| [BAO_CAO-giai-doan-3.md](./BAO_CAO-giai-doan-3.md) | Phase 3: Auth/sync/comments |
+
+### EPUB Plans
+| File | Mô tả |
+|------|--------|
+| [epub-quick-overview-plan-01.md](./epub-quick-overview-plan-01.md) | Architecture EPUB synopsis plan |
+| [epub-quick-overview-plan-01-RUNBOOK.md](./epub-quick-overview-plan-01-RUNBOOK.md) | Runbook thực thi |
+| [epub-quick-overview-plan-01-ban-giao.md](./epub-quick-overview-plan-01-ban-giao.md) | Bàn giao Plan 01 |
+
+### Session Logs
+| File | Mô tả |
+|------|--------|
+| [session-log-2026-05-09.md](./session-log-2026-05-09.md) | Session: UI/ToolsTab/fix_titles |
+| [session-log-2026-05-09.obsidian.md](./session-log-2026-05-09.obsidian.md) | Obsidian format session |
+| [session-log-2026-05-10.md](./session-log-2026-05-10.md) | Session: Cloudflare deployment |

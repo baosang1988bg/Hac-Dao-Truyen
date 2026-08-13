@@ -2,8 +2,8 @@ name: Auto Check & Translate Lanh Chua (Daily 12:00 AM VN Time)
 
 on:
   schedule:
-    - cron: '0 17 * * *' # Chạy đúng 12:00 AM đêm (00:00 GMT+7) mỗi ngày — chỉ tốn ~5 request/ngày (100% Free)
-  workflow_dispatch: # Cho phép bấm chạy thủ công trên GitHub
+    - cron: '0 17 * * *' # 12:00 AM VN Time (00:00 GMT+7) — ~5 request/ngày (100% Free)
+  workflow_dispatch:
 
 jobs:
   check_and_translate:
@@ -17,18 +17,27 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Dependencies
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python Dependencies
         run: |
-          pip install requests beautifulsoup4 google-generativeai
+          pip install requests beautifulsoup4 playwright python-slugify
+          playwright install chromium
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend && npm ci
 
       - name: Run Auto Check & Translate
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          HACDAO_SYNC_KEY: ${{ secrets.HACDAO_SYNC_KEY }}
         run: |
-          python tools/auto_check_lanh_chua.py || true
+          python tools/auto_check_lanh_chua.py
 
       - name: Commit & Push Changes
         run: |
