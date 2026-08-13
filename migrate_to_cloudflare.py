@@ -241,6 +241,38 @@ def r2_get_json(key: str) -> dict:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
 
+def _next_bundle_index(manifest: dict) -> int:
+    """
+    [MỚI — dùng bởi build_and_upload_bundles(), tránh bug ghi đè bundle cũ]
+    ================================================================
+    Tính batch_index BẮT ĐẦU cho lượt build_and_upload_bundles() hiện tại,
+    dựa trên state ĐÃ CÓ trong manifest (đọc từ R2), KHÔNG tính từ 0.
+
+    Lý do: khi chạy incremental (vd `--from-chapter N` / `--smart-sync`),
+    `files` truyền vào build_and_upload_bundles() chỉ chứa các chương MỚI
+    (không phải toàn bộ chương của truyện). Nếu cứ `enumerate(...)` bắt đầu
+    batch_index từ 0 mỗi lần gọi, R2 key "<slug>/bundles/bundle-0000.json"
+    của lượt sync mới sẽ GHI ĐÈ lên bundle-0000.json của lượt sync trước
+    (vốn đang chứa các chương ĐẦU truyện) → mất dữ liệu các chương đó, dù
+    manifest.json vẫn trỏ filename cũ tới bundle-0000.json → tra cứu sẽ
+    miss vì bundle giờ chỉ còn chương mới nhất.
+
+    Cách tính: lấy toàn bộ GIÁ TRỊ (bundle R2 key, vd "slug/bundles/bundle-0007.json")
+    hiện có trong manifest, trích số thứ tự lớn nhất bằng regex
+    `bundle-(\\d+)\\.json`, trả về max_index + 1. Nếu manifest rỗng (lần đầu
+    sync novel này với --batch-upload) → trả về 0 như hành vi cũ.
+    """
+    max_index = -1
+    pattern = re.compile(r'bundle-(\d+)\.json')
+    for bundle_key in manifest.values():
+        m = pattern.search(str(bundle_key))
+        if m:
+            idx = int(m.group(1))
+            if idx > max_index:
+                max_index = idx
+    return max_index + 1
+
+
 def build_and_upload_bundles(slug: str, files: list, bundle_size: int, dry_run=False) -> bool:
     """
     [MỚI — CHẾ ĐỘ THỬ NGHIỆM, opt-in qua --batch-upload]
@@ -271,13 +303,21 @@ def build_and_upload_bundles(slug: str, files: list, bundle_size: int, dry_run=F
     trên các chương đã upload theo cách cũ.
     """
     manifest_key = f"{slug}/bundles/manifest.json"
-    manifest = r2_get_json(manifest_key) if not dry_run else {}
+    # LUÔN đọc manifest thật từ R2 (kể cả khi dry_run) — để (a) preview số
+    # entries chính xác cộng dồn với dữ liệu cũ thật sự có, và (b)
+    # _next_bundle_index() tính đúng offset bundle tiếp theo dựa trên state
+    # thật, tránh bug ghi đè bundle cũ khi chạy incremental (xem docstring
+    # _next_bundle_index()). Việc ĐỌC không ảnh hưởng gì tới R2 nên an toàn
+    # để gọi cả trong dry-run; chỉ phần GHI (r2_put) mới bị gate theo dry_run.
+    manifest = r2_get_json(manifest_key)
 
     ok_bundles = 0
     fail_bundles = 0
     total = len(files)
+    start_index = _next_bundle_index(manifest)
 
-    for batch_index, i in enumerate(range(0, total, bundle_size)):
+    for offset, i in enumerate(range(0, total, bundle_size)):
+        batch_index = start_index + offset
         batch = files[i:i + bundle_size]
         bundle_r2_key = f"{slug}/bundles/bundle-{batch_index:04d}.json"
         bundle_data = {}
