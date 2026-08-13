@@ -1,5 +1,5 @@
 import React from 'react'
-import { Newspaper, Bell } from 'lucide-react'
+import { Newspaper } from 'lucide-react'
 import announcements from '../../content/announcements.json'
 
 /**
