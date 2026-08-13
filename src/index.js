@@ -611,7 +611,13 @@ function sortAndDeduplicateCatalog(catalog) {
   return unique;
 }
 
-async function getChaptersFromDriveFallback(env, slug, ctx) {
+// Tra cuu "upload_state.json" (ghi boi cong cu upload len Google Drive, KHAC
+// voi tools/remote_state.json cua cloud_to_cloud_syncer.py) de lay file_id
+// cua "chapters.json" tren Drive cho 1 truyen, roi tai va parse file do.
+// Duoc dung chung boi ca getChaptersFromDriveFallback() (muc luc) LAN
+// getChapterContentFromDrive() (noi dung tung chuong, xem ben duoi) de tranh
+// lap code fetch/parse Drive o 2 noi.
+async function fetchDriveAllChapters(env, slug) {
   try {
     const stateObj = await env.CHAPTERS.get('upload_state.json');
     if (!stateObj) return null;
@@ -630,24 +636,83 @@ async function getChaptersFromDriveFallback(env, slug, ctx) {
     if (!res.ok) return null;
 
     const allChaps = await res.json();
-    if (!Array.isArray(allChaps)) return null;
-
-    const catalog = sortAndDeduplicateCatalog(allChaps.map(c => ({
-      filename: c.filename,
-      title: c.title,
-      chapter_number: c.number || 0
-    })));
-
-    if (ctx && ctx.waitUntil) {
-      ctx.waitUntil(env.CHAPTERS.put(`${slug}/catalog.json`, JSON.stringify(catalog)));
-    } else {
-      await env.CHAPTERS.put(`${slug}/catalog.json`, JSON.stringify(catalog));
-    }
-
-    return { catalog, allChaps };
+    return Array.isArray(allChaps) ? allChaps : null;
   } catch (e) {
     return null;
   }
+}
+
+async function getChaptersFromDriveFallback(env, slug, ctx) {
+  const allChaps = await fetchDriveAllChapters(env, slug);
+  if (!allChaps) return null;
+
+  const catalog = sortAndDeduplicateCatalog(allChaps.map(c => ({
+    filename: c.filename,
+    title: c.title,
+    chapter_number: c.number || 0
+  })));
+
+  if (ctx && ctx.waitUntil) {
+    ctx.waitUntil(env.CHAPTERS.put(`${slug}/catalog.json`, JSON.stringify(catalog)));
+  } else {
+    await env.CHAPTERS.put(`${slug}/catalog.json`, JSON.stringify(catalog));
+  }
+
+  return { catalog, allChaps };
+}
+
+// [MOI] Bug da phat hien: getChaptersFromDriveFallback() o tren chi lay
+// filename/title/chapter_number tu Drive de hien muc luc (va TU CACHE muc luc
+// do vao R2 catalog.json) nhung KHONG luu lai noi dung that cua tung chuong.
+// Vi vay, voi truyen chi moi duoc "kham pha" qua duong nay (chua tung chay
+// migrate_to_cloudflare.py/cloud_to_cloud_syncer.py that su dong bo noi dung
+// vao R2) - muc luc hien binh thuong nhung bam vao chuong cu the se 404, vi
+// R2 khong co object noi dung ("slug/b64_<filename>") du catalog.json da co.
+//
+// Ham nay la du phong CUOI CUNG cho getChapterContent(): khi D1 va R2 (ke ca
+// bundle) deu khong tim thay noi dung, thu tai lai "chapters.json" tu Drive
+// (nguon du lieu goc ma cloud_to_cloud_syncer.py dung) va lay dung noi dung
+// chuong duoc yeu cau. Sau khi lay duoc, TU GHI (self-heal) vao R2 + bang D1
+// `chapters` qua ctx.waitUntil() de nhung lan doc sau lay thang tu R2, khong
+// can goi lai Drive nua - giong cach getChaptersFromDriveFallback() dang tu
+// cache catalog.json. Loi khi ghi cache (neu co) KHONG duoc lam hong response
+// tra ve cho nguoi doc (chi la toi uu, khong phai dieu kien bat buoc).
+//
+// LUU Y CHI PHI: thao tac ghi nay la traffic DOC THAT tu doc gia, KHONG nam
+// trong SyncBudget cua tools/cloud_to_cloud_syncer.py (ngan sach do chi dem
+// thao tac cua rieng script do). Nhung day chi la 1 lan ghi/chuong duy nhat
+// (lan doc dau tien), khong phai backfill hang loat toan bo truyen, nen rui
+// ro vuot free tier R2/D1 rat thap.
+async function getChapterContentFromDrive(env, slug, num, identifier, ctx) {
+  const allChaps = await fetchDriveAllChapters(env, slug);
+  if (!allChaps) return null;
+
+  const ch = allChaps.find(c => (c.number === num || c.chapter_number === num || c.filename === identifier));
+  if (!ch || typeof ch.content !== 'string' || !ch.filename) return null;
+
+  const body = ch.content.startsWith('#') ? ch.content : `# ${ch.title || ch.filename}\n\n${ch.content}`;
+
+  const encoded = btoa(unescape(encodeURIComponent(ch.filename))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const r2Key = `${slug}/b64_${encoded}`;
+  const chapterNumber = ch.number || 0;
+
+  const cacheWrite = Promise.all([
+    env.CHAPTERS.put(r2Key, body),
+    env.DB.prepare(`
+      INSERT INTO chapters (novel_slug, filename, title, chapter_number, r2_key)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(novel_slug, filename) DO UPDATE SET
+        title=excluded.title, chapter_number=excluded.chapter_number, r2_key=excluded.r2_key
+    `).bind(slug, ch.filename, ch.title || '', chapterNumber, r2Key).run(),
+  ]).catch(() => {});
+
+  if (ctx && ctx.waitUntil) {
+    ctx.waitUntil(cacheWrite);
+  } else {
+    await cacheWrite;
+  }
+
+  return body;
 }
 
 async function getChapters(env, slug, ctx) {
@@ -786,6 +851,19 @@ async function getChapterContent(env, slug, identifier, ctx) {
       }
     }
   } catch { /* fallback */ }
+
+  // 3. Du phong cuoi cung: lay truc tiep noi dung chuong tu Google Drive - xu
+  // ly dung truong hop truyen chi moi duoc "kham pha" qua muc luc
+  // (getChaptersFromDriveFallback o tren, dong 1) nhung noi dung chuong that
+  // CHUA TUNG duoc dong bo vao R2 (xem giai thich chi tiet o
+  // getChapterContentFromDrive()). Tu ghi cache khi lay duoc de lan sau nhanh
+  // hon, khong can goi lai Drive.
+  try {
+    const driveContent = await getChapterContentFromDrive(env, slug, num, identifier, ctx);
+    if (driveContent !== null) {
+      return jsonResponse({ content: driveContent });
+    }
+  } catch { /* het du phong, tra 404 ben duoi */ }
 
   return jsonResponse({ error: 'Chapter content not found', identifier, slug }, 404);
 }
