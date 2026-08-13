@@ -468,6 +468,7 @@ async function isAdminRequest(request, env) {
   try {
     const res = await fetch(`${env.BACKEND_URL}/api/auth/verify`, {
       headers: { Authorization: auth },
+      signal: AbortSignal.timeout(3000),
     });
     return res.ok;
   } catch {
@@ -489,13 +490,18 @@ async function getNovel(env, slug, request) {
 
   if (!novel) return jsonResponse({ error: 'Novel not found' }, 404);
 
-  let chapter_count = novel.total_chapters || 0;
+  // chapter_count phải dùng CÙNG công thức với getNovels() (đếm từ bảng D1
+  // `chapters`, nguồn sự thật), KHÔNG dùng độ dài catalog.json (có thể lệch
+  // với dữ liệu D1 thật, gây bug tương tự chapter_count sai ở getNovels()).
+  const chapCountRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS cnt FROM chapters WHERE novel_slug = ?`
+  ).bind(slug).first();
+  let chapter_count = chapCountRow?.cnt || 0;
   let latest_chapter_title = null;
   try {
     const catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
     if (catObj) {
       const catalog = await catObj.json();
-      chapter_count = catalog.length;
       if (catalog.length > 0) {
         latest_chapter_title = catalog[catalog.length - 1].title || null;
       }
@@ -851,9 +857,14 @@ async function syncNovelBatch(env, request) {
     // 1. Lưu/Cập nhật thông tin truyện duy nhất 1 dòng vào D1 `novels` table
     if (is_first_chunk) {
       const preview = (synopsis || '').slice(0, 2000).replace(/'/g, "''");
+      // glossary_count KHÔNG nằm trong danh sách cột INSERT lẫn ON CONFLICT
+      // DO UPDATE SET: nếu truyện chưa tồn tại, D1 tự set theo DEFAULT 0 của
+      // schema; nếu truyện đã tồn tại (đã có glossary_count thật qua
+      // updateGlossary()/migrate script), giá trị cũ được giữ nguyên vì cột
+      // đó không bị đụng tới khi conflict.
       await env.DB.prepare(`
-        INSERT INTO novels (slug, title, original_title, author, genre, source_url, last_translated_url, last_chapter_number, total_chapters, glossary, glossary_count, translation_style, notes, updated_at, synopsis, has_epub)
-        VALUES (?, ?, ?, ?, ?, '', '', ?, ?, '{}', 0, 'văn học', '', ?, ?, 1)
+        INSERT INTO novels (slug, title, original_title, author, genre, source_url, last_translated_url, last_chapter_number, total_chapters, glossary, translation_style, notes, updated_at, synopsis, has_epub)
+        VALUES (?, ?, ?, ?, ?, '', '', ?, ?, '{}', 'văn học', '', ?, ?, 1)
         ON CONFLICT(slug) DO UPDATE SET
           title=excluded.title, last_chapter_number=excluded.total_chapters, total_chapters=excluded.total_chapters, updated_at=excluded.updated_at, synopsis=excluded.synopsis, has_epub=1
       `).bind(
@@ -866,15 +877,29 @@ async function syncNovelBatch(env, request) {
       }
     }
 
-    // 2. Upload các file chương lên Cloudflare R2 (lưu trữ vô hạn)
-    const r2Puts = chapters.map(c => {
+    // 2. Upload các file chương lên Cloudflare R2 (lưu trữ vô hạn) VÀ ghi bảng
+    // D1 `chapters` — bảng này là nguồn đếm chapter_count thật (xem
+    // getNovels()/getNovel()); nếu chỉ PUT lên R2 mà không ghi D1, chapter_count
+    // sẽ sai giống bug đã sửa trước đó. Gộp R2 put + D1 insert theo từng
+    // chapter (Promise.all cả 2 thao tác) để tránh phải lặp lại việc tính
+    // r2_key ở 2 vòng lặp riêng.
+    const chapterOps = chapters.map(c => {
       const encoded = btoa(unescape(encodeURIComponent(c.filename))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
       const r2_key = `${slug}/b64_${encoded}`;
       const body = c.content.startsWith('#') ? c.content : `# ${c.title}\n\n${c.content}`;
-      return env.CHAPTERS.put(r2_key, body);
+      const chapterNumber = c.number || 0;
+      return Promise.all([
+        env.CHAPTERS.put(r2_key, body),
+        env.DB.prepare(`
+          INSERT INTO chapters (novel_slug, filename, title, chapter_number, r2_key)
+          VALUES (?, ?, ?, ?, ?)
+          ON CONFLICT(novel_slug, filename) DO UPDATE SET
+            title=excluded.title, chapter_number=excluded.chapter_number, r2_key=excluded.r2_key
+        `).bind(slug, c.filename, c.title, chapterNumber, r2_key).run(),
+      ]);
     });
 
-    await Promise.all(r2Puts);
+    await Promise.all(chapterOps);
 
     // 3. Cập nhật catalog.json lên R2
     let catalog = [];
@@ -1284,6 +1309,26 @@ async function novelRequestCreate(request, env) {
   const { meta } = await env.DB.prepare(
     `INSERT INTO novel_requests (user_id, url, note) VALUES (?, ?, ?)`
   ).bind(user.id, requestUrl, note).run();
+
+  // Best-effort giảm race, không phải giải pháp tuyệt đối: D1 không hỗ trợ
+  // multi-statement transaction dễ dàng qua HTTP API, nên vẫn có khe hở giữa
+  // SELECT COUNT(*) ở trên và INSERT vừa rồi (2 request đồng thời có thể cùng
+  // đi qua check trước khi request kia INSERT xong). Ở đây kiểm tra lại lần
+  // nữa SAU khi insert: nếu phát hiện vượt giới hạn do race, tự động từ chối
+  // ngay row vừa tạo thay vì để nó tồn tại như 1 pending request hợp lệ.
+  const recheck = await env.DB.prepare(
+    `SELECT COUNT(*) AS n FROM novel_requests WHERE user_id = ? AND status = 'pending'`
+  ).bind(user.id).first();
+  if ((recheck?.n || 0) > MAX_PENDING_NOVEL_REQUESTS) {
+    await env.DB.prepare(
+      `UPDATE novel_requests SET status = 'rejected', admin_note = ?, reviewed_at = datetime('now') WHERE id = ?`
+    ).bind('Tự động từ chối: vượt giới hạn yêu cầu đang chờ do gửi đồng thời', meta.last_row_id).run();
+    return jsonResponse({
+      error: `Bạn đang có ${MAX_PENDING_NOVEL_REQUESTS} yêu cầu chờ duyệt. `
+        + 'Vui lòng đợi admin xử lý trước khi gửi thêm.',
+    }, 429);
+  }
+
   return jsonResponse({ id: meta.last_row_id }, 201);
 }
 
@@ -1339,9 +1384,18 @@ async function adminNovelRequestReview(request, env, id) {
   }
 
   const { meta } = await env.DB.prepare(
-    `UPDATE novel_requests SET status = ?, admin_note = ?, reviewed_at = datetime('now') WHERE id = ?`
+    `UPDATE novel_requests SET status = ?, admin_note = ?, reviewed_at = datetime('now') WHERE id = ? AND status = 'pending'`
   ).bind(status, adminNote, id).run();
-  if (!meta.changes) return jsonResponse({ error: 'Không tìm thấy yêu cầu' }, 404);
+  if (!meta.changes) {
+    // UPDATE không đổi dòng nào — có thể do id không tồn tại, hoặc id tồn tại
+    // nhưng đã được duyệt/từ chối trước đó (double-review). Phân biệt 2 case
+    // bằng cách query lại status hiện tại.
+    const existing = await env.DB.prepare(
+      `SELECT status FROM novel_requests WHERE id = ?`
+    ).bind(id).first();
+    if (!existing) return jsonResponse({ error: 'Không tìm thấy yêu cầu' }, 404);
+    return jsonResponse({ error: 'Yêu cầu này đã được xử lý trước đó' }, 409);
+  }
   return jsonResponse({ ok: true });
 }
 
