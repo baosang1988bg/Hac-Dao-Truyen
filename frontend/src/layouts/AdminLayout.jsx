@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
-  BookOpen, LayoutDashboard, Library, ScrollText,
+  BookOpen, LayoutDashboard, Library, ScrollText, Inbox,
   ExternalLink, Menu, LogOut,
 } from 'lucide-react'
 
@@ -60,6 +60,9 @@ export default function AdminLayout() {
         </NavLink>
         <NavLink to="/admin/novels" className={linkCls}>
           <Library size={17} /> Truyện
+        </NavLink>
+        <NavLink to="/admin/requests" className={linkCls}>
+          <Inbox size={17} /> Yêu cầu truyện
         </NavLink>
         <NavLink to="/admin/logs" className={linkCls}>
           <ScrollText size={17} /> Nhật ký

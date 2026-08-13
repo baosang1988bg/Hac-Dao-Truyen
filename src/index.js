@@ -206,6 +206,25 @@ async function handleApi(request, url, env, ctx) {
     return commentDelete(request, env, parseInt(commentDelMatch[1]));
   }
 
+  // ── Request Novel — độc giả gợi ý truyện muốn dịch, admin duyệt ─────
+  // POST /api/novel-requests
+  if (path === '/api/novel-requests' && method === 'POST') {
+    return novelRequestCreate(request, env);
+  }
+  // GET /api/novel-requests/mine
+  if (path === '/api/novel-requests/mine' && method === 'GET') {
+    return novelRequestsMine(request, env);
+  }
+  // GET /api/admin/novel-requests?status=
+  if (path === '/api/admin/novel-requests' && method === 'GET') {
+    return adminNovelRequestsList(request, env, url);
+  }
+  // POST /api/admin/novel-requests/:id/review
+  const novelReqReviewMatch = path.match(/^\/api\/admin\/novel-requests\/(\d+)\/review$/);
+  if (novelReqReviewMatch && method === 'POST') {
+    return adminNovelRequestReview(request, env, parseInt(novelReqReviewMatch[1]));
+  }
+
   // GET /api/proxy-cover?url=...
   if (path === '/api/proxy-cover' && method === 'GET') {
     return proxyCover(url);
@@ -1204,6 +1223,110 @@ async function commentDelete(request, env, id) {
   if (!allowed) return jsonResponse({ error: 'Forbidden' }, 403);
 
   await env.DB.prepare(`DELETE FROM comments WHERE id = ?`).bind(id).run();
+  return jsonResponse({ ok: true });
+}
+
+// ── Request Novel ──────────────────────────────────────────────────────────────
+// Độc giả đã đăng nhập gửi URL truyện muốn dịch; admin xem danh sách và duyệt/
+// từ chối. Duyệt CHỈ đổi status trong D1 — KHÔNG tự động gọi scraper/import
+// (tránh SSRF/rủi ro tự động hóa); admin vẫn phải tự chạy `python main.py import
+// --url ...` thủ công. Hợp đồng API này phải khớp với routers/users.py.
+const MAX_REQUEST_URL_LENGTH = 500;
+const MAX_REQUEST_NOTE_LENGTH = 500;
+const MAX_PENDING_NOVEL_REQUESTS = 3;
+const NOVEL_REQUEST_STATUSES = new Set(['approved', 'rejected']);
+
+async function novelRequestCreate(request, env) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+
+  const body = await readJsonBody(request);
+  if (!body) return jsonResponse({ error: 'Invalid JSON body' }, 400);
+
+  const requestUrl = String(body.url || '').trim();
+  const note = String(body.note || '').trim();
+
+  if (!(requestUrl.startsWith('http://') || requestUrl.startsWith('https://'))) {
+    return jsonResponse({ error: 'URL phải bắt đầu bằng http:// hoặc https://' }, 400);
+  }
+  if (requestUrl.length < 1 || requestUrl.length > MAX_REQUEST_URL_LENGTH) {
+    return jsonResponse({ error: `URL phải từ 1 đến ${MAX_REQUEST_URL_LENGTH} ký tự` }, 400);
+  }
+  if (note.length > MAX_REQUEST_NOTE_LENGTH) {
+    return jsonResponse({ error: `Ghi chú tối đa ${MAX_REQUEST_NOTE_LENGTH} ký tự` }, 400);
+  }
+
+  const pending = await env.DB.prepare(
+    `SELECT COUNT(*) AS n FROM novel_requests WHERE user_id = ? AND status = 'pending'`
+  ).bind(user.id).first();
+  if ((pending?.n || 0) >= MAX_PENDING_NOVEL_REQUESTS) {
+    return jsonResponse({
+      error: `Bạn đang có ${MAX_PENDING_NOVEL_REQUESTS} yêu cầu chờ duyệt. `
+        + 'Vui lòng đợi admin xử lý trước khi gửi thêm.',
+    }, 429);
+  }
+
+  const { meta } = await env.DB.prepare(
+    `INSERT INTO novel_requests (user_id, url, note) VALUES (?, ?, ?)`
+  ).bind(user.id, requestUrl, note).run();
+  return jsonResponse({ id: meta.last_row_id }, 201);
+}
+
+async function novelRequestsMine(request, env) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  const { results } = await env.DB.prepare(`
+    SELECT id, url, note, status, admin_note, created_at, reviewed_at
+    FROM novel_requests WHERE user_id = ? ORDER BY id DESC
+  `).bind(user.id).all();
+  return jsonResponse(results || []);
+}
+
+async function adminNovelRequestsList(request, env, url) {
+  if (!(await isAdminRequest(request, env))) {
+    return jsonResponse({ error: 'Unauthorized' }, 403);
+  }
+  const status = url.searchParams.get('status');
+  let stmt;
+  if (status) {
+    stmt = env.DB.prepare(`
+      SELECT r.id, r.user_id, COALESCE(u.email, '') AS email, r.url, r.note,
+             r.status, r.admin_note, r.created_at, r.reviewed_at
+      FROM novel_requests r LEFT JOIN users u ON u.id = r.user_id
+      WHERE r.status = ? ORDER BY r.id DESC
+    `).bind(status);
+  } else {
+    stmt = env.DB.prepare(`
+      SELECT r.id, r.user_id, COALESCE(u.email, '') AS email, r.url, r.note,
+             r.status, r.admin_note, r.created_at, r.reviewed_at
+      FROM novel_requests r LEFT JOIN users u ON u.id = r.user_id
+      ORDER BY r.id DESC
+    `);
+  }
+  const { results } = await stmt.all();
+  return jsonResponse(results || []);
+}
+
+async function adminNovelRequestReview(request, env, id) {
+  if (!(await isAdminRequest(request, env))) {
+    return jsonResponse({ error: 'Unauthorized' }, 403);
+  }
+  const body = await readJsonBody(request);
+  if (!body) return jsonResponse({ error: 'Invalid JSON body' }, 400);
+
+  const status = String(body.status || '');
+  const adminNote = String(body.admin_note || '').trim();
+  if (!NOVEL_REQUEST_STATUSES.has(status)) {
+    return jsonResponse({ error: "status chỉ nhận 'approved' hoặc 'rejected'" }, 400);
+  }
+  if (adminNote.length > MAX_REQUEST_NOTE_LENGTH) {
+    return jsonResponse({ error: `Ghi chú admin tối đa ${MAX_REQUEST_NOTE_LENGTH} ký tự` }, 400);
+  }
+
+  const { meta } = await env.DB.prepare(
+    `UPDATE novel_requests SET status = ?, admin_note = ?, reviewed_at = datetime('now') WHERE id = ?`
+  ).bind(status, adminNote, id).run();
+  if (!meta.changes) return jsonResponse({ error: 'Không tìm thấy yêu cầu' }, 404);
   return jsonResponse({ ok: true });
 }
 

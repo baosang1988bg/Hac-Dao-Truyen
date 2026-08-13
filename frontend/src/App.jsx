@@ -20,6 +20,7 @@ const EpubCatalogPage = lazy(() => import('./pages/EpubCatalogPage'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminNovels = lazy(() => import('./pages/admin/AdminNovels'))
 const AdminNovelDetail = lazy(() => import('./pages/admin/AdminNovelDetail'))
+const AdminNovelRequests = lazy(() => import('./pages/admin/AdminNovelRequests'))
 
 /** Fallback tối giản khi chờ tải chunk của trang lazy. */
 function PageLoading() {
@@ -67,6 +68,7 @@ function App() {
         <Route index element={<AdminDashboard />} />
         <Route path="novels" element={<AdminNovels />} />
         <Route path="novels/:slug" element={<AdminNovelDetail />} />
+        <Route path="requests" element={<AdminNovelRequests />} />
         <Route path="logs" element={<Logs />} />
       </Route>
 

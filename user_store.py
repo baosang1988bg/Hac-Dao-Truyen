@@ -28,6 +28,8 @@ DB_PATH = os.path.join(DATA_DIR, "users.db")
 TOKEN_TTL_SQL = "+30 days"
 # Khoảng cách tối thiểu giữa 2 comment của cùng user (giây)
 COMMENT_COOLDOWN_SECONDS = 20
+# Số request truyện đang 'pending' tối đa mỗi user được giữ cùng lúc (chống spam)
+MAX_PENDING_NOVEL_REQUESTS = 3
 
 # Regex email đơn giản — đồng bộ với Worker D1
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -65,6 +67,16 @@ CREATE TABLE IF NOT EXISTS comments (
     chapter    INTEGER,
     content    TEXT,
     created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS novel_requests (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL,
+    url        TEXT NOT NULL,
+    note       TEXT DEFAULT '',
+    status     TEXT NOT NULL DEFAULT 'pending',
+    admin_note TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now')),
+    reviewed_at TEXT
 );
 """
 
@@ -285,6 +297,80 @@ def delete_comment(comment_id: int) -> None:
     """Xóa comment theo id."""
     with _conn() as conn:
         conn.execute("DELETE FROM comments WHERE id = ?", (comment_id,))
+
+
+# ── Novel requests (độc giả gợi ý truyện muốn dịch) ─────────────────────────
+
+def count_pending_requests(user_id: int) -> int:
+    """Đếm số request đang 'pending' của user — dùng để chặn spam (tối đa
+    MAX_PENDING_NOVEL_REQUESTS request cùng lúc, khác cooldown thời gian của comment)."""
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) AS n FROM novel_requests WHERE user_id = ? AND status = 'pending'",
+            (user_id,),
+        ).fetchone()
+    return row["n"] if row else 0
+
+
+def create_novel_request(user_id: int, url: str, note: str = "") -> int:
+    """Tạo request mới, trả về id."""
+    with _conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO novel_requests (user_id, url, note) VALUES (?, ?, ?)",
+            (user_id, url, note),
+        )
+        return cur.lastrowid
+
+
+def list_my_requests(user_id: int) -> list[dict]:
+    """Danh sách request của chính user, mới nhất trước."""
+    with _conn() as conn:
+        rows = conn.execute(
+            "SELECT id, url, note, status, admin_note, created_at, reviewed_at "
+            "FROM novel_requests WHERE user_id = ? ORDER BY id DESC",
+            (user_id,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def list_all_requests(status: str | None = None) -> list[dict]:
+    """Danh sách TẤT CẢ request (admin), lọc theo status nếu có, mới nhất trước,
+    kèm email người gửi."""
+    sql = (
+        "SELECT r.id, r.user_id, COALESCE(u.email, '') AS email, r.url, r.note, "
+        "r.status, r.admin_note, r.created_at, r.reviewed_at "
+        "FROM novel_requests r LEFT JOIN users u ON u.id = r.user_id"
+    )
+    params: list = []
+    if status:
+        sql += " WHERE r.status = ?"
+        params.append(status)
+    sql += " ORDER BY r.id DESC"
+    with _conn() as conn:
+        rows = conn.execute(sql, params).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_novel_request(request_id: int) -> dict | None:
+    """Lấy 1 request theo id."""
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT id, user_id, url, note, status, admin_note, created_at, reviewed_at "
+            "FROM novel_requests WHERE id = ?",
+            (request_id,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def review_novel_request(request_id: int, status: str, admin_note: str = "") -> bool:
+    """Cập nhật status + admin_note + reviewed_at=now. Trả về False nếu không tìm thấy id."""
+    with _conn() as conn:
+        cur = conn.execute(
+            "UPDATE novel_requests SET status = ?, admin_note = ?, "
+            "reviewed_at = datetime('now') WHERE id = ?",
+            (status, admin_note, request_id),
+        )
+        return cur.rowcount > 0
 
 
 # Tạo DB + schema ngay khi import module

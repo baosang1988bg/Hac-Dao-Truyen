@@ -1,12 +1,17 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { Ticket, ShoppingBag, ArrowRight } from 'lucide-react'
+import React, { useState } from 'react'
+import { Ticket, Send } from 'lucide-react'
+import RequestNovelModal from '../../components/RequestNovelModal'
 
 /**
  * TruyThuNoticeSection — Top Banner Truy Thư Lệnh & Đăng Tin Tìm Truyện (Chuẩn Truyentrung.com)
+ * Nút "Yêu cầu truyện mới" mở RequestNovelModal — độc giả gửi URL truyện muốn dịch,
+ * admin duyệt/từ chối ở /admin/requests.
  */
 export default function TruyThuNoticeSection() {
+  const [modalOpen, setModalOpen] = useState(false)
+
   return (
+    <>
     <div className="glass-panel truy-thu-banner" style={{
       padding: '0.85rem 1.2rem',
       borderRadius: '14px',
@@ -34,21 +39,26 @@ export default function TruyThuNoticeSection() {
           <Ticket size={18} />
         </div>
         <div style={{ fontSize: '0.84rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
-          Sử dụng <strong>Truy Thư Lệnh</strong> để đăng tin tìm truyện. 
+          Chưa tìm thấy truyện bạn muốn đọc? <strong>Gửi yêu cầu truyện mới</strong>.
           <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }} className="desktop-only">
-            Thành viên đăng nhập lần đầu được tặng 1 Truy Thư Lệnh Tàn Phiến miễn phí.
+            Đội ngũ dịch thuật sẽ xem xét và phản hồi sớm nhất có thể.
           </span>
         </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span className="btn btn-secondary" style={{ fontSize: '0.78rem', padding: '5px 10px', minHeight: '32px', cursor: 'default' }}>
-          <ShoppingBag size={13} /> Cửa Hàng
-        </span>
-        <span className="btn btn-primary" style={{ fontSize: '0.78rem', padding: '5px 12px', minHeight: '32px', cursor: 'default' }}>
-          Xem bài đăng <ArrowRight size={13} />
-        </span>
+        <button
+          type="button"
+          className="btn btn-primary"
+          style={{ fontSize: '0.78rem', padding: '5px 12px', minHeight: '32px' }}
+          onClick={() => setModalOpen(true)}
+        >
+          <Send size={13} /> Yêu cầu truyện mới
+        </button>
       </div>
     </div>
+
+    {modalOpen && <RequestNovelModal onClose={() => setModalOpen(false)} />}
+    </>
   )
 }

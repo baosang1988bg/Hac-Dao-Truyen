@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
 import user_store
-from auth import _is_valid as _is_admin_token
+from auth import _is_valid as _is_admin_token, require_admin
 from security_utils import validate_slug
 
 router = APIRouter()
@@ -20,6 +20,11 @@ router = APIRouter()
 # Giới hạn nội dung comment
 MAX_COMMENT_LENGTH = 2000
 MIN_PASSWORD_LENGTH = 8
+
+# Giới hạn form "Request Novel"
+MAX_REQUEST_URL_LENGTH = 500
+MAX_REQUEST_NOTE_LENGTH = 500
+NOVEL_REQUEST_STATUSES = {"approved", "rejected"}
 
 
 # ── Auth helpers ─────────────────────────────────────────────────────────────
@@ -62,6 +67,16 @@ class ProgressRequest(BaseModel):
 class CommentRequest(BaseModel):
     chapter: int
     content: str
+
+
+class NovelRequestCreate(BaseModel):
+    url: str
+    note: str = ""
+
+
+class NovelRequestReview(BaseModel):
+    status: str
+    admin_note: str = ""
 
 
 # ── Auth endpoints ───────────────────────────────────────────────────────────
@@ -188,3 +203,71 @@ def delete_comment(comment_id: int, authorization: str = Header(default="")):
         user_store.delete_comment(comment_id)
         return {"ok": True}
     raise HTTPException(status_code=403, detail="Không có quyền xóa comment này")
+
+
+# ── Request Novel ────────────────────────────────────────────────────────────
+# Độc giả đã đăng nhập gửi URL truyện Trung muốn dịch; admin xem danh sách và
+# duyệt/từ chối. Duyệt CHỈ đổi trạng thái trong DB — KHÔNG tự động gọi scraper
+# hay import (tránh SSRF/rủi ro tự động hóa); admin vẫn phải tự chạy
+# `python main.py import --url ...` thủ công sau khi duyệt.
+
+@router.post("/api/novel-requests", status_code=201)
+def create_novel_request(req: NovelRequestCreate, user: dict = Depends(require_user)):
+    """Gửi yêu cầu truyện mới — chống spam: tối đa 3 request đang pending/user."""
+    url = req.url.strip()
+    note = req.note.strip()
+    if not (url.startswith("http://") or url.startswith("https://")):
+        raise HTTPException(
+            status_code=400, detail="URL phải bắt đầu bằng http:// hoặc https://"
+        )
+    if not (1 <= len(url) <= MAX_REQUEST_URL_LENGTH):
+        raise HTTPException(
+            status_code=400,
+            detail=f"URL phải từ 1 đến {MAX_REQUEST_URL_LENGTH} ký tự",
+        )
+    if len(note) > MAX_REQUEST_NOTE_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Ghi chú tối đa {MAX_REQUEST_NOTE_LENGTH} ký tự",
+        )
+    if user_store.count_pending_requests(user["id"]) >= user_store.MAX_PENDING_NOVEL_REQUESTS:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"Bạn đang có {user_store.MAX_PENDING_NOVEL_REQUESTS} yêu cầu chờ duyệt. "
+                "Vui lòng đợi admin xử lý trước khi gửi thêm."
+            ),
+        )
+    request_id = user_store.create_novel_request(user["id"], url, note)
+    return {"id": request_id}
+
+
+@router.get("/api/novel-requests/mine")
+def list_my_novel_requests(user: dict = Depends(require_user)):
+    """Danh sách yêu cầu của chính user, mới nhất trước."""
+    return user_store.list_my_requests(user["id"])
+
+
+@router.get("/api/admin/novel-requests", dependencies=[Depends(require_admin)])
+def list_all_novel_requests(status: str | None = None):
+    """Danh sách TẤT CẢ yêu cầu (admin), lọc theo status nếu truyền, kèm email."""
+    return user_store.list_all_requests(status)
+
+
+@router.post("/api/admin/novel-requests/{request_id}/review", dependencies=[Depends(require_admin)])
+def review_novel_request(request_id: int, req: NovelRequestReview):
+    """Duyệt/từ chối 1 yêu cầu — chỉ đổi trạng thái, KHÔNG tự động import."""
+    if req.status not in NOVEL_REQUEST_STATUSES:
+        raise HTTPException(
+            status_code=400, detail="status chỉ nhận 'approved' hoặc 'rejected'"
+        )
+    admin_note = req.admin_note.strip()
+    if len(admin_note) > MAX_REQUEST_NOTE_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Ghi chú admin tối đa {MAX_REQUEST_NOTE_LENGTH} ký tự",
+        )
+    ok = user_store.review_novel_request(request_id, req.status, admin_note)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Không tìm thấy yêu cầu")
+    return {"ok": True}
