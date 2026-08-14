@@ -14,7 +14,9 @@ Tất cả kế hoạch, báo cáo, session log và roadmap được tập trung
 | [BAO_CAO_XU_LY_PHIEN3_2026-08-13.md](./BAO_CAO_XU_LY_PHIEN3_2026-08-13.md) | Báo cáo thực thi 3 việc còn lại (rà soát UI, Request Novel, ADK Foundation) | ✅ |
 | [KE_HOACH_AUDIT_PHIEN4_2026-08-13.md](./KE_HOACH_AUDIT_PHIEN4_2026-08-13.md) | Kế hoạch audit toàn diện (data consistency, race condition, thread-safety) | ✅ |
 | [BAO_CAO_AUDIT_PHIEN4_2026-08-13.md](./BAO_CAO_AUDIT_PHIEN4_2026-08-13.md) | Báo cáo thực thi audit phiên 4 | ✅ |
-| [BAO_CAO_XU_LY_PHIEN5_2026-08-13.md](./BAO_CAO_XU_LY_PHIEN5_2026-08-13.md) | Xác nhận audit phiên 4 xong + thêm ngân sách R2/D1 tự giới hạn cho cloud-to-cloud sync | 🟢 Mới nhất |
+| [BAO_CAO_XU_LY_PHIEN5_2026-08-13.md](./BAO_CAO_XU_LY_PHIEN5_2026-08-13.md) | Xác nhận audit phiên 4 xong + ngân sách R2/D1 cho cloud-to-cloud sync + fix đọc chương Lãnh Chúa | ✅ |
+| [KE_HOACH_UI_VA_BAO_VE_NOI_DUNG_2026-08-14.md](./KE_HOACH_UI_VA_BAO_VE_NOI_DUNG_2026-08-14.md) | Kế hoạch nâng cấp UI + bảo vệ nội dung tránh download/copy | 📋 Planning |
+| [KE_HOACH_NANG_CAP_TONG_THE_2026-08-14.md](./KE_HOACH_NANG_CAP_TONG_THE_2026-08-14.md) | Kế hoạch nâng cấp tổng thể + thêm truyện tranh (manga/manhua) | 🟢 Mới nhất |
 | [ROADMAP-nang-cap-2026-07.md](./ROADMAP-nang-cap-2026-07.md) | Roadmap nâng cấp tổng thể tháng 7/2026 | ✅ Phase 1-3 Done |
 | [HOMEPAGE_PLAN.md](./HOMEPAGE_PLAN.md) | Nghiên cứu nguồn dữ liệu & kế hoạch multi-source scraper | 📋 Planning |
 
