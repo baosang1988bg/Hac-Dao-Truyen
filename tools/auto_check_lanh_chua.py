@@ -5,7 +5,6 @@ Khung giờ chạy: 12h đêm (00:00 UTC+7 / 17:00 UTC).
 """
 
 import sys
-import os
 import re
 import json
 import subprocess
@@ -142,16 +141,21 @@ def main():
     with open(ANNOUNCEMENTS_JSON, 'w', encoding='utf-8') as f:
         json.dump(ann_data[:5], f, ensure_ascii=False, indent=2)
 
-    # 4. Rebuild frontend & deploy wrangler
-    print("📦 Đang build frontend...")
-    npm_cmd = "npm.cmd" if os.name == 'nt' else "npm"
-    npx_cmd = "npx.cmd" if os.name == 'nt' else "npx"
-    subprocess.run([npm_cmd, "run", "build"], cwd=BASE_DIR / "frontend", check=True)
+    # 4. KHÔNG build frontend / wrangler deploy ở đây (đã bỏ, xem ghi chú dưới).
+    # Nội dung chương mới đã LÊN THẲNG R2/D1 qua wrangler CLI trong bước 2
+    # (migrate_to_cloudflare.py) — R2/D1 là dữ liệu, KHÔNG phải mã nguồn Worker,
+    # nên không cần redeploy Worker/frontend để độc giả thấy chương mới. Trước
+    # đây bước này gọi thêm `npm run build` + `npx wrangler deploy` mỗi ngày,
+    # nhưng KHÔNG có CLOUDFLARE_API_TOKEN nào được truyền vào workflow/step này
+    # → `wrangler deploy` luôn thất bại (lỗi xác thực) → toàn bộ script thoát
+    # lỗi (subprocess check=True) → job dừng TRƯỚC bước "Commit & Push Changes"
+    # → chương đã dịch xong trên runner nhưng KHÔNG BAO GIỜ được commit/push
+    # (xác nhận: chưa từng có commit nào từ "AutoTranslator Bot" trong git log).
+    # Nếu sau này cần deploy Worker/frontend thật (đổi code, không phải chỉ
+    # thêm chương), hãy chạy `wrangler deploy` thủ công theo `deploy.md`.
+    print("✅ Chương mới đã đồng bộ lên R2/D1, không cần deploy lại Worker/frontend.")
 
-    print("🌐 Đang deploy Cloudflare Worker & Assets...")
-    subprocess.run([npx_cmd, "wrangler", "deploy"], cwd=BASE_DIR, check=True)
-
-    print("🎉 Tự động dịch, đồng bộ và deploy chương mới thành công!")
+    print("🎉 Tự động dịch và đồng bộ chương mới thành công!")
 
 if __name__ == "__main__":
     main()

@@ -21,25 +21,33 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
+      # Trước đây pip install liệt kê thủ công từng package (requests,
+      # beautifulsoup4, playwright, python-slugify) và THIẾU python-dotenv,
+      # google-genai, groq, openai — mà migrate_to_cloudflare.py (dotenv) và
+      # providers/gemini.py (google-genai, backend dịch mặc định) đều cần.
+      # Thiếu package nào là script lỗi ImportError ngay, dừng job trước khi
+      # kịp dịch/commit. Dùng chung requirements.txt (giống ci.yml) để không
+      # bao giờ bị lệch danh sách phụ thuộc nữa.
       - name: Install Python Dependencies
         run: |
-          pip install requests beautifulsoup4 playwright python-slugify
+          pip install -r requirements.txt
           playwright install chromium
 
-      - name: Install Frontend Dependencies
-        run: |
-          cd frontend && npm ci
-
+      # migrate_to_cloudflare.py (bước "Sync lên R2/D1" bên trong
+      # tools/auto_check_lanh_chua.py) dùng `wrangler d1 execute --remote` và
+      # `wrangler r2 object put` để ghi dữ liệu — CẦN CLOUDFLARE_API_TOKEN mới
+      # xác thực được trong CI (không có TTY để `wrangler login`). Không có
+      # secret này thì mọi lệnh wrangler đều lỗi xác thực → job thất bại trước
+      # khi kịp commit/push (đã xác nhận: chưa từng có commit tự động nào).
+      # Tạo token tại Cloudflare Dashboard → My Profile → API Tokens → Create
+      # Token (quyền D1 Edit + Workers R2 Storage Edit cho account này), rồi
+      # thêm vào GitHub repo Settings → Secrets → Actions.
       - name: Run Auto Check & Translate
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          HACDAO_SYNC_KEY: ${{ secrets.HACDAO_SYNC_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           python tools/auto_check_lanh_chua.py
 
