@@ -179,7 +179,7 @@ def get_wrangler():
     local = os.path.join(os.getcwd(), 'node_modules', '.bin', f'wrangler{ext}')
     if os.path.exists(local):
         return [local]
-    return [f'npx{ext}', 'wrangler']
+    return [f'npx{ext}', '-y', 'wrangler']
 
 def run_safe(args: list) -> subprocess.CompletedProcess:
     if isinstance(args[0], list):

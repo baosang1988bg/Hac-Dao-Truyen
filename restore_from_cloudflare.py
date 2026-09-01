@@ -30,7 +30,7 @@ def get_wrangler():
     local = os.path.join(os.getcwd(), 'node_modules', '.bin', f'wrangler{ext}')
     if os.path.exists(local):
         return [local]
-    return [f'npx{ext}', 'wrangler']
+    return [f'npx{ext}', '-y', 'wrangler']
 
 
 def run_command(cmd_list):

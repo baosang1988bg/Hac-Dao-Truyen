@@ -54,12 +54,51 @@ def fetch_latest_chapters():
 def main():
     print(f"⏰ [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Kiểm tra chương mới cho truyện '{NOVEL_SLUG}'...")
     
-    if not NOVEL_JSON.exists() or not CATALOG_JSON.exists():
-        print("❌ Không tìm thấy novel.json hoặc catalog.json.")
-        sys.exit(1)
+    NOVEL_DIR.mkdir(parents=True, exist_ok=True)
+    (NOVEL_DIR / "translated").mkdir(parents=True, exist_ok=True)
+    (NOVEL_DIR / "text_raw").mkdir(parents=True, exist_ok=True)
 
-    with open(NOVEL_JSON, encoding='utf-8') as f:
-        novel_meta = json.load(f)
+    if not NOVEL_JSON.exists():
+        print("ℹ️ Chưa có novel.json, đang khởi tạo cấu hình mặc định...")
+        novel_meta = {
+            "slug": NOVEL_SLUG,
+            "title": "Lãnh Chúa Cầu Sinh: Thiên Phú Hợp Thành",
+            "original_title": "領主求生之天賦合成",
+            "author": "Kỳ Khai (祁開)",
+            "source_url": "https://www.novel543.com/0606657941/8096_1.html",
+            "genre": "cultivation",
+            "last_translated_url": "https://www.novel543.com/0606657941/8096_1500.html",
+            "last_chapter_number": 1500,
+            "total_chapters": 1500,
+            "glossary": {
+                "陈辞": "Trần Từ",
+                "领主": "Lãnh chúa",
+                "求生": "Cầu sinh",
+                "天赋合成": "Thiên phú hợp thành"
+            },
+            "translation_style": "",
+            "notes": "Tự động dịch từ novel543"
+        }
+        with open(NOVEL_JSON, 'w', encoding='utf-8') as f:
+            json.dump(novel_meta, f, ensure_ascii=False, indent=2)
+    else:
+        with open(NOVEL_JSON, encoding='utf-8') as f:
+            novel_meta = json.load(f)
+
+    if not CATALOG_JSON.exists():
+        print("ℹ️ Chưa có catalog.json, đang khởi tạo danh mục ban đầu...")
+        catalog = [
+            {
+                "number": 1500,
+                "title": "Chương 1500",
+                "original_title": "第1500章 禪山城",
+                "url": "https://www.novel543.com/0606657941/8096_1500.html",
+                "original_chapter_number": 1500,
+                "filename": "Chương 1500_VI.md"
+            }
+        ]
+        with open(CATALOG_JSON, 'w', encoding='utf-8') as f:
+            json.dump(catalog, f, ensure_ascii=False, indent=2)
 
     last_num = novel_meta.get("last_chapter_number", 0)
     print(f"📖 Chương hiện tại trong hệ thống: {last_num}")
