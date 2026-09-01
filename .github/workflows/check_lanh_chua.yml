@@ -47,6 +47,7 @@ jobs:
       - name: Run Auto Check & Translate
         env:
           HEADLESS: "true"
+          HACDAO_SYNC_KEY: ${{ secrets.HACDAO_SYNC_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY || secrets.GEMINI_API_KEY }}
           GOOGLE_API_KEYS: ${{ secrets.GOOGLE_API_KEYS || secrets.GEMINI_API_KEYS }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || secrets.GOOGLE_API_KEY }}

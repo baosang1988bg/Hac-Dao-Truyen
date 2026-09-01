@@ -5,6 +5,7 @@ Khung giờ chạy: 12h đêm (00:00 UTC+7 / 17:00 UTC).
 """
 
 import sys
+import os
 import re
 import json
 import subprocess
@@ -36,7 +37,6 @@ def fetch_latest_chapters():
     with urllib.request.urlopen(req, timeout=30) as resp:
         content = resp.read().decode("utf-8", errors="ignore")
 
-    # Match chapters like: [第1499章 聯軍納新](https://www.novel543.com/0606657941/8096_1499.html ...)
     pattern = re.compile(r'\[第(\d+)章\s*([^\]]+)\]\((https?://[^\s\)]+)')
     matches = pattern.findall(content)
     
@@ -50,6 +50,81 @@ def fetch_latest_chapters():
             "url": url
         })
     return new_chapters
+
+def sync_via_worker_api(slug: str, novel_meta: dict, pending: list, base_dir: Path) -> bool:
+    """Đồng bộ trực tiếp lên Cloudflare D1 + R2 qua Worker API /api/admin/sync-novel bằng HACDAO_SYNC_KEY."""
+    sync_key = os.getenv("HACDAO_SYNC_KEY", "").strip()
+    if not sync_key:
+        print("ℹ️ Không tìm thấy HACDAO_SYNC_KEY để đồng bộ qua Worker API.")
+        return False
+
+    host = "hac-dao-truyen.nguyenbaosang1998.workers.dev"
+    url = f"https://{host}/api/admin/sync-novel"
+    trans_dir = base_dir / "novels" / slug / "translated"
+
+    if not trans_dir.exists():
+        print(f"⚠️ Thư mục dịch {trans_dir} không tồn tại.")
+        return False
+
+    chapters_to_sync = []
+    for c in pending:
+        ch_num = c["number"]
+        found_file = None
+        for fp in trans_dir.glob("*.md"):
+            if f"Chương {ch_num}" in fp.name or f"第{ch_num}章" in fp.name or fp.name.startswith(f"{ch_num}_") or f"_{ch_num}_" in fp.name:
+                found_file = fp
+                break
+
+        if not found_file:
+            print(f"⚠️ Không tìm thấy file dịch cho Chương {ch_num}")
+            continue
+
+        content = found_file.read_text(encoding="utf-8")
+        first_line = content.splitlines()[0] if content else f"Chương {ch_num}"
+        title = first_line.lstrip("# ").strip()
+
+        chapters_to_sync.append({
+            "filename": found_file.name,
+            "title": title,
+            "number": ch_num,
+            "content": content
+        })
+
+    if not chapters_to_sync:
+        print("⚠️ Không có nội dung chương nào để sync qua Worker API.")
+        return False
+
+    print(f"📡 Đang đẩy {len(chapters_to_sync)} chương lên Cloudflare D1 + R2 qua Worker API (/api/admin/sync-novel)...")
+    payload = {
+        "slug": slug,
+        "title": novel_meta.get("title", slug),
+        "original_title": novel_meta.get("original_title", ""),
+        "author": novel_meta.get("author", "Unknown"),
+        "genre": novel_meta.get("genre", "cultivation"),
+        "total_chapter_count": novel_meta.get("total_chapters", len(chapters_to_sync)),
+        "is_first_chunk": True,
+        "chapters": chapters_to_sync
+    }
+
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json; charset=utf-8",
+            "x-sync-key": sync_key,
+            "User-Agent": "HacDaoAutoSyncer/1.0"
+        },
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            resp_body = resp.read().decode("utf-8")
+            print(f"✅ Đồng bộ thành công lên Cloudflare D1 + R2 ({resp_body[:80]}).")
+            return True
+    except Exception as e:
+        print(f"⚠️ Lỗi khi sync qua Worker API: {e}")
+        return False
 
 def main():
     print(f"⏰ [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Kiểm tra chương mới cho truyện '{NOVEL_SLUG}'...")
@@ -99,6 +174,9 @@ def main():
         ]
         with open(CATALOG_JSON, 'w', encoding='utf-8') as f:
             json.dump(catalog, f, ensure_ascii=False, indent=2)
+    else:
+        with open(CATALOG_JSON, encoding='utf-8') as f:
+            catalog = json.load(f)
 
     last_num = novel_meta.get("last_chapter_number", 0)
     print(f"📖 Chương hiện tại trong hệ thống: {last_num}")
@@ -118,9 +196,6 @@ def main():
         return
 
     print(f"🔥 Phát hiện {len(pending)} chương mới: {[c['number'] for c in pending]}")
-
-    with open(CATALOG_JSON, encoding='utf-8') as f:
-        catalog = json.load(f)
 
     first_new = pending[0]["number"]
 
@@ -153,19 +228,32 @@ def main():
     cmd_trans = [sys.executable, "-u", "main.py", "translate", "--novel", NOVEL_SLUG, "--chapters", str(len(pending))]
     subprocess.run(cmd_trans, cwd=BASE_DIR, check=True)
 
+    # Đọc lại novel.json sau khi dịch để lấy last_chapter_number mới nhất
+    if NOVEL_JSON.exists():
+        try:
+            with open(NOVEL_JSON, encoding='utf-8') as f:
+                novel_meta = json.load(f)
+        except Exception:
+            pass
+
     # 2. Sync lên Cloudflare R2/D1
     print("☁️ Đang đồng bộ lên Cloudflare R2/D1...")
-    import os
     cf_token = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()
+    synced = False
+
     if cf_token:
         try:
             cmd_sync = [sys.executable, "-u", "migrate_to_cloudflare.py", "--slug", NOVEL_SLUG, "--from-chapter", str(first_new)]
             subprocess.run(cmd_sync, cwd=BASE_DIR, check=True)
-            print("✅ Đã đồng bộ thành công lên Cloudflare R2/D1.")
+            print("✅ Đã đồng bộ thành công lên Cloudflare qua wrangler CLI.")
+            synced = True
         except Exception as e:
-            print(f"⚠️ Lỗi khi đồng bộ lên Cloudflare (tiếp tục lưu vào Git): {e}")
-    else:
-        print("ℹ️ Bỏ qua đồng bộ Cloudflare do chưa cấu hình secret CLOUDFLARE_API_TOKEN.")
+            print(f"⚠️ Lỗi khi đồng bộ qua wrangler CLI: {e}")
+
+    if not synced:
+        sync_ok = sync_via_worker_api(NOVEL_SLUG, novel_meta, pending, BASE_DIR)
+        if not sync_ok and not cf_token:
+            print("ℹ️ Chưa cấu hình CLOUDFLARE_API_TOKEN hoặc HACDAO_SYNC_KEY hợp lệ.")
 
     # 3. Cập nhật announcements.json
     today_str = datetime.now().strftime('%Y-%m-%d')
@@ -188,20 +276,6 @@ def main():
     
     with open(ANNOUNCEMENTS_JSON, 'w', encoding='utf-8') as f:
         json.dump(ann_data[:5], f, ensure_ascii=False, indent=2)
-
-    # 4. KHÔNG build frontend / wrangler deploy ở đây (đã bỏ, xem ghi chú dưới).
-    # Nội dung chương mới đã LÊN THẲNG R2/D1 qua wrangler CLI trong bước 2
-    # (migrate_to_cloudflare.py) — R2/D1 là dữ liệu, KHÔNG phải mã nguồn Worker,
-    # nên không cần redeploy Worker/frontend để độc giả thấy chương mới. Trước
-    # đây bước này gọi thêm `npm run build` + `npx wrangler deploy` mỗi ngày,
-    # nhưng KHÔNG có CLOUDFLARE_API_TOKEN nào được truyền vào workflow/step này
-    # → `wrangler deploy` luôn thất bại (lỗi xác thực) → toàn bộ script thoát
-    # lỗi (subprocess check=True) → job dừng TRƯỚC bước "Commit & Push Changes"
-    # → chương đã dịch xong trên runner nhưng KHÔNG BAO GIỜ được commit/push
-    # (xác nhận: chưa từng có commit nào từ "AutoTranslator Bot" trong git log).
-    # Nếu sau này cần deploy Worker/frontend thật (đổi code, không phải chỉ
-    # thêm chương), hãy chạy `wrangler deploy` thủ công theo `deploy.md`.
-    print("✅ Chương mới đã đồng bộ lên R2/D1, không cần deploy lại Worker/frontend.")
 
     print("🎉 Tự động dịch và đồng bộ chương mới thành công!")
 
