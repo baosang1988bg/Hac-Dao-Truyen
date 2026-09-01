@@ -17,8 +17,12 @@ load_dotenv()
 # ── Gemini API ────────────────────────────────────────────────────────────────
 # Hỗ trợ nhiều API key, cách nhau bằng dấu phẩy để rotate khi bị 429
 # Ví dụ: GOOGLE_API_KEYS="key1,key2,key3"
-# Nếu chỉ có 1 key thì dùng GOOGLE_API_KEY như cũ
-_raw_keys = os.getenv("GOOGLE_API_KEYS", "") or os.getenv("GOOGLE_API_KEY", "")
+_raw_keys = (
+    os.getenv("GOOGLE_API_KEYS", "")
+    or os.getenv("GOOGLE_API_KEY", "")
+    or os.getenv("GEMINI_API_KEYS", "")
+    or os.getenv("GEMINI_API_KEY", "")
+)
 GOOGLE_API_KEYS: list[str] = [k.strip() for k in _raw_keys.split(",") if k.strip()]
 GOOGLE_API_KEY = GOOGLE_API_KEYS[0] if GOOGLE_API_KEYS else ""
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
