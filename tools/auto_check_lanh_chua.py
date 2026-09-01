@@ -155,8 +155,17 @@ def main():
 
     # 2. Sync lên Cloudflare R2/D1
     print("☁️ Đang đồng bộ lên Cloudflare R2/D1...")
-    cmd_sync = [sys.executable, "-u", "migrate_to_cloudflare.py", "--slug", NOVEL_SLUG, "--from-chapter", str(first_new)]
-    subprocess.run(cmd_sync, cwd=BASE_DIR, check=True)
+    import os
+    cf_token = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()
+    if cf_token:
+        try:
+            cmd_sync = [sys.executable, "-u", "migrate_to_cloudflare.py", "--slug", NOVEL_SLUG, "--from-chapter", str(first_new)]
+            subprocess.run(cmd_sync, cwd=BASE_DIR, check=True)
+            print("✅ Đã đồng bộ thành công lên Cloudflare R2/D1.")
+        except Exception as e:
+            print(f"⚠️ Lỗi khi đồng bộ lên Cloudflare (tiếp tục lưu vào Git): {e}")
+    else:
+        print("ℹ️ Bỏ qua đồng bộ Cloudflare do chưa cấu hình secret CLOUDFLARE_API_TOKEN.")
 
     # 3. Cập nhật announcements.json
     today_str = datetime.now().strftime('%Y-%m-%d')

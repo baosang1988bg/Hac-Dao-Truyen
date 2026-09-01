@@ -95,7 +95,7 @@ class NovelScraper:
         if self._playwright is None:
             self._playwright = await async_playwright().start()
             self._browser = await self._playwright.chromium.launch(
-                headless=False,
+                headless=self.headless,
                 args=["--disable-blink-features=AutomationControlled"]
             )
             # Windows Chrome UA — let Playwright use its default UA to avoid mismatch
