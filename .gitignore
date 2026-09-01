@@ -99,6 +99,8 @@ pnpm-debug.log*
 # PROJECT DATA — BỎ QUA NỘI DUNG NẶNG (MD, TXT, RAW), GIỮ LẠI METADATA & CATALOG JSON
 # ─────────────────────────────────────────────
 novels/**/translated/
+!novels/lanh-chua-cau-sinh-thien-phu-hop-thanh/translated/
+!novels/lanh-chua-cau-sinh-thien-phu-hop-thanh/translated/*.md
 novels/**/text_raw/
 novels/**/raw/
 novels/**/text_vi/
