@@ -25,7 +25,7 @@ _raw_keys = (
 )
 GOOGLE_API_KEYS: list[str] = [k.strip() for k in _raw_keys.split(",") if k.strip()]
 GOOGLE_API_KEY = GOOGLE_API_KEYS[0] if GOOGLE_API_KEYS else ""
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 # ── Groq API (fallback miễn phí khi Gemini hết quota) ─────────────────────────
 # Đăng ký tại: https://console.groq.com  →  tạo API key miễn phí

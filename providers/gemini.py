@@ -29,13 +29,15 @@ GEMINI_MODEL_POOL: list[str] = (
         "gemini-2.5-flash",
         "gemini-2.5-flash-lite",
         "gemini-flash-lite-latest",
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-8b",
         "gemini-2.0-flash",
-        "gemini-3.1-flash-lite-preview",
     ]
 )
 # Đảm bảo GEMINI_MODEL luôn ở đầu pool
-if GEMINI_MODEL not in GEMINI_MODEL_POOL:
-    GEMINI_MODEL_POOL.insert(0, GEMINI_MODEL)
+if GEMINI_MODEL in GEMINI_MODEL_POOL:
+    GEMINI_MODEL_POOL.remove(GEMINI_MODEL)
+GEMINI_MODEL_POOL.insert(0, GEMINI_MODEL)
 
 
 class _DailyQuotaExhausted(Exception):
@@ -56,6 +58,7 @@ class GeminiBackend:
     _INVALID_PATTERNS  = ("400", "401", "403", "API_KEY_INVALID", "invalid api key",
                           "api key not valid", "permission denied")
     _QUOTA_PATTERNS    = ("429", "quota", "RESOURCE_EXHAUSTED", "rate_limit", "rateLimitExceeded")
+    _MODEL_NOT_FOUND   = ("404", "NOT_FOUND", "not found", "no longer available", "deprecated")
 
     def __init__(self):
         if not GOOGLE_API_KEYS:
@@ -142,8 +145,10 @@ class GeminiBackend:
         return ", ".join(f"{v} {k}" for k, v in counts.items())
 
     def _classify_error(self, err: str) -> str:
-        """Phân loại lỗi: 'invalid' | 'quota' | 'other'"""
+        """Phân loại lỗi: 'invalid' | 'quota' | 'model_not_found' | 'other'"""
         err_lower = err.lower()
+        if any(p.lower() in err_lower for p in self._MODEL_NOT_FOUND):
+            return "model_not_found"
         if any(p.lower() in err_lower for p in self._INVALID_PATTERNS):
             return "invalid"
         if any(p.lower() in err_lower for p in self._QUOTA_PATTERNS):

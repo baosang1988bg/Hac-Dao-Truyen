@@ -400,9 +400,15 @@ class NovelTranslator:
                 print(f"  [!] {err[:180]}")
 
                 if not is_quota_error(err):
-                    # Kiểm tra nếu là lỗi invalid key → rotate ngay, không retry
                     err_type = self._gemini._classify_error(err)
-                    if err_type == "invalid":
+                    if err_type == "model_not_found":
+                        print(f"  [!] Model {self._gemini._current_model} not found/deprecated → rotating to next model...")
+                        rotated = self._gemini.next_available_model()
+                        if not rotated:
+                            raise _DailyQuotaExhausted("All Gemini models unavailable")
+                        per_minute_retries = 0
+                        continue
+                    elif err_type == "invalid":
                         print(f"  [!] Invalid key detected — rotating...")
                         rotated = self._gemini.next_available_key(error_type="invalid")
                         if not rotated:
