@@ -2,7 +2,9 @@
 
 ## Trạng thái trước phát hành
 
-Đợt review 08/09/2026 chỉ kiểm tra local. Hai blocker cần xử lý: Worker thiếu route auth admin và schema bootstrap thiếu `drive_file_id`. Hướng dẫn này mô tả cấu hình hiện có và điều kiện triển khai, không xác nhận production đã được migrate hay đã chạy đúng.
+Route admin/health đã sửa và có runtime tests. Bootstrap schema hiện đầy đủ;
+upgrade dùng preflight dưới đây. Trạng thái staging/production xem
+[nhật ký triển khai](docs/implementation-log.md).
 
 ## Build và bindings
 
@@ -19,24 +21,24 @@ node --check src/index.js
 
 ## Schema
 
-Không chạy toàn bộ migration một cách mù quáng: `schema.sql` đã có `glossary_count`, còn migration 001 thêm lại cột này. Migration `add_epub_catalog_fields.sql` dùng `ALTER TABLE` không idempotent.
-
-Với database mới, thứ tự cơ sở là `schema.sql` → `002_users.sql` → `003_novel_requests.sql` → `add_epub_catalog_fields.sql`. Bộ file này vẫn thiếu `drive_file_id`; phải bổ sung migration đã review trước khi coi bootstrap hoàn tất. Không dùng migration 001 trên schema mới.
-
-Với database tồn tại, kiểm tra cột/bảng thực tế và snapshot trước khi chọn migration:
+`schema.sql` là snapshot đầy đủ cho DB mới. Với DB cũ, runner so sánh schema
+thực tế, thêm cột/bảng/index còn thiếu và ghi lịch sử snapshot; không chạy mù
+quáng tất cả migration cũ. Schema không tương thích sẽ bị từ chối.
 
 ```sh
-npx wrangler d1 execute hacdao-db --remote --command 'PRAGMA table_info(novels);'
-npx wrangler d1 execute hacdao-db --remote --command "SELECT name FROM sqlite_master WHERE type='table';"
+# Mặc định chỉ in kế hoạch (remote là read-only ở bước này)
+python tools/migrate_schema.py --database hacdao-db --remote
+# Chỉ áp dụng khi đã kiểm tra kế hoạch và backup đúng database
+python tools/migrate_schema.py --database hacdao-db --remote --apply
 ```
 
-Lệnh áp dụng một file đã được chọn:
+Chọn `--config` riêng cho staging. Bỏ `--remote` để chạy D1 local; dùng
+`--sqlite /tmp/hacdao-test.db --apply` để thử trên SQLite rời. Runner không
+DROP cột/bảng hoặc xóa dữ liệu. Kiểm tra thủ công schema được thêm cột khác
+kiểu/default; không tự coi mọi lỗi duplicate column là thành công.
 
-```sh
-npx wrangler d1 execute hacdao-db --remote --file=migrations/003_novel_requests.sql
-```
-
-Đây là thao tác ghi production. Chỉ chạy sau khi xác nhận đúng account/database và có phương án phục hồi. Review này chưa chạy lệnh remote nào.
+Các migration 001–004 được giữ làm lịch sử; không áp dụng lại chúng sau
+bootstrap snapshot. D1/R2 production chưa được thay đổi trong phiên này.
 
 ## Secrets
 

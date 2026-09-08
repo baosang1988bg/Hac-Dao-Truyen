@@ -15,3 +15,7 @@ Verify: 27 Python tests pass; 1 Worker test pass. Một cảnh báo deprecation 
 ## Phase 1 — Route admin/health
 
 Dispatch chính xác login/logout/verify, thêm health và 404 cho truyện không tồn tại; bỏ route cover trùng. Proxy dùng Request clone để giữ body/header/method. Verify: 4 Worker tests pass, bao gồm vòng đời phiên, lỗi backend, method/path sai và health dữ liệu/missing. Staging chưa chạy.
+
+## Phase 2 — Schema bootstrap và nâng cấp
+
+Snapshot có đủ bảng user/request và cột EPUB/Drive. Runner mặc định read-only, preflight kiểu/default/PK, thêm schema thiếu, ghi snapshot history và chạy lại được sau lỗi một phần. Verify: 33 Python tests pass (DB trống/cũ/EPUB/manual/current, rerun, partial và incompatible). Chưa áp dụng remote.
