@@ -46,6 +46,16 @@ async function handleApi(request, url, env, ctx) {
     return jsonResponse({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau 1 phút.' }, 429);
   }
 
+  const authMethods = {
+    '/api/auth/login': 'POST',
+    '/api/auth/logout': 'POST',
+    '/api/auth/verify': 'GET',
+  };
+  if (Object.hasOwn(authMethods, path)) {
+    if (method !== authMethods[path]) return jsonResponse({ error: 'Method not allowed' }, 405);
+    return proxyToBackend(request, url, env);
+  }
+
   // POST /api/admin/sync-novel — high-speed batch sync endpoint
   if (path === '/api/admin/sync-novel' && method === 'POST') {
     return syncNovelBatch(env, request);
@@ -141,6 +151,8 @@ async function handleApi(request, url, env, ctx) {
 
 
   // GET /api/novels/:slug/health
+  const healthMatch = path.match(/^\/api\/novels\/([^/]+)\/health$/);
+  if (healthMatch && method === 'GET') return getHealth(env, healthMatch[1]);
 
   // ── User account routes (roadmap 3.1–3.4) ───────────────────────────
   // Đặt TRƯỚC block proxy. Lưu ý: /api/user/* vốn không match proxy
@@ -225,10 +237,6 @@ async function handleApi(request, url, env, ctx) {
     return adminNovelRequestReview(request, env, parseInt(novelReqReviewMatch[1]));
   }
 
-  // GET /api/proxy-cover?url=...
-  if (path === '/api/proxy-cover' && method === 'GET') {
-    return proxyCover(url);
-  }
 
   // ── Proxy translate jobs → Python backend (nếu có BACKEND_URL) ──────
   if (path.includes('/translate') || path.includes('/tools') || path === '/api/logs') {
@@ -903,6 +911,8 @@ async function getHealth(env, slug) {
     `SELECT total_chapters FROM novels WHERE slug = ?`
   ).bind(slug).first();
 
+  if (!novel) return jsonResponse({ error: 'Novel not found' }, 404);
+
   return jsonResponse({
     summary: {
       total_translated: totalTranslated,
@@ -1485,12 +1495,7 @@ async function proxyToBackend(request, url, env) {
   }
 
   const targetUrl = `${backendUrl}${url.pathname}${url.search}`;
-  const proxied = new Request(targetUrl, {
-    method: request.method,
-    headers: request.headers,
-    body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : undefined,
-    redirect: 'follow',
-  });
+  const proxied = new Request(targetUrl, request);
 
   try {
     return await fetch(proxied);
