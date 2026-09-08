@@ -1,6 +1,10 @@
 # 📚 Thư Mục Kế Hoạch & Báo Cáo — HacDaoTruyen
 
+> Đây là tài liệu lịch sử. Các nhãn “mới nhất”, “done” bên dưới phản ánh thời điểm viết, không xác nhận checkout hay production hiện tại. Xem [review 08/09/2026](../docs/review-2026-09-08.md) và [tài liệu dự án](../README.md) để có trạng thái hiện hành.
+
 Tất cả kế hoạch, báo cáo, session log và roadmap được tập trung tại đây.
+
+**Kế hoạch sửa lỗi hiện hành:** [Kế hoạch fix 08/09/2026](KE_HOACH_FIX_2026-09-08.md) — thứ tự PR, file cần sửa, kiểm thử và điều kiện phát hành R01–R07.
 
 ---
 

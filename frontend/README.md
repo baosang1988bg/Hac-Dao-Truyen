@@ -1,8 +1,16 @@
-# React + Vite
+# Frontend Hắc Đạo Truyện
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 18, React Router 6, Vite 5, Axios và epubjs. Entry `src/main.jsx`, routes/layouts trong `src/App.jsx`; các trang admin và EPUB được lazy-load.
 
-Currently, two official plugins are available:
+```sh
+npm ci
+npm run dev
+npm run build
+npm run lint
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Chạy từ `frontend/`. Vite proxy `/api` đến FastAPI `http://127.0.0.1:4444`. Bản build nằm ở `dist/`, được Cloudflare Worker phục vụ qua binding `ASSETS`.
+
+`src/api.js` gắn token admin `authToken`; `src/userApi.js` dùng token độc giả `userToken`. Hai loại phiên có cách xử lý 401 khác nhau. Local và Worker có response danh sách truyện khác shape; xem [API](../docs/api.md).
+
+Xem [cài đặt dự án](../docs/getting-started.md), [kiến trúc](../docs/architecture.md) và [review](../docs/review-2026-09-08.md). Build đã pass trong review 08/09/2026; lint còn 422 lỗi, 6 cảnh báo. Chưa có xác nhận browser end-to-end trong phiên này.

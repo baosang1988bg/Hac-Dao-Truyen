@@ -1,76 +1,84 @@
-# Deploy runbook — HacDaoTruyen
+# Triển khai Cloudflare
 
-File này là checklist deploy sống — mỗi lần chuẩn bị deploy hoặc vừa deploy xong, cập nhật lại phần "Cần làm trước lần deploy tiếp theo" và ghi thêm 1 dòng vào "Lịch sử deploy" bên dưới. Khi bạn nói "deploy", đây là file được tra cứu/cập nhật trước tiên.
+## Trạng thái trước phát hành
 
-## Cần làm trước lần deploy tiếp theo
+Đợt review 08/09/2026 chỉ kiểm tra local. Hai blocker cần xử lý: Worker thiếu route auth admin và schema bootstrap thiếu `drive_file_id`. Hướng dẫn này mô tả cấu hình hiện có và điều kiện triển khai, không xác nhận production đã được migrate hay đã chạy đúng.
 
-- [ ] **Rotate `SYNC_KEY`** (chưa xác nhận đã làm): `wrangler secret put SYNC_KEY` với giá trị ngẫu nhiên mới (ví dụ `openssl rand -hex 32`). Bắt buộc vì secret cũ `hacdao-secret-2026` đã lộ công khai trong lịch sử git (repo public). Xem chi tiết `BAO_CAO_KIEM_TRA_LAI_SAU_MERGE_2026-08-08.md`.
-- [ ] Sau khi rotate, thêm secret `HACDAO_SYNC_KEY` (giá trị **giống hệt** bước trên) vào GitHub repo → Settings → Secrets and variables → Actions, để workflow `cloud_sync.yml` không bị 401.
-- [ ] Nếu chạy `tools/cloud_to_cloud_syncer.py` / `tools/batch_cloud_syncer.py` thủ công trên máy: `export HACDAO_SYNC_KEY="<giá-trị-mới>"` trước khi chạy — thiếu biến này script tự dừng ngay với thông báo rõ.
-- [ ] Nếu có domain nào khác ngoài `hacdaotruyen.com` / `www.hacdaotruyen.com` / `nguyenbaosang1998.workers.dev` gọi thẳng API: `wrangler secret put ALLOWED_ORIGINS` (danh sách domain cách nhau bởi dấu phẩy).
-- [ ] Deploy 5 giai đoạn nâng cấp trang chủ (A-E, xem `KE_HOACH_HOC_HOI_TRUYENTRUNG_2026-08-08.md`) — cần `npm run build` frontend **và** `wrangler deploy` (Giai đoạn D thêm route mới `GET /api/comments/recent` trong Worker, không phải chỉ đổi frontend). Không cần secret/biến môi trường mới cho 5 giai đoạn này.
+## Build và bindings
 
-## Quy trình deploy chuẩn
+Từ root:
 
-Chạy trên máy đã đăng nhập `wrangler` (không chạy được từ sandbox Claude — không có SSH key GitHub / credential Cloudflare / mạng ra ngoài bị chặn):
-
-```bash
-git pull
-
-cd frontend
-npm install
-npm run build
-cd ..
-
-wrangler deploy
+```sh
+npm ci
+npm ci --prefix frontend
+npm run build --prefix frontend
+node --check src/index.js
 ```
 
-Nếu chưa đăng nhập: `wrangler login` trước.
+`wrangler.jsonc` cấu hình Worker `hac-dao-truyen`, entry `src/index.js`, assets `frontend/dist`, D1 binding `DB` và R2 binding `CHAPTERS`. Nếu triển khai sang account khác, thay database ID, database name và bucket tương ứng; script migrate/restore cũng có tên tài nguyên riêng cần đối chiếu.
 
-## Kiểm tra ngay sau khi deploy
+## Schema
 
-```bash
-# Glossary phải bị chặn khi không có token admin
-curl -X POST https://hacdaotruyen.com/api/novels/<slug>/glossary -d '{"glossary":{}}'
-# → phải trả 401
+Không chạy toàn bộ migration một cách mù quáng: `schema.sql` đã có `glossary_count`, còn migration 001 thêm lại cột này. Migration `add_epub_catalog_fields.sql` dùng `ALTER TABLE` không idempotent.
 
-# Debug endpoint phải bị chặn
-curl https://hacdaotruyen.com/api/debug/chapter/<slug>/1
-# → phải trả 401
+Với database mới, thứ tự cơ sở là `schema.sql` → `002_users.sql` → `003_novel_requests.sql` → `add_epub_catalog_fields.sql`. Bộ file này vẫn thiếu `drive_file_id`; phải bổ sung migration đã review trước khi coi bootstrap hoàn tất. Không dùng migration 001 trên schema mới.
 
-# sync-novel phải từ chối secret CŨ đã lộ (nếu đã rotate SYNC_KEY)
-curl -X POST https://hacdaotruyen.com/api/admin/sync-novel \
-  -H "x-sync-key: hacdao-secret-2026" -d '{"slug":"test","chapters":[]}'
-# → phải trả 401 (nếu vẫn trả thành công nghĩa là CHƯA rotate SYNC_KEY)
+Với database tồn tại, kiểm tra cột/bảng thực tế và snapshot trước khi chọn migration:
+
+```sh
+npx wrangler d1 execute hacdao-db --remote --command 'PRAGMA table_info(novels);'
+npx wrangler d1 execute hacdao-db --remote --command "SELECT name FROM sqlite_master WHERE type='table';"
 ```
 
-Kiểm tra bằng mắt: trang chủ tải bình thường (không lỗi CORS trong Console), bìa ảnh hiển thị bình thường, đọc 1 chương thấy lượt xem vẫn +1, đánh giá sao vẫn lưu được, admin sửa glossary vẫn thành công (vì đã có Bearer token), pipeline sync 24/7 (`cloud_sync.yml`) chạy job thủ công (workflow_dispatch) một lần để xác nhận không bị 401 sau khi đổi secret.
+Lệnh áp dụng một file đã được chọn:
 
-Riêng cho 5 giai đoạn nâng cấp trang chủ: mục "Bảng Xếp Hạng" tự ẩn nếu chưa có truyện nào có view/rating thật (không phải lỗi); chip thể loại dưới ô tìm kiếm bấm lọc được `AllNovelsSection`; nút chuyển Grid/Bảng chỉ hiện trên desktop (≥768px), thu nhỏ trình duyệt xuống dưới 768px phải tự quay lại Grid; mục "Đang Thảo Luận" tự ẩn nếu site chưa có bình luận nào — nếu đã có bình luận mà mục này không hiện, kiểm tra `curl https://hacdaotruyen.com/api/comments/recent` xem Worker đã deploy route mới chưa.
-
-Thay `<slug>` bằng slug một truyện thật đang có trên site. PowerShell trên Windows dùng `curl.exe` thay vì `curl` (alias mặc định trỏ `Invoke-WebRequest`, cú pháp khác).
-
-## Nếu có gì gãy sau deploy
-
-Mỗi phần vá là 1 commit riêng nên có thể revert đúng chỗ mà không cần revert tất cả:
-
-```bash
-git log --oneline    # tìm hash commit gây lỗi
-git revert <hash>
-wrangler deploy
+```sh
+npx wrangler d1 execute hacdao-db --remote --file=migrations/003_novel_requests.sql
 ```
 
-## Tài liệu liên quan
+Đây là thao tác ghi production. Chỉ chạy sau khi xác nhận đúng account/database và có phương án phục hồi. Review này chưa chạy lệnh remote nào.
 
-- `BAO_CAO_KIEM_TRA_2026-08-08.md` — audit bảo mật lần đầu
-- `BAO_CAO_BAN_GIAO_NANG_CAP_BAO_MAT_2026-08-08.md` — bàn giao đợt vá đầu
-- `BAO_CAO_KIEM_TRA_LAI_SAU_MERGE_2026-08-08.md` — audit lại sau khi merge 37 commit upstream (phát hiện secret `hacdao-secret-2026`)
-- `KE_HOACH_NANG_CAP_2026-08-08.md` — kế hoạch nâng cấp 5 giai đoạn (giai đoạn 0 đã thực thi, 1-5 còn lại)
-- `KE_HOACH_HOC_HOI_TRUYENTRUNG_2026-08-08.md` — kế hoạch học hỏi trang chủ truyentrung.com, 5 giai đoạn A-E (cả 5 đã thực thi)
+## Secrets
 
-## Lịch sử deploy
+| Biến | Nơi dùng |
+|---|---|
+| `SYNC_KEY` | Worker xác thực endpoint sync; bắt buộc nếu dùng endpoint này |
+| `BACKEND_URL` | Worker truy cập FastAPI để proxy dịch và verify admin |
+| `ALLOWED_ORIGINS` | Worker: thay thế allowlist mặc định nếu được khai báo |
+| `ADMIN_PASSWORD` | `.env` của Python, không phải secret đăng nhập trực tiếp của Worker |
+| `HACDAO_SYNC_KEY` | Máy sync/Actions; cùng giá trị với `SYNC_KEY` |
+| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | Máy vận hành/CI dùng Wrangler |
 
-| Ngày | Commit tới (HEAD) | Đã deploy? | Ghi chú |
-|---|---|---|---|
-| 2026-08-08 | `7d0000f` | Chưa xác nhận | 6 commit vá bảo mật Worker + Python + rotate SYNC_KEY (code xong, secret thật trên Cloudflare chưa xác nhận đã đổi) |
-| 2026-08-09 | `4240edd` | Chưa xác nhận | 5 commit Giai đoạn A-E nâng cấp trang chủ (bảng xếp hạng, chip thể loại, chế độ bảng, bình luận mới nhất, thông báo cập nhật). Cần cả `npm run build` lẫn `wrangler deploy` vì Giai đoạn D có route Worker mới. |
+Dùng prompt nhập secret, không đặt giá trị thật trong docs:
+
+```sh
+npx wrangler secret put SYNC_KEY
+npx wrangler secret put BACKEND_URL
+```
+
+Các lệnh trên cập nhật cấu hình remote. Cho môi trường Worker local, dùng `.dev.vars` không commit. `.env` Python không tự trở thành Worker secrets.
+
+## Phát hành và xác nhận
+
+Sau khi xử lý blocker và chuẩn bị schema:
+
+```sh
+npx wrangler deploy
+```
+
+Script `npm run deploy` cũng có sẵn nhưng chạy `npm install` frontend trước build. Quy trình tách `npm ci`/build/deploy phía trên giúp kiểm soát dependency theo lockfile.
+
+Kiểm tra sau phát hành:
+
+1. Trang chủ và URL sâu của SPA tải được.
+2. Danh sách, chi tiết, mục lục và nội dung một chương khớp nhau.
+3. Đăng ký/đăng nhập/logout độc giả; bookmark và tiến độ được lưu.
+4. Admin login/verify, thao tác glossary và duyệt request đúng quyền.
+5. Một truyện thử sync lên có đủ D1, object R2 và catalog; EPUB/bundle kiểm tra riêng nếu dùng.
+6. Request không xác thực bị chặn đúng, không có lỗi schema trong logs.
+
+Rollback code không rollback D1/R2. Ghi lại phiên bản Worker, snapshot schema/data và phạm vi sync trước phát hành; phục hồi dữ liệu là thao tác riêng cần thử trên môi trường tách biệt.
+
+## GitHub Actions
+
+CI hiện kiểm tra syntax Python, integration FastAPI, build frontend và syntax Worker; chưa chạy lint, toàn bộ pytest hoặc Worker runtime tests. Workflow dịch tự động chạy cron `0 17 * * *` (00:00 giờ Việt Nam), có trigger thủ công. Workflow cloud-to-cloud chỉ chạy thủ công. Một số bước dùng `|| true`, nên trạng thái xanh chưa đủ chứng minh sync/push thành công; xem R05 trong review.
