@@ -21,7 +21,7 @@ import sqlite3
 
 # ── Cấu hình ──────────────────────────────────────────────────────────────────
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(_BASE_DIR, "data")
+DATA_DIR = os.getenv("HACDAO_DATA_DIR", os.path.join(_BASE_DIR, "data"))
 DB_PATH = os.path.join(DATA_DIR, "users.db")
 
 # TTL của token user — 30 ngày (dùng modifier của SQLite datetime)

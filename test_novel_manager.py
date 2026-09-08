@@ -1,6 +1,7 @@
 import unittest
 import os
 import shutil
+import tempfile
 from novel_manager import (
     NovelProfile,
     slugify,
@@ -14,7 +15,7 @@ from novel_manager import (
 class TestNovelManager(unittest.TestCase):
     def setUp(self):
         # Create a temporary test directory
-        self.test_dir = "test_novels"
+        self.test_dir = tempfile.mkdtemp(prefix="novel-manager-")
         self.original_base_dir = NOVELS_BASE_DIR
         
         # Override the NOVELS_BASE_DIR temporarily for testing

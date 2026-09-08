@@ -4,10 +4,12 @@
   "description": "Hệ thống tự động crawl & dịch tiểu thuyết Trung Quốc sang tiếng Việt bằng AI đa provider",
   "private": true,
   "scripts": {
-    "test": "python -m pytest test_novel_manager.py -v --tb=short",
+    "test": "npm run test:python && npm run test:worker",
     "build:frontend": "cd frontend && npm install && npm run build",
     "deploy": "npm run build:frontend && wrangler deploy",
-    "preview": "npm run build:frontend && wrangler dev --remote"
+    "preview": "npm run build:frontend && wrangler dev --remote",
+    "test:python": "python -m pytest -q",
+    "test:worker": "node --test tests/worker/*.test.mjs"
   },
   "repository": {
     "type": "git",
