@@ -8,6 +8,7 @@ from pathlib import Path
 from datetime import datetime
 
 from security_utils import validate_slug, safe_join, safe_novel_dir
+from tools.sync_budget import atomic_json
 
 # Set output encoding to UTF-8
 if sys.stdout.encoding != 'utf-8':
@@ -145,15 +146,16 @@ def restore():
     novels = query_d1("SELECT * FROM novels;")
     if novels is None:
         print("[-] Could not retrieve novels. Please make sure wrangler is authenticated.")
-        return
+        return False
 
     if not novels:
         print("[!] No novels found in Cloudflare D1 database.")
-        return
+        return True
 
     print(f"[+] Found {len(novels)} novels in database.")
 
-    sync_state = {}
+    sync_state = json.loads(SYNC_STATE_PATH.read_text(encoding="utf-8")) if SYNC_STATE_PATH.exists() else {}
+    had_failure = False
 
     for novel in novels:
         slug = novel['slug']
@@ -166,6 +168,7 @@ def restore():
             validate_slug(slug)
         except Exception as e:
             print(f"  [-] Bỏ qua novel có slug không hợp lệ ({slug!r}): {e}")
+            had_failure = True
             continue
 
         novel_dir = Path(safe_novel_dir(slug))
@@ -220,6 +223,7 @@ def restore():
         chapters = query_d1(f"SELECT filename, title, chapter_number, r2_key FROM chapters WHERE novel_slug={q(slug)};")
         if chapters is None:
             print("  [-] Failed to fetch chapters list from D1.")
+            had_failure = True
             continue
             
         print(f"  [+] Found {len(chapters)} chapters in D1.")
@@ -263,6 +267,10 @@ def restore():
                 
         print(f"  [+] Chapter Sync complete: {downloaded_count} downloaded, {skipped_count} skipped (existed), {failed_count} failed.")
         
+        if failed_count:
+            had_failure = True
+            continue
+
         # 6. Build sync state info
         sync_state[slug] = {
             "last_synced_at": datetime.now().isoformat(),
@@ -271,11 +279,13 @@ def restore():
             "total_synced": len(chapters) - failed_count
         }
 
-    # 7. Recreate .sync_state.json
-    with open(SYNC_STATE_PATH, "w", encoding="utf-8") as f:
-        json.dump(sync_state, f, ensure_ascii=False, indent=2)
-    print("\n[+] Recreated .sync_state.json successfully!")
+    # Giữ checkpoint cũ của truyện lỗi; chỉ cập nhật truyện phục hồi đủ.
+    atomic_json(SYNC_STATE_PATH, sync_state)
+    if had_failure:
+        print("\n[-] Restore incomplete; failed novels retain their previous checkpoint.")
+        return False
     print("\n=== RESTORE COMPLETED SUCCESSFULLY! ===")
+    return True
 
 if __name__ == "__main__":
-    restore()
+    raise SystemExit(0 if restore() else 1)

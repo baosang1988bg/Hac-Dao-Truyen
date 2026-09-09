@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 import time
 import urllib.request
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 from ebooklib import epub
 from playwright.sync_api import sync_playwright, expect
 
@@ -60,7 +60,12 @@ def main():
                             if endpoint.endswith('/epub'):
                                 route.fulfill(status=200,content_type='application/epub+zip',body=(path/'test.epub').read_bytes());return
                             data={}
-                            if endpoint=='/api/novels':data=[novel] if shape=='local' else {'novels':[novel],'total':1,'page':1,'pages':1,'limit':48}
+                            if endpoint=='/api/novels':
+                                query=parse_qs(url.query)
+                                admin=query.get('limit')==['200']
+                                pg=int(query.get('page',['1'])[0])
+                                item=novel if pg==1 else {**novel,'slug':'demo2','title':'Truyện trang hai'}
+                                data=[novel] if shape=='local' else {'novels':[item],'total':2 if admin else 1,'page':pg,'pages':2 if admin else 1,'limit':200 if admin else 48}
                             elif endpoint=='/api/novels/demo':data=novel
                             elif endpoint.endswith('/chapters'):data=chapters
                             elif '/chapters/' in endpoint:data={'content':f'# Chương {endpoint.rsplit("/",1)[1]}\n\nNội dung chương kiểm thử.'}
@@ -70,7 +75,7 @@ def main():
                             elif endpoint.endswith('/auth/verify'):data={'status':'valid'}
                             elif endpoint.endswith('/server-info'):data={'server_start':'2026-09-08T00:00:00Z','mode':'local'}
                             elif endpoint.endswith('/translate/status'):data={'status':'idle'}
-                            elif endpoint.endswith('/logs'):data={'sessions':[],'total':0}
+                            elif endpoint.endswith('/logs'):data=[]
                             elif endpoint.endswith('/glossary'):data={'status':'success'}
                             elif any(x in endpoint for x in ['/comments','/catalog','/bookmarks','/progress','/novel-requests']):data=[]
                             route.fulfill(status=200,content_type='application/json',body=json.dumps(data,ensure_ascii=False))
@@ -80,6 +85,10 @@ def main():
                         page.keyboard.press('ArrowRight');expect(page).to_have_url(origin+'/novel/demo/read/2')
                         page.goto(origin+'/login');page.get_by_placeholder('Mật khẩu Admin').fill('test-password')
                         page.get_by_role('button',name='Đăng nhập',exact=False).click();expect(page).to_have_url(origin+'/admin')
+                        expect(page.get_by_text('Không có phiên dịch nào đang chạy.',exact=True)).to_be_visible()
+                        page.goto(origin+'/admin/novels')
+                        expect(page.get_by_text('Quản lý 1 truyện trong hệ thống.' if shape=='local' else 'Quản lý 2 truyện trong hệ thống.',exact=True)).to_be_visible()
+                        if shape=='cloud':expect(page.locator('a[href="/admin/novels/demo2"]')).to_be_visible()
                         page.goto(origin+'/admin/novels/demo');expect(page.get_by_text('Truyện kiểm thử',exact=True).first).to_be_visible()
                         page.goto(origin+'/novel/demo/epub-reader')
                         expect(page.locator('iframe').first).to_be_visible(timeout=15000)

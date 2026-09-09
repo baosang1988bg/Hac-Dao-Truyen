@@ -31,4 +31,4 @@ Cloudflare Rate Limiting binding có phạm vi theo vị trí Cloudflare và tí
 
 ## Điều kiện xác minh production
 
-Chủ dự án cho phép thao tác trực tiếp với điều kiện không phát sinh phí. Hiện chỉ đã xác minh đăng nhập qua `wrangler whoami`; chưa có bằng chứng gói dịch vụ, mức sử dụng và khoản phí $9 trước đây. Không suy đoán đó là phí R2 hay Workers. Chưa deploy, chạy migration remote, đọc kho production để đối soát hay bật workflow. Kiểm thử local không cần những thao tác này.
+Chủ dự án cho phép thao tác trực tiếp với điều kiện không phát sinh phí. Đăng nhập đã được xác minh qua `wrangler whoami`. Ngày 09/09/2026, GET API quản lý danh sách subscription trả 403 sau khi kiểm tra lại OAuth; phiên hiện tại không đọc được gói. Chưa có bằng chứng mức sử dụng và khoản phí $9 trước đây. Không suy đoán đó là phí R2 hay Workers. Chưa deploy, chạy migration remote, đọc kho production để đối soát hay bật workflow. Kiểm thử local không cần những thao tác này.

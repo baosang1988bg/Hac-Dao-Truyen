@@ -34,3 +34,21 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// Admin cần toàn bộ danh sách để thống kê, kể cả Worker trả nhiều trang.
+export async function fetchAdminNovels() {
+  const novels = new Map();
+  let page = 1;
+  let pages = 1;
+  do {
+    const { data } = await api.get('/novels', { params: { page, limit: 200 } });
+    if (Array.isArray(data)) return data;
+    if (!Array.isArray(data?.novels) || !Number.isInteger(data.pages) || data.pages < 0) {
+      throw new Error('Phản hồi danh sách truyện không hợp lệ');
+    }
+    pages = data.pages;
+    for (const novel of data.novels) novels.set(novel.slug, novel);
+    page += 1;
+  } while (page <= pages);
+  return [...novels.values()];
+}

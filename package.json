@@ -5,9 +5,9 @@
   "private": true,
   "scripts": {
     "test": "npm run test:python && npm run test:worker",
-    "build:frontend": "cd frontend && npm install && npm run build",
+    "build:frontend": "npm ci --prefix frontend && npm run build --prefix frontend",
     "deploy": "npm run build:frontend && wrangler deploy",
-    "preview": "npm run build:frontend && wrangler dev --remote",
+    "preview": "npm run build:frontend && wrangler dev",
     "test:python": "python -m pytest -q",
     "test:worker": "node --test tests/worker/*.test.mjs"
   },

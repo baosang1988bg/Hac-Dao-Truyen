@@ -10,6 +10,8 @@ Hệ thống quản lý, thu thập và dịch truyện chữ Trung → Việt, 
 | [Kiến trúc](docs/architecture.md) | Thành phần, dữ liệu, xác thực và giới hạn |
 | [Sử dụng](use.md) | Import, dịch, kiểm tra, đồng bộ và phục hồi |
 | [Triển khai](deploy.md) | Cloudflare, schema, secrets và checklist phát hành |
+| [Kiểm soát chi phí](docs/cost-controls.md) | Cờ ghi cloud, ngân sách, rate limit và phạm vi bảo vệ |
+| [Nghiệm thu](docs/release-verification.md) | Bằng chứng local, đối soát offline và điều kiện rollout |
 | [API](docs/api.md) | Các nhóm endpoint và khác biệt local/cloud |
 | [Review tồn đọng](docs/review-2026-09-08.md) | Phát hiện có bằng chứng, ưu tiên và việc chưa xác minh |
 | [Kế hoạch sửa lỗi](plans/KE_HOACH_FIX_2026-09-08.md) | Các đợt sửa R01–R07, kiểm thử và phát hành |
@@ -17,13 +19,14 @@ Hệ thống quản lý, thu thập và dịch truyện chữ Trung → Việt, 
 
 ## Khởi động local
 
-Dùng Python 3.11 và Node.js 20 để khớp cấu hình CI hiện có. Từ thư mục gốc:
+Dùng Python 3.11 và Node.js 22 để khớp cấu hình CI hiện có. Từ thư mục gốc:
 
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.lock
 cp .env.example .env
+npm ci
 npm ci --prefix frontend
 ```
 
@@ -45,7 +48,7 @@ Mở địa chỉ Vite in ra, mặc định `http://localhost:5173`. Chi tiết 
 
 Mã nguồn có quản lý truyện/glossary, dịch nhiều provider, đọc chương, EPUB, tài khoản độc giả, bookmark, tiến độ đọc, bình luận và yêu cầu truyện. Duyệt yêu cầu truyện chỉ đổi trạng thái; admin phải import riêng.
 
-Local và cloud chưa tương đương hoàn toàn. Đợt review 08/09/2026 xác nhận lỗi route admin trên Worker và thiếu cột trong schema bootstrap; xem báo cáo trước khi triển khai mới. ADK mới ở mức foundation, mặc định tắt. Truyện tranh là đề xuất trong kế hoạch, chưa phải tính năng sản phẩm.
+Route admin/health, schema, sync, lint/CI và kiểm soát ngân sách đã được sửa và kiểm thử local. Xác minh production còn chờ điều kiện không phát sinh phí; xem [nhật ký triển khai](docs/implementation-log.md). Local và cloud vẫn có contract và kho tài khoản riêng. ADK mới ở mức foundation, mặc định tắt. Truyện tranh là đề xuất trong kế hoạch, chưa phải tính năng sản phẩm.
 
 ## Cấu trúc chính
 

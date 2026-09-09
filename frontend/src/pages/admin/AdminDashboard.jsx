@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import {
   BookOpen, Layers, Book, Activity, Square, ScrollText, ChevronRight,
 } from 'lucide-react'
-import api from '../../api'
+import api, { fetchAdminNovels } from '../../api'
 import { fmtNumber, fmtDuration, fmtDate, fmtTokens } from '../../utils/format'
 
 /**
@@ -20,8 +20,8 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     let alive = true
-    api.get('/novels')
-      .then(res => { if (alive) setNovels(res.data || []) })
+    fetchAdminNovels()
+      .then(data => { if (alive) setNovels(data) })
       .catch(() => {})
     api.get('/logs?limit=8')
       .then(res => { if (alive) setSessions(res.data || []) })

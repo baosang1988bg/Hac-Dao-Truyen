@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom'
 import { Layers, Book, AlertCircle } from 'lucide-react'
-import api from '../../api'
+import api, { fetchAdminNovels } from '../../api'
 import NovelCover from '../../components/NovelCover'
 import { fmtTimeAgo } from '../../utils/format'
 
@@ -18,8 +18,8 @@ export default function AdminNovels() {
 
   useEffect(() => {
     let alive = true
-    api.get('/novels')
-      .then(res => { if (alive) setNovels(res.data || []) })
+    fetchAdminNovels()
+      .then(data => { if (alive) setNovels(data) })
       .catch(() => { if (alive) { setNovels([]); setError('Không tải được danh sách truyện.') } })
     return () => { alive = false }
   }, [])

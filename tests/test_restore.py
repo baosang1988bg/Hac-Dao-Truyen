@@ -25,3 +25,17 @@ def test_restore_bundle_and_failed_download_never_publish_partial(tmp_path, monk
     objects['demo/missing.md'] = 'standalone'
     assert restore.restore_chapter('demo',chapter,dest)
     assert dest.read_text() == 'standalone'
+
+
+def test_partial_restore_preserves_checkpoint_and_reports_failure(tmp_path, monkeypatch):
+    state = tmp_path / 'state.json'
+    old = {'demo': {'total_synced': 1}, 'other': {'total_synced': 4}}
+    state.write_text(json.dumps(old))
+    monkeypatch.setattr(restore, 'SYNC_STATE_PATH', state)
+    monkeypatch.setattr(restore, 'safe_novel_dir', lambda slug: str(tmp_path / slug))
+    chapters = [{'filename': '1.md', 'chapter_number': 1, 'r2_key': 'demo/1'}]
+    monkeypatch.setattr(restore, 'query_d1', lambda sql: [{'slug': 'demo', 'title': 'Demo'}] if sql == 'SELECT * FROM novels;' else chapters)
+    monkeypatch.setattr(restore, 'download_r2_object', lambda *args: False)
+    monkeypatch.setattr(restore, 'restore_chapter', lambda *args: False)
+    assert restore.restore() is False
+    assert json.loads(state.read_text()) == old

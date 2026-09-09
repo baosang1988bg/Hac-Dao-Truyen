@@ -26,10 +26,10 @@ thực tế, thêm cột/bảng/index còn thiếu và ghi lịch sử snapshot;
 quáng tất cả migration cũ. Schema không tương thích sẽ bị từ chối.
 
 ```sh
-# Mặc định chỉ in kế hoạch (remote là read-only ở bước này)
+# Remote chỉ đọc schema nhưng vẫn tạo D1 requests; kiểm tra chi phí trước
 python tools/migrate_schema.py --database hacdao-db --remote
 # Chỉ áp dụng khi đã kiểm tra kế hoạch và backup đúng database
-python tools/migrate_schema.py --database hacdao-db --remote --apply
+HACDAO_ALLOW_CLOUD_WRITES=true python tools/migrate_schema.py --database hacdao-db --remote --apply
 ```
 
 Chọn `--config` riêng cho staging. Bỏ `--remote` để chạy D1 local; dùng
@@ -68,7 +68,7 @@ Sau khi xử lý blocker và chuẩn bị schema:
 npx wrangler deploy
 ```
 
-Script `npm run deploy` cũng có sẵn nhưng chạy `npm install` frontend trước build. Quy trình tách `npm ci`/build/deploy phía trên giúp kiểm soát dependency theo lockfile.
+`npm run deploy` dùng `npm ci` trước build rồi deploy. `npm run preview` chạy Wrangler local; không còn mặc định `--remote`. Chỉ lệnh deploy thực sự phát hành; kiểm tra điều kiện chi phí trước khi dùng.
 
 Kiểm tra sau phát hành:
 
@@ -76,11 +76,13 @@ Kiểm tra sau phát hành:
 2. Danh sách, chi tiết, mục lục và nội dung một chương khớp nhau.
 3. Đăng ký/đăng nhập/logout độc giả; bookmark và tiến độ được lưu.
 4. Admin login/verify, thao tác glossary và duyệt request đúng quyền.
-5. Một truyện thử sync lên có đủ D1, object R2 và catalog; EPUB/bundle kiểm tra riêng nếu dùng.
+5. Một truyện thử sync lên có đủ D1, object R2 và mục lục gộp (không cần tạo catalog mới); EPUB/bundle kiểm tra riêng nếu dùng.
 6. Request không xác thực bị chặn đúng, không có lỗi schema trong logs.
 
 Rollback code không rollback D1/R2. Ghi lại phiên bản Worker, snapshot schema/data và phạm vi sync trước phát hành; phục hồi dữ liệu là thao tác riêng cần thử trên môi trường tách biệt.
 
 ## GitHub Actions
 
-CI hiện kiểm tra syntax Python, integration FastAPI, build frontend và syntax Worker; chưa chạy lint, toàn bộ pytest hoặc Worker runtime tests. Workflow dịch tự động chạy cron `0 17 * * *` (00:00 giờ Việt Nam), có trigger thủ công. Workflow cloud-to-cloud chỉ chạy thủ công. Một số bước dùng `|| true`, nên trạng thái xanh chưa đủ chứng minh sync/push thành công; xem R05 trong review.
+CI chạy pytest cô lập, Worker Miniflare, lint không warning, frontend build và browser smoke. Workflow dịch có lịch `0 17 * * *` nhưng chỉ chạy khi repository variable `ALLOW_CLOUD_WRITES=true`; cloud-to-cloud chỉ chạy thủ công và có cùng gate. Sync/push lỗi làm job thất bại; checkpoint ngân sách được lưu kể cả khi lỗi.
+
+Đọc [kiểm soát chi phí](docs/cost-controls.md) trước khi bật workflow/Worker sync. Chuẩn bị bản build bằng `npx wrangler deploy --dry-run --outdir /tmp/hacdao-release` không phát hành. Checklist đối soát và trạng thái thực tế: [nghiệm thu](docs/release-verification.md).

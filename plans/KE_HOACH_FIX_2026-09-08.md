@@ -1,6 +1,6 @@
 # Kế hoạch sửa lỗi hiện tại — 08/09/2026
 
-Trạng thái: **đã lập kế hoạch, chưa triển khai code**. Căn cứ: [review 08/09/2026](../docs/review-2026-09-08.md). Phạm vi là R01–R07 và xác minh dữ liệu liên quan; ADK nâng cao, manga/OCR và redesign không thuộc đợt này.
+Trạng thái cập nhật 09/09/2026: **phase 0–6 đã triển khai và đạt local; phase 7 đang nghiệm thu local, chưa đạt production**. Bảng dưới giữ yêu cầu gốc; bằng chứng hiện hành ở [nhật ký](../docs/implementation-log.md) và [nghiệm thu](../docs/release-verification.md). Căn cứ: [review 08/09/2026](../docs/review-2026-09-08.md). Phạm vi là R01–R07 và xác minh dữ liệu liên quan; ADK nâng cao, manga/OCR và redesign không thuộc đợt này.
 
 ## 1. Thứ tự thực hiện
 
@@ -175,3 +175,9 @@ Mỗi mục dùng trạng thái: `Chưa làm` → `Đang làm` → `Đạt local
 | R07 | Cài mới bằng lock + tests không chạm dữ liệu thật | Docs đã cập nhật; code chưa làm |
 
 Điều kiện kết thúc đợt ổn định: các lỗi P1 đã đạt staging và được xác nhận sau phát hành; quality gates hoạt động; dữ liệu chịu ảnh hưởng đã có kết quả đối soát hoặc danh sách ngoại lệ cụ thể có người phụ trách. Mọi hạn chế chưa xử lý được giữ trong review hiện hành.
+
+## Cập nhật triển khai 09/09/2026
+
+Phase 0–6 có commit riêng và verify trước/sau commit. Thiết kế mục lục điều chỉnh thành gộp filename D1/catalog thay vì thêm cờ index-complete suy đoán. R01–R07 đạt kiểm thử local trong phạm vi nhật ký; R06 binding thật, workflow_dispatch, đối soát/backfill và phát hành vẫn chưa đạt remote.
+
+Người dùng cho phép xác minh production trực tiếp nếu không phát sinh phí, thay cho yêu cầu tạo staging riêng. API subscription trả 403; chưa xác minh được billing nên chưa chạy thao tác D1/R2 remote hoặc deploy. Không đánh dấu điều kiện kết thúc production đã đạt.

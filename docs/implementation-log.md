@@ -46,3 +46,12 @@ Theo ràng buộc không phát sinh phí: workflow dịch/sync chỉ chạy nế
 Hai syncer dùng chung reservation bền vững trước mỗi attempt, retry hữu hạn, mặc định ngân sách 0. Ghi trực tiếp cần opt-in; Worker sync và Drive cache write tắt mặc định. Workflow lưu ngân sách kể cả khi lỗi. Rate limit phân nhóm, hỗ trợ binding chia sẻ và Map dự phòng có giới hạn kích thước; chưa cấu hình binding production. Health gộp filename D1/catalog để không đếm thiếu chương sync mới.
 
 Khóa dependency runtime/dev/Drive riêng và dùng lock trong CI. Verify: cài offline vào venv Python 3.11 sạch thành công; 42 Python tests pass (1 cảnh báo deprecation), 12 Worker tests pass. Tests bao gồm retry 429, budget đồng thời/restart/lỗi đĩa, cờ ghi mặc định và giới hạn giữa hai isolate bằng stub. `git diff --check` pass. Chưa thể đóng phần xác minh rate limit môi trường thật; xem [phạm vi ngân sách](cost-controls.md).
+
+
+## Phase 7 — Nghiệm thu local, chưa phát hành
+
+Phase 6 commit `a0fb2ab`, verify lại 42 Python/12 Worker tests pass trước khi bổ sung bài test phase 7. Thêm đối soát snapshot offline (không gọi cloud), sửa restore giữ checkpoint truyện lỗi, sửa admin nhận response phân trang và tải đủ các trang. Browser smoke chờ admin render và kiểm tra hai trang cloud; sửa fixture logs về array theo FastAPI. `npm run preview` dùng local, build dùng `npm ci`.
+
+Verify cuối trước commit: 46 Python tests pass (1 deprecation), 12 Worker tests pass, lint 0 lỗi/cảnh báo, build pass, Chrome smoke local/cloud pass, Worker deploy dry-run pass; liên kết docs local và diff-check pass. Docs đã cập nhật theo code, giữ review cũ làm baseline lịch sử.
+
+Cloudflare: chỉ gọi API quản lý. Sau xác minh OAuth, GET subscriptions trả 403; chưa đọc được gói/billing để bảo đảm điều kiện không phát sinh phí. Đã hỏi người dùng thông tin Dashboard. Chưa deploy/push, đọc/ghi D1/R2 remote, bật workflow hay backfill. Phase 7 production và rate limit môi trường thật còn mở; chi tiết ở [nghiệm thu](release-verification.md).

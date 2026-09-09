@@ -13,4 +13,4 @@ Chạy từ `frontend/`. Vite proxy `/api` đến FastAPI `http://127.0.0.1:4444
 
 `src/api.js` gắn token admin `authToken`; `src/userApi.js` dùng token độc giả `userToken`. Hai loại phiên có cách xử lý 401 khác nhau. Local và Worker có response danh sách truyện khác shape; xem [API](../docs/api.md).
 
-Xem [cài đặt dự án](../docs/getting-started.md), [kiến trúc](../docs/architecture.md) và [review](../docs/review-2026-09-08.md). Build đã pass trong review 08/09/2026; lint còn 422 lỗi, 6 cảnh báo. Chưa có xác nhận browser end-to-end trong phiên này.
+Xem [cài đặt dự án](../docs/getting-started.md), [kiến trúc](../docs/architecture.md) và [review](../docs/review-2026-09-08.md). Lint 0 lỗi/0 cảnh báo và build pass. Browser smoke giả lập API local/cloud kiểm tra trang chủ, reader, admin và EPUB; xem nhật ký triển khai để biết phạm vi xác minh production.
