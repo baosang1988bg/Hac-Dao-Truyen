@@ -3,8 +3,15 @@ name: Cloud-to-Cloud Sync (Google Drive to Cloudflare R2)
 on:
   workflow_dispatch: # Cho phép bấm thủ công khi cần — KHÔNG tự động chạy cron 30 phút/lần nữa
 
+concurrency:
+  group: cloud-sync-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   sync:
+    if: vars.ALLOW_CLOUD_WRITES == 'true'
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -31,12 +38,18 @@ jobs:
         env:
           HACDAO_SYNC_KEY: ${{ secrets.HACDAO_SYNC_KEY }}
         run: |
-          python tools/cloud_to_cloud_syncer.py --state-file tools/remote_state.json --workers 4 || true
+          python tools/cloud_to_cloud_syncer.py --state-file tools/remote_state.json --workers 1
 
-      - name: Commit & Push Progress State
-        run: |
-          git config --global user.name 'CloudSync Bot'
-          git config --global user.email 'bot@hacdaotruyen.local'
-          git add tools/remote_state.json .cloud_sync_state.json || true
-          git commit -m "auto(sync): update cloud-to-cloud sync progress" || true
-          git push origin main || true
+      - name: Lưu checkpoint kể cả khi sync thất bại
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-sync-checkpoint
+          path: |
+            tools/.cloud_sync_state.json
+            tools/.cloud_sync_budget.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Commit và push checkpoint
+        run: bash tools/commit_sync_state.sh "auto(sync): cập nhật checkpoint" tools/.cloud_sync_state.json tools/.cloud_sync_budget.json

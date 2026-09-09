@@ -203,13 +203,6 @@ SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 CREDENTIALS_FILE = str(Path(__file__).parent / "credentials.json")
 TOKEN_FILE = str(Path(__file__).parent / "token.json")
 
-try:
-    from googleapiclient.discovery import build
-    from google.oauth2.credentials import Credentials
-    from google.auth.transport.requests import Request
-except ImportError:
-    print("ERROR: Thiếu thư viện Google API.")
-    sys.exit(1)
 
 
 import threading
@@ -217,6 +210,9 @@ import threading
 thread_local = threading.local()
 
 def get_drive_service():
+    from googleapiclient.discovery import build
+    from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request
     creds = None
     if Path(TOKEN_FILE).exists():
         creds = Credentials.from_authorized_user_file(TOKEN_FILE, ["https://www.googleapis.com/auth/drive"])
@@ -454,6 +450,7 @@ def main():
     uploaded_session = 0
     start_time = time.time()
     stop_all = False
+    had_failure = False
 
     def save_cloud_state():
         try:
@@ -497,6 +494,7 @@ def main():
                         )
                         sys.stdout.flush()
                     elif res.get('budget_exceeded'):
+                        had_failure = True
                         # Ngân sách Cloudflare đã hết (tháng/ngày UTC hoặc giới hạn per-run) —
                         # DỪNG NGAY toàn bộ, không thử slug khác (ngân sách dùng chung cho cả
                         # lần chạy). Tiến độ (synced_slugs) đã lưu sau mỗi novel thành công
@@ -504,16 +502,19 @@ def main():
                         sys.stderr.write(f"\n\n🛑 DỪNG DO NGÂN SÁCH CLOUDFLARE: {res.get('error')}\n")
                         stop_all = True
                     else:
+                        had_failure = True
+                        stop_all = True
                         sys.stderr.write(f"\n❌ Lỗi sync [{slug}]: {res.get('error')}\n")
 
-                    if stop_all:
-                        break
 
         except Exception as e:
-            sys.stderr.write(f"\n⚠️ Mạng tạm ngắt kết nối ({e}), tự động khôi phục sau 3 giây...\n")
-            time.sleep(3.0)
+            had_failure = True
+            stop_all = True
+            sys.stderr.write(f"\nĐồng bộ thất bại: {e}\n")
 
     print(f"\n💰 Ngân sách sau khi chạy: {budget.summary()}")
+    if had_failure:
+        raise SystemExit(1)
 
 
 if __name__ == '__main__':

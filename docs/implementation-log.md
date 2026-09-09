@@ -34,3 +34,9 @@ Snapshot có đủ bảng user/request và cột EPUB/Drive. Runner mặc địn
 Đã xử lý baseline lint: import/biến thừa, prop contracts, JSX text, hook dependencies; tách helper khỏi file component. Reader giữ callback điều hướng đúng slug; EPUB init không tải lại khi đổi theme và gỡ keyboard listener/hủy fetch khi unmount. CI chạy pytest cô lập, Worker Miniflare, lint không warning, build và browser smoke.
 
 Verify: lint 0 lỗi/0 cảnh báo, build pass; Chrome smoke pass cả API array local và object phân trang cloud (trang chủ, đọc/chuyển chương, login/detail admin, EPUB và unmount). Toàn bộ API/asset ngoài được giả lập, không gọi production. Node baseline CI là 22; Python 3.11.
+
+## Phase 5 — Workflow và kết quả sync
+
+Bỏ nuốt lỗi commit/push, bỏ vòng retry vô hạn khi một truyện thất bại; sync không thành công không công bố announcement. Helper checkpoint phân biệt không có diff với lỗi commit/push. CI writer dùng cùng concurrency group, đúng đường dẫn checkpoint; lưu artifact kể cả khi sync fail. Google Drive dependency chỉ nạp khi cần gọi Drive.
+
+Theo ràng buộc không phát sinh phí: workflow dịch/sync chỉ chạy nếu repository variable `ALLOW_CLOUD_WRITES=true`; chưa bật biến này hay chạy workflow remote. Verify: 3 test pass (không thay đổi, push tới bare repo local, push bị từ chối và sync failure exit 1). Chưa có bằng chứng workflow_dispatch remote.

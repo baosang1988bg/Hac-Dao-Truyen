@@ -2,15 +2,16 @@ name: Auto Check & Translate Lanh Chua (Daily 12:00 AM VN Time)
 
 on:
   schedule:
-    - cron: '0 17 * * *' # 12:00 AM VN Time (00:00 GMT+7) — ~5 request/ngày (100% Free)
+    - cron: '0 17 * * *' # 00:00 giờ Việt Nam; chỉ chạy khi đã bật biến kiểm soát chi phí
   workflow_dispatch:
 
 concurrency:
-  group: check-lanh-chua
+  group: cloud-sync-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   check_and_translate:
+    if: vars.ALLOW_CLOUD_WRITES == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -23,27 +24,17 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Trước đây pip install liệt kê thủ công từng package (requests,
-      # beautifulsoup4, playwright, python-slugify) và THIẾU python-dotenv,
-      # google-genai, groq, openai — mà migrate_to_cloudflare.py (dotenv) và
-      # providers/gemini.py (google-genai, backend dịch mặc định) đều cần.
-      # Thiếu package nào là script lỗi ImportError ngay, dừng job trước khi
-      # kịp dịch/commit. Dùng chung requirements.txt (giống ci.yml) để không
-      # bao giờ bị lệch danh sách phụ thuộc nữa.
       - name: Install Python Dependencies
         run: |
           pip install -r requirements.txt
           playwright install --with-deps chromium
 
-      # migrate_to_cloudflare.py (bước "Sync lên R2/D1" bên trong
-      # tools/auto_check_lanh_chua.py) dùng `wrangler d1 execute --remote` và
-      # `wrangler r2 object put` để ghi dữ liệu — CẦN CLOUDFLARE_API_TOKEN mới
-      # xác thực được trong CI (không có TTY để `wrangler login`). Không có
-      # secret này thì mọi lệnh wrangler đều lỗi xác thực → job thất bại trước
-      # khi kịp commit/push (đã xác nhận: chưa từng có commit tự động nào).
-      # Tạo token tại Cloudflare Dashboard → My Profile → API Tokens → Create
-      # Token (quyền D1 Edit + Workers R2 Storage Edit cho account này), rồi
-      # thêm vào GitHub repo Settings → Secrets → Actions.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
       - name: Run Auto Check & Translate
         env:
           HEADLESS: "true"
@@ -59,10 +50,5 @@ jobs:
         run: |
           python tools/auto_check_lanh_chua.py
 
-      - name: Commit & Push Changes
-        run: |
-          git config --global user.name 'AutoTranslator Bot'
-          git config --global user.email 'bot@hacdaotruyen.local'
-          git add novels/lanh-chua-cau-sinh-thien-phu-hop-thanh/ frontend/src/content/announcements.json || true
-          git commit -m "auto(translate): cập nhật chương mới cho Lãnh Chúa Cầu Sinh" || true
-          git push origin main || true
+      - name: Commit và push kết quả
+        run: bash tools/commit_sync_state.sh "auto(translate): cập nhật chương mới" novels/lanh-chua-cau-sinh-thien-phu-hop-thanh/ frontend/src/content/announcements.json

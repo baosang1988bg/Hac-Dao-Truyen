@@ -251,9 +251,9 @@ def main():
             print(f"⚠️ Lỗi khi đồng bộ qua wrangler CLI: {e}")
 
     if not synced:
-        sync_ok = sync_via_worker_api(NOVEL_SLUG, novel_meta, pending, BASE_DIR)
-        if not sync_ok and not cf_token:
-            print("ℹ️ Chưa cấu hình CLOUDFLARE_API_TOKEN hoặc HACDAO_SYNC_KEY hợp lệ.")
+        synced = sync_via_worker_api(NOVEL_SLUG, novel_meta, pending, BASE_DIR)
+    if not synced:
+        raise RuntimeError("Đồng bộ thất bại; không công bố thông báo thành công")
 
     # 3. Cập nhật announcements.json
     today_str = datetime.now().strftime('%Y-%m-%d')
