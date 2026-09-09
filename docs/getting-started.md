@@ -2,13 +2,13 @@
 
 ## Điều kiện
 
-Baseline theo `.github/workflows/ci.yml`: Python 3.11, Node.js 22 và npm. Chạy lệnh Python từ thư mục gốc vì nhiều đường dẫn dữ liệu là tương đối. `requirements.txt` chưa khóa phiên bản; `pytest` chưa được khai báo trong đó.
+Baseline theo `.github/workflows/ci.yml`: Python 3.11, Node.js 22 và npm. Chạy lệnh Python từ thư mục gốc vì nhiều đường dẫn dữ liệu là tương đối. Các dependency Python được khóa trong `requirements.lock` (runtime), `requirements-dev.lock` (test) và `requirements-cloud.lock` (thêm Google Drive).
 
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.txt
-python -m pip install pytest
+python -m pip install -r requirements-dev.lock
+npm ci
 npm ci --prefix frontend
 cp .env.example .env
 ```
@@ -45,7 +45,7 @@ python -m playwright install chromium
 | `ALLOWED_ORIGINS` | Origin bổ sung cho CORS FastAPI, cách nhau dấu phẩy |
 | `ADK_ENABLED` | Tắt mặc định; thử nghiệm riêng, cần dependency bổ sung |
 
-`.env.example` còn một số giá trị khác mặc định code: Gemini 2.0, batch 3, Ollama timeout 120. Giá trị được khai báo trong `.env` sẽ ghi đè mặc định. Các ghi chú quota/giá cũ trong template chưa được xác minh; không dùng để lập ngân sách.
+Template `.env.example` đã đồng bộ mặc định code. Ghi cloud và ngân sách mặc định tắt/0; xem [kiểm soát chi phí](cost-controls.md).
 
 ## Chạy ứng dụng
 
@@ -72,6 +72,6 @@ node --check src/index.js
 python -m pytest test_novel_manager.py tests/ -v
 ```
 
-Chạy test Python trên bản sao làm việc dành riêng cho kiểm thử: integration test yêu cầu ít nhất một truyện có bản dịch trên 50 ký tự và ghi tài khoản/bình luận vào `data/users.db`. Có thể tạo fixture `novels/ci-demo/novel.json` và chương trong `translated/` theo CI. Không chạy trên dữ liệu người dùng đang phục vụ. `npm test` ở root chỉ chọn `test_novel_manager.py`, không bao gồm `tests/`.
+Pytest tự tạo dữ liệu và SQLite tạm, không cần truyện thật. `npm test` chạy toàn bộ Python và Worker; cần kích hoạt venv trước. Worker dùng Miniflare D1/R2 local, không cần đăng nhập Cloudflare.
 
-Đợt review hiện tại: build và syntax pass; lint fail. Chưa chạy test Python vì môi trường không có pytest và venv không có `bin/python`. Xem [kết quả chi tiết](review-2026-09-08.md).
+Browser smoke: `python tests/browser/smoke.py` sau khi cài Chromium; có thể đặt `HACDAO_BROWSER_PATH` tới Chrome hệ thống. API/asset ngoài được giả lập. Kết quả và giới hạn production: [nhật ký triển khai](implementation-log.md).

@@ -6,7 +6,7 @@ import { Miniflare } from 'miniflare';
 async function setup(t) {
   const mf = new Miniflare({modules:true, script:await readFile(new URL('../../src/index.js',import.meta.url),'utf8'),
     compatibilityDate:'2026-05-07',compatibilityFlags:['nodejs_compat'],
-    d1Databases:['DB'],r2Buckets:['CHAPTERS'],bindings:{SYNC_KEY:'test-secret'},
+    d1Databases:['DB'],r2Buckets:['CHAPTERS'],bindings:{SYNC_KEY:'test-secret',ALLOW_SYNC_WRITES:'true'},
     outboundService: () => new Response('External requests disabled in tests',{status:503}),
   });
   t.after(()=>mf.dispose());
@@ -65,7 +65,7 @@ test('R2/D1 failures are retryable without publishing broken pointers', async t 
   const worker = await loadWorker();
   const req = () => new Request('http://test.invalid/api/admin/sync-novel', {method:'POST',headers:{'x-sync-key':'test-secret'},
     body:JSON.stringify({slug:'demo',chapters:[chapter(1)]})});
-  const env = {SYNC_KEY:'test-secret',DB:db,CHAPTERS:{put:async()=>{throw new Error('R2 unavailable');}}};
+  const env = {SYNC_KEY:'test-secret',ALLOW_SYNC_WRITES:'true',DB:db,CHAPTERS:{put:async()=>{throw new Error('R2 unavailable');}}};
   assert.equal((await worker.fetch(req(),env,{})).status,500);
   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM chapters').first()).n,0);
   env.CHAPTERS=bucket;

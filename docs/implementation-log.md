@@ -40,3 +40,9 @@ Verify: lint 0 lỗi/0 cảnh báo, build pass; Chrome smoke pass cả API array
 Bỏ nuốt lỗi commit/push, bỏ vòng retry vô hạn khi một truyện thất bại; sync không thành công không công bố announcement. Helper checkpoint phân biệt không có diff với lỗi commit/push. CI writer dùng cùng concurrency group, đúng đường dẫn checkpoint; lưu artifact kể cả khi sync fail. Google Drive dependency chỉ nạp khi cần gọi Drive.
 
 Theo ràng buộc không phát sinh phí: workflow dịch/sync chỉ chạy nếu repository variable `ALLOW_CLOUD_WRITES=true`; chưa bật biến này hay chạy workflow remote. Verify: 3 test pass (không thay đổi, push tới bare repo local, push bị từ chối và sync failure exit 1). Chưa có bằng chứng workflow_dispatch remote.
+
+## Phase 6 — Ngân sách, giới hạn và dependency
+
+Hai syncer dùng chung reservation bền vững trước mỗi attempt, retry hữu hạn, mặc định ngân sách 0. Ghi trực tiếp cần opt-in; Worker sync và Drive cache write tắt mặc định. Workflow lưu ngân sách kể cả khi lỗi. Rate limit phân nhóm, hỗ trợ binding chia sẻ và Map dự phòng có giới hạn kích thước; chưa cấu hình binding production. Health gộp filename D1/catalog để không đếm thiếu chương sync mới.
+
+Khóa dependency runtime/dev/Drive riêng và dùng lock trong CI. Verify: cài offline vào venv Python 3.11 sạch thành công; 42 Python tests pass (1 cảnh báo deprecation), 12 Worker tests pass. Tests bao gồm retry 429, budget đồng thời/restart/lỗi đĩa, cờ ghi mặc định và giới hạn giữa hai isolate bằng stub. `git diff --check` pass. Chưa thể đóng phần xác minh rate limit môi trường thật; xem [phạm vi ngân sách](cost-controls.md).

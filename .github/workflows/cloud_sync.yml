@@ -24,7 +24,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install google-api-python-client google-auth-oauthlib google-auth-httplib2
+          pip install -r requirements-cloud.lock
 
       - name: Create Credentials & Token Files
         env:
@@ -36,9 +36,14 @@ jobs:
 
       - name: Execute Cloud-to-Cloud Sync
         env:
+          HACDAO_ALLOW_CLOUD_WRITES: 'false'
+          HACDAO_R2_WRITE_BUDGET: ${{ vars.HACDAO_R2_WRITE_BUDGET || '0' }}
+          HACDAO_D1_WRITE_BUDGET: ${{ vars.HACDAO_D1_WRITE_BUDGET || '0' }}
+          HACDAO_MAX_OPS_PER_RUN: ${{ vars.HACDAO_MAX_OPS_PER_RUN || '0' }}
+          HACDAO_BUDGET_FILE: tools/.cloud_sync_budget.json
           HACDAO_SYNC_KEY: ${{ secrets.HACDAO_SYNC_KEY }}
         run: |
-          python tools/cloud_to_cloud_syncer.py --state-file tools/remote_state.json --workers 1
+          python tools/cloud_to_cloud_syncer.py --state-file tools/remote_state.json --workers 1 --r2-budget "$HACDAO_R2_WRITE_BUDGET" --d1-budget "$HACDAO_D1_WRITE_BUDGET" --max-ops-per-run "$HACDAO_MAX_OPS_PER_RUN"
 
       - name: Lưu checkpoint kể cả khi sync thất bại
         if: always()
@@ -52,4 +57,5 @@ jobs:
           retention-days: 7
 
       - name: Commit và push checkpoint
+        if: always()
         run: bash tools/commit_sync_state.sh "auto(sync): cập nhật checkpoint" tools/.cloud_sync_state.json tools/.cloud_sync_budget.json

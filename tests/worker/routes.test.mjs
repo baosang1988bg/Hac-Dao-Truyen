@@ -46,11 +46,11 @@ test('unavailable backend and invalid routes do not silently succeed', async t =
 test('health reads catalog and metadata, missing novel is 404', async () => {
   const worker = await loadWorker();
   const env = {
-    DB: {prepare: () => ({bind: slug => ({first: async () => slug === 'demo' ? {total_chapters: 7} : null})})},
-    CHAPTERS: {get: async () => ({json: async () => [{},{}]})},
+    DB: {prepare: () => ({bind: slug => ({first: async () => slug === 'demo' ? {total_chapters: 7} : null, all: async () => ({results:[{filename:'one'},{filename:'two'}]})})})},
+    CHAPTERS: {get: async () => ({json: async () => [{filename:'two'},{filename:'three'}]})},
   };
   const res = await worker.fetch(request('novels/demo/health'),env,{});
   assert.equal(res.status,200);
-  assert.deepEqual(await res.json(),{summary:{total_translated:2,total_raw:7},issues:[]});
+  assert.deepEqual(await res.json(),{summary:{total_translated:3,total_raw:7},issues:[]});
   assert.equal((await worker.fetch(request('novels/missing/health'),env,{})).status,404);
 });

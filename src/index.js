@@ -41,10 +41,22 @@ async function handleApi(request, url, env, ctx) {
   const path = url.pathname;
   const method = request.method;
 
-  // Global Rate Limiting: Chống DDoS/Spam - Tối đa 120 API request / 1 phút / IP
-  if (!checkRateLimit(`api:${clientIp(request)}`, 60_000, 120)) {
-    return jsonResponse({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau 1 phút.' }, 429);
+  const isSync = path === '/api/admin/sync-novel' && method === 'POST';
+  // Chỉ phân loại sync sau khi xác minh key; header giả không được bypass.
+  const verifiedSync = isSync && env.SYNC_KEY && timingSafeEqualStr(request.headers.get('x-sync-key') || '', env.SYNC_KEY);
+  const isLogin = ['/api/auth/login','/api/user/login','/api/user/register'].includes(path);
+  const category = verifiedSync ? 'sync' : isLogin ? 'auth' : 'public';
+  const binding = env[category === 'sync' ? 'SYNC_RATE_LIMITER' : category === 'auth' ? 'AUTH_RATE_LIMITER' : 'PUBLIC_RATE_LIMITER'];
+  const key = category === 'sync' ? 'sync:authorized' : `${category}:${clientIp(request)}`;
+  const maximum = category === 'sync' ? 30 : category === 'auth' ? 10 : 120;
+  let permitted;
+  try {
+    permitted = binding ? (await binding.limit({key})).success : checkRateLimit(key,60_000,maximum);
+  } catch {
+    if (category !== 'public') return jsonResponse({error:'Rate limiter unavailable'},503);
+    permitted = checkRateLimit(key,60_000,maximum);
   }
+  if (!permitted) return jsonResponse({error:'Quá nhiều yêu cầu. Thử lại sau 1 phút.'},429,{'Retry-After':'60'});
 
   const authMethods = {
     '/api/auth/login': 'POST',
@@ -414,6 +426,10 @@ const _rateLimitMap = new Map(); // key -> { count, resetAt }
 function checkRateLimit(key, windowMs, maxRequests = 1) {
   const now = Date.now();
   let entry = _rateLimitMap.get(key);
+  if (!entry && _rateLimitMap.size >= 5000) {
+    for (const [k,v] of _rateLimitMap) if (now > v.resetAt) _rateLimitMap.delete(k);
+    if (_rateLimitMap.size >= 5000) return false;
+  }
   if (!entry || now > entry.resetAt) {
     entry = { count: 0, resetAt: now + windowMs };
   }
@@ -660,6 +676,8 @@ async function getChaptersFromDriveFallback(env, slug, ctx) {
     chapter_number: c.number || 0
   })));
 
+  if (env.ENABLE_DRIVE_CACHE_WRITES !== 'true') return {catalog, allChaps};
+
   if (ctx && ctx.waitUntil) {
     ctx.waitUntil(env.CHAPTERS.put(`${slug}/catalog.json`, JSON.stringify(catalog)));
   } else {
@@ -700,19 +718,20 @@ async function getChapterContentFromDrive(env, slug, num, identifier, ctx) {
 
   const body = ch.content.startsWith('#') ? ch.content : `# ${ch.title || ch.filename}\n\n${ch.content}`;
 
+  if (env.ENABLE_DRIVE_CACHE_WRITES !== 'true') return body;
+
   const encoded = btoa(unescape(encodeURIComponent(ch.filename))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const r2Key = `${slug}/b64_${encoded}`;
   const chapterNumber = ch.number || 0;
 
-  const cacheWrite = Promise.all([
-    env.CHAPTERS.put(r2Key, body),
-    env.DB.prepare(`
+  const cacheWrite = (async () => {
+    await env.CHAPTERS.put(r2Key, body);
+    await env.DB.prepare(`
       INSERT INTO chapters (novel_slug, filename, title, chapter_number, r2_key)
-      VALUES (?, ?, ?, ?, ?)
-      ON CONFLICT(novel_slug, filename) DO UPDATE SET
-        title=excluded.title, chapter_number=excluded.chapter_number, r2_key=excluded.r2_key
-    `).bind(slug, ch.filename, ch.title || '', chapterNumber, r2Key).run(),
-  ]).catch(() => {});
+      VALUES (?, ?, ?, ?, ?) ON CONFLICT(novel_slug, filename) DO NOTHING
+    `).bind(slug, ch.filename, ch.title || '', chapterNumber, r2Key).run();
+  })().catch(() => {});
+
 
   if (ctx && ctx.waitUntil) {
     ctx.waitUntil(cacheWrite);
@@ -879,20 +898,24 @@ async function updateGlossary(env, slug, request) {
 }
 
 async function getHealth(env, slug) {
-  let totalTranslated = 0;
-  try {
-    const catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
-    if (catObj) {
-      const catalog = await catObj.json();
-      totalTranslated = catalog.length;
-    }
-  } catch {}
-
   const novel = await env.DB.prepare(
     `SELECT total_chapters FROM novels WHERE slug = ?`
   ).bind(slug).first();
 
   if (!novel) return jsonResponse({ error: 'Novel not found' }, 404);
+
+  const {results} = await env.DB.prepare(
+    'SELECT filename FROM chapters WHERE novel_slug = ?'
+  ).bind(slug).all();
+  const filenames = new Set((results || []).map(row => row.filename));
+  try {
+    const object = await env.CHAPTERS.get(`${slug}/catalog.json`);
+    const catalog = object ? await object.json() : [];
+    if (Array.isArray(catalog)) {
+      for (const chapter of catalog) if (chapter.filename) filenames.add(chapter.filename);
+    }
+  } catch { /* D1 remains available when the legacy catalog is corrupt. */ }
+  const totalTranslated = filenames.size;
 
   return jsonResponse({
     summary: {
@@ -908,6 +931,7 @@ async function syncNovelBatch(env, request) {
   if (!env.SYNC_KEY || !timingSafeEqualStr(authHeader, env.SYNC_KEY)) {
     return jsonResponse({ error: 'Unauthorized sync key' }, 401);
   }
+  if (env.ALLOW_SYNC_WRITES !== 'true') return jsonResponse({error:'Cloud sync writes are disabled'},503);
   const maxBytes = 2 * 1024 * 1024;
   const reader = request.body?.getReader();
   if (!reader) return jsonResponse({ error: 'Missing body' }, 400);
@@ -936,7 +960,7 @@ async function syncNovelBatch(env, request) {
         || c.filename === '.' || c.filename === '..' || filenames.has(c.filename)
         || typeof c.title !== 'string' || c.title.length > 500
         || typeof c.content !== 'string' || !c.content.trim()
-        || !Number.isSafeInteger(c.number) || c.number < 1
+        || !Number.isSafeInteger(c.number) || c.number < 0
         || (c.expected_r2_key !== undefined && c.expected_r2_key !== null && typeof c.expected_r2_key !== 'string')) {
       return jsonResponse({error: 'Invalid or duplicate chapter'}, 400);
     }

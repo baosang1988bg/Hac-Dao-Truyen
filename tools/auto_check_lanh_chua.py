@@ -11,6 +11,7 @@ import json
 import subprocess
 import urllib.request
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from datetime import datetime
 
 if sys.stdout.encoding != 'utf-8':
@@ -58,20 +59,20 @@ def sync_via_worker_api(slug: str, novel_meta: dict, pending: list, base_dir: Pa
         print("ℹ️ Không tìm thấy HACDAO_SYNC_KEY để đồng bộ qua Worker API.")
         return False
 
-    host = "hac-dao-truyen.nguyenbaosang1998.workers.dev"
-    url = f"https://{host}/api/admin/sync-novel"
+    host = os.getenv("HACDAO_SYNC_HOST", "hac-dao-truyen.nguyenbaosang1998.workers.dev")
     trans_dir = base_dir / "novels" / slug / "translated"
 
     if not trans_dir.exists():
         print(f"⚠️ Thư mục dịch {trans_dir} không tồn tại.")
         return False
 
+    from migrate_to_cloudflare import get_chapter_number, get_title
     chapters_to_sync = []
     for c in pending:
         ch_num = c["number"]
         found_file = None
         for fp in trans_dir.glob("*.md"):
-            if f"Chương {ch_num}" in fp.name or f"第{ch_num}章" in fp.name or fp.name.startswith(f"{ch_num}_") or f"_{ch_num}_" in fp.name:
+            if get_chapter_number(get_title(fp), fp.name) == ch_num:
                 found_file = fp
                 break
 
@@ -90,6 +91,10 @@ def sync_via_worker_api(slug: str, novel_meta: dict, pending: list, base_dir: Pa
             "content": content
         })
 
+    if len(chapters_to_sync) != len(pending):
+        print("Thiếu bản dịch; không công bố batch chưa đủ chương")
+        return False
+
     if not chapters_to_sync:
         print("⚠️ Không có nội dung chương nào để sync qua Worker API.")
         return False
@@ -106,25 +111,22 @@ def sync_via_worker_api(slug: str, novel_meta: dict, pending: list, base_dir: Pa
         "chapters": chapters_to_sync
     }
 
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json; charset=utf-8",
-            "x-sync-key": sync_key,
-            "User-Agent": "HacDaoAutoSyncer/1.0"
-        },
-        method="POST"
-    )
-
+    from tools.sync_budget import budget_from_env
+    from tools.sync_transport import send_chunk
+    budget = budget_from_env()
+    conn = None
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            resp_body = resp.read().decode("utf-8")
-            print(f"✅ Đồng bộ thành công lên Cloudflare D1 + R2 ({resp_body[:80]}).")
-            return True
-    except Exception as e:
-        print(f"⚠️ Lỗi khi sync qua Worker API: {e}")
-        return False
+        for start in range(0,len(chapters_to_sync),25):
+            payload['chapters'] = chapters_to_sync[start:start+25]
+            payload['is_first_chunk'] = start == 0
+            result,conn=send_chunk(conn,payload,host=host,sync_key=sync_key,budget=budget)
+            if not result['success']:
+                print(f"Sync thất bại: {result.get('error')}")
+                return False
+        return True
+    finally:
+        if conn:conn.close()
+
 
 def main():
     print(f"⏰ [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Kiểm tra chương mới cho truyện '{NOVEL_SLUG}'...")

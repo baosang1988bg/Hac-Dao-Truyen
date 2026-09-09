@@ -106,6 +106,11 @@ def main():
         sql = '\n'.join(statements)
         print(sql)
         if args.apply:
+            if args.remote:
+                import sys
+                sys.path.insert(0,str(ROOT))
+                from tools.sync_budget import require_cloud_writes
+                require_cloud_writes()
             if conn:
                 conn.executescript('BEGIN IMMEDIATE;\n' + sql + '\nCOMMIT;')
             else:

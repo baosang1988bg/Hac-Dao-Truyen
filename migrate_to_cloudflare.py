@@ -34,6 +34,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
+from tools.sync_budget import require_cloud_writes
 
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -190,6 +191,7 @@ def d1_file(sql: str, dry_run=False) -> bool:
     if dry_run:
         print(f"    [DRY-D1] {sql[:60].strip()}...")
         return True
+    require_cloud_writes()
     with tempfile.NamedTemporaryFile(mode='w', suffix='.sql', encoding='utf-8', delete=False) as f:
         f.write(sql + "\n")
         tmp = f.name
@@ -213,6 +215,7 @@ def r2_exists(key: str) -> bool:
 def r2_put(local: Path, key: str, dry_run=False) -> bool:
     if dry_run:
         return True
+    require_cloud_writes()
     r = run_safe([get_wrangler(), 'r2', 'object', 'put',
                   f"{R2_BUCKET}/{key}", '--file', str(local.resolve()), '--remote'])
     if r.returncode != 0:
@@ -525,6 +528,8 @@ def get_effective_files(trans_dir: Path) -> list:
 
 def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=None, resume=False,
                    from_chapter=None, extra_files=None, batch_upload=False, bundle_size=50):
+    if not dry_run:
+        require_cloud_writes()
     novel_dir = NOVELS_DIR / slug
     nj        = novel_dir / "novel.json"
     trans_dir = novel_dir / "translated"

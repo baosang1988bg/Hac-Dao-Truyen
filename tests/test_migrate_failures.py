@@ -4,6 +4,7 @@ import migrate_to_cloudflare as migrate
 
 
 def test_failed_upload_does_not_publish_chapters_delete_or_advance_state(tmp_path, monkeypatch):
+    monkeypatch.setenv('HACDAO_ALLOW_CLOUD_WRITES','true')
     novels=tmp_path/'source'
     root=novels/'demo'
     (root/'translated').mkdir(parents=True)

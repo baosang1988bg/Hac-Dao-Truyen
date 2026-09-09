@@ -26,7 +26,7 @@ jobs:
 
       - name: Install Python Dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements.lock
           playwright install --with-deps chromium
 
       - uses: actions/setup-node@v4
@@ -38,6 +38,11 @@ jobs:
       - name: Run Auto Check & Translate
         env:
           HEADLESS: "true"
+          HACDAO_ALLOW_CLOUD_WRITES: 'false'
+          HACDAO_R2_WRITE_BUDGET: ${{ vars.HACDAO_R2_WRITE_BUDGET || '0' }}
+          HACDAO_D1_WRITE_BUDGET: ${{ vars.HACDAO_D1_WRITE_BUDGET || '0' }}
+          HACDAO_MAX_OPS_PER_RUN: ${{ vars.HACDAO_MAX_OPS_PER_RUN || '0' }}
+          HACDAO_BUDGET_FILE: tools/.cloud_sync_budget.json
           HACDAO_SYNC_KEY: ${{ secrets.HACDAO_SYNC_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY || secrets.GEMINI_API_KEY }}
           GOOGLE_API_KEYS: ${{ secrets.GOOGLE_API_KEYS || secrets.GEMINI_API_KEYS }}
@@ -52,3 +57,16 @@ jobs:
 
       - name: Commit và push kết quả
         run: bash tools/commit_sync_state.sh "auto(translate): cập nhật chương mới" novels/lanh-chua-cau-sinh-thien-phu-hop-thanh/ frontend/src/content/announcements.json
+
+      - name: Lưu ngân sách kể cả khi tác vụ thất bại
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: translation-budget-checkpoint
+          path: tools/.cloud_sync_budget.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Commit ngân sách đã sử dụng
+        if: always()
+        run: bash tools/commit_sync_state.sh "auto(sync): lưu ngân sách đã sử dụng" tools/.cloud_sync_budget.json

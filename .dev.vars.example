@@ -1,0 +1,5 @@
+# Worker local; không commit .dev.vars thật.
+BACKEND_URL=http://127.0.0.1:4444
+SYNC_KEY=
+ALLOW_SYNC_WRITES=false
+ENABLE_DRIVE_CACHE_WRITES=false
