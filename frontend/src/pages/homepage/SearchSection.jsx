@@ -1,4 +1,6 @@
-import React from 'react'
+import PropTypes from 'prop-types'
+import { novelType } from '../../utils/propTypes'
+
 import { Search, X, Loader2 } from 'lucide-react'
 import { EpubCard } from '../../components/EpubCard'
 
@@ -85,7 +87,7 @@ export default function SearchSection({
             </div>
           ) : searchResults && searchResults.length === 0 ? (
             <div className="glass-panel p-6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-              Không tìm thấy truyện nào phù hợp với từ khóa "<strong>{searchQuery}</strong>".
+              Không tìm thấy truyện nào phù hợp với từ khóa &quot;<strong>{searchQuery}</strong>&quot;.
             </div>
           ) : searchResults ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '14px' }}>
@@ -99,3 +101,9 @@ export default function SearchSection({
     </>
   )
 }
+SearchSection.propTypes = {
+  searchQuery: PropTypes.string,
+  setSearchQuery: PropTypes.func,
+  searchResults: PropTypes.arrayOf(novelType),
+  searchLoading: PropTypes.bool,
+};

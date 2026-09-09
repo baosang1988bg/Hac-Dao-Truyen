@@ -1,6 +1,8 @@
-import React, { useState, useMemo } from 'react'
+import PropTypes from 'prop-types'
+import { novelType } from '../../utils/propTypes'
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom'
-import { Trophy, Flame, Eye, Star, Sparkles, MessageSquare } from 'lucide-react'
+import { Trophy, Flame, Eye, Star, Sparkles } from 'lucide-react';
 import { fmtNovelTitle, fmtNumber } from '../../utils/format'
 
 /**
@@ -119,3 +121,6 @@ export default function TruyenTrungRankings({ novels = [] }) {
     </div>
   )
 }
+TruyenTrungRankings.propTypes = {
+  novels: PropTypes.arrayOf(novelType),
+};

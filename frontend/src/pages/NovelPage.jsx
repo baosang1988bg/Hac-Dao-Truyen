@@ -1,4 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import PropTypes from 'prop-types'
+import { chapterType } from '../utils/propTypes'
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Play, BookOpen, Search, ArrowUpDown,
@@ -217,6 +219,10 @@ function FollowButton({ slug }) {
     </button>
   )
 }
+FollowButton.propTypes = {
+  slug: PropTypes.string,
+};
+
 
 /** Ghi chú truyện — mặc định thu gọn 3 dòng. */
 function CollapsibleNotes({ notes }) {
@@ -245,6 +251,10 @@ function CollapsibleNotes({ notes }) {
     </div>
   )
 }
+CollapsibleNotes.propTypes = {
+  notes: PropTypes.string,
+};
+
 
 /**
  * Danh sách chương guest: tìm kiếm + đảo chiều mới/cũ + phân trang "Tải thêm 100".
@@ -380,3 +390,7 @@ function ChapterList({ slug, chapters }) {
     </div>
   )
 }
+ChapterList.propTypes = {
+  slug: PropTypes.string,
+  chapters: PropTypes.arrayOf(chapterType),
+};

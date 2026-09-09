@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react';
 import { Ticket, Send } from 'lucide-react'
 import RequestNovelModal from '../../components/RequestNovelModal'
 

@@ -1,4 +1,6 @@
-import React from 'react'
+import PropTypes from 'prop-types'
+import { novelType } from '../../utils/propTypes'
+
 import { Link } from 'react-router-dom'
 import { BookOpen, User, Clock, Eye, Star } from 'lucide-react'
 import NovelCover from '../NovelCover'
@@ -87,3 +89,9 @@ export default function NovelList({ novels = [], showRank = false, showViews = f
     </div>
   )
 }
+NovelList.propTypes = {
+  novels: PropTypes.arrayOf(novelType),
+  showRank: PropTypes.bool,
+  showViews: PropTypes.bool,
+  showRating: PropTypes.bool,
+};

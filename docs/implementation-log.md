@@ -28,3 +28,9 @@ Snapshot có đủ bảng user/request và cột EPUB/Drive. Runner mặc địn
 - Restore tải vào file tạm, hỗ trợ fallback bundle; lỗi tải không ghi file chương dở.
 - Verify: 35 Python tests và 8 Worker tests pass, gồm Miniflare D1/R2, concurrent/retry/conflict, payload validation và fault injection. Khóa Miniflare cùng runtime với Wrangler để test tương thích. Không gọi cloud production.
 - Giới hạn: công cụ migrate trực tiếp và upload bundle vẫn phải chạy một writer cho mỗi slug; backfill legacy chưa thực hiện. Kiểm tra production chỉ được thực hiện khi đáp ứng điều kiện không phát sinh phí của người dùng.
+
+## Phase 4 — Frontend và CI
+
+Đã xử lý baseline lint: import/biến thừa, prop contracts, JSX text, hook dependencies; tách helper khỏi file component. Reader giữ callback điều hướng đúng slug; EPUB init không tải lại khi đổi theme và gỡ keyboard listener/hủy fetch khi unmount. CI chạy pytest cô lập, Worker Miniflare, lint không warning, build và browser smoke.
+
+Verify: lint 0 lỗi/0 cảnh báo, build pass; Chrome smoke pass cả API array local và object phân trang cloud (trang chủ, đọc/chuyển chương, login/detail admin, EPUB và unmount). Toàn bộ API/asset ngoài được giả lập, không gọi production. Node baseline CI là 22; Python 3.11.

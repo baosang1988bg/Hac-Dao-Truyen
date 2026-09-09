@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react'
+import PropTypes from 'prop-types'
+import { useState, useCallback, useRef, useEffect } from 'react';
 import api from '../api'
 
 /**
@@ -102,6 +103,13 @@ export default function SynopsisPanel({ slug, synopsis, hasMore = false, maxLine
     </div>
   )
 }
+SynopsisPanel.propTypes = {
+  slug: PropTypes.string,
+  synopsis: PropTypes.string,
+  hasMore: PropTypes.bool,
+  maxLines: PropTypes.number,
+};
+
 
 const styles = {
   container: {

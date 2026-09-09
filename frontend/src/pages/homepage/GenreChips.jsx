@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
+import { useEffect, useState } from 'react';
 import api from '../../api'
 
 /**
@@ -41,3 +42,7 @@ export default function GenreChips({ activeGenre, onSelect }) {
     </div>
   )
 }
+GenreChips.propTypes = {
+  activeGenre: PropTypes.string,
+  onSelect: PropTypes.func,
+};

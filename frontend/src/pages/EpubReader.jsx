@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react'
+import PropTypes from 'prop-types'
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, ChevronLeft, ChevronRight, Settings, BookOpen, List, X, Sun, Moon, Minus, Plus } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Settings, BookOpen, List, X, Minus, Plus } from 'lucide-react';
 import api from '../api'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
@@ -10,6 +11,12 @@ const API_BASE = import.meta.env.VITE_API_URL || ''
  * Sử dụng epub.js (https://github.com/futurepress/epub.js)
  * EPUB được stream từ Cloudflare R2 qua /api/novels/:slug/epub
  */
+  const themes = {
+    dark:   { body: { background: '#1a1a2e', color: '#e8e8e8' } },
+    sepia:  { body: { background: '#f4ecd8', color: '#3b2f2f' } },
+    white:  { body: { background: '#ffffff', color: '#1a1a1a' } },
+  }
+
 export default function EpubReader() {
   const { slug } = useParams()
   const viewerRef = useRef(null)
@@ -36,11 +43,7 @@ export default function EpubReader() {
   useEffect(() => { localStorage.setItem('epub_fontSize', fontSize) }, [fontSize])
   useEffect(() => { localStorage.setItem('epub_font', fontFamily) }, [fontFamily])
 
-  const themes = {
-    dark:   { body: { background: '#1a1a2e', color: '#e8e8e8' } },
-    sepia:  { body: { background: '#f4ecd8', color: '#3b2f2f' } },
-    white:  { body: { background: '#ffffff', color: '#1a1a1a' } },
-  }
+
 
   const applyTheme = useCallback((rendition, t = theme, fs = fontSize, ff = fontFamily) => {
     if (!rendition) return
@@ -51,6 +54,9 @@ export default function EpubReader() {
     })
     rendition.themes.select('custom')
   }, [theme, fontSize, fontFamily])
+
+  const applyThemeRef = useRef(applyTheme)
+  useEffect(() => { applyThemeRef.current = applyTheme }, [applyTheme])
 
   // Load novel info + track view
   useEffect(() => {
@@ -63,13 +69,17 @@ export default function EpubReader() {
   useEffect(() => {
     if (!viewerRef.current) return
     let destroyed = false
+    let removeKeyboard = () => {}
+    const controller = new AbortController()
+    setLoading(true)
+    setError(null)
 
     const initEpub = async () => {
       try {
         const ePub = (await import('epubjs')).default
 
         // Fetch EPUB as ArrayBuffer
-        const res = await fetch(`${API_BASE}/api/novels/${slug}/epub`)
+        const res = await fetch(`${API_BASE}/api/novels/${slug}/epub`, { signal: controller.signal })
         if (!res.ok) throw new Error(`EPUB chưa có trên R2 (${res.status})`)
         const buffer = await res.arrayBuffer()
         if (destroyed) return
@@ -84,7 +94,7 @@ export default function EpubReader() {
           flow: 'paginated',
         })
         renditionRef.current = rendition
-        applyTheme(rendition)
+        applyThemeRef.current(rendition)
 
         // Restore last position
         const savedCfi = localStorage.getItem(`epub_cfi_${slug}`)
@@ -108,6 +118,7 @@ export default function EpubReader() {
 
         // Build TOC
         await book.loaded.navigation
+        if (destroyed) return
         const nav = book.navigation.toc
         setToc(nav)
         setLoading(false)
@@ -118,7 +129,7 @@ export default function EpubReader() {
           if (e.key === 'ArrowLeft') rendition.prev()
         }
         document.addEventListener('keydown', onKey)
-        return () => document.removeEventListener('keydown', onKey)
+        removeKeyboard = () => document.removeEventListener('keydown', onKey)
       } catch (err) {
         if (!destroyed) {
           setError(err.message || 'Không thể tải EPUB')
@@ -130,7 +141,11 @@ export default function EpubReader() {
     initEpub()
     return () => {
       destroyed = true
+      controller.abort()
+      removeKeyboard()
       bookRef.current?.destroy()
+      bookRef.current = null
+      renditionRef.current = null
     }
   }, [slug])
 
@@ -319,6 +334,15 @@ function TocItem({ item, currentHref, onGoTo, textColor, theme, depth = 0 }) {
     </>
   )
 }
+TocItem.propTypes = {
+  item: PropTypes.object,
+  currentHref: PropTypes.string,
+  onGoTo: PropTypes.func,
+  textColor: PropTypes.string,
+  theme: PropTypes.string,
+  depth: PropTypes.number,
+};
+
 
 function iconBtnStyle(textColor, size = '34px') {
   return {

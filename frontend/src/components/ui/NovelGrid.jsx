@@ -1,4 +1,6 @@
-import React from 'react'
+import PropTypes from 'prop-types'
+import { novelType } from '../../utils/propTypes'
+
 import { Link } from 'react-router-dom'
 import NovelCover from '../NovelCover'
 import Badge from './Badge'
@@ -54,3 +56,8 @@ export default function NovelGrid({ novels, cols, getBadge }) {
     </div>
   )
 }
+NovelGrid.propTypes = {
+  novels: PropTypes.arrayOf(novelType),
+  cols: PropTypes.shape({ mobile: PropTypes.number, tablet: PropTypes.number, desktop: PropTypes.number }),
+  getBadge: PropTypes.func,
+};

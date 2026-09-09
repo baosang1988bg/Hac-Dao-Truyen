@@ -2,7 +2,7 @@
 
 ## Điều kiện
 
-Baseline theo `.github/workflows/ci.yml`: Python 3.11, Node.js 20 và npm. Chạy lệnh Python từ thư mục gốc vì nhiều đường dẫn dữ liệu là tương đối. `requirements.txt` chưa khóa phiên bản; `pytest` chưa được khai báo trong đó.
+Baseline theo `.github/workflows/ci.yml`: Python 3.11, Node.js 22 và npm. Chạy lệnh Python từ thư mục gốc vì nhiều đường dẫn dữ liệu là tương đối. `requirements.txt` chưa khóa phiên bản; `pytest` chưa được khai báo trong đó.
 
 ```sh
 python3 -m venv .venv

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
+import { useEffect, useState } from 'react';
 import { RefreshCw, ShieldCheck, AlertTriangle, CheckCircle, Trash2 } from 'lucide-react'
 import api from '../../api'
 import { StatBadge, SpinnerIcon } from '../shared/ui'
@@ -183,3 +184,6 @@ export default function HealthPanel({ slug }) {
     </div>
   )
 }
+HealthPanel.propTypes = {
+  slug: PropTypes.string,
+};

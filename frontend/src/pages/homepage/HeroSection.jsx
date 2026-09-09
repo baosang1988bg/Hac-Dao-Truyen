@@ -1,4 +1,5 @@
-import React from 'react'
+import { novelType } from '../../utils/propTypes'
+
 import { Link } from 'react-router-dom'
 import { Play, Info, BookMarked, Flame } from 'lucide-react'
 import NovelCover from '../../components/NovelCover'
@@ -63,3 +64,6 @@ export default function HeroSection({ novel }) {
     </section>
   )
 }
+HeroSection.propTypes = {
+  novel: novelType,
+};

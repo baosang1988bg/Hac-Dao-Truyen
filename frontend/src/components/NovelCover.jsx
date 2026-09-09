@@ -1,4 +1,6 @@
-import React, { useState } from 'react'
+import PropTypes from 'prop-types'
+import { novelType } from '../utils/propTypes'
+import { useState } from 'react';
 import { coverGradient } from '../utils/coverColors'
 import { fmtNovelTitle } from '../utils/format'
 
@@ -58,3 +60,8 @@ export default function NovelCover({ novel, size = 'md', badge }) {
     </div>
   )
 }
+NovelCover.propTypes = {
+  novel: novelType,
+  size: PropTypes.string,
+  badge: PropTypes.node,
+};

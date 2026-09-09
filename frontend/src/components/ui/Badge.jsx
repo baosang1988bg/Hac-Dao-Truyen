@@ -1,4 +1,5 @@
-import React from 'react'
+import PropTypes from 'prop-types'
+
 
 /**
  * Badge – Badge chip nhỏ hiển thị trạng thái truyện.
@@ -33,3 +34,8 @@ export default function Badge({ variant = 'default', children, style }) {
     </span>
   )
 }
+Badge.propTypes = {
+  variant: PropTypes.string,
+  children: PropTypes.node,
+  style: PropTypes.object,
+};

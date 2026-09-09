@@ -1,12 +1,12 @@
-# CI tối thiểu (roadmap 1.4): syntax + build + contract test.
-# Lưu ý: integration test cần dữ liệu novels/ — trên CI không có truyện thật
-# nên bước test tạo 1 truyện mẫu nhỏ trước khi chạy.
 name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   backend:
@@ -18,25 +18,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install deps
-        run: pip install -r requirements.txt
-      - name: Syntax check toàn bộ Python
+      - name: Cài dependency kiểm thử
+        run: pip install -r requirements-dev.txt
+      - name: Kiểm tra Python với dữ liệu cô lập
+        run: python -m pytest -q
+      - name: Kiểm tra không theo dõi secret
         run: |
-          python -m compileall -q . -x 'node_modules|AgentReach|\.venv|scratch'
-      - name: Tạo dữ liệu mẫu cho integration test
-        run: |
-          mkdir -p novels/ci-demo/translated
-          cat > novels/ci-demo/novel.json <<'EOF'
-          {"slug":"ci-demo","title":"CI Demo","total_chapters":1,"glossary":{"甲":"Giáp"}}
-          EOF
-          printf '# Chương 1: Mở đầu\n\nNội dung chương một đủ dài để vượt qua kiểm tra tối thiểu của test đọc chương.\n' \
-            > "novels/ci-demo/translated/Chương 1 - Mở đầu_VI.md"
-      - name: Integration tests (contract API)
-        run: python tests/test_integration.py
-      - name: Kiểm tra không lộ secret
-        run: |
-          git check-ignore .env .dev.vars key_status.json || true
           ! git ls-files | grep -E '^\.env$|^\.dev\.vars$|^key_status\.json$'
+
+  worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --check src/index.js
+      - name: Kiểm thử Worker, schema và D1/R2 local
+        run: npm run test:worker
 
   frontend:
     runs-on: ubuntu-latest
@@ -44,13 +45,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Build frontend
-        working-directory: frontend
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: npm ci --prefix frontend
+      - run: npm run lint --prefix frontend
+      - run: npm run build --prefix frontend
+      - name: Chuẩn bị trình duyệt
         run: |
-          npm ci
-          npm run build
-      - name: Syntax check Worker
-        run: node --check src/index.js
+          pip install -r requirements-dev.txt
+          python -m playwright install --with-deps chromium
+      - name: Smoke test với API giả lập, không gọi production
+        run: python tests/browser/smoke.py

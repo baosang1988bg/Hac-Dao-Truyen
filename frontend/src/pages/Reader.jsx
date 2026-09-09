@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react'
+import PropTypes from 'prop-types'
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Home, ChevronUp, Settings, Type, Maximize2, Download } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
@@ -43,6 +44,11 @@ function scrollAllTo(top, smooth = false) {
   const mc = document.querySelector('.main-content')
   if (mc) mc.scrollTo(opts)
 }
+
+const getChapNum = (title) => {
+    const m = title.match(/第(\d+)章|[Cc]hapter\s*(\d+)|Chương\s*(\d+)|(\d+)\./)
+    return m ? (m[1] || m[2] || m[3] || m[4]) : null
+  }
 
 export default function Reader() {
   const { slug, chapter } = useParams()
@@ -206,10 +212,7 @@ export default function Reader() {
     }
   }, [slug, chapter])
 
-  const getChapNum = (title) => {
-    const m = title.match(/第(\d+)章|[Cc]hapter\s*(\d+)|Chương\s*(\d+)|(\d+)\./)
-    return m ? (m[1] || m[2] || m[3] || m[4]) : null
-  }
+
 
   const isNumberParam = /^\d+$/.test(chapter)
   const targetNum = isNumberParam ? parseInt(chapter) : null
@@ -224,19 +227,19 @@ export default function Reader() {
   const prevChapter = currentChapterIndex > 0 ? chapters[currentChapterIndex - 1] : null
   const nextChapter = currentChapterIndex !== -1 && currentChapterIndex < chapters.length - 1 ? chapters[currentChapterIndex + 1] : null
 
-  const getChapterUrl = (c) => {
+  const getChapterUrl = useCallback((c) => {
     if (!c) return '#'
     const num = c.number || c.chapter_number || getChapNum(c.title || '') || getChapNum(c.filename || '')
     return `/novel/${slug}/read/${num || encodeURIComponent(c.filename)}`
-  }
+  }, [slug])
 
   const goNext = useCallback(() => {
     if (nextChapter) navigate(getChapterUrl(nextChapter))
-  }, [nextChapter, slug, navigate])
+  }, [nextChapter, getChapterUrl, navigate])
 
   const goPrev = useCallback(() => {
     if (prevChapter) navigate(getChapterUrl(prevChapter))
-  }, [prevChapter, slug, navigate])
+  }, [prevChapter, getChapterUrl, navigate])
 
   useEffect(() => {
     const handleKey = (e) => {
@@ -399,6 +402,8 @@ export default function Reader() {
     )
   }
 
+  NavBar.propTypes = { position: PropTypes.string }
+
   return (
     <div className={`reader-root reader--${themeId}`} style={{
       background: currentTheme.bg, color: currentTheme.text,
@@ -451,7 +456,7 @@ export default function Reader() {
           ) : (
             <ReactMarkdown
               components={{
-                h1: ({ node, ...props }) => (
+                h1: ({ node: _node, ...props }) => (
                   <h1 style={{
                     fontSize: '1.6em', fontWeight: 800,
                     marginBottom: '2.5rem', color: 'inherit',
@@ -459,13 +464,13 @@ export default function Reader() {
                     paddingBottom: '1.25rem', lineHeight: 1.3,
                   }} {...props} />
                 ),
-                p: ({ node, ...props }) => (
+                p: ({ node: _node, ...props }) => (
                   <p className="reader-p" style={{
                     marginBottom: '1.6em', textIndent: '1.2em',
                     wordBreak: 'break-word', overflowWrap: 'break-word'
                   }} {...props} />
                 ),
-                hr: ({ node, ...props }) => (
+                hr: ({ node: _node, ...props }) => (
                   <hr style={{
                     border: 'none', borderTop: `2px solid ${currentTheme.border}`,
                     margin: '3.5rem 0',

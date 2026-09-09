@@ -1,4 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import PropTypes from 'prop-types'
+import { chapterType } from '../../utils/propTypes'
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom'
 import { Search, Play, ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -224,3 +226,10 @@ export default function CatalogBrowser({ catalog, chapters, slug, onTranslateFro
     </div>
   )
 }
+CatalogBrowser.propTypes = {
+  catalog: PropTypes.arrayOf(chapterType),
+  chapters: PropTypes.arrayOf(chapterType),
+  slug: PropTypes.string,
+  onTranslateFromChapter: PropTypes.func,
+  readOnly: PropTypes.bool,
+};

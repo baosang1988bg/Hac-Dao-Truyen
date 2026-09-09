@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from 'react'
+import PropTypes from 'prop-types'
+import { novelType } from '../../utils/propTypes'
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom'
 import { Trophy, Eye, Star } from 'lucide-react'
 import NovelCover from '../../components/NovelCover'
@@ -81,3 +83,6 @@ export default function TopListSection({ novels }) {
     </section>
   )
 }
+TopListSection.propTypes = {
+  novels: PropTypes.arrayOf(novelType),
+};

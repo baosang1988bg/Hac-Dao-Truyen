@@ -1,4 +1,6 @@
-import React from 'react'
+import PropTypes from 'prop-types'
+import { novelType } from '../utils/propTypes'
+
 import { Link } from 'react-router-dom'
 import NovelCover from './NovelCover'
 import { fmtTimeAgo } from '../utils/format'
@@ -26,3 +28,8 @@ export default function NovelCard({ novel, size = 'md', badge }) {
     </Link>
   )
 }
+NovelCard.propTypes = {
+  novel: novelType,
+  size: PropTypes.string,
+  badge: PropTypes.node,
+};

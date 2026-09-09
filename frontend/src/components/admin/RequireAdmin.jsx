@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
+import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom'
 import api from '../../api'
 
@@ -49,3 +50,6 @@ export default function RequireAdmin({ children }) {
 
   return children
 }
+RequireAdmin.propTypes = {
+  children: PropTypes.node,
+};

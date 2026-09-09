@@ -1,4 +1,6 @@
-import React from 'react'
+import PropTypes from 'prop-types'
+import { novelType } from '../../utils/propTypes'
+
 import { Link } from 'react-router-dom'
 import { fmtNumber, fmtNovelTitle } from '../../utils/format'
 
@@ -50,3 +52,6 @@ export default function NovelTable({ novels }) {
     </div>
   )
 }
+NovelTable.propTypes = {
+  novels: PropTypes.arrayOf(novelType),
+};

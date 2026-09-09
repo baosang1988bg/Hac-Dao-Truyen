@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom'
 import { MessageSquare, Send, Loader2 } from 'lucide-react'
 import userApi, { isLoggedIn, getUserInfo } from '../userApi'
@@ -125,3 +126,7 @@ export default function ChapterComments({ slug, chapter }) {
     </section>
   )
 }
+ChapterComments.propTypes = {
+  slug: PropTypes.string,
+  chapter: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+};

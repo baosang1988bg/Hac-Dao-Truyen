@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import PropTypes from 'prop-types'
+import { useEffect, useMemo, useState } from 'react';
 import { Plus, Trash2, Search, Edit2, Check, X, ChevronLeft, ChevronRight, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import api from '../../api'
 
@@ -237,7 +238,7 @@ export default function GlossaryEditor({ slug, glossary: glossaryProp, onSaved }
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                   {conflicts.substrPairs.slice(0, 50).map((p, i) => (
                     <div key={i} style={{ fontSize: '0.82rem', color: '#d1d5db', padding: '0.4rem 0.6rem', background: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
-                      <strong>{p.shortKey}</strong> → "{p.shortVal}" &nbsp;⊂&nbsp; <strong>{p.longKey}</strong> → "{p.longVal}"
+                      <strong>{p.shortKey}</strong> → &quot;{p.shortVal}&quot; &nbsp;⊂&nbsp; <strong>{p.longKey}</strong> → &quot;{p.longVal}&quot;
                     </div>
                   ))}
                   {conflicts.substrPairs.length > 50 && (
@@ -257,7 +258,7 @@ export default function GlossaryEditor({ slug, glossary: glossaryProp, onSaved }
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                   {conflicts.valueGroups.slice(0, 50).map((g, i) => (
                     <div key={i} style={{ fontSize: '0.82rem', color: '#d1d5db', padding: '0.4rem 0.6rem', background: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
-                      "{g.val}" ← {g.keys.length} key: {g.keys.slice(0, 8).join('、')}{g.keys.length > 8 ? '…' : ''}
+                      &quot;{g.val}&quot; ← {g.keys.length} key: {g.keys.slice(0, 8).join('、')}{g.keys.length > 8 ? '…' : ''}
                     </div>
                   ))}
                 </div>
@@ -381,3 +382,8 @@ export default function GlossaryEditor({ slug, glossary: glossaryProp, onSaved }
     </div>
   )
 }
+GlossaryEditor.propTypes = {
+  slug: PropTypes.string,
+  glossary: PropTypes.objectOf(PropTypes.string),
+  onSaved: PropTypes.func,
+};

@@ -25,6 +25,7 @@ export default [
     },
     rules: {
       ...js.configs.recommended.rules,
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       ...react.configs.recommended.rules,
       ...react.configs['jsx-runtime'].rules,
       ...reactHooks.configs.recommended.rules,

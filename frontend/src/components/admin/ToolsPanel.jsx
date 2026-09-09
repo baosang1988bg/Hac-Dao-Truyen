@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react'
+import PropTypes from 'prop-types'
+import { useEffect, useState, useRef } from 'react';
 import { AlertTriangle, Zap, Sparkles, CheckCircle, GitMerge, RefreshCw } from 'lucide-react'
 import { SpinnerIcon } from '../shared/ui'
 
@@ -351,3 +352,6 @@ export default function ToolsPanel({ slug }) {
     </div>
   )
 }
+ToolsPanel.propTypes = {
+  slug: PropTypes.string,
+};

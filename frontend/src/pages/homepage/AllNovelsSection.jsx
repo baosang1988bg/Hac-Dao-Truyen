@@ -1,4 +1,6 @@
-import React, { useState } from 'react'
+import PropTypes from 'prop-types'
+import { novelType } from '../../utils/propTypes'
+import { useState } from 'react';
 import { BookOpen, LayoutGrid, List, AlignJustify } from 'lucide-react'
 import SectionHeader from '../../components/ui/SectionHeader'
 import NovelGrid from '../../components/ui/NovelGrid'
@@ -108,3 +110,7 @@ export default function AllNovelsSection({ novels, activeGenre = '' }) {
     </section>
   )
 }
+AllNovelsSection.propTypes = {
+  novels: PropTypes.arrayOf(novelType),
+  activeGenre: PropTypes.string,
+};

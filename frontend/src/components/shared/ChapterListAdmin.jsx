@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from 'react'
+import PropTypes from 'prop-types'
+import { chapterType } from '../../utils/propTypes'
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom'
 import { Search, ArrowUpDown, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 
@@ -115,6 +117,12 @@ function AuthorNotesSection({ chapters, slug, getChapNum }) {
     </div>
   )
 }
+AuthorNotesSection.propTypes = {
+  chapters: PropTypes.arrayOf(chapterType),
+  slug: PropTypes.string,
+  getChapNum: PropTypes.func,
+};
+
 
 export default function ChapterListAdmin({ chapters, slug }) {
   const [searchTerm, setSearchTerm] = useState('')
@@ -398,3 +406,7 @@ export default function ChapterListAdmin({ chapters, slug }) {
     </div>
   )
 }
+ChapterListAdmin.propTypes = {
+  chapters: PropTypes.arrayOf(chapterType),
+  slug: PropTypes.string,
+};

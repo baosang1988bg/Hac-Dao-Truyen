@@ -1,4 +1,6 @@
-import React from 'react'
+import PropTypes from 'prop-types'
+import { novelType } from '../../utils/propTypes'
+
 import { Link } from 'react-router-dom'
 import { History, Clock, BookOpen, BookMarked } from 'lucide-react'
 import NovelCover from '../../components/NovelCover'
@@ -102,3 +104,6 @@ export default function RecentlyReadSection({ novels }) {
     </section>
   )
 }
+RecentlyReadSection.propTypes = {
+  novels: PropTypes.arrayOf(novelType),
+};

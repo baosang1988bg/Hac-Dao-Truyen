@@ -1,4 +1,5 @@
-import React from 'react'
+import { novelType } from '../utils/propTypes'
+
 import { Link } from 'react-router-dom'
 import { BookOpen, Eye, Star, BookMarked } from 'lucide-react'
 import NovelCover from './NovelCover'
@@ -103,5 +104,9 @@ export function EpubCard({ novel }) {
     </div>
   )
 }
+EpubCard.propTypes = {
+  novel: novelType,
+};
+
 
 export default EpubCard

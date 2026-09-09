@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom'
 import {
   ArrowLeft, BookOpen, Book, Sparkles, ShieldCheck, Zap,
@@ -12,7 +12,8 @@ import HealthPanel from '../../components/admin/HealthPanel'
 import ToolsPanel from '../../components/admin/ToolsPanel'
 import CatalogBrowser from '../../components/admin/CatalogBrowser'
 import ChapterListAdmin from '../../components/shared/ChapterListAdmin'
-import { InfoRow, sectionTitle } from '../../components/shared/ui'
+import { InfoRow } from '../../components/shared/ui'
+import { sectionTitle } from '../../components/shared/presentation'
 
 const TABS = { CHAPTERS: 'chapters', CATALOG: 'catalog', GLOSSARY: 'glossary', HEALTH: 'health', TOOLS: 'tools' }
 

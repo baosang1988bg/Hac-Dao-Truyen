@@ -1,10 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom'
-import {
-  ArrowLeft, RefreshCw, BookOpen, Zap, Clock, CheckCircle,
-  AlertTriangle, TrendingUp, Cpu, ChevronDown, ChevronUp,
-  FileText, Filter, Database,
-} from 'lucide-react'
+import { ArrowLeft, RefreshCw, BookOpen, Zap, Clock, AlertTriangle, TrendingUp, Cpu, ChevronDown, ChevronUp, FileText, Filter, Database } from 'lucide-react';
 import api from '../api'
 import { fmtDuration, fmtDate, fmtTokens } from '../utils/format'
 
@@ -232,8 +229,6 @@ export default function Logs() {
 
 // ── Session Row ───────────────────────────────────────────────────────────────
 function SessionRow({ session: s, index, isExpanded, onToggle }) {
-  const isError   = s.status === 'error'
-  const isDone    = s.status === 'done'
   const isFix     = s.session_type === 'fix'
   const isOrphan  = s.is_orphan_stats === true
 
@@ -464,6 +459,13 @@ function SessionRow({ session: s, index, isExpanded, onToggle }) {
     </div>
   )
 }
+SessionRow.propTypes = {
+  session: PropTypes.object,
+  index: PropTypes.number,
+  isExpanded: PropTypes.bool,
+  onToggle: PropTypes.func,
+};
+
 
 // ── Small components ──────────────────────────────────────────────────────────
 
@@ -476,6 +478,13 @@ function AggrCard({ icon, label, value, color }) {
     </div>
   )
 }
+AggrCard.propTypes = {
+  icon: PropTypes.node,
+  label: PropTypes.node,
+  value: PropTypes.node,
+  color: PropTypes.string,
+};
+
 
 function TypeBadge({ type }) {
   const isFix = type === 'fix'
@@ -491,6 +500,10 @@ function TypeBadge({ type }) {
     </span>
   )
 }
+TypeBadge.propTypes = {
+  type: PropTypes.string,
+};
+
 
 function StatusPill({ status }) {
   const cfg = {
@@ -508,6 +521,10 @@ function StatusPill({ status }) {
     </span>
   )
 }
+StatusPill.propTypes = {
+  status: PropTypes.string,
+};
+
 
 function MetricPill({ value, label, color }) {
   return (
@@ -522,6 +539,12 @@ function MetricPill({ value, label, color }) {
     </div>
   )
 }
+MetricPill.propTypes = {
+  value: PropTypes.node,
+  label: PropTypes.node,
+  color: PropTypes.string,
+};
+
 
 function DetailSection({ title, children }) {
   return (
@@ -535,6 +558,11 @@ function DetailSection({ title, children }) {
     </div>
   )
 }
+DetailSection.propTypes = {
+  title: PropTypes.node,
+  children: PropTypes.node,
+};
+
 
 function DetailRow({ label, value, mono }) {
   if (value === undefined || value === null || value === '') return null
@@ -547,6 +575,12 @@ function DetailRow({ label, value, mono }) {
     </div>
   )
 }
+DetailRow.propTypes = {
+  label: PropTypes.node,
+  value: PropTypes.node,
+  mono: PropTypes.bool,
+};
+
 
 // ── Model Breakdown Table ─────────────────────────────────────────────────────
 function ModelBreakdownTable({ breakdown }) {
@@ -613,3 +647,6 @@ function ModelBreakdownTable({ breakdown }) {
     </div>
   )
 }
+ModelBreakdownTable.propTypes = {
+  breakdown: PropTypes.object,
+};

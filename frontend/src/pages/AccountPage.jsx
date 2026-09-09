@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom'
 import { User, LogOut, BookOpen, HeartOff, Loader2 } from 'lucide-react'
 import api from '../api'
@@ -129,6 +130,10 @@ function AuthForm({ onSuccess }) {
     </div>
   )
 }
+AuthForm.propTypes = {
+  onSuccess: PropTypes.func,
+};
+
 
 /* ── Dashboard sau đăng nhập ──────────────────────────────────────────────── */
 
@@ -269,3 +274,7 @@ function AccountDashboard({ user, onLogout }) {
     </div>
   )
 }
+AccountDashboard.propTypes = {
+  user: PropTypes.shape({id: PropTypes.number, name: PropTypes.string, email: PropTypes.string}),
+  onLogout: PropTypes.func,
+};

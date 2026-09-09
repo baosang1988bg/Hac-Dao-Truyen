@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react'
+import PropTypes from 'prop-types'
+import { useEffect, useState, useRef } from 'react';
 import {
   Play, Square, Zap, Clock, TrendingUp, Sparkles,
   CheckCircle, AlertTriangle, RefreshCw,
@@ -498,3 +499,13 @@ export default function TranslationPanel({ isRunning, translating, translateCoun
 
   return null
 }
+TranslationPanel.propTypes = {
+  isRunning: PropTypes.bool,
+  translating: PropTypes.bool,
+  translateCount: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  setTranslateCount: PropTypes.func,
+  taskStatus: PropTypes.object,
+  elapsedSec: PropTypes.number,
+  onStart: PropTypes.func,
+  onStop: PropTypes.func,
+};

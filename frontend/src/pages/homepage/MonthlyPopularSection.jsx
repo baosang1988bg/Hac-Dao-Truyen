@@ -1,4 +1,5 @@
-import React from 'react'
+import { novelType } from '../../utils/propTypes'
+
 import { Link } from 'react-router-dom'
 import { Flame, Play, Eye, BookOpen } from 'lucide-react'
 import NovelCover from '../../components/NovelCover'
@@ -82,3 +83,6 @@ export default function MonthlyPopularSection({ novel }) {
     </section>
   )
 }
+MonthlyPopularSection.propTypes = {
+  novel: novelType,
+};

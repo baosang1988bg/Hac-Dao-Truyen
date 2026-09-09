@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { MessageSquare, Zap } from 'lucide-react'
 
 /**

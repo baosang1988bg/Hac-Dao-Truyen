@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from 'react'
+import PropTypes from 'prop-types'
+import { novelType } from '../../utils/propTypes'
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom'
 import { Trophy, Eye, Star, Flame, Sparkles } from 'lucide-react'
 import NovelCover from '../../components/NovelCover'
@@ -125,3 +127,6 @@ export default function QidianRankingsWidget({ novels = [] }) {
     </div>
   )
 }
+QidianRankingsWidget.propTypes = {
+  novels: PropTypes.arrayOf(novelType),
+};

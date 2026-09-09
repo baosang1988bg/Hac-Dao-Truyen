@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import PropTypes from 'prop-types'
+import { useState } from 'react';
 import { Link } from 'react-router-dom'
 import { X, Send, Loader2, CheckCircle2, LogIn } from 'lucide-react'
 import userApi, { isLoggedIn } from '../userApi'
@@ -152,3 +153,6 @@ export default function RequestNovelModal({ onClose }) {
     </div>
   )
 }
+RequestNovelModal.propTypes = {
+  onClose: PropTypes.func,
+};

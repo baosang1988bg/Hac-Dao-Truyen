@@ -1,13 +1,7 @@
-import React from 'react'
+import PropTypes from 'prop-types'
+
 
 // ── Các component / helper nhỏ dùng chung (tách từ NovelDetail.jsx cũ) ────────
-
-/** Giây → "45s" / "3m 20s" */
-export function fmtTime(seconds) {
-  if (seconds < 60) return `${seconds}s`
-  const m = Math.floor(seconds / 60), s = seconds % 60
-  return `${m}m ${s}s`
-}
 
 /** Badge trạng thái phiên dịch (running/finished/error/cancelling/cancelled). */
 export function StatusBadge({ status }) {
@@ -37,6 +31,10 @@ export function StatusBadge({ status }) {
     </div>
   )
 }
+StatusBadge.propTypes = {
+  status: PropTypes.string,
+};
+
 
 /** Spinner xoay nhỏ (14px). */
 export function SpinnerIcon() {
@@ -58,6 +56,12 @@ export function StatBadge({ label, value, color }) {
     </div>
   )
 }
+StatBadge.propTypes = {
+  label: PropTypes.node,
+  value: PropTypes.node,
+  color: PropTypes.string,
+};
+
 
 /** Dòng thông tin label: value. */
 export function InfoRow({ label, value, mono }) {
@@ -69,9 +73,8 @@ export function InfoRow({ label, value, mono }) {
     </div>
   )
 }
-
-/** Style tiêu đề section trong panel. */
-export const sectionTitle = {
-  fontSize: '1rem', fontWeight: 600, marginBottom: '1rem',
-  display: 'flex', alignItems: 'center', gap: '8px',
-}
+InfoRow.propTypes = {
+  label: PropTypes.node,
+  value: PropTypes.node,
+  mono: PropTypes.bool,
+};

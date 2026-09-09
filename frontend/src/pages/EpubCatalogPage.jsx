@@ -1,12 +1,10 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react'
-import { Link } from 'react-router-dom'
-import {
-  Search, BookMarked, ChevronDown, Star, Eye, BookOpen,
-  SlidersHorizontal, X, Filter, TrendingUp, Clock, AlignLeft,
-} from 'lucide-react'
+import PropTypes from 'prop-types'
+import { useEffect, useState, useCallback, useRef } from 'react';
+
+import { Search, BookMarked, Star, Eye, BookOpen, SlidersHorizontal, X, Clock, AlignLeft } from 'lucide-react';
 import api from '../api'
 import { EpubCard } from '../components/EpubCard'
-import { fmtNumber, fmtTimeAgo } from '../utils/format'
+import { fmtNumber } from '../utils/format';
 
 const LIMIT = 24
 
@@ -295,6 +293,12 @@ function FilterChip({ label, active, onClick }) {
     </button>
   )
 }
+FilterChip.propTypes = {
+  label: PropTypes.node,
+  active: PropTypes.bool,
+  onClick: PropTypes.func,
+};
+
 
 function SkeletonCard() {
   return (

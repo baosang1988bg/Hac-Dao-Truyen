@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
+import { useEffect, useState } from 'react';
 import { Inbox, Check, X, ExternalLink, AlertCircle } from 'lucide-react'
 import api from '../../api'
 import { fmtDate } from '../../utils/format'
@@ -172,3 +173,6 @@ function StatusPill({ status }) {
     </span>
   )
 }
+StatusPill.propTypes = {
+  status: PropTypes.string,
+};

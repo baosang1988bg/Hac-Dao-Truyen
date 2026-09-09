@@ -1,4 +1,6 @@
-import React from 'react'
+import PropTypes from 'prop-types'
+import { novelType } from '../../utils/propTypes'
+
 import { fmtNumber } from '../../utils/format'
 
 /**
@@ -31,3 +33,6 @@ export default function StatsSection({ novels }) {
     </div>
   )
 }
+StatsSection.propTypes = {
+  novels: PropTypes.arrayOf(novelType),
+};

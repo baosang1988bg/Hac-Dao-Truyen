@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom'
 import {
   BookOpen, Layers, Book, Activity, Square, ScrollText, ChevronRight,
@@ -208,6 +209,13 @@ function StatCard({ icon, label, value, color }) {
     </div>
   )
 }
+StatCard.propTypes = {
+  icon: PropTypes.node,
+  label: PropTypes.node,
+  value: PropTypes.node,
+  color: PropTypes.string,
+};
+
 
 function SessionStatusPill({ status }) {
   const cfg = {
@@ -225,3 +233,6 @@ function SessionStatusPill({ status }) {
     </span>
   )
 }
+SessionStatusPill.propTypes = {
+  status: PropTypes.string,
+};

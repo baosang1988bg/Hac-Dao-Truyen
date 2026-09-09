@@ -1,4 +1,5 @@
-import React from 'react'
+import PropTypes from 'prop-types'
+
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
@@ -30,3 +31,10 @@ export default function SectionHeader({ icon, title, href, hrefLabel = 'Xem thê
     </div>
   )
 }
+SectionHeader.propTypes = {
+  icon: PropTypes.node,
+  title: PropTypes.node,
+  href: PropTypes.string,
+  hrefLabel: PropTypes.string,
+  count: PropTypes.number,
+};

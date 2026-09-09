@@ -1,4 +1,6 @@
-import React from 'react'
+import PropTypes from 'prop-types'
+import { novelType } from '../../utils/propTypes'
+
 import { Link } from 'react-router-dom'
 import { Sparkles, ArrowRight } from 'lucide-react'
 import SectionHeader from '../../components/ui/SectionHeader'
@@ -76,3 +78,6 @@ export default function UpdatesSection({ novels }) {
     </section>
   )
 }
+UpdatesSection.propTypes = {
+  novels: PropTypes.arrayOf(novelType),
+};

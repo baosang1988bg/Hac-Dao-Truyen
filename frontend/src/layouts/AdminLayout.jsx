@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react';
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   BookOpen, LayoutDashboard, Library, ScrollText, Inbox,
