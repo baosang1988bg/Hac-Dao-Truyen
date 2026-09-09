@@ -384,7 +384,7 @@ async function getNovels(env, params = new URLSearchParams()) {
   const novels = (results || []).map(({ last_created_at, ...n }) => ({
     ...n,
     last_translated_at: last_created_at
-      ? Math.floor(Date.parse(last_created_at.replace(' ', 'T') + 'Z') / 1000)
+      ? Math.floor(Date.parse(/Z$|[+-]\d{2}:\d{2}$/.test(last_created_at) ? last_created_at : last_created_at.replace(' ', 'T') + 'Z') / 1000)
       : null,
     glossary_count: n.glossary_count || 0,
   }));
@@ -520,7 +520,7 @@ async function getNovel(env, slug, request) {
     chapter_count,
     latest_chapter_title,
     last_translated_at: novel.updated_at
-      ? Math.floor(Date.parse(novel.updated_at.replace(' ', 'T') + 'Z') / 1000)
+      ? Math.floor(Date.parse(/Z$|[+-]\d{2}:\d{2}$/.test(novel.updated_at) ? novel.updated_at : novel.updated_at.replace(' ', 'T') + 'Z') / 1000)
       : null,
     glossary_count: novel.glossary_count || 0,
   };
@@ -724,41 +724,22 @@ async function getChapterContentFromDrive(env, slug, num, identifier, ctx) {
 }
 
 async function getChapters(env, slug, ctx) {
-  // 1. Ưu tiên đọc catalog.json từ R2 (Store không giới hạn dung lượng)
-  try {
-    const catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
-    if (catObj) {
-      let text = await catObj.text();
-      text = text.replace(/^\uFEFF/, '').trim();
-      const catalog = JSON.parse(text);
-      const cleaned = sortAndDeduplicateCatalog(catalog);
-      if (cleaned.length > 0) {
-        return jsonResponse(cleaned);
-      }
-    }
-  } catch (e) { /* fallback */ }
-
-  // 2. Tra cứu từ D1 database
-  try {
-    const { results } = await env.DB.prepare(`
-      SELECT filename, title, chapter_number
-      FROM chapters
-      WHERE novel_slug = ?
-      ORDER BY chapter_number ASC
-    `).bind(slug).all();
-
-    if (results && results.length > 0) {
-      return jsonResponse(sortAndDeduplicateCatalog(results));
-    }
-  } catch { /* fallback */ }
-
-  // 3. Dynamic Fallback: Nạp trực tiếp từ Google Drive 5TB nếu R2 & D1 chưa có
-  const driveResult = await getChaptersFromDriveFallback(env, slug, ctx);
-  if (driveResult && driveResult.catalog) {
-    return jsonResponse(driveResult.catalog);
+  // Legacy catalog may include chapters not indexed yet (Drive lazy cache).
+  // Merge rather than infer completeness from a nonempty D1 result.
+  let legacy = [];
+  const catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
+  if (catObj) {
+    try { legacy = JSON.parse((await catObj.text()).replace(/^\uFEFF/, '').trim()); }
+    catch { /* A corrupt cache must not hide the authoritative index. */ }
   }
-
-  return jsonResponse([]);
+  if (!Array.isArray(legacy)) legacy = [];
+  const {results} = await env.DB.prepare(`SELECT filename,title,chapter_number FROM chapters
+    WHERE novel_slug = ? ORDER BY chapter_number ASC`).bind(slug).all();
+  const merged = new Map(legacy.map(c => [c.filename,c]));
+  for (const row of results || []) merged.set(row.filename,row);
+  if (merged.size) return jsonResponse(sortAndDeduplicateCatalog([...merged.values()]));
+  const driveResult = await getChaptersFromDriveFallback(env, slug, ctx);
+  return jsonResponse(driveResult?.catalog || []);
 }
 
 // ── [MOI - THU NGHIEM] Doc chuong tu bundle JSON (che do --batch-upload) ────
@@ -923,98 +904,95 @@ async function getHealth(env, slug) {
 }
 
 async function syncNovelBatch(env, request) {
-  try {
-    const authHeader = request.headers.get('x-sync-key') || '';
-    // SYNC_KEY phải set qua `wrangler secret put SYNC_KEY` — KHÔNG có giá trị
-    // mặc định/fallback về 'hacdao-secret-2026' vì secret đó đã lộ công khai
-    // trong lịch sử git (repo public). Nếu env.SYNC_KEY chưa được set, từ chối
-    // toàn bộ (fail-closed) thay vì âm thầm chấp nhận secret cũ đã bị lộ.
-    if (!env.SYNC_KEY || !timingSafeEqualStr(authHeader, env.SYNC_KEY)) {
-      return jsonResponse({ error: 'Unauthorized sync key' }, 401);
-    }
-
-    const data = await request.json();
-    const { slug, title, original_title, author, genre, synopsis, chapters, is_first_chunk = true, total_chapter_count } = data;
-
-    if (!slug || !chapters) {
-      return jsonResponse({ error: 'Missing slug or chapters' }, 400);
-    }
-
-    const totalCount = total_chapter_count || chapters.length;
-
-    // 1. Lưu/Cập nhật thông tin truyện duy nhất 1 dòng vào D1 `novels` table
-    if (is_first_chunk) {
-      const preview = (synopsis || '').slice(0, 2000).replace(/'/g, "''");
-      // glossary_count KHÔNG nằm trong danh sách cột INSERT lẫn ON CONFLICT
-      // DO UPDATE SET: nếu truyện chưa tồn tại, D1 tự set theo DEFAULT 0 của
-      // schema; nếu truyện đã tồn tại (đã có glossary_count thật qua
-      // updateGlossary()/migrate script), giá trị cũ được giữ nguyên vì cột
-      // đó không bị đụng tới khi conflict.
-      await env.DB.prepare(`
-        INSERT INTO novels (slug, title, original_title, author, genre, source_url, last_translated_url, last_chapter_number, total_chapters, glossary, translation_style, notes, updated_at, synopsis, has_epub)
-        VALUES (?, ?, ?, ?, ?, '', '', ?, ?, '{}', 'văn học', '', ?, ?, 1)
-        ON CONFLICT(slug) DO UPDATE SET
-          title=excluded.title, last_chapter_number=excluded.total_chapters, total_chapters=excluded.total_chapters, updated_at=excluded.updated_at, synopsis=excluded.synopsis, has_epub=1
-      `).bind(
-        slug, title || slug, original_title || '', author || 'Unknown', genre || 'Khác',
-        totalCount, totalCount, new Date().toISOString(), preview
-      ).run();
-
-      if (synopsis) {
-        await env.CHAPTERS.put(`${slug}/synopsis.md`, synopsis);
-      }
-    }
-
-    // 2. Upload các file chương lên Cloudflare R2 (lưu trữ vô hạn) VÀ ghi bảng
-    // D1 `chapters` — bảng này là nguồn đếm chapter_count thật (xem
-    // getNovels()/getNovel()); nếu chỉ PUT lên R2 mà không ghi D1, chapter_count
-    // sẽ sai giống bug đã sửa trước đó. Gộp R2 put + D1 insert theo từng
-    // chapter (Promise.all cả 2 thao tác) để tránh phải lặp lại việc tính
-    // r2_key ở 2 vòng lặp riêng.
-    const chapterOps = chapters.map(c => {
-      const encoded = btoa(unescape(encodeURIComponent(c.filename))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-      const r2_key = `${slug}/b64_${encoded}`;
-      const body = c.content.startsWith('#') ? c.content : `# ${c.title}\n\n${c.content}`;
-      const chapterNumber = c.number || 0;
-      return Promise.all([
-        env.CHAPTERS.put(r2_key, body),
-        env.DB.prepare(`
-          INSERT INTO chapters (novel_slug, filename, title, chapter_number, r2_key)
-          VALUES (?, ?, ?, ?, ?)
-          ON CONFLICT(novel_slug, filename) DO UPDATE SET
-            title=excluded.title, chapter_number=excluded.chapter_number, r2_key=excluded.r2_key
-        `).bind(slug, c.filename, c.title, chapterNumber, r2_key).run(),
-      ]);
-    });
-
-    await Promise.all(chapterOps);
-
-    // 3. Cập nhật catalog.json lên R2
-    let catalog = [];
-    if (!is_first_chunk) {
-      try {
-        const existingCat = await env.CHAPTERS.get(`${slug}/catalog.json`);
-        if (existingCat) {
-          catalog = await existingCat.json();
-        }
-      } catch {}
-    }
-
-    const newEntries = chapters.map(c => ({
-      filename: c.filename,
-      title: c.title,
-      chapter_number: c.number || 0
-    }));
-
-    catalog.push(...newEntries);
-    const cleanCatalog = sortAndDeduplicateCatalog(catalog);
-
-    await env.CHAPTERS.put(`${slug}/catalog.json`, JSON.stringify(cleanCatalog));
-
-    return jsonResponse({ success: true, slug, chapters_synced: chapters.length });
-  } catch (err) {
-    return jsonResponse({ error: err.message, stack: err.stack }, 500);
+  const authHeader = request.headers.get('x-sync-key') || '';
+  if (!env.SYNC_KEY || !timingSafeEqualStr(authHeader, env.SYNC_KEY)) {
+    return jsonResponse({ error: 'Unauthorized sync key' }, 401);
   }
+  const maxBytes = 2 * 1024 * 1024;
+  const reader = request.body?.getReader();
+  if (!reader) return jsonResponse({ error: 'Missing body' }, 400);
+  let size = 0;
+  const parts = [];
+  while (true) {
+    const {done, value} = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxBytes) { await reader.cancel(); return jsonResponse({error: 'Payload too large'}, 413); }
+    parts.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const part of parts) { bytes.set(part, offset); offset += part.length; }
+  let data;
+  try { data = JSON.parse(new TextDecoder().decode(bytes)); }
+  catch { return jsonResponse({error: 'Invalid JSON'}, 400); }
+  const {slug, chapters} = data || {};
+  if (typeof slug !== 'string' || !SLUG_RE.test(slug) || !Array.isArray(chapters) || chapters.length < 1 || chapters.length > 25) {
+    return jsonResponse({error: 'Expected safe slug and 1–25 chapters'}, 400);
+  }
+  const filenames = new Set();
+  for (const c of chapters) {
+    if (!c || typeof c.filename !== 'string' || !c.filename || c.filename.length > 240 || /[\\/\x00-\x1f]/.test(c.filename)
+        || c.filename === '.' || c.filename === '..' || filenames.has(c.filename)
+        || typeof c.title !== 'string' || c.title.length > 500
+        || typeof c.content !== 'string' || !c.content.trim()
+        || !Number.isSafeInteger(c.number) || c.number < 1
+        || (c.expected_r2_key !== undefined && c.expected_r2_key !== null && typeof c.expected_r2_key !== 'string')) {
+      return jsonResponse({error: 'Invalid or duplicate chapter'}, 400);
+    }
+    filenames.add(c.filename);
+  }
+  for (const field of ['title','original_title','author','genre','synopsis','drive_file_id']) {
+    if (data[field] !== undefined && typeof data[field] !== 'string') return jsonResponse({error: `Invalid ${field}`},400);
+  }
+  if (data.total_chapter_count !== undefined && (!Number.isSafeInteger(data.total_chapter_count) || data.total_chapter_count < chapters.length)) {
+    return jsonResponse({error: 'Invalid total_chapter_count'},400);
+  }
+  const placeholders = chapters.map(() => '?').join(',');
+  const readRows = () => env.DB.prepare(`SELECT filename, r2_key FROM chapters WHERE novel_slug = ? AND filename IN (${placeholders})`)
+    .bind(slug, ...chapters.map(c => c.filename)).all();
+  const {results: previous} = await readRows();
+  const oldKeys = new Map(previous.map(c => [c.filename, c.r2_key]));
+  const prepared = [];
+  for (const c of chapters) {
+    const body = c.content.startsWith('#') ? c.content : `# ${c.title}\n\n${c.content}`;
+    const hash = toHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body)));
+    const key = `${slug}/content/${hash}.md`;
+    const old = oldKeys.get(c.filename) || null;
+    // Idempotent retry accepts the same hash. Replacing existing content needs
+    // the explicit previous key; stale clients cannot silently overwrite it.
+    if (old && old !== key && c.expected_r2_key !== old) {
+      return jsonResponse({error: 'Chapter changed; reconcile before replacing', filename: c.filename},409);
+    }
+    prepared.push({...c, body, key, old});
+  }
+  // Immutable objects first. Failed commits may leave unreferenced objects;
+  // they are safe to retry and are never deleted automatically here.
+  for (const c of prepared) await env.CHAPTERS.put(c.key, c.body);
+  if (data.is_first_chunk !== false && data.synopsis) {
+    await env.CHAPTERS.put(`${slug}/synopsis.md`, data.synopsis);
+  }
+  const operations = [env.DB.prepare(`
+    INSERT INTO novels (slug,title,original_title,author,genre,total_chapters,drive_file_id,synopsis)
+    VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(slug) DO UPDATE SET
+      total_chapters=MAX(novels.total_chapters,excluded.total_chapters), updated_at=datetime('now')
+  `).bind(slug, data.title || slug, data.original_title || '', data.author || '', data.genre || '',
+    data.total_chapter_count || chapters.length, data.drive_file_id || '', (data.synopsis || '').slice(0,2000))];
+  for (const c of prepared) {
+    operations.push(env.DB.prepare(`
+      INSERT INTO chapters (novel_slug,filename,title,chapter_number,r2_key) VALUES (?,?,?,?,?)
+      ON CONFLICT(novel_slug,filename) DO UPDATE SET
+        title=excluded.title,chapter_number=excluded.chapter_number,r2_key=excluded.r2_key
+      WHERE chapters.r2_key = ? OR chapters.r2_key = excluded.r2_key
+    `).bind(slug,c.filename,c.title,c.number,c.key,c.old));
+  }
+  await env.DB.batch(operations);
+  const {results: committed} = await readRows();
+  const keys = new Map(committed.map(c => [c.filename,c.r2_key]));
+  if (prepared.some(c => keys.get(c.filename) !== c.key)) return jsonResponse({error:'Concurrent chapter change; reconcile and retry'},409);
+  // Catalog remains a legacy read source. Never overwrite it from a chunk.
+  // getChapters merges D1 entries over legacy entries by filename.
+  return jsonResponse({success:true,slug,chapters_synced:chapters.length});
 }
 
 // ── User account system (roadmap 3.1–3.4) ────────────────────────────────────

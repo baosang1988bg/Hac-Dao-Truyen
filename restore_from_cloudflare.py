@@ -104,6 +104,39 @@ def download_r2_object(r2_key, local_path):
     res = run_command(cmd)
     return res.returncode == 0
 
+def restore_chapter(slug, chapter, destination):
+    """Download to a temporary file; publish only complete standalone/bundle content."""
+    import base64
+    destination = Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="hacdao-restore-") as tmp:
+        temp = Path(tmp) / "chapter.md"
+        if download_r2_object(chapter['r2_key'], temp):
+            temp.replace(destination)
+            return True
+        manifest_path = Path(tmp) / "manifest.json"
+        if not download_r2_object(f"{slug}/bundles/manifest.json", manifest_path):
+            return False
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+            key = manifest.get(chapter['filename'])
+            if not isinstance(key, str) or not key.startswith(f"{slug}/bundles/"):
+                return False
+            bundle_path = Path(tmp) / "bundle.json"
+            if not download_r2_object(key, bundle_path):
+                return False
+            bundle = json.loads(bundle_path.read_text(encoding='utf-8'))
+            encoded = base64.urlsafe_b64encode(chapter['filename'].encode()).decode().rstrip('=')
+            content = bundle.get(encoded)
+            if not isinstance(content, str):
+                return False
+            temp.write_text(content, encoding='utf-8')
+            temp.replace(destination)
+            return True
+        except (ValueError, TypeError, AttributeError):
+            return False
+
+
 def restore():
     print("=== STARTING RESTORE FROM CLOUDFLARE D1 + R2 ===")
 
@@ -223,7 +256,7 @@ def restore():
                 continue
 
             # print(f"    [{idx}/{len(chapters)}] Downloading {filename}...")
-            if download_r2_object(r2_key, local_chap_path):
+            if restore_chapter(slug, chap, local_chap_path):
                 downloaded_count += 1
             else:
                 failed_count += 1

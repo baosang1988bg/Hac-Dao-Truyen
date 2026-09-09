@@ -28,7 +28,7 @@ Cách dùng:
   python migrate_to_cloudflare.py --slug xich-tam-tuan-thien --dry-run --batch-upload --bundle-size 50
 """
 
-import os, re, json, subprocess, argparse, sys, tempfile, base64
+import os, re, json, subprocess, argparse, sys, tempfile, base64, hashlib
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
@@ -328,7 +328,7 @@ def build_and_upload_bundles(slug: str, files: list, bundle_size: int, dry_run=F
                 content = fp.read_text(encoding='utf-8')
             except Exception as e:
                 print(f"    [bundle-ERR] Không đọc được {fname}: {e}")
-                continue
+                return False
             bundle_data[filename_to_bundle_key(fname)] = content
             manifest[fname] = bundle_r2_key
 
@@ -355,6 +355,9 @@ def build_and_upload_bundles(slug: str, files: list, bundle_size: int, dry_run=F
             fail_bundles += 1
             print(f"    ❌ {bundle_r2_key} upload thất bại")
 
+    if fail_bundles:
+        return False
+    ok_m = True
     if dry_run:
         print(f"    [DRY-BUNDLE] manifest.json sẽ có {len(manifest)} entries (chưa ghi)")
     else:
@@ -369,7 +372,7 @@ def build_and_upload_bundles(slug: str, files: list, bundle_size: int, dry_run=F
 
     print(f"  📦 Batch-upload (THỬ NGHIỆM): {ok_bundles} bundle(s) OK, {fail_bundles} lỗi "
           f"(bundle_size={bundle_size})")
-    return fail_bundles == 0
+    return fail_bundles == 0 and ok_m
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -571,6 +574,8 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
     if not skip_d1:
         ok = d1_file(novel_sql, dry_run)
         print(f"  {'✅' if ok else '❌'} Novel metadata → D1")
+        if not ok:
+            return False
     else:
         print(f"  [skip-d1] Novel metadata")
 
@@ -642,13 +647,12 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
     if batch_upload and not skip_r2:
         print(f"  📦 [THỬ NGHIỆM] --batch-upload bật — gộp {total} chương thành "
               f"bundle JSON (bundle_size={bundle_size})")
-        build_and_upload_bundles(slug, files, bundle_size, dry_run)
+        if not build_and_upload_bundles(slug, files, bundle_size, dry_run):
+            return False
 
     ok_n = skip_n = fail_n = 0
 
-    # Nếu sync toàn bộ (không resume, không --from-chapter), tự động xóa chapters cũ trong D1 để né rác filename
-    if from_chapter is None and not resume and not skip_d1:
-        d1_file(f"DELETE FROM chapters WHERE novel_slug={q(slug)};", dry_run)
+    # Upload is additive; pruning requires a separate reviewed reconciliation.
 
     for i in range(0, total, BATCH_SIZE):
         batch = files[i : i + BATCH_SIZE]
@@ -657,14 +661,15 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
 
         for fp in batch:
             fname  = fp.name
-            r2key  = filename_to_r2key(slug, fname)
+            r2key = (filename_to_r2key(slug, fname) if batch_upload else
+                     f"{slug}/content/{hashlib.sha256(fp.read_bytes()).hexdigest()}.md")
             ctitle = get_title(fp)
             num    = get_chapter_number(ctitle, fname)
 
             # Resume mode: skip nếu R2 đã có file này
-            if resume and not skip_r2 and r2_exists(r2key):
+            already_uploaded = resume and not skip_r2 and r2_exists(r2key)
+            if already_uploaded:
                 skip_n += 1
-                continue
 
             sql_lines.append(
                 f"INSERT INTO chapters (novel_slug,filename,title,chapter_number,r2_key) "
@@ -672,7 +677,8 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
                 f"ON CONFLICT(novel_slug,filename) DO UPDATE SET "
                 f"title=excluded.title,r2_key=excluded.r2_key,chapter_number=excluded.chapter_number;"
             )
-            r2_batch.append((fp, r2key))
+            if not already_uploaded:
+                r2_batch.append((fp, r2key))
 
         # Nếu toàn bộ batch đã có trong R2 → skip D1 luôn
         if not sql_lines:
@@ -681,7 +687,6 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
                 print(f"    → {end}/{total} ⏭ {skip_n} skipped")
             continue
 
-        d1_ok = True if skip_d1 else d1_file("\n".join(sql_lines), dry_run)
 
         r2_ok_all = True
         if not skip_r2 and r2_batch:
@@ -704,10 +709,11 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
                     if not all(results):
                         r2_ok_all = False
 
-        if d1_ok and r2_ok_all:
-            ok_n += len(r2_batch)
+        d1_ok = r2_ok_all and (skip_d1 or d1_file("\n".join(sql_lines), dry_run))
+        if d1_ok:
+            ok_n += len(sql_lines)
         else:
-            fail_n += len(r2_batch)
+            fail_n += len(sql_lines)
 
         end = min(i + BATCH_SIZE, total)
         if end % 100 == 0 or end == total or fail_n > 0:
@@ -723,12 +729,7 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
     print(f"  {'✅' if fail_n==0 else '⚠️ '} {summary}")
 
     # ── Lưu sync state tự động sau mỗi lần chạy thành công ───────────────
-    if not dry_run and ok_n > 0:
-        # Tìm chapter number lớn nhất trong batch vừa sync
-        synced_files = [f for f in files if not (
-            resume and r2_exists(filename_to_r2key(slug, f.name))
-        )] if resume else files
-
+    if not dry_run and ok_n > 0 and fail_n == 0 and not skip_d1 and not skip_r2:
         max_chapter = max(
             (get_chapter_number(get_title(f), f.name) for f in files),
             default=0
@@ -736,11 +737,13 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
         last_file = files[-1].name if files else ""
 
         # Đếm tổng chapters đã sync (lấy từ state cũ + mới upload)
-        prev_state   = get_novel_sync_info(slug)
-        prev_total   = prev_state.get("total_synced", 0)
-        total_synced = max(prev_total, prev_total + ok_n)
+        indexed_names = get_synced_filenames(slug)
+        if indexed_names is None:
+            return False
+        total_synced = len(indexed_names)
 
         update_novel_sync(slug, max_chapter, last_file, total_synced)
+    return fail_n == 0
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
@@ -853,6 +856,7 @@ def main():
     if not args.slug:
         print(f"📦 {len(slugs)} novels: {', '.join(slugs)}\n")
 
+    failed = []
     for slug in slugs:
         from_chapter   = args.from_chapter
         extra_files    = []   # author notes mới cần sync thêm
@@ -889,11 +893,16 @@ def main():
             else:
                 print(f"  ℹ️  Chưa có sync state cho {slug}, sync toàn bộ")
 
-        migrate_novel(slug, dry_run=args.dry_run, skip_r2=args.skip_r2,
+        result = migrate_novel(slug, dry_run=args.dry_run, skip_r2=args.skip_r2,
                       skip_d1=args.skip_d1, limit=args.limit, resume=args.resume,
                       from_chapter=from_chapter, extra_files=extra_files,
                       batch_upload=args.batch_upload, bundle_size=args.bundle_size)
 
+        if result is False:
+            failed.append(slug)
+
+    if failed:
+        raise SystemExit("Sync failed: " + ", ".join(failed))
     print("\n🎉 Xong!")
     if not args.dry_run:
         print("👉 npm run deploy")

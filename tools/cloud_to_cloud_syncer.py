@@ -342,7 +342,7 @@ def sync_novel_from_drive(slug: str, novel_data: dict, budget: 'SyncBudget') -> 
             except Exception:
                 pass
 
-        CHUNK_SIZE = 150
+        CHUNK_SIZE = 25
         total_chapters = len(all_chapters)
         chunks = [all_chapters[i:i + CHUNK_SIZE] for i in range(0, total_chapters, CHUNK_SIZE)]
 

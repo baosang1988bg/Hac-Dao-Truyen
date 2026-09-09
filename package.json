@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/baosang1988bg/Hac-Dao-Truyen#readme",
   "devDependencies": {
+    "miniflare": "4.20260507.0",
     "wrangler": "^4.89.0"
   }
 }
