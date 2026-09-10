@@ -1,9 +1,11 @@
 import { novelType } from '../utils/propTypes'
 
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BookOpen, Eye, Star, BookMarked } from 'lucide-react'
+import { BookOpen, Eye, Star, BookMarked, Download, Check } from 'lucide-react'
 import NovelCover from './NovelCover'
 import { fmtNumber, fmtNovelTitle } from '../utils/format'
+import { isEpubDownloaded, downloadEpubOffline } from '../utils/epubOffline'
 
 /**
  * EpubCard — thẻ hiển thị 1 truyện trong lưới (dùng ở EpubCatalogPage và
@@ -12,6 +14,31 @@ import { fmtNumber, fmtNovelTitle } from '../utils/format'
  */
 export function EpubCard({ novel }) {
   const hasChapters = Number(novel.chapter_count) > 0;
+  const isEpubOnly = !hasChapters && Boolean(novel.has_epub)
+
+  const [downloaded, setDownloaded] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+
+  useEffect(() => {
+    if (!isEpubOnly) return
+    let cancelled = false
+    isEpubDownloaded(novel.slug).then(v => { if (!cancelled) setDownloaded(v) })
+    return () => { cancelled = true }
+  }, [isEpubOnly, novel.slug])
+
+  const handleDownload = async (e) => {
+    e.preventDefault()
+    if (downloading || downloaded) return
+    setDownloading(true)
+    try {
+      await downloadEpubOffline(novel.slug)
+      setDownloaded(true)
+    } catch {
+      // Lỗi tải (offline/mạng lỗi) — người dùng có thể thử lại, không cần báo ồn ào.
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', borderRadius: '14px', overflow: 'hidden', background: 'var(--glass-bg)', border: '1px solid var(--border)', transition: 'transform 0.18s, box-shadow 0.18s' }}
@@ -98,6 +125,23 @@ export function EpubCard({ novel }) {
             >
               <BookMarked size={13} /> Đọc EPUB
             </Link>
+          )}
+          {isEpubOnly && (
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={downloading || downloaded}
+              title={downloaded ? 'Đã tải để đọc offline' : 'Tải để đọc offline'}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '32px', padding: 0, borderRadius: '8px', border: '1px solid var(--border)',
+                background: downloaded ? 'rgba(16,185,129,0.15)' : 'transparent',
+                color: downloaded ? '#10b981' : 'var(--text-muted)',
+                cursor: downloading || downloaded ? 'default' : 'pointer',
+              }}
+            >
+              {downloaded ? <Check size={14} /> : <Download size={14} />}
+            </button>
           )}
         </div>
       </div>

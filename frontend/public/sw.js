@@ -6,6 +6,13 @@
    - /assets/*  (bundle có hash, bất biến)      : cache-first
    - GET /api/novels/:slug/chapters/:id (nội dung chương, bất biến sau dịch)
                                                 : cache-first  → 'hacdao-chapters-v1'
+   - GET /api/novels/:slug/epub (file EPUB)     : chỉ cache khi người dùng bấm
+                                                  "Tải để đọc offline" (query
+                                                  ?offline=1) hoặc đã tải trước
+                                                  đó → 'hacdao-epub-v1', có giới
+                                                  hạn dung lượng (EPUB_QUOTA_BYTES),
+                                                  không tự động cache khi đọc
+                                                  online bình thường.
    - GET /api/novels, /api/novels/:slug, /api/novels/:slug/chapters (cần tươi)
                                                 : network-first, fallback cache
    - Các /api khác (auth, admin, POST...)       : KHÔNG can thiệp
@@ -14,7 +21,10 @@
 const STATIC_CACHE = 'hacdao-static-v1'
 const CHAPTER_CACHE = 'hacdao-chapters-v1'
 const API_CACHE = 'hacdao-api-v1'
-const KNOWN_CACHES = [STATIC_CACHE, CHAPTER_CACHE, API_CACHE]
+const EPUB_CACHE = 'hacdao-epub-v1'
+const KNOWN_CACHES = [STATIC_CACHE, CHAPTER_CACHE, API_CACHE, EPUB_CACHE]
+const EPUB_QUOTA_BYTES = 200 * 1024 * 1024 // 200MB tổng cho toàn bộ EPUB đã tải offline
+const EPUB_INDEX_KEY = '/__sw_epub_index__' // key nội bộ, không phải route thật
 
 const APP_SHELL = [
   '/',
@@ -76,6 +86,62 @@ async function networkFirst(request, cacheName, fallbackUrl) {
   }
 }
 
+/** Đọc bảng chỉ mục các EPUB đã tải offline: { [slug]: { size, updatedAt } }. */
+async function readEpubIndex(cache) {
+  const res = await cache.match(EPUB_INDEX_KEY)
+  if (!res) return {}
+  try {
+    return await res.json()
+  } catch {
+    return {}
+  }
+}
+
+async function writeEpubIndex(cache, index) {
+  await cache.put(EPUB_INDEX_KEY, new Response(JSON.stringify(index)))
+}
+
+/** Xoá EPUB cũ nhất cho tới khi tổng dung lượng nằm dưới hạn mức. */
+async function enforceEpubQuota(cache, index) {
+  let total = Object.values(index).reduce((sum, e) => sum + (e.size || 0), 0)
+  const bySlugOldest = Object.entries(index).sort((a, b) => a[1].updatedAt - b[1].updatedAt)
+  for (const [slug, entry] of bySlugOldest) {
+    if (total <= EPUB_QUOTA_BYTES) break
+    await cache.delete(epubRequestFor(slug))
+    delete index[slug]
+    total -= entry.size || 0
+  }
+  return index
+}
+
+function epubRequestFor(slug) {
+  return new Request(`${self.location.origin}/api/novels/${slug}/epub`)
+}
+
+/** Tải (nếu cần) và lưu EPUB vào cache, cập nhật chỉ mục + giới hạn dung lượng. */
+async function downloadEpub(request, slug) {
+  const cache = await caches.open(EPUB_CACHE)
+  const response = await fetch(request)
+  if (!response || !response.ok) return response
+  const clone = response.clone()
+  const size = Number(clone.headers.get('content-length')) || (await clone.blob()).size
+  await cache.put(epubRequestFor(slug), response.clone())
+  const index = await readEpubIndex(cache)
+  index[slug] = { size, updatedAt: Date.now() }
+  await writeEpubIndex(cache, await enforceEpubQuota(cache, index))
+  return response
+}
+
+/** Đọc EPUB đã tải offline; chỉ tải mới nếu người dùng chủ động bấm tải. */
+async function handleEpub(request, slug, isExplicitDownload) {
+  const cache = await caches.open(EPUB_CACHE)
+  const cached = await cache.match(epubRequestFor(slug))
+  if (cached && !isExplicitDownload) return cached
+  if (isExplicitDownload) return downloadEpub(request, slug)
+  // Không có trong cache và không phải yêu cầu tải offline → để mạng xử lý bình thường.
+  return fetch(request)
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event
   if (request.method !== 'GET') return
@@ -86,6 +152,14 @@ self.addEventListener('fetch', (event) => {
   // Nội dung chương: cache-first (đã dịch xong thì không đổi) → đọc offline
   if (/^\/api\/novels\/[^/]+\/chapters\/.+/.test(url.pathname)) {
     event.respondWith(cacheFirst(request, CHAPTER_CACHE))
+    return
+  }
+
+  // EPUB: chỉ cache khi đã tải offline trước đó hoặc đang được tải chủ động
+  // (?offline=1 do nút "Tải để đọc offline" gắn vào) — đọc bình thường không cache.
+  const epubMatch = url.pathname.match(/^\/api\/novels\/([^/]+)\/epub$/)
+  if (epubMatch) {
+    event.respondWith(handleEpub(request, epubMatch[1], url.searchParams.get('offline') === '1'))
     return
   }
 
