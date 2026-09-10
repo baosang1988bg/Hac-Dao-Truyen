@@ -6,7 +6,7 @@ Mặc định mới không cho phép sync ghi cloud. Cấu hình này chỉ có 
 |---|---|---|
 | Worker `ALLOW_SYNC_WRITES` | không có / `false` | Sync API trả 503 sau xác thực |
 | Worker `ENABLE_DRIVE_CACHE_WRITES` | không có / `false` | Đọc fallback Drive không tự ghi cache R2/D1 |
-| Python `HACDAO_ALLOW_CLOUD_WRITES` | `false` | Chặn migrate trực tiếp và migration schema remote `--apply` |
+| Python `HACDAO_ALLOW_CLOUD_WRITES` | `false` | Chặn migrate trực tiếp, migration schema remote `--apply`, và cả 2 CLI sync (`cloud_to_cloud_syncer.py`, `batch_cloud_syncer.py`) |
 | Repository variable `ALLOW_CLOUD_WRITES` | không bật | Workflow sync/dịch không chạy |
 | `HACDAO_R2_WRITE_BUDGET` | `0` | Ước tính thao tác ghi R2 theo tháng UTC |
 | `HACDAO_D1_WRITE_BUDGET` | `0` | Ước tính ghi D1 theo ngày UTC |
@@ -20,6 +20,8 @@ Mỗi lần gửi (kể cả retry) reserve trước: số chương + synopsis c
 Chỉ chạy một scheduler với một checkpoint. Lock thư mục chỉ phối hợp cùng filesystem; không bảo vệ nhiều máy độc lập. CI lưu checkpoint/artifact cả khi sync lỗi. Nếu push/artifact lỗi hoặc runner bị hủy trước khi lưu, phải đối chiếu và phục hồi checkpoint trước lần chạy tiếp; không xóa state để tiếp tục. Không chạy writer ở nhiều branch vì checkpoint theo branch.
 
 Migrate trực tiếp qua Wrangler không dùng ngân sách syncer: cờ opt-in chỉ là chặn mặc định. Ngân sách cũng không bao phủ lưu trữ đang tồn tại, lượt đọc website, D1 scan, dịch AI, Google Drive, GitHub Actions hay dịch vụ khác của account. Tắt Drive cache không tắt mọi endpoint có ghi (tài khoản, bookmark, bình luận…). Vì vậy không thể cam kết hóa đơn 0 chỉ từ các cờ này.
+
+Admin có thể xem nhanh nội dung `HACDAO_BUDGET_FILE` hiện tại qua `GET /api/admin/sync-usage` (trang `/admin/usage` trên frontend), không cần đọc file thủ công. Đây vẫn là **số liệu ước lượng cục bộ ghi bởi script sync**, không phải số liệu billing/usage thật từ Cloudflare — endpoint trả `available: false` nếu chưa có script sync nào từng chạy trên máy đó.
 
 ## Rate limit
 
