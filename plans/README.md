@@ -6,6 +6,8 @@ Tất cả kế hoạch, báo cáo, session log và roadmap được tập trung
 
 **Kế hoạch sửa lỗi hiện hành:** [Kế hoạch fix 08/09/2026](KE_HOACH_FIX_2026-09-08.md) — thứ tự PR, file cần sửa, kiểm thử và điều kiện phát hành R01–R07.
 
+**Kế hoạch nâng cấp đọc (4 đợt đã triển khai và nghiệm thu local):** [Kế hoạch nâng cấp đọc 09/09/2026](KE_HOACH_NANG_CAP_DOC_2026-09-09.md) — hợp nhất reading settings, đồng bộ tiến độ đọc đa thiết bị (kể cả EPUB), mở rộng offline cho EPUB, Text-to-Speech. Đã kiểm chứng bằng Chrome thật; chưa deploy production.
+
 ---
 
 ## 📋 Mục Lục

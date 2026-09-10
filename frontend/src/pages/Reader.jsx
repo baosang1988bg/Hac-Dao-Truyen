@@ -1,30 +1,25 @@
 import PropTypes from 'prop-types'
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Home, ChevronUp, Settings, Type, Maximize2, Download } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Home, ChevronUp, Settings, Download, Volume2, Pause, Square } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import api from '../api'
 import userApi, { isLoggedIn } from '../userApi'
 import ChapterComments from '../components/ChapterComments'
+import ReaderSettingsPanel from '../components/ReaderSettingsPanel'
+import useReaderSettings, { THEMES } from '../hooks/useReaderSettings'
+import useTextToSpeech from '../hooks/useTextToSpeech'
 import { markChapterRead } from '../utils/readingHistory'
 
 const OFFLINE_BATCH_SIZE = 10
 
-// Mặc định cho người dùng mới (người dùng cũ giữ nguyên cài đặt đã lưu)
-const DEFAULT_SETTINGS = {
-  fontSize: 21,
-  fontFamily: 'Times New Roman, serif',
-  theme: 'sepia',
-  contentWidth: 800,
-  lineHeight: 1.7,
-}
-
-const THEMES = {
-  white: { bg: '#ffffff', text: '#1a1a1a', border: '#e5e7eb', panel: '#f9fafb' },
-  sepia: { bg: '#f4ecd8', text: '#5b4636', border: '#dcd1b3', panel: '#efe5cd' },
-  green: { bg: '#e8f5e9', text: '#2e4a31', border: '#c8e6c9', panel: '#dceddc' },
-  dark:  { bg: '#1a1a1a', text: '#d1d5db', border: '#333333', panel: '#262626' },
-  blue:  { bg: '#f0f4f8', text: '#2d3748', border: '#d1d5db', panel: '#e2e8f0' },
+// Bỏ cú pháp markdown để giọng đọc không đọc thành tiếng ký tự "#", "*"...
+function stripMarkdown(text) {
+  return text
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`>#~]/g, '')
+    .trim()
 }
 
 // Đọc vị trí cuộn hiện tại (window hoặc .main-content, tuỳ layout)
@@ -71,22 +66,12 @@ export default function Reader() {
   const [dlProgress, setDlProgress] = useState(null) // { done, total } | null
 
   // ── Reader Settings (Persistent) ──────────────────────────────────────────
-  const [settings, setSettings] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('readerSettings') || 'null')
-      // Merge: cài đặt đã lưu của người dùng cũ luôn thắng mặc định mới
-      return saved ? { ...DEFAULT_SETTINGS, ...saved } : { ...DEFAULT_SETTINGS }
-    } catch {
-      return { ...DEFAULT_SETTINGS }
-    }
-  })
+  const { settings, onChange } = useReaderSettings()
   const [showSettings, setShowSettings] = useState(false)
 
-  useEffect(() => {
-    localStorage.setItem('readerSettings', JSON.stringify(settings))
-  }, [settings])
-
-  const updateSetting = (key, val) => setSettings(prev => ({ ...prev, [key]: val }))
+  // ── Text-to-Speech ─────────────────────────────────────────────────────────
+  const tts = useTextToSpeech()
+  const { stop: ttsStop } = tts
 
   // ───────────────────────────────────────────────────────────────────────────
 
@@ -111,6 +96,7 @@ export default function Reader() {
   useEffect(() => {
     setLoading(true)
     setDlProgress(null) // đổi chương → reset trạng thái tải offline
+    ttsStop() // đổi chương khi đang đọc → dừng để không chồng giọng
     api.get(`/novels/${slug}/chapters/${chapter}`)
       .then(res => {
         setContent(res.data.content)
@@ -123,7 +109,7 @@ export default function Reader() {
         if (isLoggedIn() && lastSyncedChapterRef.current !== syncKey) {
           lastSyncedChapterRef.current = syncKey
           const chap = /^\d+$/.test(chapter) ? Number(chapter) : chapter
-          userApi.put(`/user/progress/${slug}`, { chapter: chap }).catch(() => {})
+          userApi.put(`/user/progress/${slug}`, { type: 'chapter', chapter: chap }).catch(() => {})
         }
       })
       .catch(err => {
@@ -131,7 +117,7 @@ export default function Reader() {
         setContent('# Lỗi tải chương\nNội dung chưa sẵn sàng hoặc lỗi kết nối. Vui lòng thử lại sau.')
         setLoading(false)
       })
-  }, [slug, chapter, saveReadProgress])
+  }, [slug, chapter, saveReadProgress, ttsStop])
 
   useEffect(() => {
     setChaptersLoadError(false)
@@ -300,7 +286,7 @@ export default function Reader() {
   }
 
   // Theme áp dụng bằng CSS class `reader--<id>` (biến định nghĩa trong index.css,
-  // chỉ ảnh hưởng trang đọc). THEMES giữ lại làm màu ô chọn trong panel Settings.
+  // chỉ ảnh hưởng trang đọc). Danh sách theme được dùng chung với EPUB.
   const themeId = THEMES[settings.theme] ? settings.theme : 'sepia'
   const currentTheme = {
     bg: 'var(--reader-bg)',
@@ -383,6 +369,42 @@ export default function Reader() {
             <ArrowRight size={22} />
           </button>
         </div>
+
+        {isBottom && tts.supported && (
+          <button
+            onClick={() => {
+              if (tts.isPlaying && !tts.isPaused) tts.pause()
+              else if (tts.isPaused) tts.resume()
+              else tts.play(stripMarkdown(content), { voiceName: settings.ttsVoice, rate: settings.ttsRate })
+            }}
+            title={tts.isPlaying && !tts.isPaused ? 'Tạm dừng đọc' : 'Nghe chương này'}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '58px', height: '58px', borderRadius: '18px',
+              background: currentTheme.panel, color: currentTheme.text,
+              border: `2px solid ${currentTheme.border}`, cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+            }}
+          >
+            {tts.isPlaying && !tts.isPaused ? <Pause size={24} /> : <Volume2 size={24} />}
+          </button>
+        )}
+
+        {isBottom && tts.isPlaying && (
+          <button
+            onClick={tts.stop}
+            title="Dừng đọc"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '58px', height: '58px', borderRadius: '18px',
+              background: currentTheme.panel, color: currentTheme.text,
+              border: `2px solid ${currentTheme.border}`, cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+            }}
+          >
+            <Square size={20} />
+          </button>
+        )}
 
         <button
           onClick={() => setShowSettings(true)}
@@ -534,87 +556,7 @@ export default function Reader() {
               <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', minWidth: '44px', minHeight: '44px' }}>✕</button>
             </div>
 
-            {/* Live preview */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '0.75rem', letterSpacing: '0.05em' }}>XEM TRƯỚC</div>
-              <div style={{
-                background: currentTheme.bg, color: currentTheme.text,
-                border: `1px solid ${currentTheme.border}`, borderRadius: '14px',
-                padding: '0.9rem 1.1rem',
-                fontFamily: settings.fontFamily,
-                fontSize: `${settings.fontSize}px`,
-                lineHeight: settings.lineHeight,
-                maxHeight: '110px', overflow: 'hidden',
-                transition: 'all 0.2s'
-              }}>
-                Hắc phong gào thét, trăng lạnh treo cao. Hắn khoác áo bào đen, một mình bước vào màn đêm.
-              </div>
-            </div>
-
-            {/* Theme Grid */}
-            <div style={{ marginBottom: '2rem' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '1rem', letterSpacing: '0.05em' }}>CHỦ ĐỀ</div>
-              <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-                {Object.entries(THEMES).map(([id, colors]) => (
-                  <button
-                    key={id}
-                    onClick={() => updateSetting('theme', id)}
-                    style={{
-                      width: '54px', height: '54px', borderRadius: '16px',
-                      background: colors.bg, border: settings.theme === id ? '3px solid var(--accent)' : '2px solid rgba(255,255,255,0.1)',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
-                    }}
-                  >
-                    {settings.theme === id && <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--accent)' }} />}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Font Selector */}
-            <div style={{ marginBottom: '2rem' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '1rem', letterSpacing: '0.05em' }}>FONT CHỮ</div>
-              <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '8px', scrollbarWidth: 'none' }}>
-                {['Times New Roman', 'Arial', 'Georgia', 'Palatino', 'Inter'].map(f => {
-                  const isActive = settings.fontFamily.includes(f)
-                  return (
-                    <button
-                      key={f}
-                      onClick={() => updateSetting('fontFamily', f === 'Arial' || f === 'Inter' ? `${f}, sans-serif` : `${f}, serif`)}
-                      style={{
-                        padding: '12px 20px', borderRadius: '14px', fontSize: '1rem', whiteSpace: 'nowrap',
-                        background: isActive ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
-                        color: isActive ? 'white' : 'rgba(255,255,255,0.7)',
-                        border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                        fontWeight: isActive ? 700 : 500, minHeight: '44px'
-                      }}
-                    >
-                      {f}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Controls Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1rem' }}>
-              <div>
-                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '0.8rem' }}>CỠ CHỮ</div>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '16px', padding: '6px' }}>
-                  <button className="ctrl-btn" onClick={() => updateSetting('fontSize', Math.max(14, settings.fontSize - 1))}><Type size={18} /></button>
-                  <span style={{ flex: 1, textAlign: 'center', fontSize: '1.1rem', fontWeight: 800 }}>{settings.fontSize}</span>
-                  <button className="ctrl-btn" onClick={() => updateSetting('fontSize', Math.min(36, settings.fontSize + 1))}><Type size={24} /></button>
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '0.8rem' }}>DÀN TRANG</div>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '16px', padding: '6px' }}>
-                  <button className="ctrl-btn" onClick={() => updateSetting('contentWidth', Math.max(400, settings.contentWidth - 50))}><Maximize2 size={18} /></button>
-                  <span style={{ flex: 1, textAlign: 'center', fontSize: '1.1rem', fontWeight: 800 }}>{settings.contentWidth}</span>
-                  <button className="ctrl-btn" onClick={() => updateSetting('contentWidth', Math.min(1200, settings.contentWidth + 50))}><Maximize2 size={24} /></button>
-                </div>
-              </div>
-            </div>
+            <ReaderSettingsPanel settings={settings} onChange={onChange} />
 
             {/* Đọc offline: tải trước N chương kế tiếp để service worker cache */}
             <div style={{ marginBottom: '0.5rem' }}>
@@ -677,12 +619,6 @@ export default function Reader() {
           opacity: 0.7;
         }
         .fab:active { transform: scale(0.92); opacity: 1; }
-        .ctrl-btn {
-          width: 48px; height: 48px; border-radius: 12px; border: none;
-          background: rgba(255,255,255,0.15); color: white; cursor: pointer;
-          display: flex; align-items: center; justify-content: center;
-        }
-        .ctrl-btn:active { background: var(--accent); transform: scale(0.95); }
         .hide-mobile { display: inline; }
 
         /* Tap zones: mặc định ẩn, chỉ bật trên thiết bị cảm ứng màn hình nhỏ */

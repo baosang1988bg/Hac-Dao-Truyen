@@ -1,8 +1,11 @@
 import PropTypes from 'prop-types'
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, ChevronLeft, ChevronRight, Settings, BookOpen, List, X, Minus, Plus } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Settings, BookOpen, List, X } from 'lucide-react';
 import api from '../api'
+import userApi, { isLoggedIn } from '../userApi'
+import ReaderSettingsPanel from '../components/ReaderSettingsPanel'
+import useReaderSettings, { THEMES } from '../hooks/useReaderSettings'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
@@ -11,12 +14,6 @@ const API_BASE = import.meta.env.VITE_API_URL || ''
  * Sử dụng epub.js (https://github.com/futurepress/epub.js)
  * EPUB được stream từ Cloudflare R2 qua /api/novels/:slug/epub
  */
-  const themes = {
-    dark:   { body: { background: '#1a1a2e', color: '#e8e8e8' } },
-    sepia:  { body: { background: '#f4ecd8', color: '#3b2f2f' } },
-    white:  { body: { background: '#ffffff', color: '#1a1a1a' } },
-  }
-
 export default function EpubReader() {
   const { slug } = useParams()
   const viewerRef = useRef(null)
@@ -32,28 +29,26 @@ export default function EpubReader() {
   const [showSettings, setShowSettings] = useState(false)
   const [progress, setProgress]   = useState(0) // 0-100%
   const touchStartX = useRef(null)
+  const lastSyncedCfiRef = useRef(null) // debounce: chỉ sync progress khi CFI thực sự đổi
 
-  // Settings
-  const [theme, setTheme]       = useState(() => localStorage.getItem('epub_theme') || 'dark')
-  const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem('epub_fontSize') || '18'))
-  const [fontFamily, setFontFamily] = useState(() => localStorage.getItem('epub_font') || 'serif')
+  const { settings, onChange } = useReaderSettings()
+  const { fontSize, fontFamily, contentWidth, lineHeight } = settings
+  const theme = THEMES[settings.theme] ? settings.theme : 'sepia'
 
-  // Save settings
-  useEffect(() => { localStorage.setItem('epub_theme', theme) }, [theme])
-  useEffect(() => { localStorage.setItem('epub_fontSize', fontSize) }, [fontSize])
-  useEffect(() => { localStorage.setItem('epub_font', fontFamily) }, [fontFamily])
-
-
-
-  const applyTheme = useCallback((rendition, t = theme, fs = fontSize, ff = fontFamily) => {
-    if (!rendition) return
-    rendition.themes.register('custom', {
-      ...themes[t],
-      'p, li, div': { 'font-size': `${fs}px !important`, 'line-height': '1.8 !important', 'font-family': `${ff} !important` },
-      'h1, h2, h3': { 'font-size': `${fs + 4}px !important`, 'font-family': `${ff} !important` },
+  const applyTheme = useCallback((rendition) => {
+    if (!rendition || !viewerRef.current) return
+    // Biến CSS ở trang cha không tự xuyên iframe: lấy màu đã resolve.
+    const colors = getComputedStyle(viewerRef.current)
+    rendition.themes.register(theme, {
+      body: {
+        background: `${colors.getPropertyValue('--reader-bg').trim()} !important`,
+        color: `${colors.getPropertyValue('--reader-text').trim()} !important`,
+      },
+      'p, li, div': { 'font-size': `${fontSize}px !important`, 'line-height': `${lineHeight} !important`, 'font-family': `${fontFamily} !important` },
+      'h1, h2, h3': { 'font-size': `${fontSize + 4}px !important`, 'font-family': `${fontFamily} !important` },
     })
-    rendition.themes.select('custom')
-  }, [theme, fontSize, fontFamily])
+    rendition.themes.select(theme)
+  }, [theme, fontSize, fontFamily, lineHeight])
 
   const applyThemeRef = useRef(applyTheme)
   useEffect(() => { applyThemeRef.current = applyTheme }, [applyTheme])
@@ -73,6 +68,7 @@ export default function EpubReader() {
     const controller = new AbortController()
     setLoading(true)
     setError(null)
+    lastSyncedCfiRef.current = null
 
     const initEpub = async () => {
       try {
@@ -96,18 +92,38 @@ export default function EpubReader() {
         renditionRef.current = rendition
         applyThemeRef.current(rendition)
 
-        // Restore last position
-        const savedCfi = localStorage.getItem(`epub_cfi_${slug}`)
-        await rendition.display(savedCfi || undefined)
-
+        // Restore last position — ưu tiên vị trí trên server nếu mới hơn localStorage
+        let savedCfi = localStorage.getItem(`epub_cfi_${slug}`)
+        if (isLoggedIn()) {
+          try {
+            const { data } = await userApi.get('/user/progress')
+            const remote = data.find(p => p.slug === slug && p.type === 'epub' && p.position)
+            if (remote && !destroyed) {
+              const timestamp = remote.updated_at.replace(' ', 'T')
+              const remoteMs = Date.parse(/(?:Z|[+-]\d{2}:?\d{2})$/i.test(timestamp) ? timestamp : timestamp + 'Z')
+              const localMs = Number(localStorage.getItem(`last_read_time_${slug}`)) || 0
+              if (Number.isFinite(remoteMs) && remoteMs > localMs) {
+                savedCfi = remote.position
+                lastSyncedCfiRef.current = remote.position
+              }
+            }
+          } catch { /* offline hoặc lỗi mạng — dùng localStorage */ }
+        }
+        if (destroyed) return
         // Track location + progress
-        rendition.on('locationChanged', (loc) => {
+        rendition.on('relocated', (loc) => {
+          if (destroyed) return
           if (loc?.start?.cfi) {
-            localStorage.setItem(`epub_cfi_${slug}`, loc.start.cfi)
+            const cfi = loc.start.cfi
+            localStorage.setItem(`epub_cfi_${slug}`, cfi)
             localStorage.setItem('last_read_novel', slug)
             localStorage.setItem(`last_read_chapter_${slug}`, 'EPUB')
             localStorage.setItem(`last_read_time_${slug}`, String(Date.now()))
             setCurrentHref(loc.start.href || '')
+            if (isLoggedIn() && lastSyncedCfiRef.current !== cfi) {
+              lastSyncedCfiRef.current = cfi
+              userApi.put(`/user/progress/${slug}`, { type: 'epub', position: cfi }).catch(() => {})
+            }
           }
           // Calculate progress
           try {
@@ -115,6 +131,9 @@ export default function EpubReader() {
             if (pct >= 0) setProgress(Math.round(pct * 100))
           } catch { /* locations not generated yet */ }
         })
+
+        // Đăng ký listener trước display để lưu cả vị trí vừa restore.
+        await rendition.display(savedCfi || undefined)
 
         // Build TOC
         await book.loaded.navigation
@@ -152,18 +171,23 @@ export default function EpubReader() {
   // Apply theme/font changes live
   useEffect(() => {
     if (renditionRef.current) applyTheme(renditionRef.current)
-  }, [theme, fontSize, fontFamily, applyTheme])
+  }, [applyTheme])
+
+  useEffect(() => {
+    // epub.js chỉ tự nghe window resize; cần dàn trang lại khi đổi độ rộng.
+    renditionRef.current?.resize()
+  }, [contentWidth])
 
   const next = () => renditionRef.current?.next()
   const prev = () => renditionRef.current?.prev()
   const goTo = (href) => { renditionRef.current?.display(href); setShowToc(false) }
 
-  const bgColor = theme === 'dark' ? '#1a1a2e' : theme === 'sepia' ? '#f4ecd8' : '#ffffff'
-  const textColor = theme === 'dark' ? '#e8e8e8' : theme === 'sepia' ? '#3b2f2f' : '#1a1a1a'
-  const panelBg = theme === 'dark' ? 'rgba(26,26,46,0.95)' : theme === 'sepia' ? 'rgba(244,236,216,0.97)' : 'rgba(255,255,255,0.97)'
+  const bgColor = 'var(--reader-bg)'
+  const textColor = 'var(--reader-text)'
+  const panelBg = 'var(--reader-panel)'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: bgColor, color: textColor, transition: 'background 0.3s, color 0.3s' }}>
+    <div className={`reader-root reader--${theme}`} style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: bgColor, color: textColor, transition: 'background 0.3s, color 0.3s' }}>
 
       {/* ── Top bar ── */}
       <div style={{
@@ -182,7 +206,7 @@ export default function EpubReader() {
         <button onClick={() => { setShowToc(t => !t); setShowSettings(false) }} style={iconBtnStyle(textColor)}>
           <List size={18} />
         </button>
-        <button onClick={() => { setShowSettings(s => !s); setShowToc(false) }} style={iconBtnStyle(textColor)}>
+        <button aria-label="Cài đặt giao diện" onClick={() => { setShowSettings(s => !s); setShowToc(false) }} style={iconBtnStyle(textColor)}>
           <Settings size={18} />
         </button>
       </div>
@@ -215,7 +239,7 @@ export default function EpubReader() {
           )}
           <div
             ref={viewerRef}
-            style={{ width: '100%', height: '100%', maxWidth: '720px', margin: '0 auto' }}
+            style={{ width: '100%', height: '100%', maxWidth: `${contentWidth}px`, margin: '0 auto' }}
             onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
             onTouchEnd={e => {
               if (touchStartX.current === null) return
@@ -252,44 +276,7 @@ export default function EpubReader() {
               <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Tùy chỉnh</span>
               <button onClick={() => setShowSettings(false)} style={iconBtnStyle(textColor)}><X size={16} /></button>
             </div>
-            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-              {/* Theme */}
-              <div>
-                <div style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nền</div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {[['dark', '#1a1a2e', '🌙', 'Tối'], ['sepia', '#f4ecd8', '📜', 'Sepia'], ['white', '#fff', '☀️', 'Sáng']].map(([t, bg, icon, label]) => (
-                    <button key={t} onClick={() => setTheme(t)} style={{ flex: 1, padding: '10px 4px', background: bg, border: `2px solid ${theme === t ? '#6366f1' : 'transparent'}`, borderRadius: '10px', cursor: 'pointer', fontSize: '0.8rem', color: t === 'dark' ? '#eee' : '#333', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', transition: 'border-color 0.2s' }}>
-                      <span>{icon}</span><span>{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Font size */}
-              <div>
-                <div style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cỡ chữ: {fontSize}px</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <button onClick={() => setFontSize(f => Math.max(12, f - 2))} style={iconBtnStyle(textColor, '38px')}><Minus size={16} /></button>
-                  <div style={{ flex: 1, height: '4px', background: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)', borderRadius: '2px', position: 'relative' }}>
-                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${((fontSize - 12) / 20) * 100}%`, background: '#6366f1', borderRadius: '2px', transition: 'width 0.2s' }} />
-                  </div>
-                  <button onClick={() => setFontSize(f => Math.min(32, f + 2))} style={iconBtnStyle(textColor, '38px')}><Plus size={16} /></button>
-                </div>
-              </div>
-
-              {/* Font family */}
-              <div>
-                <div style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Font chữ</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {[['serif', 'Có chân (Serif)'], ['sans-serif', 'Không chân (Sans)'], ['Georgia, serif', 'Georgia']].map(([ff, label]) => (
-                    <button key={ff} onClick={() => setFontFamily(ff)} style={{ padding: '10px 14px', background: fontFamily === ff ? 'rgba(99,102,241,0.2)' : (theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'), border: `1px solid ${fontFamily === ff ? '#6366f1' : 'transparent'}`, borderRadius: '8px', cursor: 'pointer', color: textColor, fontFamily: ff, textAlign: 'left', fontSize: '0.9rem', transition: 'all 0.15s' }}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <ReaderSettingsPanel settings={settings} onChange={onChange} />
           </div>
         )}
       </div>
