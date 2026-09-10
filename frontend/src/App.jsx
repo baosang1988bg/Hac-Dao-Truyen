@@ -21,6 +21,7 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminNovels = lazy(() => import('./pages/admin/AdminNovels'))
 const AdminNovelDetail = lazy(() => import('./pages/admin/AdminNovelDetail'))
 const AdminNovelRequests = lazy(() => import('./pages/admin/AdminNovelRequests'))
+const AdminUsage = lazy(() => import('./pages/admin/AdminUsage'))
 
 /** Fallback tối giản khi chờ tải chunk của trang lazy. */
 function PageLoading() {
@@ -42,6 +43,8 @@ function PageLoading() {
  *     index                    → AdminDashboard
  *     novels                   → AdminNovels
  *     novels/:slug             → AdminNovelDetail
+ *     requests                 → AdminNovelRequests
+ *     usage                    → AdminUsage (ước lượng ngân sách sync cục bộ)
  *     logs                     → Logs
  * - /logs                      → redirect /admin/logs (tương thích link cũ)
  * - Guest (public, GuestLayout):
@@ -69,6 +72,7 @@ function App() {
         <Route path="novels" element={<AdminNovels />} />
         <Route path="novels/:slug" element={<AdminNovelDetail />} />
         <Route path="requests" element={<AdminNovelRequests />} />
+        <Route path="usage" element={<AdminUsage />} />
         <Route path="logs" element={<Logs />} />
       </Route>
 

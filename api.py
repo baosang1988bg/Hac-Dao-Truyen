@@ -18,7 +18,7 @@ from state import TASKS_LOCK, translation_tasks, cancel_flags, SERVER_START_TIME
 # ── Helpers (re-export tương thích ngược: from api import extract_chapter_number_from_text) ──
 from chapter_utils import chinese_to_arabic, extract_chapter_number_from_text
 
-from routers import auth_routes, novels, chapters, translate, tools, logs, users
+from routers import auth_routes, novels, chapters, translate, tools, logs, users, admin_usage
 
 app = FastAPI(title="Novel Translation System")
 
@@ -48,6 +48,7 @@ app.include_router(chapters.router)
 app.include_router(tools.router)
 app.include_router(logs.router)
 app.include_router(users.router)
+app.include_router(admin_usage.router)
 
 
 if __name__ == "__main__":

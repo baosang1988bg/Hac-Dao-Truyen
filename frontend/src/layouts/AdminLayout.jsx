@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   BookOpen, LayoutDashboard, Library, ScrollText, Inbox,
-  ExternalLink, Menu, LogOut,
+  ExternalLink, Menu, LogOut, Gauge,
 } from 'lucide-react'
 
 /**
@@ -66,6 +66,9 @@ export default function AdminLayout() {
         </NavLink>
         <NavLink to="/admin/logs" className={linkCls}>
           <ScrollText size={17} /> Nhật ký
+        </NavLink>
+        <NavLink to="/admin/usage" className={linkCls}>
+          <Gauge size={17} /> Ngân sách sync
         </NavLink>
 
         <div className="admin-sidebar__divider" />

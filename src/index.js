@@ -251,7 +251,8 @@ async function handleApi(request, url, env, ctx) {
 
 
   // ── Proxy translate jobs → Python backend (nếu có BACKEND_URL) ──────
-  if (path.includes('/translate') || path.includes('/tools') || path === '/api/logs') {
+  if (path.includes('/translate') || path.includes('/tools') || path === '/api/logs'
+      || path === '/api/admin/sync-usage') {
     return proxyToBackend(request, url, env);
   }
 

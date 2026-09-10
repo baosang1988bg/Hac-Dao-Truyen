@@ -43,6 +43,25 @@ test('unavailable backend and invalid routes do not silently succeed', async t =
   assert.equal((await worker.fetch(request('auth/login-extra','POST'), {}, {})).status,404);
 });
 
+test('admin sync-usage proxies to backend when BACKEND_URL is set', async t => {
+  const worker = await loadWorker();
+  t.mock.method(globalThis, 'fetch', async req => {
+    assert.equal(new URL(req.url).pathname, '/api/admin/sync-usage');
+    assert.equal(req.headers.get('Authorization'), 'Bearer session');
+    return Response.json({ available: true, r2_ops: 1, note: 'ước lượng cục bộ' });
+  });
+  const env = { BACKEND_URL: 'https://backend.invalid' };
+  const res = await worker.fetch(request('admin/sync-usage', 'GET', 'session'), env, {});
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { available: true, r2_ops: 1, note: 'ước lượng cục bộ' });
+});
+
+test('admin sync-usage returns 503 without BACKEND_URL', async () => {
+  const worker = await loadWorker();
+  const res = await worker.fetch(request('admin/sync-usage', 'GET', 'session'), {}, {});
+  assert.equal(res.status, 503);
+});
+
 test('health reads catalog and metadata, missing novel is 404', async () => {
   const worker = await loadWorker();
   const env = {
