@@ -1413,14 +1413,27 @@ async function userProgressUpdate(request, env, slug) {
     position = body.position;
   }
 
-  // Upsert: mỗi user chỉ giữ 1 record tiến độ cho mỗi truyện
-  await env.DB.prepare(`
-    INSERT INTO reading_progress (user_id, slug, chapter, position, type, updated_at)
-    VALUES (?, ?, ?, ?, ?, datetime('now'))
+  // C03: client_updated_at (epoch ms, optional — tương thích client cũ) chặn
+  // request cũ đến muộn (network delay/retry) ghi đè bản mới hơn đã lưu.
+  // Điều kiện đặt NGAY TRONG WHERE của DO UPDATE để toàn bộ so sánh + ghi là
+  // MỘT statement nguyên tử (không tách SELECT rồi UPDATE — sẽ có race).
+  // KHÔNG lấy max(chapter): đọc lại chương trước là tiến độ mới hợp lệ.
+  const clientUpdatedAt = Number.isSafeInteger(body?.client_updated_at) ? body.client_updated_at : null;
+  const { meta } = await env.DB.prepare(`
+    INSERT INTO reading_progress (user_id, slug, chapter, position, type, updated_at, client_updated_at)
+    VALUES (?, ?, ?, ?, ?, datetime('now'), ?)
     ON CONFLICT(user_id, slug) DO UPDATE SET
       chapter = excluded.chapter, position = excluded.position,
-      type = excluded.type, updated_at = excluded.updated_at
-  `).bind(user.id, slug, chapter, position, type).run();
+      type = excluded.type, updated_at = excluded.updated_at,
+      client_updated_at = excluded.client_updated_at
+    WHERE excluded.client_updated_at IS NULL
+       OR reading_progress.client_updated_at IS NULL
+       OR excluded.client_updated_at >= reading_progress.client_updated_at
+  `).bind(user.id, slug, chapter, position, type, clientUpdatedAt).run();
+
+  if (!meta.changes) {
+    return jsonResponse({ ok: false, error: 'Đã có tiến độ mới hơn được lưu, bỏ qua request cũ này' }, 409);
+  }
   return jsonResponse({ ok: true });
 }
 

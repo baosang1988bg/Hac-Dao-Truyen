@@ -7,6 +7,7 @@ Endpoint quản lý truyện: danh sách, chi tiết, catalog, glossary.
 import os
 import re
 import json
+import math
 import importlib.util
 from typing import Dict
 
@@ -98,15 +99,41 @@ class GlossaryUpdateRequest(BaseModel):
     glossary: Dict[str, str]
 
 
+# B01/B02: contract phải khớp Worker Cloudflare (src/index.js getNovels) —
+# cùng envelope {novels,total,page,limit,pages} và cùng bộ tham số query, để
+# frontend dùng chung 1 adapter cho cả 2 backend thay vì .find()/mảng trần
+# (bug cũ: AccountPage.jsx .find() trên object cloud → mất bookmark trang sau).
+_SORT_KEYS = {
+    # Local không có 'views'/'rating' (khái niệm engagement chỉ tồn tại ở D1
+    # Cloudflare) — fallback về 'updated_at' (last_translated_at), ghi rõ giới
+    # hạn này thay vì giả lập số liệu không có thật.
+    'updated_at': 'last_translated_at',
+    'chapter_count': 'chapter_count',
+    'title': 'title',
+    'views': 'last_translated_at',
+    'rating': 'last_translated_at',
+}
+
+
 @router.get("/api/novels")
-def list_novels():
+def list_novels(
+    q: str = "", sort: str = "updated_at", order: str = "desc",
+    genre: str = "", status: str = "", has_epub: str = "",
+    page: int = 1, limit: int = 48,
+):
     """
     Danh sách truyện (public, gọn nhẹ):
     chỉ field whitelist + số liệu thật (chapter_count, last_translated_at,
     latest_chapter_title, glossary_count). KHÔNG trả glossary/source_url.
+
+    Hỗ trợ q/sort/order/genre/status/has_epub/page/limit — cùng tham số với
+    Worker Cloudflare, trả cùng envelope {novels,total,page,limit,pages}.
     """
+    page = max(1, page)
+    limit = min(200, max(1, limit))
+
     if not os.path.exists(NOVELS_DIR):
-        return []
+        return {"novels": [], "total": 0, "page": page, "limit": limit, "pages": 0}
 
     novels = []
     for slug in sorted(os.listdir(NOVELS_DIR)):
@@ -123,6 +150,37 @@ def list_novels():
         item["glossary_count"] = len(data.get("glossary", {}) or {})
         item.update(_translated_stats(slug))
         novels.append(item)
+
+    q_norm = q.strip().lower()
+    if q_norm:
+        def _match(n):
+            haystacks = (n.get("title"), n.get("slug"), n.get("author"), n.get("original_title"))
+            return any(q_norm in str(h or "").lower() for h in haystacks)
+        novels = [n for n in novels if _match(n)]
+
+    genre_norm = genre.strip().lower()
+    if genre_norm:
+        novels = [n for n in novels if genre_norm in str(n.get("genre") or "").lower()]
+
+    if status in ("ongoing", "completed"):
+        novels = [n for n in novels if n.get("status") == status]
+
+    if has_epub in ("1", "true"):
+        # Local không có cờ has_epub lưu sẵn — EPUB được build on-demand từ
+        # translated/ (xem download_epub), nên "có epub" ~ "đã có ít nhất 1
+        # chương dịch". Đây là xấp xỉ hợp lý, không phải field lưu trữ thật.
+        novels = [n for n in novels if (n.get("chapter_count") or 0) > 0]
+
+    sort_key = _SORT_KEYS.get(sort, 'last_translated_at')
+    reverse = order.lower() != 'asc'
+    novels.sort(key=lambda n: (n.get(sort_key) is None, n.get(sort_key) or ''), reverse=reverse)
+
+    total = len(novels)
+    pages = math.ceil(total / limit) if total else 0
+    start = (page - 1) * limit
+    page_items = novels[start:start + limit]
+
+    return {"novels": page_items, "total": total, "page": page, "limit": limit, "pages": pages}
     return novels
 
 

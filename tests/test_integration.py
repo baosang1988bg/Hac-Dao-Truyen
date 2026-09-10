@@ -29,7 +29,7 @@ REQUIRED_LIST_FIELDS = {"slug", "title", "chapter_count", "glossary_count"}
 
 def _first_translated_slug():
     r = client.get("/api/novels")
-    for n in r.json():
+    for n in r.json()["novels"]:
         if n.get("chapter_count", 0) > 0:
             return n["slug"]
     return None
@@ -38,14 +38,39 @@ def _first_translated_slug():
 # ── Guest: danh sách & chi tiết ──────────────────────────────────────────────
 
 def test_list_novels_public_shape():
+    # B01/B02: envelope {novels,total,page,limit,pages} — PHẢI khớp Worker
+    # Cloudflare (src/index.js getNovels), không còn mảng trần như trước (bug
+    # cũ: AccountPage.jsx .find() trên object cloud vs mảng local không khớp).
     r = client.get("/api/novels")
     assert r.status_code == 200
     data = r.json()
-    assert isinstance(data, list) and len(data) > 0
-    for n in data:
+    assert set(data.keys()) >= {"novels", "total", "page", "limit", "pages"}
+    assert isinstance(data["novels"], list) and len(data["novels"]) > 0
+    for n in data["novels"]:
         assert REQUIRED_LIST_FIELDS <= set(n.keys()), f"thiếu field: {n.get('slug')}"
         leak = FORBIDDEN_GUEST_FIELDS & set(n.keys())
         assert not leak, f"lộ field {leak} trong /api/novels ({n.get('slug')})"
+
+
+def test_list_novels_search_and_pagination():
+    all_res = client.get("/api/novels", params={"limit": 200}).json()
+    total = all_res["total"]
+    assert total > 0
+    slug = all_res["novels"][0]["slug"]
+
+    # Tìm theo slug đầy đủ phải ra đúng ít nhất truyện đó (contract 'q', không
+    # phải 'search' — bug cũ HomePage.jsx gửi 'search' trong khi backend đọc 'q').
+    found = client.get("/api/novels", params={"q": slug}).json()
+    assert any(n["slug"] == slug for n in found["novels"])
+
+    page1 = client.get("/api/novels", params={"limit": 1, "page": 1}).json()
+    assert len(page1["novels"]) == 1
+    assert page1["pages"] == total  # limit=1 → mỗi trang 1 truyện
+    if total > 1:
+        page2 = client.get("/api/novels", params={"limit": 1, "page": 2}).json()
+        assert page2["novels"][0]["slug"] != page1["novels"][0]["slug"], (
+            "truyện ở trang 2 không được trùng trang 1 — bug cũ chỉ tải trang đầu"
+        )
 
 
 def test_novel_detail_guest_no_glossary():
@@ -184,6 +209,32 @@ def test_user_progress_epub_position():
     r = client.put("/api/user/progress/mot-truyen-epub",
                     json={"type": "epub"}, headers=h)
     assert r.status_code == 400
+
+
+def test_user_progress_rejects_stale_out_of_order_write():
+    """C03: request PUT progress cũ đến muộn (client_updated_at nhỏ hơn bản đã
+    lưu) không được ghi đè bản mới hơn — trả 409 thay vì âm thầm overwrite."""
+    _, _, token, _ = _register_user()
+    h = {"Authorization": f"Bearer {token}"}
+
+    r = client.put("/api/user/progress/demo-slug",
+                    json={"chapter": 20, "client_updated_at": 2000}, headers=h)
+    assert r.status_code == 200
+
+    r = client.put("/api/user/progress/demo-slug",
+                    json={"chapter": 5, "client_updated_at": 1000}, headers=h)
+    assert r.status_code == 409
+
+    prog = client.get("/api/user/progress", headers=h).json()
+    assert prog[0]["chapter"] == 20, "chương 20 (mới hơn) không được ghi đè bởi request đến muộn"
+
+    # Đọc lại chương trước (số nhỏ hơn) vẫn hợp lệ nếu timestamp MỚI hơn —
+    # không được lấy max(chapter).
+    r = client.put("/api/user/progress/demo-slug",
+                    json={"chapter": 3, "client_updated_at": 3000}, headers=h)
+    assert r.status_code == 200
+    prog = client.get("/api/user/progress", headers=h).json()
+    assert prog[0]["chapter"] == 3
 
 
 def test_user_comments_flow():

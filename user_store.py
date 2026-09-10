@@ -54,12 +54,13 @@ CREATE TABLE IF NOT EXISTS bookmarks (
     PRIMARY KEY (user_id, slug)
 );
 CREATE TABLE IF NOT EXISTS reading_progress (
-    user_id    INTEGER,
-    slug       TEXT,
-    chapter    INTEGER,
-    position   TEXT,
-    type       TEXT DEFAULT 'chapter',
-    updated_at TEXT,
+    user_id           INTEGER,
+    slug              TEXT,
+    chapter           INTEGER,
+    position          TEXT,
+    type              TEXT DEFAULT 'chapter',
+    updated_at        TEXT,
+    client_updated_at INTEGER,
     PRIMARY KEY (user_id, slug)
 );
 CREATE TABLE IF NOT EXISTS comments (
@@ -103,6 +104,8 @@ def _init_db() -> None:
             conn.execute("ALTER TABLE reading_progress ADD COLUMN position TEXT")
         if "type" not in existing:
             conn.execute("ALTER TABLE reading_progress ADD COLUMN type TEXT DEFAULT 'chapter'")
+        if "client_updated_at" not in existing:
+            conn.execute("ALTER TABLE reading_progress ADD COLUMN client_updated_at INTEGER")
 
 
 # ── Password ─────────────────────────────────────────────────────────────────
@@ -236,17 +239,39 @@ def list_progress(user_id: int) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def set_progress(user_id: int, slug: str, type: str, *, chapter: int | None, position: str) -> None:
-    """Upsert tiến độ đọc một truyện. `type` là 'chapter' hoặc 'epub'."""
+def set_progress(
+    user_id: int, slug: str, type: str, *, chapter: int | None, position: str,
+    client_updated_at: int | None = None,
+) -> bool:
+    """Upsert tiến độ đọc một truyện. `type` là 'chapter' hoặc 'epub'.
+
+    C03: request cũ đến muộn (network delay/retry) không được ghi đè bản mới
+    hơn. `client_updated_at` (epoch ms do client gửi tại thời điểm tạo request)
+    dùng làm điều kiện conditional write NGUYÊN TỬ trong chính câu UPSERT (WHERE
+    trên DO UPDATE) — không tách SELECT-rồi-UPDATE (sẽ có race giống lỗi F01
+    trước khi sửa). KHÔNG lấy max(chapter) — user có thể chủ động đọc lại
+    chương trước, đó là tiến độ mới hợp lệ dù chapter number nhỏ hơn.
+    Client cũ không gửi `client_updated_at` (None) vẫn ghi đè vô điều kiện,
+    giữ tương thích ngược.
+
+    Trả về True nếu bản ghi được áp dụng, False nếu bị từ chối vì có bản mới
+    hơn đã lưu (stale write) — caller nên báo conflict cho client thay vì coi
+    là thành công.
+    """
     with _conn() as conn:
-        conn.execute(
-            "INSERT INTO reading_progress (user_id, slug, chapter, position, type, updated_at) "
-            "VALUES (?, ?, ?, ?, ?, datetime('now')) "
+        cur = conn.execute(
+            "INSERT INTO reading_progress (user_id, slug, chapter, position, type, updated_at, client_updated_at) "
+            "VALUES (?, ?, ?, ?, ?, datetime('now'), ?) "
             "ON CONFLICT(user_id, slug) DO UPDATE SET "
             "chapter = excluded.chapter, position = excluded.position, "
-            "type = excluded.type, updated_at = excluded.updated_at",
-            (user_id, slug, chapter, position, type),
+            "type = excluded.type, updated_at = excluded.updated_at, "
+            "client_updated_at = excluded.client_updated_at "
+            "WHERE excluded.client_updated_at IS NULL "
+            "   OR reading_progress.client_updated_at IS NULL "
+            "   OR excluded.client_updated_at >= reading_progress.client_updated_at",
+            (user_id, slug, chapter, position, type, client_updated_at),
         )
+        return cur.rowcount != 0
 
 
 # ── Comments ─────────────────────────────────────────────────────────────────

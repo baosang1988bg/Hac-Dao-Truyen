@@ -9,6 +9,7 @@ Hợp đồng API này được Worker Cloudflare (D1) và frontend làm theo �
 """
 
 from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 import user_store
@@ -65,6 +66,9 @@ class ProgressRequest(BaseModel):
     type: str = "chapter"
     chapter: int | None = None
     position: str | None = None
+    # C03: epoch ms client tự gắn khi tạo request — dùng để từ chối request cũ
+    # đến muộn (xem user_store.set_progress). Optional để tương thích client cũ.
+    client_updated_at: int | None = None
 
 
 class CommentRequest(BaseModel):
@@ -181,11 +185,23 @@ def put_progress(slug: str, req: ProgressRequest, user: dict = Depends(require_u
     if req.type == "chapter":
         if not isinstance(req.chapter, int):
             raise HTTPException(400, "chapter phải là số nguyên")
-        user_store.set_progress(user["id"], slug, "chapter", chapter=req.chapter, position=str(req.chapter))
+        applied = user_store.set_progress(
+            user["id"], slug, "chapter", chapter=req.chapter, position=str(req.chapter),
+            client_updated_at=req.client_updated_at,
+        )
     else:
         if not req.position:
             raise HTTPException(400, "position phải là chuỗi CFI không rỗng")
-        user_store.set_progress(user["id"], slug, "epub", chapter=None, position=req.position)
+        applied = user_store.set_progress(
+            user["id"], slug, "epub", chapter=None, position=req.position,
+            client_updated_at=req.client_updated_at,
+        )
+    if not applied:
+        # Không phải lỗi — request hợp lệ nhưng đến muộn hơn 1 bản đã lưu.
+        # 409 để client biết "đã có bản mới hơn trên server", không phải retry.
+        return JSONResponse(status_code=409, content={
+            "ok": False, "error": "Đã có tiến độ mới hơn được lưu, bỏ qua request cũ này",
+        })
     return {"ok": True}
 
 

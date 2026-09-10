@@ -8,6 +8,7 @@ Tự động xử lý encoding (UTF-8 / GBK / GB2312) và relative URL.
 
 import asyncio
 import re
+import time
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
@@ -19,13 +20,135 @@ from security_utils import validate_source_url
 GBK_DOMAINS = {"69shuba.com", "69shuba.tw", "69shuba", "69shu.com", "readnovel.com"}
 
 
+# ── Rate limit theo host + backoff/circuit-breaker khi nguồn từ chối ─────────
+
+# Khoảng cách tối thiểu (giây) giữa 2 request liên tiếp TỚI CÙNG MỘT HOST.
+# Đây là mặc định lịch sự (polite crawling), không phải giới hạn kỹ thuật để
+# vượt qua bất kỳ chặn nào — mục đích là tránh dội request dồn dập vào 1 site.
+DEFAULT_MIN_INTERVAL_PER_HOST = 2.0
+# Số lần lỗi liên tiếp (403/429/5xx hoặc bị phát hiện chặn) cho phép trước khi
+# NGỪNG HẲN việc gọi tới host đó (circuit breaker) thay vì lặp lại vô hạn.
+DEFAULT_MAX_CONSECUTIVE_ERRORS = 5
+DEFAULT_BACKOFF_BASE = 2.0
+DEFAULT_BACKOFF_MAX = 60.0
+
+
+class ScraperBlockedError(Exception):
+    """
+    Host đã trả lỗi (403/429/5xx) hoặc bị phát hiện chặn (Cloudflare/captcha)
+    liên tiếp quá ngưỡng cho phép. Đây là tín hiệu "dừng hẳn" — không nên
+    tiếp tục gọi mạng tới host này nữa cho tới khi có can thiệp thủ công
+    (khởi tạo lại scraper / reset rate limiter), tránh vòng lặp gọi vô hạn
+    vào một nguồn đang chủ động từ chối truy cập.
+    """
+
+    def __init__(self, host: str, consecutive_errors: int, last_status: int | None = None):
+        self.host = host
+        self.consecutive_errors = consecutive_errors
+        self.last_status = last_status
+        super().__init__(
+            f"Host '{host}' đã lỗi {consecutive_errors} lần liên tiếp "
+            f"(status cuối: {last_status}) — dừng crawl host này để tránh "
+            f"lặp lại vô hạn vào nguồn đang từ chối truy cập."
+        )
+
+
+class HostRateLimiter:
+    """
+    Rate limit crawl THEO HOST (dùng `netloc` — host:port — làm khóa, KHÔNG
+    phải theo domain đích của 1 truyện), để 2 truyện khác nhau nhưng chung 1
+    host (vd. 2 bộ cùng lấy từ 69shuba.com) không thể lách rate limit bằng
+    cách coi mỗi truyện là một "luồng" riêng, đồng thời request tới 2 host
+    khác nhau không bị chặn chéo (chờ nhau) một cách không cần thiết.
+
+    Đồng thời theo dõi số lỗi liên tiếp (403/429/5xx hoặc bị chặn) theo host:
+    - Mỗi lỗi liên tiếp làm tăng khoảng chờ theo cấp số nhân (exponential
+      backoff), tới mức trần `backoff_max`.
+    - Sau `max_consecutive_errors` lần lỗi liên tiếp, `wait()` raise
+      `ScraperBlockedError` ngay lập tức (không sleep, không gọi mạng thêm)
+      — dừng hẳn thay vì tiếp tục thử lại vô hạn.
+    - 1 lần thành công sẽ reset bộ đếm lỗi liên tiếp của host đó về 0.
+
+    `clock` và `sleeper` có thể được inject (mặc định `time.monotonic` và
+    `asyncio.sleep`) để unit test không phải chờ thời gian thực.
+    """
+
+    def __init__(
+        self,
+        min_interval: float = DEFAULT_MIN_INTERVAL_PER_HOST,
+        max_consecutive_errors: int = DEFAULT_MAX_CONSECUTIVE_ERRORS,
+        backoff_base: float = DEFAULT_BACKOFF_BASE,
+        backoff_max: float = DEFAULT_BACKOFF_MAX,
+        clock=time.monotonic,
+        sleeper=asyncio.sleep,
+    ):
+        self.min_interval = min_interval
+        self.max_consecutive_errors = max_consecutive_errors
+        self.backoff_base = backoff_base
+        self.backoff_max = backoff_max
+        self._clock = clock
+        self._sleeper = sleeper
+        self._last_request_at: dict[str, float] = {}
+        self._consecutive_errors: dict[str, int] = {}
+        self._lock = asyncio.Lock()
+
+    @staticmethod
+    def host_key(url: str) -> str:
+        """netloc (host[:port]) chuẩn hoá lowercase — đơn vị rate limit."""
+        return (urlparse(url).netloc or "").lower()
+
+    async def wait(self, url: str) -> None:
+        """
+        Chờ đủ khoảng cách lịch sự kể từ request gần nhất TỚI CÙNG HOST
+        (cộng thêm backoff nếu host đang có lỗi liên tiếp), rồi đánh dấu
+        thời điểm request hiện tại. Raise `ScraperBlockedError` ngay (không
+        sleep) nếu host đã vượt ngưỡng lỗi liên tiếp.
+        """
+        host = self.host_key(url)
+        async with self._lock:
+            errors = self._consecutive_errors.get(host, 0)
+            if errors >= self.max_consecutive_errors:
+                raise ScraperBlockedError(host, errors)
+
+            required_gap = self.min_interval
+            if errors > 0:
+                backoff = min(self.backoff_base * (2 ** (errors - 1)), self.backoff_max)
+                required_gap = max(required_gap, backoff)
+
+            last = self._last_request_at.get(host)
+            now = self._clock()
+            remaining = (last + required_gap - now) if last is not None else 0.0
+
+        if remaining > 0:
+            await self._sleeper(remaining)
+
+        async with self._lock:
+            self._last_request_at[host] = self._clock()
+
+    def record_success(self, url: str) -> None:
+        """Reset bộ đếm lỗi liên tiếp của host sau 1 lần fetch thành công."""
+        self._consecutive_errors[self.host_key(url)] = 0
+
+    def record_error(self, url: str, status_code: int | None = None) -> int:
+        """Tăng bộ đếm lỗi liên tiếp của host, trả về số lỗi liên tiếp mới."""
+        host = self.host_key(url)
+        count = self._consecutive_errors.get(host, 0) + 1
+        self._consecutive_errors[host] = count
+        return count
+
+
 class NovelScraper:
-    def __init__(self):
+    def __init__(self, rate_limiter: "HostRateLimiter | None" = None):
         self.user_agent = USER_AGENT
         self.headless = HEADLESS
         self._playwright = None
         self._browser = None
         self._context = None
+        # Rate limit theo host + backoff/circuit-breaker khi nguồn từ chối
+        # (403/429/5xx hoặc bị phát hiện chặn liên tiếp). Cho phép truyền vào
+        # từ ngoài (vd. chia sẻ 1 limiter giữa nhiều NovelScraper trong cùng
+        # 1 phiên pipeline) — mặc định tạo mới riêng cho mỗi instance.
+        self._rate_limiter = rate_limiter or HostRateLimiter()
 
     # ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -185,6 +308,16 @@ class NovelScraper:
         if not await self._is_url_safe(url):
             return None
 
+        # Rate limit theo host (không phải theo domain đích 1 truyện — 2
+        # truyện cùng lấy từ 1 host vẫn dùng chung ngân sách request của host
+        # đó) + circuit breaker: nếu host đã lỗi liên tiếp quá ngưỡng, dừng
+        # hẳn (không gọi mạng) thay vì tiếp tục thử lại vô hạn.
+        try:
+            await self._rate_limiter.wait(url)
+        except ScraperBlockedError as exc:
+            print(f"[!] {exc}")
+            return None
+
         origin = f"{parsed.scheme}://{parsed.netloc}"
         page = await self._context.new_page()
         # Chặn thêm ở tầng network: mọi redirect/subresource phát sinh trong
@@ -226,7 +359,13 @@ class NovelScraper:
             # (trước đây "novel543.com" luôn bị set is_blocked=True vô điều kiện,
             # khiến HTML thật fetch được luôn bị bỏ qua để dùng Jina fallback).
             is_blocked = self._detect_block(html, status_code, url)
-            if (is_chapter_page and not content_check) or is_blocked:
+            is_error_status = status_code in (403, 429) or (status_code is not None and status_code >= 500)
+            if (is_chapter_page and not content_check) or is_blocked or is_error_status:
+                # Đếm là 1 lỗi liên tiếp của host (403/429/5xx hoặc bị phát
+                # hiện chặn) TRƯỚC khi thử Jina fallback — kể cả khi Jina lấy
+                # được nội dung thay thế, việc host này từ chối truy cập trực
+                # tiếp vẫn cần được backoff cho các lần fetch trực tiếp sau.
+                self._rate_limiter.record_error(url, status_code)
                 print(f"[*] Content not found or blocked (title: {title_check.get_text(strip=True) if title_check else 'None'}), trying Jina Reader fallback...")
                 for jina_attempt in range(1, 4):
                     try:
@@ -287,11 +426,15 @@ class NovelScraper:
                     await page.close()
                     return None
 
+            # Tới được đây nghĩa là fetch trực tiếp thành công (không bị chặn,
+            # không lỗi status) — reset bộ đếm lỗi liên tiếp của host.
+            self._rate_limiter.record_success(url)
             await page.close()
             return html
 
         except Exception as e:
             print(f"[!] Error fetching page: {e}")
+            self._rate_limiter.record_error(url)
             await page.close()
             return None
 

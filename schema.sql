@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS reading_progress (
   position   TEXT,               -- chuỗi vị trí: số chương dạng text hoặc CFI (EPUB)
   type       TEXT DEFAULT 'chapter' CHECK (type IN ('chapter', 'epub')), -- 'chapter' | 'epub'
   updated_at TEXT,
+  client_updated_at INTEGER, -- C03: epoch ms client gửi, chặn request cũ đến muộn ghi đè bản mới
   PRIMARY KEY (user_id, slug),
   FOREIGN KEY (user_id) REFERENCES users(id),
   FOREIGN KEY (slug) REFERENCES novels(slug)
