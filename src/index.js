@@ -911,7 +911,7 @@ async function getChapterContent(env, slug, identifier, ctx) {
       const obj = await env.CHAPTERS.get(row.r2_key);
       if (obj) {
         const text = await obj.text();
-        return jsonResponse({ content: text });
+        return await chapterResponse(text);
       }
     }
 
@@ -922,7 +922,7 @@ async function getChapterContent(env, slug, identifier, ctx) {
     if (row && row.filename) {
       const bundleContent = await getChapterFromBundle(env, slug, row.filename);
       if (bundleContent !== null) {
-        return jsonResponse({ content: bundleContent });
+        return await chapterResponse(bundleContent);
       }
     }
   } catch { /* fallback */ }
@@ -941,13 +941,13 @@ async function getChapterContent(env, slug, identifier, ctx) {
         const obj = await env.CHAPTERS.get(r2Key);
         if (obj) {
           const text = await obj.text();
-          return jsonResponse({ content: text });
+          return await chapterResponse(text);
         }
 
         // [MOI - THU NGHIEM] Thu bundle JSON bang filename lay tu catalog.
         const bundleContent = await getChapterFromBundle(env, slug, ch.filename);
         if (bundleContent !== null) {
-          return jsonResponse({ content: bundleContent });
+          return await chapterResponse(bundleContent);
         }
       }
     }
@@ -962,7 +962,7 @@ async function getChapterContent(env, slug, identifier, ctx) {
   try {
     const driveContent = await getChapterContentFromDrive(env, slug, num, identifier, ctx);
     if (driveContent !== null) {
-      return jsonResponse({ content: driveContent });
+      return await chapterResponse(driveContent);
     }
   } catch { /* het du phong, tra 404 ben duoi */ }
 
@@ -1185,6 +1185,15 @@ const DEFAULT_JSON_MAX_BYTES = 64 * 1024; // 64 KiB
 
 function toHex(buf) {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// C07: sw.js cache-first nội dung chương theo URL, không tự phát hiện khi
+// chương được dịch lại/sửa (URL không đổi). `version` = hash nội dung, cho
+// phép service worker so sánh bản cache với bản mới nhất (stale-while-
+// revalidate) mà không cần đổi contract URL hiện có.
+async function chapterResponse(content) {
+  const version = toHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content))).slice(0, 16);
+  return jsonResponse({ content, version });
 }
 
 function fromHex(hex) {

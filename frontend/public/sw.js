@@ -68,6 +68,45 @@ async function cacheFirst(request, cacheName) {
   return response
 }
 
+/**
+ * C07: nội dung chương là "bất biến sau khi dịch" NHƯNG có thể được dịch lại
+ * để sửa lỗi — cache-first thuần theo URL sẽ không bao giờ thấy bản sửa vì
+ * URL (số chương) không đổi. Trả cache ngay (không chặn UI), đồng thời âm
+ * thầm fetch mạng ở nền: nếu `version` (hash nội dung, xem chapterResponse()
+ * trong src/index.js) khác bản cache, ghi đè cache bằng bản mới — LẦN ĐỌC SAU
+ * sẽ thấy bản đã sửa. Không throw khi cache.put lỗi (vd quota) — best-effort,
+ * không được làm hỏng response đã trả cho request hiện tại.
+ */
+async function cacheFirstVersioned(event, cacheName) {
+  const { request } = event
+  const cache = await caches.open(cacheName)
+  const cached = await cache.match(request)
+
+  const revalidate = async () => {
+    try {
+      const fresh = await fetch(request)
+      if (!fresh || !fresh.ok) return
+      if (cached) {
+        const [cachedJson, freshJson] = await Promise.all([cached.clone().json(), fresh.clone().json()])
+        if (cachedJson.version && freshJson.version && cachedJson.version === freshJson.version) return
+      }
+      await cache.put(request, fresh.clone())
+    } catch { /* best-effort, không ảnh hưởng response đã trả về */ }
+  }
+
+  if (cached) {
+    // event.waitUntil giữ service worker sống đủ để hoàn tất revalidate nền,
+    // không chặn phản hồi cache đã trả về ngay cho request hiện tại.
+    event.waitUntil(revalidate())
+    return cached
+  }
+  const response = await fetch(request)
+  if (response && response.ok) {
+    try { await cache.put(request, response.clone()) } catch { /* quota đầy... — vẫn trả response cho user */ }
+  }
+  return response
+}
+
 /** Network-first: ưu tiên mạng (và cache lại), offline thì trả cache/fallback. */
 async function networkFirst(request, cacheName, fallbackUrl) {
   const cache = await caches.open(cacheName)
@@ -118,6 +157,22 @@ function epubRequestFor(slug) {
   return new Request(`${self.location.origin}/api/novels/${slug}/epub`)
 }
 
+// C07: readEpubIndex → sửa → writeEpubIndex là read-modify-write; 2 lượt tải
+// EPUB đồng thời (2 tab, hoặc double-tap nút tải) có thể xen kẽ giữa các
+// bước, làm 1 bên ghi đè mất entry của bên kia trong index (blob EPUB vẫn còn
+// trong cache nhưng index không biết → không tính vào quota, không xóa được
+// khi cần enforceEpubQuota). Chuỗi promise nội bộ này serialize MỌI lượt
+// cập nhật index (bất kể slug nào) thành hàng đợi tuần tự trong 1 instance
+// service worker — đủ để chặn race trong cùng 1 tab/worker instance.
+let _epubIndexQueue = Promise.resolve()
+function withEpubIndexLock(fn) {
+  const result = _epubIndexQueue.then(fn, fn)
+  // Nuốt lỗi ở đây để 1 lần thất bại không làm hỏng toàn bộ hàng đợi sau đó;
+  // lỗi thật vẫn được ném lại cho caller qua `result`.
+  _epubIndexQueue = result.catch(() => {})
+  return result
+}
+
 /** Tải (nếu cần) và lưu EPUB vào cache, cập nhật chỉ mục + giới hạn dung lượng. */
 async function downloadEpub(request, slug) {
   const cache = await caches.open(EPUB_CACHE)
@@ -125,10 +180,24 @@ async function downloadEpub(request, slug) {
   if (!response || !response.ok) return response
   const clone = response.clone()
   const size = Number(clone.headers.get('content-length')) || (await clone.blob()).size
+
+  // Cache thất bại (vd quota đầy) ném lỗi thẳng ra ngoài — KHÔNG cập nhật
+  // index (sẽ trỏ tới blob không tồn tại), không được coi là "đã tải xong".
   await cache.put(epubRequestFor(slug), response.clone())
-  const index = await readEpubIndex(cache)
-  index[slug] = { size, updatedAt: Date.now() }
-  await writeEpubIndex(cache, await enforceEpubQuota(cache, index))
+
+  try {
+    await withEpubIndexLock(async () => {
+      const index = await readEpubIndex(cache)
+      index[slug] = { size, updatedAt: Date.now() }
+      await writeEpubIndex(cache, await enforceEpubQuota(cache, index))
+    })
+  } catch {
+    // Index ghi thất bại sau khi blob đã cache — rollback để không để lại
+    // blob "mồ côi" (chiếm dung lượng nhưng không được index/quota theo dõi).
+    await cache.delete(epubRequestFor(slug)).catch(() => {})
+    throw new Error('Không thể cập nhật chỉ mục EPUB offline, đã hủy bản tải')
+  }
+
   return response
 }
 
@@ -149,9 +218,11 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
 
-  // Nội dung chương: cache-first (đã dịch xong thì không đổi) → đọc offline
+  // Nội dung chương: cache-first để đọc offline, NHƯNG chương có thể được
+  // dịch lại để sửa lỗi sau đó (URL/số chương không đổi) — dùng bản có
+  // revalidate nền theo version (hash nội dung) thay vì cache-first thuần.
   if (/^\/api\/novels\/[^/]+\/chapters\/.+/.test(url.pathname)) {
-    event.respondWith(cacheFirst(request, CHAPTER_CACHE))
+    event.respondWith(cacheFirstVersioned(event, CHAPTER_CACHE))
     return
   }
 
