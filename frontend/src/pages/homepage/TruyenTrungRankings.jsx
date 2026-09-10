@@ -7,17 +7,25 @@ import { fmtNovelTitle, fmtNumber } from '../../utils/format'
 
 /**
  * TruyenTrungRankings — Khối 5 Bảng Xếp Hạng Độc Lập chuẩn Truyentrung.com
- * (BXH Nguyệt Phiếu, BXH Bán Chạy, BXH Lượt Đọc, BXH Sách Mới, BXH Đánh Giá & Bình Luận)
+ * (BXH Tổng Hợp, BXH Nhiều Chương, BXH Lượt Đọc, BXH Sách Mới, BXH Đánh Giá)
+ *
+ * Lưu ý (B05): đây KHÔNG phải hệ thống "nguyệt phiếu" (vote/mua phiếu tháng) hay
+ * "bán chạy" (doanh số) thật — dự án không có tính năng đó. Các bảng này chỉ
+ * sắp xếp lại dữ liệu thật đã có (views, chapter_count, rating, updated_at):
+ * - "Tổng Hợp": công thức nội bộ views + rating*150 + chapter_count*2, không
+ *   phải điểm phiếu bầu của người dùng.
+ * - "Nhiều Chương": sắp theo chapter_count (không phải doanh số bán).
+ * Đổi nhãn để không gây hiểu nhầm có tính năng bán hàng/vote thật.
  */
 export default function TruyenTrungRankings({ novels = [] }) {
-  const [activeCategory, setActiveCategory] = useState('nguyetphieu')
+  const [activeCategory, setActiveCategory] = useState('tonghop')
 
   const categories = [
-    { key: 'nguyetphieu', label: 'BXH Nguyệt Phiếu', icon: <Flame size={13} /> },
-    { key: 'banchay',     label: 'BXH Bán Chạy',    icon: <Trophy size={13} /> },
-    { key: 'luotdoc',     label: 'BXH Lượt Đọc',     icon: <Eye size={13} /> },
-    { key: 'sachmoi',     label: 'BXH Sách Mới',     icon: <Sparkles size={13} /> },
-    { key: 'danhgia',      label: 'BXH Đánh Giá',     icon: <Star size={13} /> },
+    { key: 'tonghop',   label: 'BXH Tổng Hợp',      icon: <Flame size={13} /> },
+    { key: 'banchay',   label: 'BXH Nhiều Chương',  icon: <Trophy size={13} /> },
+    { key: 'luotdoc',   label: 'BXH Lượt Đọc',      icon: <Eye size={13} /> },
+    { key: 'sachmoi',   label: 'BXH Sách Mới',      icon: <Sparkles size={13} /> },
+    { key: 'danhgia',   label: 'BXH Đánh Giá',      icon: <Star size={13} /> },
   ]
 
   const currentList = useMemo(() => {
@@ -46,7 +54,7 @@ export default function TruyenTrungRankings({ novels = [] }) {
         .slice(0, 10)
     }
 
-    // Default: Nguyệt Phiếu (Phong Vân rank score)
+    // Default: Tổng Hợp (công thức nội bộ, không phải điểm phiếu bầu thật)
     return list
       .sort((a, b) => {
         const sA = (a.views || 0) + (a.rating || 0) * 150 + (a.chapter_count || 0) * 2

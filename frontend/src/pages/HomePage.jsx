@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AlertCircle } from 'lucide-react'
 import api from '../api'
+import { extractNovels, fetchAllNovels } from '../utils/novelsApi'
 
 // ── Truyentrung.com UI Components ──
 import SearchSection from './homepage/SearchSection'
@@ -21,9 +22,9 @@ import StatsSection from './homepage/StatsSection'
  *   1. Top Notice Bar: Khung Truy Thư Lệnh & Thông Báo Tìm Truyện
  *   2. Monthly Popular Hero: Section "Nhân Khí Tháng" (Card nổi bật lớn)
  *   3. Recently Updated Table: Bảng Mới Cập Nhật dạng Table chuẩn 5 cột
- *   4. Multi-Ranking Widgets: 5 BXH Nguyệt Phiếu / Bán Chạy / Lượt Đọc / Sách Mới / Đánh Giá
+ *   4. Multi-Ranking Widgets: 5 BXH Tổng Hợp / Nhiều Chương / Lượt Đọc / Sách Mới / Đánh Giá
  *   5. All Novels Tabbed List: Tất cả truyện dạng Tab
- *   6. Live Chatbox & Online Ranking: Khung chatbox & thành viên online
+ *   6. Khung thông báo tĩnh (không phải chat realtime)
  */
 export default function HomePage() {
   const [novels, setNovels] = useState([])
@@ -34,14 +35,14 @@ export default function HomePage() {
   const [searchLoading, setSearchLoading] = useState(false)
   const [activeGenre, setActiveGenre] = useState('')
 
-  // Nạp danh sách truyện trang chủ (limit=200)
+  // Nạp TOÀN BỘ danh sách truyện trang chủ — phân trang thật (không chỉ
+  // page=1) để không bỏ sót truyện khi catalog lớn hơn 1 trang (B01).
   useEffect(() => {
     let alive = true
-    api.get('/novels?limit=200')
-      .then(res => {
+    fetchAllNovels(api)
+      .then(list => {
         if (alive) {
-          const data = res.data
-          setNovels(Array.isArray(data) ? data : (data.novels || []))
+          setNovels(list)
           setLoading(false)
         }
       })
@@ -54,25 +55,34 @@ export default function HomePage() {
     return () => { alive = false }
   }, [])
 
-  // Xử lý tìm kiếm
+  // Xử lý tìm kiếm — B02: tham số đúng contract là `q` (không phải `search`).
+  // Dùng AbortController + so sánh request id để bỏ qua response cũ đến muộn
+  // (gõ nhanh có thể khiến request trước phản hồi SAU request sau).
+  const searchReqId = useRef(0)
   useEffect(() => {
     const q = searchQuery.trim()
     if (!q) {
+      searchReqId.current += 1
       setSearchResults(null)
       setSearchLoading(false)
       return
     }
     setSearchLoading(true)
+    const myReqId = ++searchReqId.current
+    const controller = new AbortController()
     const handle = setTimeout(() => {
-      api.get(`/novels?search=${encodeURIComponent(q)}&limit=50`)
+      api.get('/novels', { params: { q, limit: 50 }, signal: controller.signal })
         .then(res => {
-          const data = res.data
-          setSearchResults(Array.isArray(data) ? data : (data.novels || []))
+          if (searchReqId.current !== myReqId) return // response cũ đến muộn — bỏ qua
+          setSearchResults(extractNovels(res.data))
           setSearchLoading(false)
         })
-        .catch(() => setSearchLoading(false))
+        .catch(() => {
+          if (searchReqId.current !== myReqId) return
+          setSearchLoading(false)
+        })
     }, 250)
-    return () => clearTimeout(handle)
+    return () => { clearTimeout(handle); controller.abort() }
   }, [searchQuery])
 
   if (loading) {
@@ -140,10 +150,10 @@ export default function HomePage() {
 
             {/* ── Cột Phải: Sidebar Widgets (32%) ── */}
             <div className="hp-sidebar-col">
-              {/* 4. Multi-Ranking Widgets: 5 BXH Nguyệt Phiếu/Bán Chạy/Lượt Đọc/Sách Mới/Đánh Giá */}
+              {/* 4. Multi-Ranking Widgets: 5 BXH Tổng Hợp/Nhiều Chương/Lượt Đọc/Sách Mới/Đánh Giá */}
               <TruyenTrungRankings novels={visible} />
 
-              {/* 6. Live Chatbox & Online Ranking: Khung chat & thành viên online */}
+              {/* 6. Khung thông báo tĩnh (KHÔNG phải chat realtime) */}
               <TruyenTrungChatboxWidget />
 
               {/* Thảo luận / Bình luận mới nhất */}

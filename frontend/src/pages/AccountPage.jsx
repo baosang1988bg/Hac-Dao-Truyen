@@ -2,10 +2,10 @@ import PropTypes from 'prop-types'
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom'
 import { User, LogOut, BookOpen, HeartOff, Loader2 } from 'lucide-react'
-import api from '../api'
 import userApi, {
   saveUserSession, clearUserSession, getUserInfo, isLoggedIn,
 } from '../userApi'
+import { fetchNovelsBySlugs } from '../utils/novelsApi'
 
 /**
  * Trang tài khoản NGƯỜI DÙNG (guest đã đăng ký — không liên quan admin /login).
@@ -145,15 +145,21 @@ function AccountDashboard({ user, onLogout }) {
     let alive = true
     Promise.all([
       userApi.get('/user/bookmarks'),
-      api.get('/novels'),
       userApi.get('/user/progress').catch(() => ({ data: [] })),
     ])
-      .then(([bmRes, nvRes, pgRes]) => {
+      .then(async ([bmRes, pgRes]) => {
         if (!alive) return
-        const novels = nvRes.data || []
+        const bookmarks = bmRes.data || []
         const progress = pgRes.data || []
-        const list = (bmRes.data || []).map(bm => {
-          const novel = novels.find(n => n.slug === bm.slug)
+        // B01: KHÔNG tải page=1 của /api/novels rồi .find() — bookmark có thể
+        // trỏ tới truyện nằm ở bất kỳ trang nào của danh sách chung (contract
+        // mới luôn trả {novels,total,page,limit,pages}, không phải mảng). Gọi
+        // riêng GET /api/novels/:slug cho từng slug đã bookmark — vừa đúng
+        // (không bao giờ bỏ sót do phân trang) vừa nhẹ hơn tải cả catalog.
+        const novelsBySlug = await fetchNovelsBySlugs(userApi, bookmarks.map(bm => bm.slug))
+        if (!alive) return
+        const list = bookmarks.map(bm => {
+          const novel = novelsBySlug.get(bm.slug)
           const prog = progress.find(p => p.slug === bm.slug)
           const chapterCount = novel?.chapter_count ?? 0
           const readChapter = Number(prog?.chapter)

@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types'
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Home, ChevronUp, Settings, Download, Volume2, Pause, Square } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Home, ChevronUp, Settings, Download, Volume2, Pause, Square, Loader2, Check, AlertTriangle } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import api from '../api'
 import userApi, { isLoggedIn } from '../userApi'
@@ -12,6 +12,61 @@ import useTextToSpeech from '../hooks/useTextToSpeech'
 import { markChapterRead } from '../utils/readingHistory'
 
 const OFFLINE_BATCH_SIZE = 10
+
+// ── C02: đồng bộ tiến trình đọc lên server ──────────────────────────────────
+// Contract Worker `userProgressUpdate`: type 'chapter' → field `chapter` PHẢI
+// là integer (KHÔNG được gửi filename/string). Chương không có số thứ tự hợp
+// lệ (vd author note) thì KHÔNG có cách biểu diễn hợp lệ theo contract này —
+// bỏ qua đồng bộ thay vì gửi sai kiểu.
+const PROGRESS_RETRY_LIMIT = 3
+const PROGRESS_RETRY_BASE_DELAY_MS = 4000
+
+function progressQueueKey(slug) { return `progressQueue_${slug}` }
+
+// Hàng đợi offline chỉ giữ BẢN MỚI NHẤT (ghi đè, không append lịch sử cũ).
+function writeQueuedProgress(slug, chapterNum) {
+  try {
+    localStorage.setItem(progressQueueKey(slug), JSON.stringify({ chapter: chapterNum, ts: Date.now() }))
+  } catch { /* storage đầy/bị chặn — best effort, không crash */ }
+}
+function readQueuedProgress(slug) {
+  try {
+    const raw = localStorage.getItem(progressQueueKey(slug))
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (parsed && Number.isFinite(parsed.chapter)) return parsed
+  } catch { /* ignore */ }
+  return null
+}
+function clearQueuedProgress(slug) {
+  try { localStorage.removeItem(progressQueueKey(slug)) } catch { /* ignore */ }
+}
+
+// Gửi lại TOÀN BỘ hàng đợi offline (mỗi slug tối đa 1 bản ghi = bản mới nhất)
+// — chạy khi mount và khi có lại kết nối mạng.
+async function flushAllQueuedProgress() {
+  if (typeof localStorage === 'undefined') return
+  const keys = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i)
+    if (k && k.startsWith('progressQueue_')) keys.push(k)
+  }
+  for (const key of keys) {
+    const slugFromKey = key.slice('progressQueue_'.length)
+    const queued = readQueuedProgress(slugFromKey)
+    if (!queued) continue
+    try {
+      await userApi.put(`/user/progress/${slugFromKey}`, { type: 'chapter', chapter: queued.chapter })
+      clearQueuedProgress(slugFromKey)
+    } catch (err) {
+      const status = err.response?.status
+      // 401/400 là lỗi vĩnh viễn (cần đăng nhập lại / dữ liệu không hợp lệ)
+      // — không giữ mãi trong hàng đợi để retry vô ích.
+      if (status === 401 || status === 400) clearQueuedProgress(slugFromKey)
+      // Lỗi mạng/5xx: giữ nguyên, thử lại ở lần mount/online kế tiếp.
+    }
+  }
+}
 
 // Bỏ cú pháp markdown để giọng đọc không đọc thành tiếng ký tự "#", "*"...
 function stripMarkdown(text) {
@@ -55,11 +110,14 @@ export default function Reader() {
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [progress, setProgress] = useState(0)
   const [hideTopNav, setHideTopNav] = useState(false)
+  const [syncStatus, setSyncStatus] = useState(null) // null | 'saving' | 'saved' | 'error'
 
   const lastScrollRef = useRef(0)
   const saveScrollTimerRef = useRef(null)
   const touchRef = useRef(null)
-  const lastSyncedChapterRef = useRef(null) // debounce: chỉ sync progress khi đổi chương
+  const lastAttemptedSyncKeyRef = useRef(null) // debounce: chỉ THỬ sync 1 lần khi đổi chương (không phải "đã synced")
+  const contentEpochRef = useRef(0) // C01: chỉ áp dụng response của lần fetch MỚI NHẤT
+  const progressEpochRef = useRef(0) // C02: hủy retry cũ khi chuyển chương tiếp trước khi retry xong
 
   // ── Tải trước chương để đọc offline (service worker cache lại) ────────────
   const [downloading, setDownloading] = useState(false)
@@ -93,31 +151,83 @@ export default function Reader() {
     }
   }, []);
 
+  // C02: đồng bộ tiến trình lên server — debounce thực sự (1 lần/chương, không
+  // theo scroll), retry hữu hạn CHỈ cho lỗi mạng/5xx, KHÔNG retry 401/400 (lỗi
+  // vĩnh viễn cần user can thiệp), và CHỈ coi là "đã lưu" sau response 200 thật
+  // (không đánh dấu synced lạc quan trước khi có xác nhận).
+  const syncProgress = useCallback((novelSlug, chapterNum) => {
+    writeQueuedProgress(novelSlug, chapterNum) // giữ bản mới nhất trong hàng đợi ngay từ đầu
+    const myEpoch = ++progressEpochRef.current
+    setSyncStatus('saving')
+
+    const attempt = async (retriesLeft) => {
+      if (progressEpochRef.current !== myEpoch) return // đã chuyển chương khác — bỏ, request mới lo việc này
+      try {
+        await userApi.put(`/user/progress/${novelSlug}`, { type: 'chapter', chapter: chapterNum })
+        if (progressEpochRef.current !== myEpoch) return
+        clearQueuedProgress(novelSlug)
+        setSyncStatus('saved')
+      } catch (err) {
+        if (progressEpochRef.current !== myEpoch) return
+        const status = err.response?.status
+        if (status === 401 || status === 400 || retriesLeft <= 0) {
+          setSyncStatus('error') // lỗi vĩnh viễn hoặc hết lượt retry — giữ trong hàng đợi để thử lại lần sau
+          return
+        }
+        const delay = PROGRESS_RETRY_BASE_DELAY_MS * (PROGRESS_RETRY_LIMIT - retriesLeft + 1)
+        setTimeout(() => attempt(retriesLeft - 1), delay)
+      }
+    }
+    attempt(PROGRESS_RETRY_LIMIT)
+  }, [])
+
+  // Gửi lại hàng đợi offline (nếu có bản chưa sync từ phiên trước) khi mở lại
+  // trang và mỗi khi có lại kết nối mạng.
   useEffect(() => {
+    if (!isLoggedIn()) return
+    flushAllQueuedProgress()
+    window.addEventListener('online', flushAllQueuedProgress)
+    return () => window.removeEventListener('online', flushAllQueuedProgress)
+  }, [])
+
+  useEffect(() => {
+    const myEpoch = ++contentEpochRef.current
+    const controller = new AbortController()
     setLoading(true)
     setDlProgress(null) // đổi chương → reset trạng thái tải offline
     ttsStop() // đổi chương khi đang đọc → dừng để không chồng giọng
-    api.get(`/novels/${slug}/chapters/${chapter}`)
+    api.get(`/novels/${slug}/chapters/${chapter}`, { signal: controller.signal })
       .then(res => {
+        // C01: chuyển chương nhanh có thể khiến response chương CŨ về SAU
+        // response chương MỚI — so epoch trước khi apply, bỏ qua nếu đã lỗi thời.
+        if (contentEpochRef.current !== myEpoch) return
         setContent(res.data.content)
         setLoading(false)
-        // Lưu tiến trình đọc
+        // Lưu tiến trình đọc (local)
         saveReadProgress(slug, chapter)
-        // Đồng bộ tiến trình lên server nếu đã đăng nhập user
-        // (fire-and-forget, chỉ gọi khi chương thực sự đổi)
+        // Đồng bộ tiến trình lên server nếu đã đăng nhập — chỉ THỬ 1 lần cho
+        // mỗi (slug, chapter) mới, không phụ thuộc sự kiện cuộn.
         const syncKey = `${slug}/${chapter}`
-        if (isLoggedIn() && lastSyncedChapterRef.current !== syncKey) {
-          lastSyncedChapterRef.current = syncKey
-          const chap = /^\d+$/.test(chapter) ? Number(chapter) : chapter
-          userApi.put(`/user/progress/${slug}`, { type: 'chapter', chapter: chap }).catch(() => {})
+        if (isLoggedIn() && lastAttemptedSyncKeyRef.current !== syncKey) {
+          lastAttemptedSyncKeyRef.current = syncKey
+          if (/^\d+$/.test(chapter)) {
+            syncProgress(slug, Number(chapter))
+          } else {
+            // Chương không có số thứ tự hợp lệ (vd author note) — contract
+            // 'chapter' yêu cầu integer, không có cách biểu diễn hợp lệ nên
+            // bỏ qua đồng bộ thay vì gửi sai kiểu (KHÔNG phải lỗi).
+            setSyncStatus(null)
+          }
         }
       })
       .catch(err => {
+        if (controller.signal.aborted || contentEpochRef.current !== myEpoch) return // đã hủy do đổi chương — bỏ qua
         console.error(err)
         setContent('# Lỗi tải chương\nNội dung chưa sẵn sàng hoặc lỗi kết nối. Vui lòng thử lại sau.')
         setLoading(false)
       })
-  }, [slug, chapter, saveReadProgress, ttsStop])
+    return () => { controller.abort() }
+  }, [slug, chapter, saveReadProgress, ttsStop, syncProgress])
 
   useEffect(() => {
     setChaptersLoadError(false)
@@ -556,7 +666,7 @@ export default function Reader() {
               <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', minWidth: '44px', minHeight: '44px' }}>✕</button>
             </div>
 
-            <ReaderSettingsPanel settings={settings} onChange={onChange} />
+            <ReaderSettingsPanel settings={settings} onChange={onChange} ttsVoices={tts.voices} />
 
             {/* Đọc offline: tải trước N chương kế tiếp để service worker cache */}
             <div style={{ marginBottom: '0.5rem' }}>
@@ -606,6 +716,31 @@ export default function Reader() {
         >
           <ChevronUp size={20} />
         </button>
+      )}
+
+      {/* C02: trạng thái đồng bộ tiến trình đọc — chỉ hiện khi có gì để báo,
+          không hiện liên tục gây rối mắt (ẩn ở trạng thái 'saved' sau vài giây). */}
+      {syncStatus && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: 'fixed',
+            bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))',
+            right: 'calc(1rem + env(safe-area-inset-right, 0px))',
+            zIndex: 90,
+            display: 'flex', alignItems: 'center', gap: '5px',
+            padding: '5px 11px', borderRadius: '999px',
+            fontSize: '0.72rem', fontWeight: 600,
+            background: currentTheme.panel, color: currentTheme.text,
+            border: `1px solid ${currentTheme.border}`,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)', opacity: 0.9,
+          }}
+        >
+          {syncStatus === 'saving' && (<><Loader2 size={12} className="spin" /> Đang lưu tiến trình...</>)}
+          {syncStatus === 'saved' && (<><Check size={12} color="#4ade80" /> Đã lưu tiến trình</>)}
+          {syncStatus === 'error' && (<><AlertTriangle size={12} color="#f87171" /> Chưa lưu được, sẽ thử lại</>)}
+        </div>
       )}
 
       <style>{`

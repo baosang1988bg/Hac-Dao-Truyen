@@ -21,12 +21,41 @@ export const THEMES = {
 
 const LEGACY_KEYS = ['epub_theme', 'epub_fontSize', 'epub_font']
 
+// C06: dữ liệu localStorage có thể hỏng/lạ (field không mong đợi, kiểu sai,
+// giá trị từ phiên bản cũ/mới hơn) — validate từng field, KHÔNG spread thẳng
+// object đọc được (tránh crash hoặc field rác lọt vào state khi giá trị lưu
+// không phải object thuần, ví dụ chuỗi/số/null/array).
+function sanitizeSettings(saved) {
+  const out = { ...DEFAULT_SETTINGS }
+  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return out
+  if (Number.isFinite(saved.fontSize) && saved.fontSize >= 10 && saved.fontSize <= 60) {
+    out.fontSize = saved.fontSize
+  }
+  if (typeof saved.fontFamily === 'string' && saved.fontFamily.trim()) {
+    out.fontFamily = saved.fontFamily
+  }
+  if (typeof saved.theme === 'string' && Object.prototype.hasOwnProperty.call(THEMES, saved.theme)) {
+    out.theme = saved.theme
+  }
+  if (Number.isFinite(saved.contentWidth) && saved.contentWidth >= 300 && saved.contentWidth <= 2000) {
+    out.contentWidth = saved.contentWidth
+  }
+  if (Number.isFinite(saved.lineHeight) && saved.lineHeight >= 1 && saved.lineHeight <= 3) {
+    out.lineHeight = saved.lineHeight
+  }
+  if (typeof saved.ttsVoice === 'string') out.ttsVoice = saved.ttsVoice
+  if (Number.isFinite(saved.ttsRate) && saved.ttsRate >= 0.5 && saved.ttsRate <= 3) {
+    out.ttsRate = saved.ttsRate
+  }
+  return out
+}
+
 function readSettings() {
   try {
     const raw = localStorage.getItem('readerSettings')
     if (raw !== null) {
       const saved = JSON.parse(raw)
-      return { settings: { ...DEFAULT_SETTINGS, ...saved }, migrate: false }
+      return { settings: sanitizeSettings(saved), migrate: false }
     }
     const [theme, size, fontFamily] = LEGACY_KEYS.map(key => localStorage.getItem(key))
     const settings = { ...DEFAULT_SETTINGS }

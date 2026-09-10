@@ -1,7 +1,8 @@
 import PropTypes from 'prop-types'
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom'
-import { MessageSquare, Send, Loader2 } from 'lucide-react'
+import { MessageSquare, Send, Loader2, Trash2 } from 'lucide-react'
+import api from '../api'
 import userApi, { isLoggedIn, getUserInfo } from '../userApi'
 import { fmtTimeAgo } from '../utils/format'
 
@@ -24,8 +25,11 @@ export default function ChapterComments({ slug, chapter }) {
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState(null)
+  const [deleteError, setDeleteError] = useState(null)
   const loggedIn = isLoggedIn()
   const user = getUserInfo()
+  const isAdmin = localStorage.getItem('userRole') === 'admin'
+  const [deletingId, setDeletingId] = useState(null)
 
   useEffect(() => {
     let alive = true
@@ -59,6 +63,30 @@ export default function ChapterComments({ slug, chapter }) {
       else setError('Gửi bình luận thất bại. Vui lòng thử lại.')
     } finally {
       setSending(false)
+    }
+  }
+
+  const canDelete = (c) => isAdmin || (loggedIn && user && c.user_id === user.id)
+
+  const handleDelete = async (c) => {
+    if (deletingId) return
+    if (!window.confirm('Xóa bình luận này?')) return
+    setDeletingId(c.id)
+    setDeleteError(null)
+    const prev = comments
+    setComments(list => list.filter(x => x.id !== c.id)) // optimistic
+    try {
+      // Tự chủ (comment của chính mình) → dùng phiên user; admin xóa comment
+      // của người khác → dùng phiên admin (Bearer authToken, isAdminRequest
+      // phía Worker/require_admin phía Python xác thực qua token này).
+      const isSelf = loggedIn && user && c.user_id === user.id
+      if (isSelf) await userApi.delete(`/comments/${c.id}`)
+      else await api.delete(`/comments/${c.id}`)
+    } catch {
+      setComments(prev) // hoàn tác nếu lỗi
+      setDeleteError('Xóa bình luận thất bại. Vui lòng thử lại.')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -97,6 +125,7 @@ export default function ChapterComments({ slug, chapter }) {
       )}
 
       {/* Danh sách */}
+      {deleteError && <div className="chapter-comments__error" role="alert">{deleteError}</div>}
       {comments === null ? (
         <div className="chapter-comments__empty">Đang tải bình luận...</div>
       ) : comments.length === 0 ? (
@@ -116,6 +145,23 @@ export default function ChapterComments({ slug, chapter }) {
                   <span className="comment-item__time">
                     {fmtTimeAgo(toEpochSeconds(c.created_at))}
                   </span>
+                  {canDelete(c) && (
+                    <button
+                      type="button"
+                      className="comment-item__delete"
+                      title="Xóa bình luận"
+                      aria-label="Xóa bình luận"
+                      disabled={deletingId === c.id}
+                      onClick={() => handleDelete(c)}
+                      style={{
+                        marginLeft: 'auto', background: 'none', border: 'none',
+                        color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex',
+                        padding: '2px', opacity: deletingId === c.id ? 0.5 : 1,
+                      }}
+                    >
+                      {deletingId === c.id ? <Loader2 size={13} className="spin" /> : <Trash2 size={13} />}
+                    </button>
+                  )}
                 </div>
                 <div className="comment-item__content">{c.content}</div>
               </div>

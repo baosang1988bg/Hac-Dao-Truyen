@@ -125,15 +125,54 @@ export default function EpubReader() {
               userApi.put(`/user/progress/${slug}`, { type: 'epub', position: cfi }).catch(() => {})
             }
           }
-          // Calculate progress
+          // Tính % tiến trình — chỉ chính xác SAU KHI book.locations đã generate
+          // (xem khối generate/cache bên dưới). Trước đó bỏ qua, không hiện % sai.
           try {
-            const pct = book.locations.percentageFromCfi(loc?.start?.cfi)
-            if (pct >= 0) setProgress(Math.round(pct * 100))
-          } catch { /* locations not generated yet */ }
+            if (book.locations?.length?.() > 0 && loc?.start?.cfi) {
+              const pct = book.locations.percentageFromCfi(loc.start.cfi)
+              if (Number.isFinite(pct) && pct >= 0) setProgress(Math.round(pct * 100))
+            }
+          } catch { /* CFI không khớp locations (vd bản EPUB đã đổi) — bỏ qua, giữ % cũ */ }
         })
 
+        // C06: epub.js cần book.locations.generate() TRƯỚC KHI
+        // percentageFromCfi() trả kết quả đúng (nếu chưa generate, hàm này
+        // luôn trả giá trị vô nghĩa) — cache kết quả vào localStorage theo
+        // slug để không phải generate lại (tốn thời gian) mỗi lần mở lại.
+        // Chạy sau khi hiển thị trang đầu, không chặn thời gian tải ban đầu.
+        const locKey = `epub_locations_${slug}`
+        ;(async () => {
+          try {
+            const cached = localStorage.getItem(locKey)
+            if (cached) {
+              await book.locations.load(cached)
+            } else {
+              await book.locations.generate(1000)
+              try { localStorage.setItem(locKey, book.locations.save()) } catch { /* quota đầy — bỏ qua cache */ }
+            }
+            if (destroyed) return
+            // Cập nhật % ngay khi vừa có locations, dùng vị trí hiện tại.
+            const currentCfi = renditionRef.current?.currentLocation?.()?.start?.cfi
+            if (currentCfi) {
+              const pct = book.locations.percentageFromCfi(currentCfi)
+              if (Number.isFinite(pct) && pct >= 0 && !destroyed) setProgress(Math.round(pct * 100))
+            }
+          } catch { /* generate lỗi (epub bất thường) — % không hiển thị, không crash */ }
+        })()
+
         // Đăng ký listener trước display để lưu cả vị trí vừa restore.
-        await rendition.display(savedCfi || undefined)
+        // Fallback (C06): CFI cũ có thể hỏng hoặc không còn khớp nếu EPUB đã
+        // được build lại (offset/nội dung đổi) — display() khi đó ném lỗi;
+        // dọn CFI hỏng khỏi localStorage và mở lại từ đầu sách thay vì crash
+        // cả trang đọc.
+        try {
+          await rendition.display(savedCfi || undefined)
+        } catch (displayErr) {
+          console.warn('CFI khôi phục không hợp lệ, mở lại từ đầu sách:', displayErr)
+          try { localStorage.removeItem(`epub_cfi_${slug}`) } catch { /* ignore */ }
+          lastSyncedCfiRef.current = null
+          if (!destroyed) await rendition.display()
+        }
 
         // Build TOC
         await book.loaded.navigation

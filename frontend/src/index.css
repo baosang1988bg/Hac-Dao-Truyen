@@ -2355,3 +2355,6 @@ a:hover {
   background: var(--reader-bg); color: var(--reader-text); border: 2px solid var(--reader-border);
 }
 .reader-settings-themes button[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 2px; }
+.reader-settings-tts-note {
+  margin: 0; font-size: .78rem; line-height: 1.5; opacity: .7;
+}

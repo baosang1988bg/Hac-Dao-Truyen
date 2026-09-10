@@ -4,24 +4,31 @@ import { BookOpen, Home } from 'lucide-react'
 import api from '../api'
 import NovelCover from '../components/NovelCover'
 import { getAllHistory, fmtChapterLabel } from '../utils/readingHistory'
+import { fetchNovelsBySlugs } from '../utils/novelsApi'
 
 /**
  * Tủ truyện: các truyện đang đọc dở (từ lịch sử cookie/localStorage),
  * ghép với dữ liệu /api/novels để có tên + bìa.
+ *
+ * B01: lịch sử đọc là danh sách slug cụ thể (không phải "toàn bộ catalog"),
+ * nên gọi riêng GET /api/novels/:slug cho từng slug thay vì tải page=1 của
+ * /api/novels rồi .find() — tránh bỏ sót truyện nằm ở trang sau nếu catalog
+ * lớn hơn 1 trang mặc định.
  */
 export default function LibraryPage() {
-  const [novels, setNovels] = useState(null) // null = đang tải
+  const [novelsBySlug, setNovelsBySlug] = useState(null) // null = đang tải
   const history = getAllHistory()
 
   useEffect(() => {
     let alive = true
-    api.get('/novels')
-      .then(res => { if (alive) { const data = res.data; setNovels(Array.isArray(data) ? data : (data.novels || [])) } })
-      .catch(() => { if (alive) setNovels([]) })
+    fetchNovelsBySlugs(api, history.map(h => h.slug))
+      .then(map => { if (alive) setNovelsBySlug(map) })
+      .catch(() => { if (alive) setNovelsBySlug(new Map()) })
     return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (novels === null) {
+  if (novelsBySlug === null) {
     return (
       <div className="container" style={{ paddingTop: '3rem', color: 'var(--text-muted)' }}>
         Đang tải tủ truyện...
@@ -31,7 +38,7 @@ export default function LibraryPage() {
 
   // Chỉ giữ các mục lịch sử còn khớp với truyện đang tồn tại
   const items = history
-    .map(h => ({ ...h, novel: novels.find(n => n.slug === h.slug) }))
+    .map(h => ({ ...h, novel: novelsBySlug.get(h.slug) }))
     .filter(h => h.novel)
 
   return (
