@@ -96,6 +96,31 @@ def test_read_one_chapter():
     assert len(r2.json().get("content", "")) > 50
 
 
+def test_chapter_list_has_canonical_number_field():
+    # B04: contract phải khớp Worker (D1 chapters.chapter_number) — trước đây
+    # local CHỈ trả filename/title, không có số chương chuẩn hóa nào.
+    slug = _first_translated_slug()
+    chapters = client.get(f"/api/novels/{slug}/chapters").json()
+    assert len(chapters) > 0
+    for c in chapters:
+        assert "chapter_number" in c
+        # chapter_number là None (author note không đánh số) hoặc int — không
+        # bao giờ là sentinel nội bộ 999999 dùng để sắp xếp.
+        assert c["chapter_number"] is None or isinstance(c["chapter_number"], int)
+        assert c["chapter_number"] != 999999
+
+
+def test_chapter_content_has_version_for_cache_invalidation():
+    # C07/B04: version (hash nội dung) cho phép service worker phát hiện
+    # chương được dịch lại mà URL/identifier không đổi.
+    slug = _first_translated_slug()
+    chapters = client.get(f"/api/novels/{slug}/chapters").json()
+    ident = chapters[0]["filename"]
+    r = client.get(f"/api/novels/{slug}/chapters/{ident}")
+    data = r.json()
+    assert "version" in data and isinstance(data["version"], str) and len(data["version"]) > 0
+
+
 # ── Bảo mật ──────────────────────────────────────────────────────────────────
 
 def test_translate_requires_admin():

@@ -5,6 +5,7 @@ Endpoint chương: danh sách chương đã dịch, nội dung chương, health 
 Kèm các helper nhận diện file split đã merge (_find_merged_vi...).
 """
 
+import hashlib
 import os
 import re
 
@@ -14,6 +15,13 @@ from security_utils import safe_novel_dir, safe_join
 from chapter_utils import extract_chapter_number_from_text
 
 router = APIRouter()
+
+
+def _content_version(text: str) -> str:
+    """Hash ngắn của nội dung — cùng vai trò `version` mà Worker Cloudflare
+    trả (xem chapterResponse() trong src/index.js), để service worker phát
+    hiện chương được dịch lại dù dùng backend local hay cloud."""
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
 
 @router.get("/api/novels/{slug}/chapters")
@@ -79,7 +87,20 @@ def list_chapters(slug: str):
                         break
         except Exception:
             pass
-        result.append({"filename": f, "title": title})
+        # B04: contract chapter identifier phải khớp Worker Cloudflare (D1
+        # `chapters.chapter_number`, xem src/index.js getChapters) — trước đây
+        # local CHỈ trả filename/title, không có số chương, buộc frontend tự
+        # đoán bằng cách parse tên file khác đi cho từng backend. Không rename
+        # dữ liệu thật: chỉ THÊM field tính toán, giữ nguyên filename gốc.
+        #
+        # extract_chapter_number_from_text() trả sentinel 999999 khi KHÔNG tìm
+        # thấy số nào (author note/lời tác giả không đánh số) — đây chỉ là giá
+        # trị nội bộ để SẮP XẾP đúng vị trí cuối danh sách, KHÔNG phải số
+        # chương thật. Dịch sentinel này thành `None` khi trả ra API để không
+        # lẫn với chương số 0 (số 0 hợp lệ, khác None).
+        n = get_chapter_num(f)
+        canonical_number = None if n == 999999 else n
+        result.append({"filename": f, "title": title, "chapter_number": canonical_number})
     return result
 
 
@@ -96,7 +117,8 @@ def get_chapter_content(slug: str, identifier: str):
     filepath = safe_join(translated_dir, identifier)
     if identifier.endswith(".md") and os.path.exists(filepath):
         with open(filepath, "r", encoding="utf-8") as f:
-            return {"content": f.read()}
+            content = f.read()
+        return {"content": content, "version": _content_version(content)}
 
     # Nếu identifier là số → tìm file có chapter number khớp
     if identifier.isdigit():
@@ -106,7 +128,8 @@ def get_chapter_content(slug: str, identifier: str):
             if extract_chapter_number_from_text(fname) == chap_num:
                 fpath = os.path.join(translated_dir, fname)
                 with open(fpath, "r", encoding="utf-8") as f:
-                    return {"content": f.read()}
+                    content = f.read()
+                return {"content": content, "version": _content_version(content)}
 
     raise HTTPException(status_code=404, detail=f"Chapter not found: {identifier}")
 
