@@ -23,7 +23,12 @@ export default {
         const res = await handleApi(request, url, env, ctx);
         return corsResponse(res, request, env);
       } catch (err) {
-        return corsResponse(jsonResponse({ error: err.message }, 500), request, env);
+        // A06: không trả err.message thô cho client (có thể lộ đường dẫn nội bộ,
+        // stack trace, tên biến/schema). Log đầy đủ ở server (Cloudflare tail
+        // logs) kèm mã đối chiếu ngắn để tra cứu, client chỉ nhận lỗi chung.
+        const errorCode = crypto.randomUUID().slice(0, 8);
+        console.error(`[${errorCode}] ${url.pathname}`, err && err.stack ? err.stack : err);
+        return corsResponse(jsonResponse({ error: 'Internal server error', code: errorCode }, 500), request, env);
       }
     }
 
@@ -289,6 +294,36 @@ function isSafeCoverUrl(targetUrl) {
   return true;
 }
 
+// A01: Chỉ cho phép raster image thật (không SVG/HTML/JSON) và giới hạn kích
+// thước để tránh XSS chủ động (SVG có thể chứa <script>, trình duyệt thực thi
+// khi mở trực tiếp URL proxy) và DoS bộ nhớ Worker khi ảnh quá lớn.
+const COVER_ALLOWED_MIME = new Set([
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif',
+]);
+const COVER_MAX_BYTES = 8 * 1024 * 1024; // 8 MiB
+
+// Magic-byte sniffing: server nguồn có thể khai Content-Type sai (hoặc bị
+// tấn công MIME confusion), nên xác thực bằng chữ ký byte thật thay vì chỉ
+// tin header. Không nhận diện được => coi là không hợp lệ (fail closed).
+function sniffImageMime(bytes) {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return 'image/jpeg';
+  }
+  if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+    return 'image/png';
+  }
+  if (bytes.length >= 6 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38) {
+    return 'image/gif';
+  }
+  if (bytes.length >= 12 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+    return 'image/webp';
+  }
+  if (bytes.length >= 12 && bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) {
+    return 'image/avif';
+  }
+  return null;
+}
+
 async function proxyCover(url) {
   const targetUrl = url.searchParams.get('url');
   if (!targetUrl) return new Response('Missing url', { status: 400 });
@@ -300,17 +335,48 @@ async function proxyCover(url) {
         'Referer': 'https://audiotruyenfull.org/',
       },
     });
-    // Một số CDN ảnh trả Content-Type chung chung/thiếu — chỉ chặn khi rõ ràng
-    // KHÔNG phải ảnh (html/json/text), để không làm gãy bìa đang chạy tốt.
-    const contentType = imgRes.headers.get('Content-Type') || '';
-    const looksLikeNonImage = /^(text\/|application\/json|application\/xml)/i.test(contentType);
-    if (imgRes.ok && !looksLikeNonImage) {
-      const headers = new Headers();
-      headers.set('Content-Type', contentType || 'image/jpeg');
-      headers.set('Access-Control-Allow-Origin', '*');
-      headers.set('Cache-Control', 'public, max-age=604800, s-maxage=604800');
-      return new Response(imgRes.body, { status: 200, headers });
+    if (!imgRes.ok || !imgRes.body) {
+      return new Response('Cover fetch failed', { status: 502 });
     }
+    const declaredLength = parseInt(imgRes.headers.get('Content-Length') || '0', 10);
+    if (declaredLength > COVER_MAX_BYTES) {
+      return new Response('Ảnh vượt giới hạn kích thước', { status: 502 });
+    }
+
+    // Đọc toàn bộ body có giới hạn byte cứng (không tin Content-Length khai báo).
+    const reader = imgRes.body.getReader();
+    const chunks = [];
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > COVER_MAX_BYTES) {
+        reader.cancel().catch(() => {});
+        return new Response('Ảnh vượt giới hạn kích thước', { status: 502 });
+      }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+
+    const sniffed = sniffImageMime(bytes);
+    if (!sniffed || !COVER_ALLOWED_MIME.has(sniffed)) {
+      return new Response('Định dạng ảnh không được hỗ trợ', { status: 415 });
+    }
+
+    const headers = new Headers();
+    headers.set('Content-Type', sniffed);
+    headers.set('Content-Length', String(bytes.byteLength));
+    headers.set('Access-Control-Allow-Origin', '*');
+    headers.set('Cache-Control', 'public, max-age=604800, s-maxage=604800');
+    headers.set('X-Content-Type-Options', 'nosniff');
+    headers.set('Content-Disposition', 'inline');
+    return new Response(bytes, { status: 200, headers });
   } catch { /* fallback */ }
   return new Response('Cover fetch failed', { status: 502 });
 }
@@ -457,27 +523,53 @@ async function trackView(env, slug, request) {
   return jsonResponse({ ok: true });
 }
 
+// F02: mỗi định danh (user đăng nhập hoặc guest_id do client tự sinh) chỉ có
+// MỘT phiếu đánh giá / truyện — gửi lại thì CẬP NHẬT phiếu cũ, không cộng dồn
+// vô hạn. guest_id chỉ để chống double-submit vô ý, KHÔNG phải chống gian lận
+// tuyệt đối (client kiểm soát giá trị này). Nếu không có user lẫn guest_id,
+// từ chối thay vì âm thầm cộng dồn không định danh (hành vi cũ, đã gây lỗi).
 async function rateNovel(env, slug, request) {
   let body;
   try { body = await request.json(); } catch { return jsonResponse({ error: 'Invalid JSON' }, 400); }
   const stars = parseInt(body.stars);
   if (!stars || stars < 1 || stars > 5) return jsonResponse({ error: 'stars must be 1-5' }, 400);
 
-  // 1 lượt đánh giá / IP / truyện / 5 giây — chỉ chặn double-submit/spam script,
-  // không cản người dùng thật đổi ý đánh giá lại sau vài giây.
-  if (!checkRateLimit(`rate:${clientIp(request)}:${slug}`, 5_000)) {
+  const user = await getUserFromRequest(request, env);
+  const guestId = (request.headers.get('X-Guest-Id') || '').trim();
+  if (!user && (!guestId || guestId.length > 100 || !/^[A-Za-z0-9_-]+$/.test(guestId))) {
+    return jsonResponse({ error: 'Thiếu định danh người đánh giá (đăng nhập hoặc guest_id hợp lệ)' }, 400);
+  }
+
+  // Vẫn giữ rate limit chống double-submit nhanh (double click, script lặp).
+  const identityKey = user ? `u:${user.id}` : `g:${guestId}`;
+  if (!checkRateLimit(`rate:${identityKey}:${slug}`, 5_000)) {
     return jsonResponse({ error: 'Vui lòng thử lại sau vài giây' }, 429);
   }
 
-  await env.DB.prepare(`
-    UPDATE novels SET rating_sum = rating_sum + ?, rating_count = rating_count + 1 WHERE slug = ?
-  `).bind(stars, slug).run();
+  if (user) {
+    await env.DB.prepare(`
+      INSERT INTO novel_ratings (slug, user_id, stars, updated_at) VALUES (?, ?, ?, datetime('now'))
+      ON CONFLICT(slug, user_id) WHERE user_id IS NOT NULL
+      DO UPDATE SET stars = excluded.stars, updated_at = datetime('now')
+    `).bind(slug, user.id, stars).run();
+  } else {
+    await env.DB.prepare(`
+      INSERT INTO novel_ratings (slug, guest_id, stars, updated_at) VALUES (?, ?, ?, datetime('now'))
+      ON CONFLICT(slug, guest_id) WHERE guest_id IS NOT NULL
+      DO UPDATE SET stars = excluded.stars, updated_at = datetime('now')
+    `).bind(slug, guestId, stars).run();
+  }
 
-  const row = await env.DB.prepare(`
-    SELECT rating_sum, rating_count FROM novels WHERE slug = ?
+  const agg = await env.DB.prepare(`
+    SELECT COALESCE(SUM(stars), 0) AS rating_sum, COUNT(*) AS rating_count
+    FROM novel_ratings WHERE slug = ?
   `).bind(slug).first();
-  const avg = row && row.rating_count > 0 ? Math.round((row.rating_sum / row.rating_count) * 10) / 10 : 0;
-  return jsonResponse({ ok: true, rating: avg, rating_count: row?.rating_count || 0 });
+  await env.DB.prepare(`
+    UPDATE novels SET rating_sum = ?, rating_count = ? WHERE slug = ?
+  `).bind(agg.rating_sum, agg.rating_count, slug).run();
+
+  const avg = agg.rating_count > 0 ? Math.round((agg.rating_sum / agg.rating_count) * 10) / 10 : 0;
+  return jsonResponse({ ok: true, rating: avg, rating_count: agg.rating_count });
 }
 
 
@@ -883,8 +975,11 @@ async function updateGlossary(env, slug, request) {
   if (!(await isAdminRequest(request, env))) {
     return jsonResponse({ error: 'Unauthorized' }, 401);
   }
-  const body = await request.json();
-  const glossary = body.glossary || {};
+  const GLOSSARY_MAX_BYTES = 2 * 1024 * 1024; // đủ cho vài nghìn thuật ngữ, chặn payload bất thường
+  const parsed = await readLimitedJson(request, GLOSSARY_MAX_BYTES);
+  if (!parsed.ok) return jsonResponse({ error: 'Payload không hợp lệ hoặc quá lớn' }, parsed.status);
+  const body = parsed.body;
+  const glossary = (body && typeof body === 'object' && body.glossary && typeof body.glossary === 'object') ? body.glossary : {};
 
   // 1. Lưu glossary dạng file JSON lên R2 (để lưu trữ không giới hạn kích thước)
   await env.CHAPTERS.put(`${slug}/glossary.json`, JSON.stringify(glossary, null, 2));
@@ -896,6 +991,28 @@ async function updateGlossary(env, slug, request) {
   `).bind('{}', Object.keys(glossary).length, new Date().toISOString(), slug).run();
 
   return jsonResponse({ status: 'success', message: 'Glossary updated and saved to R2' });
+}
+
+// B03: `getSynopsis` được gọi ở route /api/novels/:slug/synopsis nhưng CHƯA
+// TỪNG được định nghĩa — mọi request thật sự đến đây ném ReferenceError, bị
+// try/catch tầng trên nuốt thành 500 (đã tái hiện). R2 `${slug}/synopsis.md`
+// là nguồn MỚI NHẤT (được ghi đè ở mỗi lần sync is_first_chunk có synopsis),
+// còn cột D1 `novels.synopsis` KHÔNG được cập nhật khi novel đã tồn tại (xem
+// ON CONFLICT DO UPDATE trong syncNovelBatch — chỉ update total_chapters),
+// nên D1 có thể cũ hơn R2. Ưu tiên đọc R2, fallback D1 khi R2 thiếu/lỗi.
+async function getSynopsis(env, slug) {
+  const novel = await env.DB.prepare(`SELECT synopsis FROM novels WHERE slug = ?`).bind(slug).first();
+  if (!novel) return jsonResponse({ error: 'Novel not found' }, 404);
+
+  try {
+    const obj = await env.CHAPTERS.get(`${slug}/synopsis.md`);
+    if (obj) {
+      const text = await obj.text();
+      return jsonResponse({ slug, synopsis: text, source: 'r2' });
+    }
+  } catch { /* R2 lỗi tạm thời → fallback D1 bên dưới, không 500 */ }
+
+  return jsonResponse({ slug, synopsis: novel.synopsis || '', source: 'd1' });
 }
 
 async function getHealth(env, slug) {
@@ -1028,14 +1145,41 @@ const SLUG_RE = /^[a-z0-9-]{1,100}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 ngày
 
-// Parse JSON body an toàn — trả null nếu JSON hỏng (handler trả 400)
-async function readJsonBody(request) {
+// A05: đọc body JSON với giới hạn byte cứng — chặn trước khi materialize
+// body quá lớn bằng cách kiểm tra Content-Length khai báo, đồng thời đếm byte
+// thật khi đọc stream (không tin tưởng tuyệt đối header, có thể thiếu/sai).
+// Trả { ok:false, status } khi vượt giới hạn hoặc JSON hỏng, { ok:true, body }
+// khi thành công.
+async function readLimitedJson(request, maxBytes) {
+  const declared = parseInt(request.headers.get('Content-Length') || '0', 10);
+  if (declared > maxBytes) return { ok: false, status: 413 };
+  const reader = request.body?.getReader();
+  if (!reader) return { ok: false, status: 400 };
+  let size = 0;
+  const parts = [];
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxBytes) {
+      await reader.cancel().catch(() => {});
+      return { ok: false, status: 413 };
+    }
+    parts.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const part of parts) { bytes.set(part, offset); offset += part.length; }
   try {
-    return await request.json();
+    return { ok: true, body: JSON.parse(new TextDecoder().decode(bytes)) };
   } catch {
-    return null;
+    return { ok: false, status: 400 };
   }
 }
+
+// Giới hạn mặc định cho body auth/bookmark/progress/comment/novel-request —
+// các payload này chỉ chứa vài trường text ngắn, không cần lớn.
+const DEFAULT_JSON_MAX_BYTES = 64 * 1024; // 64 KiB
 
 // ── Password hashing (PBKDF2-SHA256, tương thích hashlib.pbkdf2_hmac Python) ──
 
@@ -1131,15 +1275,17 @@ async function getUserFromRequest(request, env) {
 // ── Auth handlers ─────────────────────────────────────────────────────────────
 
 async function userRegister(request, env) {
-  const body = await readJsonBody(request);
-  if (!body) return jsonResponse({ error: 'Invalid JSON body' }, 400);
+  const __parsed = await readLimitedJson(request, DEFAULT_JSON_MAX_BYTES);
+  if (!__parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, __parsed.status);
+  const body = __parsed.body;
 
   const email = String(body.email || '').trim().toLowerCase();
   const password = String(body.password || '');
   const name = String(body.name || '').trim();
 
-  if (!EMAIL_RE.test(email)) return jsonResponse({ error: 'Email không hợp lệ' }, 400);
-  if (password.length < 8) return jsonResponse({ error: 'Mật khẩu phải có ít nhất 8 ký tự' }, 400);
+  if (!EMAIL_RE.test(email) || email.length > 254) return jsonResponse({ error: 'Email không hợp lệ' }, 400);
+  if (password.length < 8 || password.length > 256) return jsonResponse({ error: 'Mật khẩu phải từ 8 đến 256 ký tự' }, 400);
+  if (name.length > 100) return jsonResponse({ error: 'Tên quá dài' }, 400);
 
   const existing = await env.DB.prepare(
     `SELECT id FROM users WHERE email = ?`
@@ -1166,11 +1312,15 @@ async function userRegister(request, env) {
 }
 
 async function userLogin(request, env) {
-  const body = await readJsonBody(request);
-  if (!body) return jsonResponse({ error: 'Invalid JSON body' }, 400);
+  const __parsed = await readLimitedJson(request, DEFAULT_JSON_MAX_BYTES);
+  if (!__parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, __parsed.status);
+  const body = __parsed.body;
 
   const email = String(body.email || '').trim().toLowerCase();
   const password = String(body.password || '');
+  if (email.length > 254 || password.length > 256) {
+    return jsonResponse({ error: 'Email hoặc mật khẩu không hợp lệ' }, 400);
+  }
 
   const user = await env.DB.prepare(
     `SELECT id, email, name, password_hash FROM users WHERE email = ?`
@@ -1240,7 +1390,9 @@ async function userProgressUpdate(request, env, slug) {
   if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
   if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
 
-  const body = await readJsonBody(request);
+  const __parsed = await readLimitedJson(request, DEFAULT_JSON_MAX_BYTES);
+  if (!__parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, __parsed.status);
+  const body = __parsed.body;
   const type = body && body.type !== undefined ? body.type : 'chapter';
   if (type !== 'chapter' && type !== 'epub') {
     return jsonResponse({ error: "type phải là 'chapter' hoặc 'epub'" }, 400);
@@ -1255,8 +1407,8 @@ async function userProgressUpdate(request, env, slug) {
     chapter = body.chapter;
     position = String(body.chapter);
   } else {
-    if (!body || typeof body.position !== 'string' || !body.position) {
-      return jsonResponse({ error: 'position phải là chuỗi CFI không rỗng' }, 400);
+    if (!body || typeof body.position !== 'string' || !body.position || body.position.length > 2000) {
+      return jsonResponse({ error: 'position phải là chuỗi CFI không rỗng và không quá 2000 ký tự' }, 400);
     }
     position = body.position;
   }
@@ -1336,8 +1488,9 @@ async function commentCreate(request, env, slug) {
   if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
   if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
 
-  const body = await readJsonBody(request);
-  if (!body) return jsonResponse({ error: 'Invalid JSON body' }, 400);
+  const __parsed = await readLimitedJson(request, DEFAULT_JSON_MAX_BYTES);
+  if (!__parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, __parsed.status);
+  const body = __parsed.body;
 
   const content = String(body.content || '').trim();
   const chapter = Number.isInteger(body.chapter) ? body.chapter : 0;
@@ -1345,17 +1498,19 @@ async function commentCreate(request, env, slug) {
     return jsonResponse({ error: 'Nội dung phải từ 1 đến 2000 ký tự' }, 400);
   }
 
-  // Rate limit: 1 comment / 20 giây / user — so sánh created_at bằng SQL datetime
-  const recent = await env.DB.prepare(`
-    SELECT id FROM comments
-    WHERE user_id = ? AND created_at > datetime('now', '-20 seconds')
-    LIMIT 1
-  `).bind(user.id).first();
-  if (recent) return jsonResponse({ error: 'Bình luận quá nhanh, thử lại sau 20 giây' }, 429);
-
-  const { meta } = await env.DB.prepare(
-    `INSERT INTO comments (user_id, slug, chapter, content) VALUES (?, ?, ?, ?)`
-  ).bind(user.id, slug, chapter, content).run();
+  // F01: cooldown 1 comment / 20 giây / user PHẢI nguyên tử — kiểm tra rồi
+  // insert bằng 2 statement riêng (bản cũ) có race: 2 request đồng thời có thể
+  // cùng đọc "chưa có comment gần đây" trước khi bên nào insert xong. Gộp
+  // thành 1 câu INSERT...SELECT...WHERE NOT EXISTS để toàn bộ kiểm tra + ghi
+  // xảy ra trong một statement duy nhất.
+  const { meta } = await env.DB.prepare(`
+    INSERT INTO comments (user_id, slug, chapter, content)
+    SELECT ?, ?, ?, ?
+    WHERE NOT EXISTS (
+      SELECT 1 FROM comments WHERE user_id = ? AND created_at > datetime('now', '-20 seconds')
+    )
+  `).bind(user.id, slug, chapter, content, user.id).run();
+  if (!meta.changes) return jsonResponse({ error: 'Bình luận quá nhanh, thử lại sau 20 giây' }, 429);
   return jsonResponse({ id: meta.last_row_id }, 201);
 }
 
@@ -1388,8 +1543,9 @@ async function novelRequestCreate(request, env) {
   const user = await getUserFromRequest(request, env);
   if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
 
-  const body = await readJsonBody(request);
-  if (!body) return jsonResponse({ error: 'Invalid JSON body' }, 400);
+  const __parsed = await readLimitedJson(request, DEFAULT_JSON_MAX_BYTES);
+  if (!__parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, __parsed.status);
+  const body = __parsed.body;
 
   const requestUrl = String(body.url || '').trim();
   const note = String(body.note || '').trim();
@@ -1404,33 +1560,18 @@ async function novelRequestCreate(request, env) {
     return jsonResponse({ error: `Ghi chú tối đa ${MAX_REQUEST_NOTE_LENGTH} ký tự` }, 400);
   }
 
-  const pending = await env.DB.prepare(
-    `SELECT COUNT(*) AS n FROM novel_requests WHERE user_id = ? AND status = 'pending'`
-  ).bind(user.id).first();
-  if ((pending?.n || 0) >= MAX_PENDING_NOVEL_REQUESTS) {
-    return jsonResponse({
-      error: `Bạn đang có ${MAX_PENDING_NOVEL_REQUESTS} yêu cầu chờ duyệt. `
-        + 'Vui lòng đợi admin xử lý trước khi gửi thêm.',
-    }, 429);
-  }
+  // F01: quota "tối đa N pending / user" PHẢI nguyên tử — bản cũ dùng
+  // SELECT COUNT rồi INSERT rồi SELECT COUNT lại để "tự sửa sai" là 3
+  // statement rời rạc, vẫn còn khe hở giữa các bước. Gộp kiểm tra + ghi vào
+  // MỘT câu INSERT...SELECT...WHERE (subquery đếm pending) < MAX, chạy như
+  // một statement duy nhất nên không có 2 request nào cùng "lọt qua" check.
+  const { meta } = await env.DB.prepare(`
+    INSERT INTO novel_requests (user_id, url, note)
+    SELECT ?, ?, ?
+    WHERE (SELECT COUNT(*) FROM novel_requests WHERE user_id = ? AND status = 'pending') < ?
+  `).bind(user.id, requestUrl, note, user.id, MAX_PENDING_NOVEL_REQUESTS).run();
 
-  const { meta } = await env.DB.prepare(
-    `INSERT INTO novel_requests (user_id, url, note) VALUES (?, ?, ?)`
-  ).bind(user.id, requestUrl, note).run();
-
-  // Best-effort giảm race, không phải giải pháp tuyệt đối: D1 không hỗ trợ
-  // multi-statement transaction dễ dàng qua HTTP API, nên vẫn có khe hở giữa
-  // SELECT COUNT(*) ở trên và INSERT vừa rồi (2 request đồng thời có thể cùng
-  // đi qua check trước khi request kia INSERT xong). Ở đây kiểm tra lại lần
-  // nữa SAU khi insert: nếu phát hiện vượt giới hạn do race, tự động từ chối
-  // ngay row vừa tạo thay vì để nó tồn tại như 1 pending request hợp lệ.
-  const recheck = await env.DB.prepare(
-    `SELECT COUNT(*) AS n FROM novel_requests WHERE user_id = ? AND status = 'pending'`
-  ).bind(user.id).first();
-  if ((recheck?.n || 0) > MAX_PENDING_NOVEL_REQUESTS) {
-    await env.DB.prepare(
-      `UPDATE novel_requests SET status = 'rejected', admin_note = ?, reviewed_at = datetime('now') WHERE id = ?`
-    ).bind('Tự động từ chối: vượt giới hạn yêu cầu đang chờ do gửi đồng thời', meta.last_row_id).run();
+  if (!meta.changes) {
     return jsonResponse({
       error: `Bạn đang có ${MAX_PENDING_NOVEL_REQUESTS} yêu cầu chờ duyệt. `
         + 'Vui lòng đợi admin xử lý trước khi gửi thêm.',
@@ -1479,8 +1620,9 @@ async function adminNovelRequestReview(request, env, id) {
   if (!(await isAdminRequest(request, env))) {
     return jsonResponse({ error: 'Unauthorized' }, 403);
   }
-  const body = await readJsonBody(request);
-  if (!body) return jsonResponse({ error: 'Invalid JSON body' }, 400);
+  const __parsed = await readLimitedJson(request, DEFAULT_JSON_MAX_BYTES);
+  if (!__parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, __parsed.status);
+  const body = __parsed.body;
 
   const status = String(body.status || '');
   const adminNote = String(body.admin_note || '').trim();
@@ -1520,7 +1662,9 @@ async function proxyToBackend(request, url, env) {
   try {
     return await fetch(proxied);
   } catch (err) {
-    return jsonResponse({ error: 'Không thể kết nối backend.', detail: err.message }, 502);
+    const errorCode = crypto.randomUUID().slice(0, 8);
+    console.error(`[${errorCode}] proxyToBackend ${url.pathname}`, err && err.stack ? err.stack : err);
+    return jsonResponse({ error: 'Không thể kết nối backend.', code: errorCode }, 502);
   }
 }
 

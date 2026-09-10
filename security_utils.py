@@ -11,6 +11,7 @@ Các hàm bảo vệ đầu vào cho REST API:
 
 import os
 import re
+import socket
 import ipaddress
 from urllib.parse import urlparse
 
@@ -73,22 +74,78 @@ def validate_chapter_title(title: str) -> str:
     return title
 
 
+def _ip_obj_is_blocked(ip) -> bool:
+    """
+    IP (đối tượng ipaddress) có nằm trong dải bị chặn cho SSRF không:
+    loopback, private (RFC1918/ULA...), link-local (bao gồm 169.254.0.0/16 —
+    dải metadata cloud AWS/GCP/Azure), reserved, multicast, unspecified.
+    Với IPv6 dạng IPv4-mapped (::ffff:127.0.0.1), kiểm tra luôn IPv4 bên trong.
+    """
+    if (ip.is_loopback or ip.is_private or ip.is_link_local or ip.is_reserved
+            or ip.is_multicast or ip.is_unspecified):
+        return True
+    mapped = getattr(ip, "ipv4_mapped", None)
+    if mapped is not None:
+        return _ip_obj_is_blocked(mapped)
+    return False
+
+
 def _is_private_host(host: str) -> bool:
-    """Host là localhost / IP nội bộ?"""
-    if host.lower() in ("localhost", "0.0.0.0", "127.0.0.1", "::1"):
+    """
+    Host (hostname hoặc IP literal) có phải localhost / IP nội bộ không.
+    Không resolve DNS ở đây — chỉ kiểm tra IP literal hoặc tên gọi cục bộ đã
+    biết. Domain name thật (không phải IP) trả về False ở bước này; việc kiểm
+    tra IP thật sau khi resolve DNS nằm ở `validate_source_url`.
+    """
+    if host.lower() in ("localhost", "0.0.0.0", "0", "::", "::1"):
         return True
     try:
         ip = ipaddress.ip_address(host)
-        return ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved
     except ValueError:
-        return False  # là domain name — cho qua (đã có allowlist scheme)
+        return False  # không phải IP literal — có thể là domain, resolve DNS riêng
+    return _ip_obj_is_blocked(ip)
 
 
-def validate_source_url(url: str) -> str:
+def _resolve_host_ips(hostname: str) -> list[str]:
     """
-    Kiểm tra URL nguồn crawl:
-    - Chỉ cho scheme http/https.
-    - Chặn localhost & dải IP nội bộ (chống SSRF vào mạng nội bộ).
+    Resolve hostname ra danh sách IP THẬT sẽ được dùng để kết nối.
+    Chống DNS rebinding: một domain công khai (qua allowlist scheme/format)
+    vẫn có thể trỏ DNS về IP nội bộ/loopback/metadata.
+
+    Fail-closed: nếu không resolve được (DNS lỗi), coi là không an toàn và từ
+    chối — không có gì đảm bảo host đó không phải nội bộ.
+    """
+    try:
+        infos = socket.getaddrinfo(hostname, None)
+    except socket.gaierror:
+        raise HTTPException(status_code=400, detail="Không thể phân giải hostname của URL")
+    ips = {info[4][0] for info in infos if info[4]}
+    if not ips:
+        raise HTTPException(status_code=400, detail="Không thể phân giải hostname của URL")
+    return list(ips)
+
+
+def validate_source_url(url: str, *, check_dns: bool = True) -> str:
+    """
+    Kiểm tra URL nguồn crawl (chống SSRF):
+    - Chỉ cho scheme http/https (chặn file/gopher/ftp/data/...).
+    - Không cho phép credentials dạng user:pass@host trong URL.
+    - Chặn localhost & dải IP nội bộ/loopback/link-local/reserved/multicast,
+      cả IPv4 lẫn IPv6 (kể cả ULA fc00::/7, và IPv4-mapped IPv6).
+    - Nếu `check_dns=True` (mặc định): resolve DNS và kiểm tra IP THẬT sẽ
+      dùng để kết nối — chặn domain công khai trỏ về IP nội bộ (DNS
+      rebinding). Fail-closed nếu không resolve được.
+
+    Giới hạn còn lại (không khắc phục được ở tầng Python thuần):
+    đây là kiểm tra tại THỜI ĐIỂM GỌI HÀM (TOCTOU). Giữa lúc hàm này resolve
+    DNS xong và lúc client (requests/httpx/Playwright) thực sự mở kết nối,
+    bản ghi DNS có thể đổi lần nữa ở tầng hệ điều hành/thư viện mạng — muốn
+    loại bỏ hoàn toàn phải tự quản lý socket (resolve 1 lần, connect thẳng
+    vào IP đã resolve, không để library tự resolve lại). Với luồng Playwright
+    trong `scraper.py`, mỗi request/redirect thực tế được kiểm tra lại ngay
+    trước khi cho phép đi tiếp để giảm cửa sổ TOCTOU và chặn cả các hop
+    redirect, nhưng vẫn còn khoảng hở giữa lần kiểm tra đó và lúc trình
+    duyệt mở kết nối TCP thật.
     """
     try:
         parsed = urlparse(url)
@@ -97,8 +154,16 @@ def validate_source_url(url: str) -> str:
 
     if parsed.scheme not in ("http", "https"):
         raise HTTPException(status_code=400, detail="URL phải là http/https")
+    if parsed.username is not None or parsed.password is not None:
+        raise HTTPException(status_code=400, detail="Không cho phép thông tin đăng nhập trong URL")
     if not parsed.hostname:
         raise HTTPException(status_code=400, detail="URL thiếu hostname")
     if _is_private_host(parsed.hostname):
         raise HTTPException(status_code=400, detail="Không cho phép URL nội bộ")
+
+    if check_dns:
+        for ip_str in _resolve_host_ips(parsed.hostname):
+            if _is_private_host(ip_str):
+                raise HTTPException(status_code=400, detail="Không cho phép URL nội bộ (DNS)")
+
     return url

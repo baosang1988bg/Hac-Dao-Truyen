@@ -8,8 +8,9 @@ import os
 import re
 from datetime import datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from auth import require_admin
 from state import SERVER_START_TIME
 
 router = APIRouter()
@@ -17,16 +18,16 @@ router = APIRouter()
 NOVELS_DIR = "novels"
 
 
-@router.get("/api/server-info")
+@router.get("/api/server-info", dependencies=[Depends(require_admin)])
 def get_server_info():
-    """Trả về thời điểm server khởi động để UI biết gộp session theo server run."""
+    """Trả về thời điểm server khởi động để UI biết gộp session theo server run. (admin)"""
     return {"server_start": SERVER_START_TIME}
 
 
-@router.get("/api/logs")
+@router.get("/api/logs", dependencies=[Depends(require_admin)])
 def list_sessions(limit: int = 200):
     """
-    Parse tất cả log files trong thư mục logs/ và trả về danh sách session.
+    Parse tất cả log files trong thư mục logs/ và trả về danh sách session. (admin)
     Bao gồm cả các _stats.json không có file .log đi kèm (orphan stats).
     Mỗi session chứa: thời gian, truyện, số chương, thời lượng, tỷ lệ thành công,
     ước tính tokens, model đã dùng, loại session (translate/fix).

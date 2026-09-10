@@ -17,6 +17,11 @@ def isolated_app(tmp_path, monkeypatch):
     import state
     import user_store
     from routers import novels, logs
+    from routers.rate_limit import (
+        admin_login_rate_limiter,
+        login_rate_limiter,
+        register_rate_limiter,
+    )
 
     root = tmp_path / "novels"
     root.mkdir()
@@ -32,6 +37,12 @@ def isolated_app(tmp_path, monkeypatch):
     auth._sessions.clear()
     state.translation_tasks.clear()
     state.cancel_flags.clear()
+    # Rate limiter login/register/admin-login (routers/rate_limit.py) là dict
+    # in-memory dùng chung cho cả tiến trình test — reset mỗi test để 1 test
+    # gọi nhiều lần không vô tình làm test khác (chạy sau) bị 429 oan.
+    admin_login_rate_limiter.reset()
+    login_rate_limiter.reset()
+    register_rate_limiter.reset()
     profile = novel_manager.create_novel("CI Demo", "", slug="ci-demo", glossary={"甲": "Giáp"})
     for number in (1, 2):
         (Path(profile.translated_dir) / f"Chương {number} - Mở đầu_VI.md").write_text(
@@ -41,3 +52,6 @@ def isolated_app(tmp_path, monkeypatch):
     auth._sessions.clear()
     state.translation_tasks.clear()
     state.cancel_flags.clear()
+    admin_login_rate_limiter.reset()
+    login_rate_limiter.reset()
+    register_rate_limiter.reset()

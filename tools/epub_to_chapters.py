@@ -21,8 +21,10 @@ Options:
 
 import argparse
 import os
+import posixpath
 import re
 import sys
+import zipfile
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -162,6 +164,77 @@ def html_to_text(html_bytes: bytes) -> str:
 
 
 # ── EPUB parsing ───────────────────────────────────────────────────────────────
+
+# EPUB thực chất là file ZIP; ebooklib tự mở zipfile mà không kiểm tra giới hạn
+# nào, nên trước khi đưa file cho ebooklib phải tự validate để tránh:
+#   - Zip bomb: file nén nhỏ nhưng khai báo giải nén khổng lồ, có thể làm cạn
+#     RAM/disk khi ebooklib đọc từng entry vào bộ nhớ.
+#   - Zip slip / path traversal: entry có path kiểu "../../etc/passwd" hoặc path
+#     tuyệt đối, có thể ghi đè file ngoài ý muốn nếu code sau này extract ra đĩa.
+#   - Archive quá nhiều entry: DoS bằng cách nhồi hàng triệu entry rỗng.
+# Đây là công cụ CLI/import nội bộ (chạy bằng tay bởi người vận hành), không phải
+# endpoint upload public, nhưng EPUB có thể đến từ nguồn không tin cậy (tải về từ
+# nơi khác), nên vẫn cần chặn các input ác ý cơ bản.
+
+MAX_EPUB_COMPRESSED_BYTES = 200 * 1024 * 1024   # 200 MB — EPUB hợp lệ (kể cả nhiều ảnh) hiếm khi vượt mốc này
+MAX_EPUB_UNCOMPRESSED_BYTES = 1024 * 1024 * 1024  # 1 GB — tổng dung lượng giải nén khai báo, chặn zip bomb
+MAX_EPUB_ENTRIES = 100_000  # EPUB thật thường vài trăm đến vài nghìn entry; số này đủ dư mà vẫn chặn được DoS
+
+
+class EpubValidationError(ValueError):
+    """Lỗi khi EPUB (file ZIP) vi phạm giới hạn an toàn hoặc chứa entry path nguy hiểm."""
+
+
+def _validate_entry_path(name: str) -> None:
+    """Từ chối entry có đường dẫn tuyệt đối hoặc path traversal (zip slip)."""
+    normalized = name.replace('\\', '/')
+    if normalized.startswith('/'):
+        raise EpubValidationError(f'Entry path tuyệt đối không hợp lệ: {name!r}')
+    if re.match(r'^[A-Za-z]:', normalized):
+        raise EpubValidationError(f'Entry path tuyệt đối kiểu Windows không hợp lệ: {name!r}')
+
+    norm = posixpath.normpath(normalized)
+    if norm == '..' or norm.startswith('../') or posixpath.isabs(norm):
+        raise EpubValidationError(f'Entry path chứa path traversal (zip slip): {name!r}')
+
+
+def _validate_epub_archive(epub_path: str) -> None:
+    """Kiểm tra EPUB trước khi cho ebooklib mở, chặn zip bomb / zip slip / quá tải entry.
+
+    Raise EpubValidationError nếu vi phạm bất kỳ giới hạn nào.
+    """
+    try:
+        compressed_size = os.path.getsize(epub_path)
+    except OSError as exc:
+        raise EpubValidationError(f'Không đọc được EPUB tại {epub_path}: {exc}') from exc
+
+    if compressed_size > MAX_EPUB_COMPRESSED_BYTES:
+        raise EpubValidationError(
+            f'EPUB quá lớn: {compressed_size} bytes (giới hạn {MAX_EPUB_COMPRESSED_BYTES} bytes / 200MB)'
+        )
+
+    try:
+        zf = zipfile.ZipFile(epub_path)
+    except zipfile.BadZipFile as exc:
+        raise EpubValidationError(f'EPUB không phải file ZIP hợp lệ: {exc}') from exc
+
+    with zf:
+        infos = zf.infolist()
+        if len(infos) > MAX_EPUB_ENTRIES:
+            raise EpubValidationError(
+                f'EPUB có quá nhiều entry: {len(infos)} (giới hạn {MAX_EPUB_ENTRIES})'
+            )
+
+        total_uncompressed = 0
+        for info in infos:
+            _validate_entry_path(info.filename)
+            total_uncompressed += info.file_size
+            if total_uncompressed > MAX_EPUB_UNCOMPRESSED_BYTES:
+                raise EpubValidationError(
+                    'EPUB nghi là zip bomb: tổng dung lượng giải nén khai báo vượt '
+                    f'{MAX_EPUB_UNCOMPRESSED_BYTES} bytes (1GB)'
+                )
+
 
 def _try_import_ebooklib():
     try:
@@ -353,6 +426,7 @@ def parse_epub(epub_path: str) -> dict:
     """
     ebooklib, epub = _try_import_ebooklib()
 
+    _validate_epub_archive(epub_path)
     book = epub.read_epub(epub_path)
 
     # Tên truyện từ metadata — dùng để cắt dòng lặp lại tiêu đề trong synopsis
@@ -546,7 +620,11 @@ def main():
             sys.exit(1)
 
     print(f'[INFO] Đang parse EPUB: {epub_path}')
-    result = parse_epub(epub_path)
+    try:
+        result = parse_epub(epub_path)
+    except EpubValidationError as exc:
+        print(f'[ERROR] EPUB bị từ chối vì lý do an toàn: {exc}', file=sys.stderr)
+        sys.exit(1)
 
     synopsis = result['synopsis']
     chapters = result['chapters']

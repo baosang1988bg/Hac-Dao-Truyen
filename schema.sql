@@ -58,36 +58,43 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS user_sessions (
   token      TEXT PRIMARY KEY,
   user_id    INTEGER NOT NULL,
-  expires_at TEXT NOT NULL                   -- UTC "YYYY-MM-DD HH:MM:SS", so sánh với datetime('now')
+  expires_at TEXT NOT NULL,                  -- UTC "YYYY-MM-DD HH:MM:SS", so sánh với datetime('now')
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Truyện đã đánh dấu (bookmark) của từng user
 CREATE TABLE IF NOT EXISTS bookmarks (
-  user_id    INTEGER,
-  slug       TEXT,
+  user_id    INTEGER NOT NULL,
+  slug       TEXT NOT NULL,
   created_at TEXT DEFAULT (datetime('now')),
-  PRIMARY KEY (user_id, slug)
+  PRIMARY KEY (user_id, slug),
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (slug) REFERENCES novels(slug)
 );
 
 -- Tiến độ đọc: chương gần nhất user đang đọc của mỗi truyện
 CREATE TABLE IF NOT EXISTS reading_progress (
-  user_id    INTEGER,
-  slug       TEXT,
+  user_id    INTEGER NOT NULL,
+  slug       TEXT NOT NULL,
   chapter    INTEGER,
   position   TEXT,               -- chuỗi vị trí: số chương dạng text hoặc CFI (EPUB)
-  type       TEXT DEFAULT 'chapter', -- 'chapter' | 'epub'
+  type       TEXT DEFAULT 'chapter' CHECK (type IN ('chapter', 'epub')), -- 'chapter' | 'epub'
   updated_at TEXT,
-  PRIMARY KEY (user_id, slug)
+  PRIMARY KEY (user_id, slug),
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (slug) REFERENCES novels(slug)
 );
 
 -- Bình luận theo truyện/chương
 CREATE TABLE IF NOT EXISTS comments (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id    INTEGER,
-  slug       TEXT,
+  user_id    INTEGER NOT NULL,
+  slug       TEXT NOT NULL,
   chapter    INTEGER,
-  content    TEXT,
-  created_at TEXT DEFAULT (datetime('now'))
+  content    TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (slug) REFERENCES novels(slug)
 );
 
 -- Index phục vụ query danh sách comment theo chương và dọn session hết hạn
@@ -106,10 +113,11 @@ CREATE TABLE IF NOT EXISTS novel_requests (
   user_id     INTEGER NOT NULL,
   url         TEXT NOT NULL,
   note        TEXT DEFAULT '',
-  status      TEXT NOT NULL DEFAULT 'pending',   -- 'pending' | 'approved' | 'rejected'
+  status      TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   admin_note  TEXT DEFAULT '',
   created_at  TEXT DEFAULT (datetime('now')),
-  reviewed_at TEXT
+  reviewed_at TEXT,
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Index phục vụ query "đếm pending của user" (chống spam) và lọc theo status
@@ -118,3 +126,21 @@ CREATE INDEX IF NOT EXISTS idx_novel_requests_status ON novel_requests(status);
 
 CREATE INDEX IF NOT EXISTS idx_novels_views ON novels(views DESC);
 CREATE INDEX IF NOT EXISTS idx_novels_chapter_count ON novels(updated_at);
+
+-- HacDaoTruyen — Migration 005: phiếu đánh giá có định danh (F02).
+-- Thay cho việc cộng dồn vô hạn vào novels.rating_sum/rating_count mỗi lần
+-- POST /api/novels/:slug/rate — mỗi user/guest chỉ giữ 1 phiếu/truyện.
+CREATE TABLE IF NOT EXISTS novel_ratings (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug       TEXT NOT NULL REFERENCES novels(slug),
+  user_id    INTEGER REFERENCES users(id),
+  guest_id   TEXT,
+  stars      INTEGER NOT NULL CHECK (stars BETWEEN 1 AND 5),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  CHECK ((user_id IS NOT NULL) OR (guest_id IS NOT NULL))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_novel_ratings_user
+  ON novel_ratings(slug, user_id) WHERE user_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_novel_ratings_guest
+  ON novel_ratings(slug, guest_id) WHERE guest_id IS NOT NULL;

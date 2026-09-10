@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from auth import login as auth_login, logout as auth_logout, require_admin
+from routers.rate_limit import admin_login_rate_limiter
 
 router = APIRouter()
 
@@ -16,9 +17,16 @@ class LoginRequest(BaseModel):
     password: str
 
 
-@router.post("/api/auth/login")
+@router.post(
+    "/api/auth/login",
+    dependencies=[Depends(admin_login_rate_limiter.as_dependency("admin_login"))],
+)
 def api_login(req: LoginRequest):
-    """Đăng nhập admin — mật khẩu kiểm tra ở server, trả về Bearer token."""
+    """Đăng nhập admin — mật khẩu kiểm tra ở server, trả về Bearer token.
+
+    Giới hạn số lần thử/IP bằng rate limiter in-memory (xem routers/rate_limit.py)
+    để giảm rủi ro brute-force mật khẩu admin.
+    """
     token = auth_login(req.password)
     return {"status": "success", "token": token}
 

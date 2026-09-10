@@ -91,6 +91,19 @@ def query_d1(sql):
         if os.path.exists(tmp_name):
             os.unlink(tmp_name)
 
+# Side-channel lưu stderr của lần gọi download_r2_object() gần nhất, để phân
+# biệt "object không tồn tại" với "lỗi tải khác" (mạng/auth/timeout) mà không
+# phải đổi kiểu trả về bool của download_r2_object (nhiều nơi khác — bao gồm
+# test hiện có — đang gọi hàm này và chỉ quan tâm True/False).
+_R2_LAST_ERROR = {"stderr": ""}
+
+# Các cụm từ wrangler in ra khi object THẬT SỰ không tồn tại trên R2 (khác với
+# lỗi mạng/xác thực/timeout). Nếu wrangler đổi câu chữ, worst case là bị phân
+# loại nhầm thành 'error' (an toàn — giữ dữ liệu cũ) chứ không nhầm thành
+# 'absent' (nguy hiểm — có thể ghi đè dữ liệu cũ bằng rỗng).
+_R2_ABSENT_MARKERS = ("does not exist", "no such key", "not found", "the specified key")
+
+
 def download_r2_object(r2_key, local_path):
     """Download an object from Cloudflare R2 bucket."""
     local_path = Path(local_path)
@@ -103,7 +116,30 @@ def download_r2_object(r2_key, local_path):
         f"{R2_BUCKET}/{r2_key}", f"--file={local_path}", "--remote"
     ]
     res = run_command(cmd)
+    _R2_LAST_ERROR["stderr"] = res.stderr or ""
     return res.returncode == 0
+
+
+def _r2_glossary_status(r2_key, local_path):
+    """
+    Tải glossary.json và phân loại kết quả rõ ràng thành 3 nhóm (E01):
+      - 'ok'     : tải thành công (chưa chắc parse được — kiểm tra ở nơi gọi)
+      - 'absent' : object THẬT SỰ không tồn tại trên R2 (stderr xác nhận) —
+                   trường hợp hợp lệ của truyện mới, glossary rỗng là đúng.
+      - 'error'  : lỗi khác (mạng, auth, timeout, quyền truy cập...) — KHÔNG
+                   được coi như "không tồn tại"; nơi gọi phải giữ glossary cũ.
+
+    Khi download_r2_object() bị monkeypatch trong test (trả về bool đơn
+    thuần, không có stderr thật), hàm mặc định phân loại 'error' thay vì đoán
+    'absent' — an toàn hơn vì tránh xoá nhầm glossary cũ.
+    """
+    _R2_LAST_ERROR["stderr"] = ""
+    if download_r2_object(r2_key, local_path):
+        return "ok"
+    stderr = (_R2_LAST_ERROR.get("stderr") or "").lower()
+    if any(marker in stderr for marker in _R2_ABSENT_MARKERS):
+        return "absent"
+    return "error"
 
 def restore_chapter(slug, chapter, destination):
     """Download to a temporary file; publish only complete standalone/bundle content."""
@@ -136,6 +172,20 @@ def restore_chapter(slug, chapter, destination):
             return True
         except (ValueError, TypeError, AttributeError):
             return False
+
+
+_REQUIRED_PROFILE_FIELDS = ("slug", "title")
+
+
+def _validate_profile(profile: dict) -> list:
+    """Kiểm tra các thành phần bắt buộc trước khi publish novel.json (E01)."""
+    problems = []
+    for field_name in _REQUIRED_PROFILE_FIELDS:
+        if not profile.get(field_name):
+            problems.append(f"thiếu {field_name}")
+    if not isinstance(profile.get("glossary"), dict):
+        problems.append("glossary không phải object")
+    return problems
 
 
 def restore():
@@ -178,46 +228,83 @@ def restore():
         trans_dir.mkdir(parents=True, exist_ok=True)
         raw_dir.mkdir(parents=True, exist_ok=True)
 
-        # 2. Download glossary from R2
-        glossary = {}
+        # 2. Download glossary from R2 — phân biệt rõ absent / lỗi tải / lỗi
+        # parse (E01). Chỉ 'absent' (thật sự không tồn tại) mới được coi là
+        # glossary rỗng hợp lệ; mọi lỗi khác phải giữ glossary cũ trên đĩa.
         glossary_key = f"{slug}/glossary.json"
         temp_glossary_path = Path(tempfile.gettempdir()) / f"{slug}_glossary.json"
-        
-        print("  -> Downloading glossary from R2...")
-        if download_r2_object(glossary_key, temp_glossary_path):
-            try:
-                with open(temp_glossary_path, "r", encoding="utf-8") as f:
-                    glossary = json.load(f)
-                print(f"  [+] Loaded {len(glossary)} glossary terms.")
-            except Exception as e:
-                print(f"  [-] Failed to parse glossary JSON: {e}")
-            finally:
-                if temp_glossary_path.exists():
-                    os.unlink(temp_glossary_path)
-        else:
-            print("  [-] No glossary found on R2 or download failed. Using empty glossary.")
-            
-        # 3. Recreate novel.json
-        novel_profile = {
-            "slug": slug,
-            "title": title,
-            "original_title": novel.get('original_title', ''),
-            "author": novel.get('author', ''),
-            "source_url": novel.get('source_url', ''),
-            "genre": novel.get('genre', 'cultivation'),
-            "last_translated_url": novel.get('last_translated_url', ''),
-            "last_chapter_number": novel.get('last_chapter_number', 0),
-            "total_chapters": novel.get('total_chapters', 0),
-            "glossary": glossary,
-            "translation_style": novel.get('translation_style', ''),
-            "notes": novel.get('notes', '')
-        }
-        
         novel_json_path = novel_dir / "novel.json"
-        with open(novel_json_path, "w", encoding="utf-8") as f:
-            json.dump(novel_profile, f, ensure_ascii=False, indent=2)
-        print(f"  [+] Recreated novel.json")
-        
+
+        existing_profile = None
+        if novel_json_path.exists():
+            try:
+                existing_profile = json.loads(novel_json_path.read_text(encoding="utf-8"))
+            except Exception as e:
+                print(f"  [!] Không đọc được novel.json cũ để dự phòng: {e}")
+                existing_profile = None
+
+        print("  -> Downloading glossary from R2...")
+        glossary = None
+        try:
+            status = _r2_glossary_status(glossary_key, temp_glossary_path)
+            if status == "ok":
+                try:
+                    with open(temp_glossary_path, "r", encoding="utf-8") as f:
+                        parsed = json.load(f)
+                    if not isinstance(parsed, dict):
+                        raise ValueError("glossary.json không phải object JSON")
+                    glossary = parsed
+                    print(f"  [+] Loaded {len(glossary)} glossary terms.")
+                except Exception as e:
+                    print(f"  [-] Lỗi parse glossary.json: {e}")
+                    glossary = None
+            elif status == "absent":
+                glossary = {}
+                print("  [i] Chưa có glossary.json trên R2 (truyện mới) — dùng glossary rỗng.")
+            else:  # 'error': mạng/auth/timeout... — không phải absent
+                print("  [-] Lỗi tải glossary.json (không phải do không tồn tại).")
+        finally:
+            if temp_glossary_path.exists():
+                os.unlink(temp_glossary_path)
+
+        if glossary is None:
+            # Lỗi tải/parse thật sự: KHÔNG suy đoán glossary rỗng. Giữ profile
+            # cũ nếu có; nếu không có gì để giữ thì bỏ qua publish novel.json
+            # cho truyện này (vẫn tiếp tục tải chương bên dưới, best-effort).
+            if existing_profile is not None and isinstance(existing_profile.get("glossary"), dict):
+                glossary = existing_profile["glossary"]
+                print("  [i] Giữ nguyên glossary/profile cũ trên đĩa do lỗi tải R2.")
+            else:
+                print("  [-] Không có glossary mới lẫn profile cũ để giữ — bỏ qua publish novel.json.")
+                had_failure = True
+
+        # 3. Recreate novel.json — stage rồi validate đầy đủ thành phần bắt
+        # buộc trước khi publish (atomic_json ghi temp cùng thư mục rồi
+        # os.replace atomic), tránh để lại novel.json nửa vời.
+        if glossary is not None:
+            novel_profile = {
+                "slug": slug,
+                "title": title,
+                "original_title": novel.get('original_title', ''),
+                "author": novel.get('author', ''),
+                "source_url": novel.get('source_url', ''),
+                "genre": novel.get('genre', 'cultivation'),
+                "last_translated_url": novel.get('last_translated_url', ''),
+                "last_chapter_number": novel.get('last_chapter_number', 0),
+                "total_chapters": novel.get('total_chapters', 0),
+                "glossary": glossary,
+                "translation_style": novel.get('translation_style', ''),
+                "notes": novel.get('notes', '')
+            }
+
+            problems = _validate_profile(novel_profile)
+            if problems:
+                print(f"  [-] Profile không hợp lệ ({', '.join(problems)}) — không publish, giữ dữ liệu cũ.")
+                had_failure = True
+            else:
+                atomic_json(novel_json_path, novel_profile)
+                print(f"  [+] Recreated novel.json")
+
         # 4. Fetch chapters list from D1
         print("  -> Fetching chapters list from D1...")
         chapters = query_d1(f"SELECT filename, title, chapter_number, r2_key FROM chapters WHERE novel_slug={q(slug)};")

@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 import user_store
 from auth import _is_valid as _is_admin_token, require_admin
+from routers.rate_limit import login_rate_limiter, register_rate_limiter
 from security_utils import validate_slug
 
 router = APIRouter()
@@ -83,9 +84,17 @@ class NovelRequestReview(BaseModel):
 
 # ── Auth endpoints ───────────────────────────────────────────────────────────
 
-@router.post("/api/user/register", status_code=201)
+@router.post(
+    "/api/user/register",
+    status_code=201,
+    dependencies=[Depends(register_rate_limiter.as_dependency("register"))],
+)
 def register(req: RegisterRequest):
-    """Đăng ký tài khoản mới — trả token + thông tin user."""
+    """Đăng ký tài khoản mới — trả token + thông tin user.
+
+    Giới hạn số lần đăng ký/IP bằng rate limiter in-memory (routers/rate_limit.py)
+    để giảm spam tạo tài khoản.
+    """
     email = req.email.strip().lower()
     if not user_store.is_valid_email(email):
         raise HTTPException(status_code=400, detail="Email không hợp lệ")
@@ -101,9 +110,16 @@ def register(req: RegisterRequest):
     return {"token": token, "user": user}
 
 
-@router.post("/api/user/login")
+@router.post(
+    "/api/user/login",
+    dependencies=[Depends(login_rate_limiter.as_dependency("login"))],
+)
 def login(req: LoginRequest):
-    """Đăng nhập — trả token + thông tin user, 401 nếu sai."""
+    """Đăng nhập — trả token + thông tin user, 401 nếu sai.
+
+    Giới hạn số lần thử/IP bằng rate limiter in-memory (routers/rate_limit.py)
+    để giảm rủi ro brute-force mật khẩu user.
+    """
     user = user_store.authenticate(req.email.strip().lower(), req.password)
     if user is None:
         raise HTTPException(status_code=401, detail="Sai email hoặc mật khẩu")

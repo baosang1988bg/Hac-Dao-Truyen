@@ -11,7 +11,9 @@ import re
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
+from fastapi import HTTPException
 from config import USER_AGENT, HEADLESS, SITE_SELECTORS
+from security_utils import validate_source_url
 
 # Các site dùng encoding GBK/GB2312 thay vì UTF-8
 GBK_DOMAINS = {"69shuba.com", "69shuba.tw", "69shuba", "69shu.com", "readnovel.com"}
@@ -88,6 +90,53 @@ class NovelScraper:
             is_blocked = True
         return is_blocked
 
+    # ── Chống SSRF (Playwright điều hướng/redirect/subresource) ──────────────
+
+    @staticmethod
+    async def _is_url_safe(url: str) -> bool:
+        """
+        Kiểm tra 1 URL (điều hướng ban đầu HOẶC bất kỳ redirect/subresource
+        nào phát sinh trong lúc Playwright tải trang) có an toàn để tải hay
+        không, dùng chung `security_utils.validate_source_url` (chặn scheme
+        lạ, credentials trong URL, IP nội bộ literal, và resolve DNS để chặn
+        domain công khai trỏ về IP nội bộ — DNS rebinding).
+
+        Trả về bool thay vì raise để router/caller có thể abort request một
+        cách êm ái thay vì làm crash toàn bộ phiên fetch.
+
+        DNS resolve là blocking I/O — chạy trong thread riêng (`asyncio.to_thread`)
+        để không chặn event loop khi Playwright đang xử lý nhiều request song song.
+        """
+        try:
+            await asyncio.to_thread(validate_source_url, url)
+            return True
+        except HTTPException as exc:
+            print(f"[SSRF] Chặn URL nghi ngờ nội bộ: {url} ({exc.detail})")
+            return False
+        except Exception as exc:  # noqa: BLE001 — không để lỗi kiểm tra làm crash scraper
+            print(f"[SSRF] Lỗi khi kiểm tra an toàn URL {url}: {exc}")
+            return False
+
+    async def _install_ssrf_guard(self, page) -> None:
+        """
+        Chặn SSRF ở TẦNG MẠNG của trang: mọi request Playwright thực hiện
+        trên `page` (điều hướng ban đầu, mọi redirect 3xx tiếp theo, và mọi
+        subresource — ảnh/script/xhr/fetch...) đều bị intercept và kiểm tra
+        lại bằng `_is_url_safe` trước khi được phép tiếp tục.
+
+        Quan trọng: Playwright coi mỗi hop redirect là 1 request riêng đi
+        qua route handler này, nên đây là chỗ chặn redirect tới nội bộ —
+        không chỉ kiểm tra URL đầu vào của `page.goto`.
+        """
+        async def _guard(route):
+            request = route.request
+            if await self._is_url_safe(request.url):
+                await route.continue_()
+            else:
+                await route.abort()
+
+        await page.route("**/*", _guard)
+
     # ── Fetch ─────────────────────────────────────────────────────────────────
 
     async def start(self):
@@ -131,8 +180,16 @@ class NovelScraper:
         if not self._context:
             await self.start()
 
+        # Chặn SSRF trước khi mở page: scheme lạ / credentials trong URL /
+        # IP literal nội bộ / domain resolve về IP nội bộ (DNS rebinding).
+        if not await self._is_url_safe(url):
+            return None
+
         origin = f"{parsed.scheme}://{parsed.netloc}"
         page = await self._context.new_page()
+        # Chặn thêm ở tầng network: mọi redirect/subresource phát sinh trong
+        # lúc tải trang cũng được kiểm tra lại, không chỉ URL đầu vào.
+        await self._install_ssrf_guard(page)
         # Set referer dynamically per page
         await page.set_extra_http_headers({"Referer": origin + "/"})
 
