@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS reading_progress (
   user_id    INTEGER,
   slug       TEXT,
   chapter    INTEGER,
+  position   TEXT,               -- chuỗi vị trí: số chương dạng text hoặc CFI (EPUB)
+  type       TEXT DEFAULT 'chapter', -- 'chapter' | 'epub'
   updated_at TEXT,
   PRIMARY KEY (user_id, slug)
 );

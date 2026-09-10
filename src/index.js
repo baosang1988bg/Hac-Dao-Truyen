@@ -1229,7 +1229,7 @@ async function userProgressList(request, env) {
   const user = await getUserFromRequest(request, env);
   if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
   const { results } = await env.DB.prepare(`
-    SELECT slug, chapter, updated_at FROM reading_progress
+    SELECT slug, chapter, position, type, updated_at FROM reading_progress
     WHERE user_id = ? ORDER BY updated_at DESC
   `).bind(user.id).all();
   return jsonResponse(results);
@@ -1241,17 +1241,34 @@ async function userProgressUpdate(request, env, slug) {
   if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
 
   const body = await readJsonBody(request);
-  if (!body || !Number.isInteger(body.chapter)) {
-    return jsonResponse({ error: 'chapter phải là số nguyên' }, 400);
+  const type = body && body.type !== undefined ? body.type : 'chapter';
+  if (type !== 'chapter' && type !== 'epub') {
+    return jsonResponse({ error: "type phải là 'chapter' hoặc 'epub'" }, 400);
+  }
+
+  let chapter = null;
+  let position;
+  if (type === 'chapter') {
+    if (!body || !Number.isInteger(body.chapter)) {
+      return jsonResponse({ error: 'chapter phải là số nguyên' }, 400);
+    }
+    chapter = body.chapter;
+    position = String(body.chapter);
+  } else {
+    if (!body || typeof body.position !== 'string' || !body.position) {
+      return jsonResponse({ error: 'position phải là chuỗi CFI không rỗng' }, 400);
+    }
+    position = body.position;
   }
 
   // Upsert: mỗi user chỉ giữ 1 record tiến độ cho mỗi truyện
   await env.DB.prepare(`
-    INSERT INTO reading_progress (user_id, slug, chapter, updated_at)
-    VALUES (?, ?, ?, datetime('now'))
+    INSERT INTO reading_progress (user_id, slug, chapter, position, type, updated_at)
+    VALUES (?, ?, ?, ?, ?, datetime('now'))
     ON CONFLICT(user_id, slug) DO UPDATE SET
-      chapter = excluded.chapter, updated_at = excluded.updated_at
-  `).bind(user.id, slug, body.chapter).run();
+      chapter = excluded.chapter, position = excluded.position,
+      type = excluded.type, updated_at = excluded.updated_at
+  `).bind(user.id, slug, chapter, position, type).run();
   return jsonResponse({ ok: true });
 }
 

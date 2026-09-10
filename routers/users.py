@@ -61,7 +61,9 @@ class LoginRequest(BaseModel):
 
 
 class ProgressRequest(BaseModel):
-    chapter: int
+    type: str = "chapter"
+    chapter: int | None = None
+    position: str | None = None
 
 
 class CommentRequest(BaseModel):
@@ -156,9 +158,18 @@ def get_progress(user: dict = Depends(require_user)):
 
 @router.put("/api/user/progress/{slug}")
 def put_progress(slug: str, req: ProgressRequest, user: dict = Depends(require_user)):
-    """Upsert tiến độ đọc một truyện."""
+    """Upsert tiến độ đọc một truyện (type='chapter' hoặc 'epub')."""
     validate_slug(slug)
-    user_store.set_progress(user["id"], slug, req.chapter)
+    if req.type not in ("chapter", "epub"):
+        raise HTTPException(400, "type phải là 'chapter' hoặc 'epub'")
+    if req.type == "chapter":
+        if not isinstance(req.chapter, int):
+            raise HTTPException(400, "chapter phải là số nguyên")
+        user_store.set_progress(user["id"], slug, "chapter", chapter=req.chapter, position=str(req.chapter))
+    else:
+        if not req.position:
+            raise HTTPException(400, "position phải là chuỗi CFI không rỗng")
+        user_store.set_progress(user["id"], slug, "epub", chapter=None, position=req.position)
     return {"ok": True}
 
 

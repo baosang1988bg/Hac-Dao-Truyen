@@ -162,6 +162,30 @@ def test_user_full_flow():
     assert r.status_code == 409
 
 
+def test_user_progress_epub_position():
+    _, _, token, _ = _register_user()
+    h = {"Authorization": f"Bearer {token}"}
+    cfi = "epubcfi(/6/4[chap01]!/4/2/1:0)"
+
+    r = client.put("/api/user/progress/mot-truyen-epub",
+                    json={"type": "epub", "position": cfi}, headers=h)
+    assert r.status_code == 200 and r.json() == {"ok": True}
+
+    r = client.get("/api/user/progress", headers=h)
+    assert r.status_code == 200
+    prog = r.json()
+    assert len(prog) == 1
+    assert prog[0]["slug"] == "mot-truyen-epub"
+    assert prog[0]["type"] == "epub"
+    assert prog[0]["position"] == cfi
+    assert prog[0]["chapter"] is None
+
+    # thiếu position → 400
+    r = client.put("/api/user/progress/mot-truyen-epub",
+                    json={"type": "epub"}, headers=h)
+    assert r.status_code == 400
+
+
 def test_user_comments_flow():
     _, _, token, _ = _register_user()
     h = {"Authorization": f"Bearer {token}"}

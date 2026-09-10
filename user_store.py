@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS reading_progress (
     user_id    INTEGER,
     slug       TEXT,
     chapter    INTEGER,
+    position   TEXT,
+    type       TEXT DEFAULT 'chapter',
     updated_at TEXT,
     PRIMARY KEY (user_id, slug)
 );
@@ -94,6 +96,13 @@ def _init_db() -> None:
     with _conn() as conn:
         conn.execute("PRAGMA journal_mode=WAL")
         conn.executescript(_SCHEMA)
+        # DB đã tồn tại từ trước khi có position/type: CREATE TABLE IF NOT EXISTS
+        # ở trên là no-op, cần ALTER thủ công để không mất dữ liệu tiến độ cũ.
+        existing = {row[1] for row in conn.execute("PRAGMA table_info(reading_progress)")}
+        if "position" not in existing:
+            conn.execute("ALTER TABLE reading_progress ADD COLUMN position TEXT")
+        if "type" not in existing:
+            conn.execute("ALTER TABLE reading_progress ADD COLUMN type TEXT DEFAULT 'chapter'")
 
 
 # ── Password ─────────────────────────────────────────────────────────────────
@@ -220,22 +229,23 @@ def list_progress(user_id: int) -> list[dict]:
     """Tiến độ đọc của user, cập nhật gần nhất trước."""
     with _conn() as conn:
         rows = conn.execute(
-            "SELECT slug, chapter, updated_at FROM reading_progress "
+            "SELECT slug, chapter, position, type, updated_at FROM reading_progress "
             "WHERE user_id = ? ORDER BY updated_at DESC",
             (user_id,),
         ).fetchall()
     return [dict(r) for r in rows]
 
 
-def set_progress(user_id: int, slug: str, chapter: int) -> None:
-    """Upsert tiến độ đọc một truyện."""
+def set_progress(user_id: int, slug: str, type: str, *, chapter: int | None, position: str) -> None:
+    """Upsert tiến độ đọc một truyện. `type` là 'chapter' hoặc 'epub'."""
     with _conn() as conn:
         conn.execute(
-            "INSERT INTO reading_progress (user_id, slug, chapter, updated_at) "
-            "VALUES (?, ?, ?, datetime('now')) "
+            "INSERT INTO reading_progress (user_id, slug, chapter, position, type, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, datetime('now')) "
             "ON CONFLICT(user_id, slug) DO UPDATE SET "
-            "chapter = excluded.chapter, updated_at = excluded.updated_at",
-            (user_id, slug, chapter),
+            "chapter = excluded.chapter, position = excluded.position, "
+            "type = excluded.type, updated_at = excluded.updated_at",
+            (user_id, slug, chapter, position, type),
         )
 
 
