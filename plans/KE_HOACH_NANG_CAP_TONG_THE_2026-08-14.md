@@ -40,6 +40,62 @@ tính năng đọc truyện tranh sớm, ổn định luồng lưu trữ/giao di
 mới tính đến Phương án B như một giai đoạn mở rộng riêng biệt (có thể mất
 nhiều tháng nghiên cứu/tinh chỉnh mô hình).
 
+### 2.1b. Rủi ro bản quyền — cần đánh giá trước khi làm kỹ thuật
+
+Truyện chữ hiện tại đã có rủi ro tương tự (dịch không phép từ Qidian/69shuba,
+xem ghi chú ở `ROADMAP-nang-cap-2026-07.md` mục 4.6), nhưng manga/manhua **rủi
+ro cao hơn rõ rệt** vì mấy lý do riêng của loại nội dung này:
+
+1. **Thị trường xuất bản chính thức tại Việt Nam đã tồn tại và chủ động rà
+   soát.** Nhiều bộ manga/manhua phổ biến đã được các NXB trong nước mua bản
+   quyền chính thức (Kim Đồng, TVM Comics, IPM, Skybooks, Comicola...). Khác
+   với truyện chữ dịch từ nguồn Trung Quốc (ít đơn vị Việt Nam theo dõi sát),
+   nhóm nắm bản quyền manga tại VN có động lực thương mại trực tiếp để gửi
+   khiếu nại/DMCA khi phát hiện bản dịch lậu cạnh tranh với ấn bản họ đang bán.
+2. **Ảnh là tác phẩm gốc (artwork), không chỉ là câu chữ.** Vi phạm bản quyền
+   hình ảnh thường rõ ràng và dễ chứng minh hơn vi phạm bản quyền văn bản dịch
+   — kể cả khi dịch lại bằng AI (Phương án B), ảnh nền/nét vẽ gốc vẫn giữ
+   nguyên, không "biến đổi" nội dung như bản dịch text.
+3. **Nguồn ảnh raw/scan thường có watermark của nhóm scan gốc** — việc dùng
+   lại đồng nghĩa còn dính thêm tranh chấp với chính nhóm scan (dù bản thân
+   họ cũng vi phạm bản quyền gốc), phức tạp hơn nguồn dịch text vốn chỉ có 1
+   lớp vi phạm (dịch giả gốc → mình dịch lại).
+4. **Rủi ro lan sang toàn bộ hạ tầng đang chạy ổn định.** Manga dự kiến vẫn
+   dùng chung Cloudflare Worker/R2/D1 với truyện chữ. DMCA gửi tới Cloudflare
+   (không phải chỉ gỡ 1 truyện mà có thể tạm khóa cả zone/account) sẽ kéo sập
+   luôn phần đọc truyện chữ đang hoạt động ổn định — rủi ro không đối xứng so
+   với lợi ích của tính năng manga.
+
+**Đề xuất giảm thiểu (áp dụng trước hoặc song song Giai đoạn 0 của lộ trình
+manga ở mục 2.6, không phải làm cho xong hết mới bắt đầu):**
+
+- **Cô lập hạ tầng theo loại nội dung**: R2 bucket/D1 riêng (hoặc ít nhất
+  namespace/key prefix tách biệt rõ) cho manga, để một khiếu nại DMCA nhắm vào
+  manga không kéo sập được phần truyện chữ. Cân nhắc cả việc dùng Cloudflare
+  account/zone phụ nếu ngân sách cho phép, đúng tinh thần cô lập rủi ro.
+- **Ưu tiên bộ truyện chưa có bản quyền chính thức tại VN** khi chọn 3-5 bộ
+  thử nghiệm (Giai đoạn 0) — cần khảo sát thủ công trước (tra cứu NXB đã công
+  bố phát hành hay chưa), không chọn ngẫu nhiên theo độ phổ biến.
+- **Không SEO mạnh / không index công khai** cho phần manga ở giai đoạn thử
+  nghiệm, giữ định hướng "cộng đồng nhỏ" đã áp dụng cho truyện chữ
+  (`ROADMAP-nang-cap-2026-07.md` 4.6) — giảm khả năng bị chủ sở hữu bản quyền
+  phát hiện sớm trong lúc còn thử nghiệm kỹ thuật.
+- **Có quy trình gỡ truyện theo yêu cầu rõ ràng**, không chỉ ở mức "sẵn sàng
+  gỡ khi có yêu cầu" như hiện tại: một kênh liên hệ cụ thể (email/form), cam
+  kết thời gian xử lý, và log lại yêu cầu/hành động gỡ để có bằng chứng thiện
+  chí tuân thủ nếu bị khiếu nại chính thức (DMCA counter-notice, làm việc với
+  Cloudflare).
+- **Giữ tư thế "host nội dung có sẵn" (Phương án A) tách bạch rõ khỏi việc tự
+  render lại ảnh (Phương án B)** trong tài liệu/điều khoản sử dụng nội bộ —
+  nếu sau này có tranh chấp, Phương án A (tổng hợp) và B (tự sinh bản dịch
+  mới) có thể được đánh giá pháp lý khác nhau, nên đừng gộp lẫn khi ra quyết
+  định phạm vi ở mục 2.1.
+
+Đây là đánh giá rủi ro kỹ thuật, không phải tư vấn pháp lý — nếu tính năng
+manga được mở rộng ngoài phạm vi thử nghiệm nhỏ (nhiều bộ truyện, lưu lượng
+lớn, công khai rộng rãi), nên tham khảo ý kiến pháp lý thật trước khi triển
+khai diện rộng.
+
 ### 2.2. Thiết kế dữ liệu & lưu trữ
 
 Khác biệt cốt lõi: 1 "chương" truyện chữ là 1 file markdown (vài KB), còn 1
