@@ -23,7 +23,7 @@ if sys.stdout.encoding != 'utf-8':
         pass
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from tools.sync_budget import SyncBudget, atomic_json
+from tools.sync_budget import SyncBudget, atomic_json, require_cloud_writes
 from tools.sync_transport import send_chunk
 
 HOST = os.getenv("HACDAO_SYNC_HOST", "hac-dao-truyen.nguyenbaosang1998.workers.dev")
@@ -179,6 +179,12 @@ def main():
         parser.error("Thiếu HACDAO_SYNC_KEY")
     if args.workers < 1:
         parser.error("workers phải lớn hơn 0")
+
+    try:
+        require_cloud_writes()
+    except RuntimeError as exc:
+        print(f"❌ {exc}")
+        sys.exit(1)
 
     state_path = Path(args.state_file)
     if not state_path.exists():

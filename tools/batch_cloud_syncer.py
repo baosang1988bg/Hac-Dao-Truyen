@@ -13,7 +13,7 @@ import http.client
 import argparse
 from pathlib import Path
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, FIRST_COMPLETED, wait
 
 if sys.stdout.encoding != 'utf-8':
     try:
@@ -22,7 +22,7 @@ if sys.stdout.encoding != 'utf-8':
         pass
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from tools.sync_budget import SyncBudget, atomic_json
+from tools.sync_budget import SyncBudget, atomic_json, require_cloud_writes
 from tools.sync_transport import send_chunk
 
 HOST = os.getenv("HACDAO_SYNC_HOST", "hac-dao-truyen.nguyenbaosang1998.workers.dev")
@@ -125,6 +125,12 @@ def main():
     if args.workers < 1:
         parser.error("workers phải lớn hơn 0")
 
+    try:
+        require_cloud_writes()
+    except RuntimeError as exc:
+        print(f"❌ {exc}")
+        sys.exit(1)
+
     novels_dir = Path(args.dir)
     if not novels_dir.exists():
         print(f"❌ Chưa tìm thấy thư mục: {novels_dir}")
@@ -157,6 +163,7 @@ def main():
     print(f"📂 Thư mục local:       {novels_dir.resolve()}")
     print(f"⚡ Số luồng uploader:    {args.workers} workers song song")
     print(f"✅ Đã đồng bộ trước đó:  {len(synced_slugs):,} bộ truyện")
+    print(f"💰 Ngân sách: {budget.summary()}")
     print("=" * 80)
 
     def save_state():
@@ -191,38 +198,76 @@ def main():
 
             # Lấy 24 folder cho mỗi đợt xử lý
             batch_folders = pending_folders[:24]
+            budget_exceeded = False
 
             with ThreadPoolExecutor(max_workers=args.workers) as executor:
-                futures = {executor.submit(sync_single_novel, folder, budget): folder.name for folder in batch_folders}
+                pending_iter = iter(batch_folders)
+                in_flight = {}
 
-                for future in as_completed(futures):
-                    res = future.result()
-                    slug = res['slug']
+                def submit_next():
+                    folder = next(pending_iter, None)
+                    if folder is not None:
+                        in_flight[executor.submit(sync_single_novel, folder, budget)] = folder.name
 
-                    if res['success']:
-                        synced_slugs.add(slug)
-                        if slug in sync_issues:
-                            del sync_issues[slug]
+                for _ in range(args.workers):
+                    submit_next()
+
+                # Cửa sổ trượt: chỉ nộp truyện kế tiếp SAU KHI có kết quả và
+                # ngân sách vẫn còn — hết ngân sách thì dừng ngay, không nộp
+                # thêm bất kỳ truyện nào khác trong batch đang chạy.
+                while in_flight and not budget_exceeded:
+                    done, _ = wait(in_flight, return_when=FIRST_COMPLETED)
+                    for future in done:
+                        del in_flight[future]
+                        res = future.result()
+                        slug = res['slug']
+
+                        if res['success']:
+                            synced_slugs.add(slug)
+                            if slug in sync_issues:
+                                del sync_issues[slug]
+                                save_issues()
+                            uploaded_session += 1
+                            save_state()
+
+                            elapsed = time.time() - start_time
+                            speed = uploaded_session / elapsed if elapsed > 0 else 0
+                            sys.stdout.write(
+                                f"\r☁️  [Server Synced: {len(synced_slugs):,} | Session: +{uploaded_session}] "
+                                f"✅ {slug[:40]} ({res['chapters']} chaps - ⚡ {speed:.2f} novel/s)       "
+                            )
+                            sys.stdout.flush()
+                            submit_next()
+                        elif res.get('budget_exceeded'):
+                            had_failure = True
+                            budget_exceeded = True
+                            err_text = res.get('error', 'Lỗi không xác định')
+                            sync_issues[slug] = {
+                                'error': err_text,
+                                'timestamp': datetime.now().isoformat()
+                            }
                             save_issues()
-                        uploaded_session += 1
-                        save_state()
+                            sys.stderr.write(f"\n🛑 DỪNG NGAY DO NGÂN SÁCH [{slug}]: {err_text}\n")
+                            break
+                        else:
+                            had_failure = True
+                            err_text = res.get('error', 'Lỗi không xác định')
+                            sync_issues[slug] = {
+                                'error': err_text,
+                                'timestamp': datetime.now().isoformat()
+                            }
+                            save_issues()
+                            sys.stderr.write(f"\n❌ Lỗi sync [{slug}]: {err_text}\n")
+                            submit_next()
 
-                        elapsed = time.time() - start_time
-                        speed = uploaded_session / elapsed if elapsed > 0 else 0
-                        sys.stdout.write(
-                            f"\r☁️  [Server Synced: {len(synced_slugs):,} | Session: +{uploaded_session}] "
-                            f"✅ {slug[:40]} ({res['chapters']} chaps - ⚡ {speed:.2f} novel/s)       "
-                        )
-                        sys.stdout.flush()
-                    else:
-                        had_failure = True
-                        err_text = res.get('error', 'Lỗi không xác định')
-                        sync_issues[slug] = {
-                            'error': err_text,
-                            'timestamp': datetime.now().isoformat()
-                        }
-                        save_issues()
-                        sys.stderr.write(f"\n❌ Lỗi sync [{slug}]: {err_text}\n")
+            print(f"\n💰 Ngân sách: {budget.summary()}")
+
+            if budget_exceeded:
+                # Ngân sách dùng chung cho cả lần chạy — dừng hẳn vòng lặp
+                # ngoài cùng kể cả khi --watch bật, không xử lý tiếp truyện
+                # nào khác. Tiến độ đã lưu sau mỗi truyện thành công nên chạy
+                # lại sau sẽ tiếp tục đúng chỗ, không mất gì.
+                raise SystemExit(1)
 
             if had_failure:
                 raise SystemExit(1)
@@ -231,9 +276,13 @@ def main():
             print("\n🛑 Đã dừng Daemon Cloudflare Syncer.")
             save_state()
             save_issues()
+            print(f"💰 Ngân sách: {budget.summary()}")
             break
         except Exception as e:
+            print(f"💰 Ngân sách: {budget.summary()}")
             raise SystemExit(f"Đồng bộ thất bại: {e}")
+
+    print(f"💰 Ngân sách cuối cùng: {budget.summary()}")
 
 
 if __name__ == '__main__':

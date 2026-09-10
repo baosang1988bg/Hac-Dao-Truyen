@@ -6,6 +6,7 @@ import pytest
 
 def test_cloud_sync_reports_failure_instead_of_retrying_forever(tmp_path,monkeypatch):
     monkeypatch.setenv('HACDAO_SYNC_KEY','test-only')
+    monkeypatch.setenv('HACDAO_ALLOW_CLOUD_WRITES','true')
     module=importlib.import_module('tools.cloud_to_cloud_syncer')
     state=tmp_path/'state.json'
     state.write_text(json.dumps({'uploaded':{'demo':{}}}))
