@@ -17,14 +17,14 @@ import RecentCommentsSection from './homepage/RecentCommentsSection'
 import StatsSection from './homepage/StatsSection'
 
 /**
- * HomePage – Orchestrator trang chủ HacDaoTruyen (Bản Clone 100% UI Truyentrung.com Giai đoạn 1).
- * Cấu trúc 6 Section chính:
- *   1. Top Notice Bar: Khung Truy Thư Lệnh & Thông Báo Tìm Truyện
- *   2. Monthly Popular Hero: Section "Nhân Khí Tháng" (Card nổi bật lớn)
- *   3. Recently Updated Table: Bảng Mới Cập Nhật dạng Table chuẩn 5 cột
- *   4. Multi-Ranking Widgets: 5 BXH Tổng Hợp / Nhiều Chương / Lượt Đọc / Sách Mới / Đánh Giá
- *   5. All Novels Tabbed List: Tất cả truyện dạng Tab
- *   6. Khung thông báo tĩnh (không phải chat realtime)
+ * HomePage – Orchestrator trang chủ HacDaoTruyen.
+ * Thứ tự ưu tiên thị giác (anchor chính lên đầu, phần cá nhân/phụ xuống
+ * sidebar — xem audit UX 2026-09-11):
+ *   1. Monthly Popular Hero: Section "Nhân Khí Tháng" (anchor chính, full-width)
+ *   2. Top Notice Bar: Khung Truy Thư Lệnh & Thông Báo Tìm Truyện
+ *   3. [Cột chính] Recently Updated Table → GenreChips → All Novels Tabbed List
+ *   4. [Sidebar] Recently Read → Multi-Ranking Widgets → Khung thông báo tĩnh
+ *      → Bình luận mới nhất → Thống kê hệ thống
  */
 export default function HomePage() {
   const [novels, setNovels] = useState([])
@@ -125,35 +125,39 @@ export default function HomePage() {
       {/* Các section chính – ẩn khi đang tìm kiếm */}
       {!isSearching && (
         <>
-          {/* 1. Top Notice Bar: Khung Truy Thư Lệnh & Thông Báo Tìm Truyện */}
+          {/* 1. Anchor chính above-the-fold: Section "Nhân Khí Tháng" ngay sau
+              thanh tìm kiếm — trước đây bị Thông báo/GenreChips/Recently Read
+              che mất phía trên, không có điểm nhấn thị giác rõ ràng khi vào trang. */}
+          <MonthlyPopularSection novel={popularMonthly} />
+
+          {/* Top Notice Bar: Khung Truy Thư Lệnh & Thông Báo Tìm Truyện */}
           <TruyThuNoticeSection />
-
-          {/* Chip lọc thể loại nhanh */}
-          <GenreChips activeGenre={activeGenre} onSelect={setActiveGenre} />
-
-          {/* Vừa đọc gần đây */}
-          <RecentlyReadSection novels={visible} />
 
           {/* Bố cục 2 Cột Portal chuẩn Truyentrung.com */}
           <div className="hp-portal-layout" style={{ marginTop: '1.25rem' }}>
             {/* ── Cột Trái: Main Content (68%) ── */}
             <div className="hp-main-col">
-              {/* 2. Monthly Popular Hero: Section "Nhân Khí Tháng" */}
-              <MonthlyPopularSection novel={popularMonthly} />
-
-              {/* 3. Recently Updated Table: Bảng Mới Cập Nhật dạng Table chuẩn 5 cột */}
+              {/* Recently Updated Table: Bảng Mới Cập Nhật dạng Table chuẩn 5 cột */}
               <UpdatesSection novels={recentlyUpdated} />
 
-              {/* 5. All Novels Tabbed List: Tất cả truyện dạng Tab */}
+              {/* Chip lọc thể loại — đặt sát trên All Novels vì đây là nơi nó
+                  thực sự lọc, thay vì đứng tách biệt ở đầu trang. */}
+              <GenreChips activeGenre={activeGenre} onSelect={setActiveGenre} />
+
+              {/* All Novels Tabbed List: Tất cả truyện dạng Tab */}
               <AllNovelsSection novels={visible} activeGenre={activeGenre} />
             </div>
 
             {/* ── Cột Phải: Sidebar Widgets (32%) ── */}
             <div className="hp-sidebar-col">
-              {/* 4. Multi-Ranking Widgets: 5 BXH Tổng Hợp/Nhiều Chương/Lượt Đọc/Sách Mới/Đánh Giá */}
+              {/* Vừa đọc gần đây — nội dung cá nhân, hợp với sidebar hơn là
+                  chiếm full-width ngay đầu trang cho mọi khách vãng lai. */}
+              <RecentlyReadSection novels={visible} />
+
+              {/* Multi-Ranking Widgets: 5 BXH Tổng Hợp/Nhiều Chương/Lượt Đọc/Sách Mới/Đánh Giá */}
               <TruyenTrungRankings novels={visible} />
 
-              {/* 6. Khung thông báo tĩnh (KHÔNG phải chat realtime) */}
+              {/* Khung thông báo tĩnh (KHÔNG phải chat realtime) */}
               <TruyenTrungChatboxWidget />
 
               {/* Thảo luận / Bình luận mới nhất */}
