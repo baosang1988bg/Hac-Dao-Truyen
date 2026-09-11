@@ -364,6 +364,27 @@ def count_chinese_chars(text: str) -> int:
     return len(_CHINESE_ANY_RE.findall(text))
 
 
+def build_polish_prompt(text: str) -> str:
+    """
+    Prompt Pass 2 (polish văn phong) — ADK Giai đoạn 2. Khác Pass 1 (build_prompt):
+    Pass 1 ưu tiên tốc độ/độ chính xác/đầy đủ nội dung; Pass 2 chỉ tự nhiên hoá
+    văn phong, nhất quán đại từ nhân vật, tăng cảm giác văn học — KHÔNG được
+    thay đổi cốt truyện/hội thoại/thêm bớt nội dung.
+    """
+    return f"""You are a professional literary editor specializing in Vietnamese translations of Chinese web novels (网文).
+
+The text below has ALREADY been translated into Vietnamese. Your task is Pass 2 — a pure STYLE polish, not a re-translation:
+- Make the prose read as natural, fluent literary Vietnamese — as if originally written in Vietnamese, not translated
+- Keep character pronouns (ngôi xưng hô) consistent throughout the whole text
+- Improve sentence flow, word choice, and rhythm; remove awkward literal-translation phrasing
+- Do NOT change the plot, facts, dialogue meaning, character names, or add/remove any content
+- Do NOT summarize or truncate — keep the same scope/length as the input
+- Output ONLY the polished Vietnamese text, nothing else (no notes, no explanations, no headers)
+
+Text to polish:
+{text}"""
+
+
 def build_cleanup_prompt(text: str) -> str:
     """Prompt để Gemini dọn sạch chữ Hán còn sót trong bản dịch."""
     return f"""The following Vietnamese text still contains some Chinese characters (汉字) that were not translated.
@@ -728,6 +749,112 @@ class NovelTranslator:
                 print(f"  [!] Cleanup pass failed: {e}")
 
         return translated, summary, _usage
+
+    # ── Pass 2 (Polish) — ADK Giai đoạn 2 ───────────────────────────────────
+    # Method MỚI, KHÔNG sửa/xóa logic Pass 1 ở trên (translate_chapter).
+    # Tái sử dụng NGUYÊN VẸN cơ chế fallback/retry/rotation key đã có
+    # (_call_gemini/_call_deepseek/_call_groq/_call_ollama) — không tạo
+    # đường gọi API song song riêng ngoài rotation key hiện có, và tái
+    # dùng đúng công thức tính cost (estimate_tokens/estimate_cost) như
+    # translate_chapter, không bịa công thức mới.
+
+    def polish_chapter(
+        self,
+        translated_text: str,
+        max_retries: int = 3,
+    ) -> tuple[str, dict]:
+        """
+        Dịch lại văn phong (Pass 2) cho 1 bản dịch Pass 1 đã có sẵn — dùng
+        prompt khác Pass 1 (xem build_polish_prompt): tự nhiên hoá văn phong,
+        nhất quán đại từ, cảm giác văn học thay vì tốc độ/độ chính xác thô.
+
+        Returns (polished_text, usage). usage = {model, input_tokens,
+        output_tokens, total_tokens, cost_usd} — RỖNG ({}) nếu mọi provider
+        đều lỗi (khi đó polished_text = translated_text gốc, không raise ra
+        ngoài — caller (PolishAgent/orchestrator) tự quyết định fallback về
+        bản Pass 1 khi usage rỗng).
+        """
+        prompt = build_polish_prompt(translated_text)
+        raw = None
+        _used_model = "unknown"
+
+        active_chain = FALLBACK_ORDER if self._provider == "auto" else [self._provider]
+
+        for p in active_chain:
+            if p == "gemini" and self._gemini:
+                try:
+                    raw = self._call_gemini(prompt, max_retries)
+                    _used_model = self._gemini._current_model
+                    print("  [✓] Gemini success (polish)")
+                    break
+                except _DailyQuotaExhausted as e:
+                    print(f"  [!] Gemini unavailable (polish): {e}")
+                    if self._provider == "gemini":
+                        return translated_text, {}
+                    print("  [→] Falling back...")
+                except Exception as e:
+                    print(f"  [!] Gemini failed (polish): {e}")
+                    if self._provider == "gemini":
+                        return translated_text, {}
+                    print("  [→] Falling back...")
+
+            elif p == "deepseek" and self._deepseek:
+                try:
+                    raw = self._call_deepseek(prompt, max_retries)
+                    _used_model = self._deepseek._model if self._deepseek else "deepseek-chat"
+                    print("  [✓] DeepSeek success (polish)")
+                    break
+                except Exception as e:
+                    print(f"  [!] DeepSeek failed (polish): {e}")
+                    if self._provider == "deepseek":
+                        return translated_text, {}
+                    print("  [→] Falling back...")
+
+            elif p == "groq" and self._groq:
+                try:
+                    raw = self._call_groq(prompt, max_retries)
+                    _used_model = GROQ_MODEL
+                    print("  [✓] Groq success (polish)")
+                    break
+                except Exception as e:
+                    print(f"  [!] Groq failed (polish): {e}")
+                    if self._provider == "groq":
+                        return translated_text, {}
+                    print("  [→] Falling back...")
+
+            elif p == "ollama" and self._ollama:
+                try:
+                    raw = self._call_ollama(prompt, max_retries)
+                    _used_model = self._ollama._model if self._ollama else "ollama"
+                    print("  [✓] Ollama success (polish)")
+                    break
+                except Exception as e:
+                    print(f"  [!] Ollama failed (polish): {e}")
+                    if self._provider == "ollama":
+                        return translated_text, {}
+                    print("  [→] Falling back...")
+
+        if raw is None:
+            # Không có backend nào khả dụng/thành công — giữ nguyên bản Pass 1,
+            # KHÔNG raise (đúng nguyên tắc "không chặn lưu file" của spec).
+            return translated_text, {}
+
+        polished = raw.strip() or translated_text
+
+        in_tok = estimate_tokens(prompt)
+        out_tok = estimate_tokens(raw)
+        cost = estimate_cost(_used_model, in_tok, out_tok)
+        cost_str = f'~${cost:.5f}' if cost > 0 else 'free'
+        usage = {
+            "model":         _used_model,
+            "input_tokens":  in_tok,
+            "output_tokens": out_tok,
+            "total_tokens":  in_tok + out_tok,
+            "cost_usd":      cost,
+        }
+        print(f'  [💰] {_used_model} (polish): ~{in_tok}→{out_tok} tokens, {cost_str}')
+
+        return polished, usage
 
     def translate_batch(
         self,
