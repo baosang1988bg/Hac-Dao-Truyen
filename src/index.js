@@ -254,6 +254,16 @@ async function handleApi(request, url, env, ctx) {
     return adminNovelRequestReview(request, env, parseInt(novelReqReviewMatch[1]));
   }
 
+  // F03: POST /api/admin/novels/:slug/takedown | /restore
+  const takedownMatch = path.match(/^\/api\/admin\/novels\/([^/]+)\/(takedown|restore)$/);
+  if (takedownMatch && method === 'POST') {
+    return adminTakedownRestore(request, env, takedownMatch[1], takedownMatch[2]);
+  }
+
+  // GET /api/config — cấu hình public cho frontend (vd kênh liên hệ takedown)
+  if (path === '/api/config' && method === 'GET') {
+    return jsonResponse({ contact_email: env.CONTACT_EMAIL || '' });
+  }
 
   // ── Proxy translate jobs → Python backend (nếu có BACKEND_URL) ──────
   if (path.includes('/translate') || path.includes('/tools') || path === '/api/logs'
@@ -417,7 +427,10 @@ async function getNovels(env, params = new URLSearchParams()) {
   const sortCol = SORT_COLS[sort] || 'n.updated_at';
 
   // Build WHERE clauses
-  const where = ['1=1'];
+  // F03: truyện bị gỡ (takedown) không xuất hiện trong danh sách công khai —
+  // không xóa dữ liệu, chỉ ẩn. published mặc định 1 (bao gồm cả row cũ trước
+  // khi có cột này, xem migrations/007_takedown.sql).
+  const where = ['n.published = 1'];
   const binds = [];
 
   if (genre) {
@@ -607,6 +620,14 @@ async function getNovel(env, slug, request) {
 
   if (!novel) return jsonResponse({ error: 'Novel not found' }, 404);
 
+  const isAdmin = request && await isAdminRequest(request, env);
+  if (!novel.published && !isAdmin) {
+    // F03: guest coi truyện bị gỡ như KHÔNG tồn tại — không phân biệt với 404
+    // thật để tránh xác nhận sự tồn tại của nội dung đã bị gỡ. Admin vẫn xem
+    // được (để quản lý/restore) — xử lý ở nhánh admin bên dưới như cũ.
+    return jsonResponse({ error: 'Novel not found' }, 404);
+  }
+
   // chapter_count phải dùng CÙNG công thức với getNovels() (đếm từ bảng D1
   // `chapters`, nguồn sự thật), KHÔNG dùng độ dài catalog.json (có thể lệch
   // với dữ liệu D1 thật, gây bug tương tự chapter_count sai ở getNovels()).
@@ -634,7 +655,7 @@ async function getNovel(env, slug, request) {
     glossary_count: novel.glossary_count || 0,
   };
 
-  if (!(request && await isAdminRequest(request, env))) {
+  if (!isAdmin) {
     // Guest: chỉ field whitelist + thống kê
     const pub = {};
     for (const k of NOVEL_PUBLIC_FIELDS) if (k in novel) pub[k] = novel[k];
@@ -671,7 +692,9 @@ async function getNovel(env, slug, request) {
 
 async function getEpub(env, slug) {
   // 1. Kiểm tra drive_file_id từ Google Drive Library trong D1
-  const novel = await env.DB.prepare(`SELECT drive_file_id FROM novels WHERE slug = ?`).bind(slug).first();
+  const novel = await env.DB.prepare(`SELECT drive_file_id, published FROM novels WHERE slug = ?`).bind(slug).first();
+  // F03: truyện bị gỡ không được tiếp tục trả EPUB qua Drive/R2 fallback nào.
+  if (novel && !novel.published) return jsonResponse({ error: 'Novel not found' }, 404);
   if (novel?.drive_file_id) {
     const driveUrl = `https://drive.usercontent.google.com/download?id=${novel.drive_file_id}&export=download&confirm=t`;
     try {
@@ -836,6 +859,11 @@ async function getChapterContentFromDrive(env, slug, num, identifier, ctx) {
 }
 
 async function getChapters(env, slug, ctx) {
+  // F03: truyện bị gỡ không được liệt kê chương qua đường này (bao gồm cả
+  // fallback catalog.json/Drive bên dưới).
+  const pubRow = await env.DB.prepare(`SELECT published FROM novels WHERE slug = ?`).bind(slug).first();
+  if (pubRow && !pubRow.published) return jsonResponse({ error: 'Novel not found' }, 404);
+
   // Legacy catalog may include chapters not indexed yet (Drive lazy cache).
   // Merge rather than infer completeness from a nonempty D1 result.
   let legacy = [];
@@ -893,6 +921,13 @@ async function getChapterFromBundle(env, slug, filename) {
 }
 
 async function getChapterContent(env, slug, identifier, ctx) {
+  // F03: truyện bị gỡ không được trả nội dung chương qua bất kỳ fallback nào
+  // (D1/catalog/bundle/Drive) bên dưới.
+  const pubRow = await env.DB.prepare(`SELECT published FROM novels WHERE slug = ?`).bind(slug).first();
+  if (pubRow && !pubRow.published) {
+    return jsonResponse({ error: 'Chapter content not found', identifier, slug }, 404);
+  }
+
   let num = /^\d+$/.test(identifier) ? parseInt(identifier) : 0;
   if (!num) {
     const m = identifier.match(/(?:Chương|第)\s*(\d+)/i) || identifier.match(/(\d+)/);
@@ -1001,8 +1036,8 @@ async function updateGlossary(env, slug, request) {
 // ON CONFLICT DO UPDATE trong syncNovelBatch — chỉ update total_chapters),
 // nên D1 có thể cũ hơn R2. Ưu tiên đọc R2, fallback D1 khi R2 thiếu/lỗi.
 async function getSynopsis(env, slug) {
-  const novel = await env.DB.prepare(`SELECT synopsis FROM novels WHERE slug = ?`).bind(slug).first();
-  if (!novel) return jsonResponse({ error: 'Novel not found' }, 404);
+  const novel = await env.DB.prepare(`SELECT synopsis, published FROM novels WHERE slug = ?`).bind(slug).first();
+  if (!novel || !novel.published) return jsonResponse({ error: 'Novel not found' }, 404);
 
   try {
     const obj = await env.CHAPTERS.get(`${slug}/synopsis.md`);
@@ -1669,6 +1704,43 @@ async function adminNovelRequestReview(request, env, id) {
     return jsonResponse({ error: 'Yêu cầu này đã được xử lý trước đó' }, 409);
   }
   return jsonResponse({ ok: true });
+}
+
+// F03: gỡ/khôi phục xuất bản — TÁCH BIỆT hoàn toàn khỏi status ongoing/
+// completed. published=0 ẩn khỏi mọi đường đọc công khai (getNovels/getNovel/
+// getChapters/getChapterContent/getEpub/getSynopsis) nhưng KHÔNG xóa dữ liệu.
+// Mọi thao tác ghi vào admin_actions để có audit trail.
+async function adminTakedownRestore(request, env, slug, action) {
+  if (!(await isAdminRequest(request, env))) {
+    return jsonResponse({ error: 'Unauthorized' }, 401);
+  }
+  if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
+
+  let reason = '';
+  if (action === 'takedown') {
+    const __parsed = await readLimitedJson(request, DEFAULT_JSON_MAX_BYTES);
+    // Body rỗng vẫn hợp lệ (lý do tùy chọn) — chỉ từ chối khi JSON thật sự hỏng/quá lớn.
+    if (!__parsed.ok && __parsed.status === 413) return jsonResponse({ error: 'Payload quá lớn' }, 413);
+    reason = String((__parsed.ok && __parsed.body && __parsed.body.reason) || '').slice(0, 2000);
+  }
+
+  const published = action === 'restore' ? 1 : 0;
+  const { meta } = await env.DB.prepare(`
+    UPDATE novels SET published = ?, takedown_reason = ?, takedown_at = ?
+    WHERE slug = ?
+  `).bind(
+    published,
+    action === 'restore' ? '' : reason,
+    action === 'restore' ? null : new Date().toISOString(),
+    slug,
+  ).run();
+  if (!meta.changes) return jsonResponse({ error: 'Novel not found' }, 404);
+
+  await env.DB.prepare(`
+    INSERT INTO admin_actions (action, slug, note) VALUES (?, ?, ?)
+  `).bind(action, slug, reason).run();
+
+  return jsonResponse({ status: 'success', published: Boolean(published) });
 }
 
 // ── Proxy to Python backend ───────────────────────────────────────────────────
