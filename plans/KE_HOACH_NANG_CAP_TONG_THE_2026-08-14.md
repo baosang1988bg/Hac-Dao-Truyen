@@ -4,6 +4,31 @@
 > định hướng nâng cấp tiếp theo, và đánh giá chi tiết việc thêm mảng truyện
 > tranh (manga/manhua) — thay đổi lớn nhất được đề xuất trong kế hoạch này.
 
+## Bổ sung 11/09/2026 (F05 — đồng bộ tài liệu sau đợt xử lý review độc lập)
+
+Mục 2.1b/2.5 dưới đây (rủi ro bản quyền, cần cơ chế gỡ nội dung) đến nay đã
+có phần HẠ TẦNG KỸ THUẬT tương ứng cho truyện chữ hiện tại (implemented +
+tested local, KHÔNG phải verified production):
+- Trạng thái xuất bản/gỡ (`published`) tách biệt hoàn toàn khỏi
+  `ongoing`/`completed` — cả D1 (Worker) lẫn `novel.json` (local). Gỡ một
+  truyện không xóa dữ liệu (admin restore được), và chặn ĐỦ mọi đường đọc
+  công khai đã rà: danh sách, chi tiết, danh sách chương, nội dung chương,
+  EPUB, catalog, synopsis.
+- `POST /api/admin/novels/:slug/takedown|restore` (2 backend) ghi nhật ký
+  vào `admin_actions` (D1) / `data/admin_actions.log` (local) — chưa có UI
+  admin riêng cho việc này (chỉ có API), và **chưa có "purge cache CDN
+  online"** thật — Cloudflare cache purge cần gọi Cloudflare API với token
+  zone riêng (ngoài phạm vi Worker tự làm được), CHƯA triển khai; giới hạn
+  thực tế: bản đã cache ở Cloudflare edge / trình duyệt người dùng / bản đã
+  tải offline (EPUB/chapter cache trong service worker) có thể còn tồn tại
+  một thời gian sau khi gỡ cho tới khi cache hết hạn tự nhiên.
+- `GET /api/config` trả `contact_email` cấu hình qua biến môi trường (rỗng
+  nếu chưa cấu hình) — kênh liên hệ báo cáo bản quyền/takedown, chưa có form
+  UI riêng ở frontend, mới có ở tầng API.
+- Đây là cơ chế CHUNG cho nền tảng hiện tại (không riêng cho manga) — nếu
+  triển khai manga theo mục 2, hạ tầng takedown này đã sẵn sàng tái sử dụng,
+  không cần thiết kế lại.
+
 ## 1. Bức tranh hiện tại (tóm tắt để làm nền so sánh)
 
 Hệ thống hiện gồm: FastAPI + SQLite chạy dịch cục bộ (Gemini/DeepSeek/Groq/

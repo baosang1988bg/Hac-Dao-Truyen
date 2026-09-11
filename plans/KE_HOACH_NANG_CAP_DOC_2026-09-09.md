@@ -1,5 +1,47 @@
 # Kế hoạch nâng cấp tính năng đọc — 09/09/2026
 
+## Bổ sung 11/09/2026 (F05 — đồng bộ tài liệu sau đợt xử lý review độc lập)
+
+Đợt review `plans/KE_HOACH_XU_LY_TOAN_BO_REVIEW_2026-09-10.md` (thực thi
+2026-09-10 → 2026-09-11) đã sửa thêm một số hành vi liên quan tới đọc/EPUB đã
+mô tả ở tài liệu này — trạng thái theo đúng phân loại: **implemented** (đã
+sửa code + có test), **tested local** (chạy pytest/node --test/Miniflare
+D1 thật, KHÔNG phải production), KHÔNG có mục nào ở đây được xác minh trên
+production thật:
+
+- `reading_progress` (D1 lẫn SQLite local) nay có thêm cột `client_updated_at`
+  (epoch ms) — PUT progress cũ đến muộn (network delay/retry ngoài thứ tự) bị
+  từ chối (409) thay vì âm thầm ghi đè bản mới hơn. **Tested local**: test
+  Miniflare D1 thật (`tests/worker/progress-conflict-d1.test.mjs`) + pytest
+  (`tests/test_integration.py::test_takedown...`, `test_user_progress_rejects_stale...`).
+- `Reader.jsx`: sửa race response chương cũ ghi đè chương mới khi chuyển
+  chương nhanh (guard theo "epoch"); PUT progress không còn đánh dấu "đã lưu"
+  trước khi có xác nhận 200 từ server; retry hữu hạn (không lặp vô hạn lỗi
+  401/400); hàng đợi offline **giờ namespace theo user** (`guest` hoặc
+  `user:<id>`) — trước đây 2 tài khoản dùng chung trình duyệt có thể khiến
+  hàng đợi của người trước bị flush nhầm bằng token người sau. **Tested
+  local**: không có test runner frontend (vitest/jest) trong repo này — xác
+  nhận bằng đọc code + `npm run lint`/`npm run build` PASS, KHÔNG bằng
+  Playwright/Chrome thật như đợt 09/09 (khác với mục 3.1/4.1/5.1 ở trên).
+- `EpubReader.jsx`: xác nhận đúng bug "tính % mà chưa generate locations" đã
+  nêu ở khảo sát trước — đã thêm `book.locations.generate()` (cache theo
+  slug) + fallback khi CFI hỏng/EPUB mới hơn không khớp CFI cũ.
+- `sw.js`: cache chương từ cache-first thuần chuyển sang cache-first +
+  revalidate nền theo `version` (hash nội dung) — trước đây chương được dịch
+  lại để sửa lỗi sẽ KHÔNG BAO GIỜ được service worker nhận ra (URL không đổi).
+  Đồng thời serialize read-modify-write của index EPUB offline (tránh mất
+  entry khi tải đồng thời).
+- TTS: bổ sung UI chọn giọng đọc/tốc độ (trước đó state có sẵn nhưng không có
+  UI chỉnh), chia đoạn đọc chương dài. **Chưa xác minh chất lượng phát âm
+  tiếng Việt thật trên trình duyệt thật** — chỉ kiểm tra logic play/pause/
+  stop/dừng khi đổi chương qua đọc code.
+- Kiến trúc "2 kho tài khoản không đồng bộ tự động" (dòng dưới đây, đã đúng từ
+  trước) — đợt review xác nhận KHÔNG có công cụ merge user nào tồn tại trong
+  repo (không phải "chưa làm", mà là "chưa từng có"), và token của 2 kho
+  không thể dùng chéo do khác session-store hoàn toàn (không phải lỗ hổng).
+
+---
+
 Trạng thái cập nhật 09/09/2026: **Cả 4 đợt đã triển khai và đạt nghiệm thu**, bao gồm cả 3 việc trước đó cần xác minh thủ công (đồng bộ đa thiết bị, đọc offline, TTS) — nay đã kiểm chứng bằng Chrome thật (Playwright headless), không chỉ đọc code. Xem `tests/browser/verify_reading_upgrades.py` và kết quả PASS ở mục 3.1, 4.1, 5.1 "Ghi chú triển khai thực tế". Đợt 2 dùng `schema.sql` (snapshot-diff qua `tools/migrate_schema.py`) thay vì tạo file `migrations/00X_*.sql` mới như dự thảo ban đầu, vì R02 đã chuyển sang cơ chế này trước khi đợt này bắt đầu. Phạm vi là nâng cấp trải nghiệm đọc trên nền tảng đã có (`Reader.jsx`, `EpubReader.jsx`, PWA sẵn có, `reading_progress`/`bookmarks` trên D1) — không xây lại từ đầu, không đụng vào crawl/dịch/pipeline Python, không thuộc phạm vi truyện tranh/manga (đó là đề xuất riêng ở `KE_HOACH_NANG_CAP_TONG_THE_2026-08-14.md`).
 
 Căn cứ khảo sát code thực tế (không phải giả định):
