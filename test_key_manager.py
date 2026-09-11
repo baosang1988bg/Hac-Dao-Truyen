@@ -103,8 +103,8 @@ class TestUpdateKeyStatusNoLostUpdate:
 
     def test_two_processes_different_keys_no_lost_update(self):
         path = key_manager._KEY_STATUS_FILE
-        start_barrier = multiprocessing.Barrier(2)
         ctx = multiprocessing.get_context("spawn")
+        start_barrier = ctx.Barrier(2)
         p1 = ctx.Process(target=_transactional_update, args=(path, "key-A", "from A", start_barrier))
         p2 = ctx.Process(target=_transactional_update, args=(path, "key-B", "from B", start_barrier))
         p1.start()

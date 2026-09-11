@@ -78,8 +78,8 @@ class TestConcurrentUpdateNoLostUpdate:
     def test_two_processes_different_glossary_keys_no_lost_update(self):
         create_novel(title="Concurrent2", source_url="url", slug="concurrent2")
         base_dir = novel_manager.NOVELS_BASE_DIR
-        barrier = multiprocessing.Barrier(2)
         ctx = multiprocessing.get_context("spawn")
+        barrier = ctx.Barrier(2)
 
         p1 = ctx.Process(
             target=_worker_add_glossary,
