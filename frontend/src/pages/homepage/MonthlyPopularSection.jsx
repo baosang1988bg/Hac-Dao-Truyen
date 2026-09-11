@@ -49,7 +49,7 @@ export default function MonthlyPopularSection({ novel }) {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '10px' }}>
             {novel.author && <span>Tác giả: <strong style={{ color: 'var(--text-main)' }}>{novel.author}</strong></span>}
-            {novel.genre && <span style={{ padding: '2px 8px', borderRadius: '6px', background: 'rgba(59,130,246,0.12)', color: 'var(--accent)' }}>{novel.genre.split(',')[0]}</span>}
+            {novel.genre && <span style={{ padding: '2px 8px', borderRadius: '6px', background: 'rgba(201,147,46,0.15)', color: 'var(--accent)' }}>{novel.genre.split(',')[0]}</span>}
           </div>
 
           <p style={{

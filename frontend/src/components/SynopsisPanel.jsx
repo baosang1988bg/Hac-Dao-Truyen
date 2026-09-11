@@ -158,7 +158,7 @@ const styles = {
     background: 'transparent',
     border: '1px solid var(--border, rgba(255,255,255,0.12))',
     borderRadius: '6px',
-    color: 'var(--accent, #818cf8)',
+    color: 'var(--accent)',
     fontSize: '0.82rem',
     fontWeight: 600,
     cursor: 'pointer',

@@ -72,7 +72,7 @@ export default function LibraryPage() {
                 {isCurrent && (
                   <span style={{
                     fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.08em',
-                    color: '#60a5fa', background: 'rgba(59,130,246,0.18)',
+                    color: 'var(--accent)', background: 'rgba(201,147,46,0.18)',
                     padding: '2px 7px', borderRadius: '4px', display: 'inline-block', marginBottom: '4px',
                   }}>
                     GẦN NHẤT

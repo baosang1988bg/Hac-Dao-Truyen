@@ -1,13 +1,15 @@
 :root {
   /* Dark mode glassmorphism by default */
-  --bg-dark: #0f172a; 
+  --bg-dark: #0f172a;
   --bg-panel: rgba(30, 41, 59, 0.6);
   --border-panel: rgba(255, 255, 255, 0.08);
-  --text-main: #f8fafc; 
-  --text-muted: #94a3b8; 
-  --accent: #3b82f6; 
-  --accent-hover: #2563eb; 
-  --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  /* Tông đỏ trầm/vàng đồng — thay cho xanh-tím SaaS mặc định, hợp chủ đề
+     tiên hiệp/kiếm hiệp của "Hắc Đạo Truyện" hơn. */
+  --accent: #c9932e;
+  --accent-hover: #b8791f;
+  --accent-gradient: linear-gradient(135deg, #a8291f 0%, #c9932e 100%);
   --success: #10b981;
   --danger: #ef4444;
 }
@@ -37,7 +39,7 @@ a {
 }
 
 a:hover {
-  color: #60a5fa;
+  color: var(--accent);
 }
 
 .glass-panel {
@@ -73,12 +75,12 @@ a:hover {
 .btn-primary {
   background: var(--accent-gradient);
   color: white;
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 15px rgba(201, 147, 46, 0.3);
 }
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 6px 20px rgba(201, 147, 46, 0.4);
 }
 
 .btn-secondary {
@@ -112,7 +114,7 @@ a:hover {
 
 .input-field:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 2px rgba(201, 147, 46, 0.2);
 }
 
 /* Animations */
@@ -321,13 +323,13 @@ a:hover {
 @media (hover: hover) {
   .novel-card:hover {
     transform: translateY(-5px);
-    border-color: rgba(59, 130, 246, 0.25);
-    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.1);
+    border-color: rgba(201, 147, 46, 0.25);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(201, 147, 46, 0.1);
   }
 }
 .novel-card:active {
   transform: scale(0.99);
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: rgba(201, 147, 46, 0.3);
 }
 
 /* Nút chọn phương thức đăng nhập (LoginPage) */
@@ -562,7 +564,7 @@ a:hover {
 }
 .site-header__navlink.active {
   color: var(--accent);
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(201, 147, 46, 0.1);
   font-weight: 600;
 }
 @media (hover: hover) {
@@ -721,9 +723,9 @@ a:hover {
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 99px;
-  background: rgba(59, 130, 246, 0.12);
+  background: rgba(201, 147, 46, 0.12);
   color: var(--accent);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(201, 147, 46, 0.2);
 }
 
 /* Thanh hành động: Đọc từ đầu / Đọc tiếp */
@@ -808,7 +810,7 @@ a:hover {
 }
 .admin-sidebar__link.active {
   color: var(--accent);
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(201, 147, 46, 0.1);
   font-weight: 600;
 }
 @media (hover: hover) {
@@ -874,9 +876,9 @@ a:hover {
   letter-spacing: 0.1em;
   padding: 3px 8px;
   border-radius: 5px;
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(201, 147, 46, 0.15);
   color: var(--accent);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  border: 1px solid rgba(201, 147, 46, 0.3);
 }
 
 /* Vùng nội dung admin */
@@ -914,11 +916,11 @@ a:hover {
 }
 @media (hover: hover) {
   .admin-novel-row:hover {
-    border-color: rgba(59, 130, 246, 0.35);
-    background: rgba(59, 130, 246, 0.05);
+    border-color: rgba(201, 147, 46, 0.35);
+    background: rgba(201, 147, 46, 0.05);
   }
 }
-.admin-novel-row:active { background: rgba(59, 130, 246, 0.08); }
+.admin-novel-row:active { background: rgba(201, 147, 46, 0.08); }
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1218,7 +1220,7 @@ a:hover {
   font-weight: 600;
   padding: 1px 7px;
   border-radius: 99px;
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(201, 147, 46, 0.15);
   color: var(--accent);
   margin-left: 4px;
 }
@@ -1348,15 +1350,15 @@ a:hover {
   margin-bottom: var(--section-gap);
 }
 .hp-stats__item {
-  background: rgba(59,130,246,0.06);
-  border: 1px solid rgba(59,130,246,0.12);
+  background: rgba(201, 147, 46, 0.06);
+  border: 1px solid rgba(201, 147, 46, 0.12);
   border-radius: 12px;
   padding: 1.1rem 0.5rem;
   text-align: center;
   transition: border-color 0.2s;
 }
 @media (hover: hover) {
-  .hp-stats__item:hover { border-color: rgba(59,130,246,0.3); }
+  .hp-stats__item:hover { border-color: rgba(201, 147, 46, 0.3); }
 }
 .hp-stats__value {
   font-family: 'Outfit', sans-serif;
@@ -1540,7 +1542,7 @@ a:hover {
   color: var(--accent);
 }
 @media (hover: hover) {
-  .rr-card:hover { border-color: rgba(59,130,246,0.25); }
+  .rr-card:hover { border-color: rgba(201, 147, 46, 0.25); }
 }
 
 /* ── Portal Layout (Main Left + Sidebar Right) ── */
@@ -1584,8 +1586,8 @@ a:hover {
   transition: all 0.2s ease;
 }
 .novel-list-row:hover {
-  background: rgba(59, 130, 246, 0.08);
-  border-color: rgba(59, 130, 246, 0.25);
+  background: rgba(201, 147, 46, 0.08);
+  border-color: rgba(201, 147, 46, 0.25);
   transform: translateX(2px);
 }
 .novel-list-rank {
@@ -1634,9 +1636,9 @@ a:hover {
   font-size: 0.68rem;
   padding: 1px 6px;
   border-radius: 4px;
-  background: rgba(59, 130, 246, 0.12);
+  background: rgba(201, 147, 46, 0.12);
   color: var(--accent);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(201, 147, 46, 0.2);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -1678,9 +1680,9 @@ a:hover {
   transition: all 0.2s;
 }
 .qidian-rank-tab.active {
-  background: rgba(59, 130, 246, 0.18);
-  color: #60a5fa;
-  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(201, 147, 46, 0.18);
+  color: var(--accent);
+  border-color: rgba(201, 147, 46, 0.3);
   font-weight: 600;
 }
 .qidian-rank-list {
@@ -1700,8 +1702,8 @@ a:hover {
   transition: all 0.2s;
 }
 .qidian-rank-item:hover {
-  background: rgba(59, 130, 246, 0.08);
-  border-color: rgba(59, 130, 246, 0.2);
+  background: rgba(201, 147, 46, 0.08);
+  border-color: rgba(201, 147, 46, 0.2);
 }
 .rank-num {
   width: 20px;

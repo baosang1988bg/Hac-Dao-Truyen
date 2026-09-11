@@ -125,8 +125,8 @@ export default function EpubCatalogPage() {
             onClick={() => setShowFilter(s => !s)}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px',
-              background: showFilter ? 'rgba(99,102,241,0.2)' : 'var(--glass-bg)',
-              border: `1px solid ${showFilter ? '#6366f1' : 'var(--border)'}`,
+              background: showFilter ? 'rgba(201,147,46,0.2)' : 'var(--glass-bg)',
+              border: `1px solid ${showFilter ? 'var(--accent)' : 'var(--border)'}`,
               borderRadius: '10px', color: 'var(--text-main)', cursor: 'pointer',
               fontSize: '0.85rem', whiteSpace: 'nowrap', transition: 'all 0.15s',
               position: 'relative',
@@ -134,7 +134,7 @@ export default function EpubCatalogPage() {
           >
             <SlidersHorizontal size={15} /> Lọc
             {hasActiveFilters && (
-              <span style={{ position: 'absolute', top: '4px', right: '4px', width: '7px', height: '7px', background: '#6366f1', borderRadius: '50%' }} />
+              <span style={{ position: 'absolute', top: '4px', right: '4px', width: '7px', height: '7px', background: 'var(--accent)', borderRadius: '50%' }} />
             )}
           </button>
         </div>
@@ -155,9 +155,9 @@ export default function EpubCatalogPage() {
                       style={{
                         display: 'flex', alignItems: 'center', gap: '5px',
                         padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
-                        background: sort === opt.value ? 'rgba(99,102,241,0.2)' : 'var(--glass-bg)',
-                        border: `1px solid ${sort === opt.value ? '#6366f1' : 'var(--border)'}`,
-                        color: sort === opt.value ? '#818cf8' : 'var(--text-main)',
+                        background: sort === opt.value ? 'rgba(201,147,46,0.2)' : 'var(--glass-bg)',
+                        border: `1px solid ${sort === opt.value ? 'var(--accent)' : 'var(--border)'}`,
+                        color: sort === opt.value ? 'var(--accent)' : 'var(--text-main)',
                         fontSize: '0.82rem', transition: 'all 0.15s',
                       }}
                     >
@@ -196,7 +196,7 @@ export default function EpubCatalogPage() {
                   type="checkbox"
                   checked={hasEpub}
                   onChange={e => setHasEpub(e.target.checked)}
-                  style={{ width: '16px', height: '16px', accentColor: '#6366f1' }}
+                  style={{ width: '16px', height: '16px', accentColor: 'var(--accent)' }}
                 />
                 Chỉ hiện truyện có EPUB
               </label>
@@ -222,7 +222,7 @@ export default function EpubCatalogPage() {
               style={{
                 display: 'flex', alignItems: 'center', gap: '5px',
                 padding: '5px 12px', borderRadius: '20px', cursor: 'pointer', whiteSpace: 'nowrap',
-                background: sort === opt.value ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'var(--glass-bg)',
+                background: sort === opt.value ? 'var(--accent-gradient)' : 'var(--glass-bg)',
                 border: `1px solid ${sort === opt.value ? 'transparent' : 'var(--border)'}`,
                 color: sort === opt.value ? '#fff' : 'var(--text-muted)',
                 fontSize: '0.8rem', transition: 'all 0.2s',
@@ -283,9 +283,9 @@ function FilterChip({ label, active, onClick }) {
       onClick={onClick}
       style={{
         padding: '5px 12px', borderRadius: '20px', cursor: 'pointer', fontSize: '0.8rem',
-        background: active ? 'rgba(99,102,241,0.2)' : 'var(--glass-bg)',
-        border: `1px solid ${active ? '#6366f1' : 'var(--border)'}`,
-        color: active ? '#818cf8' : 'var(--text-muted)',
+        background: active ? 'rgba(201,147,46,0.2)' : 'var(--glass-bg)',
+        border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+        color: active ? 'var(--accent)' : 'var(--text-muted)',
         transition: 'all 0.15s', whiteSpace: 'nowrap',
       }}
     >
@@ -307,7 +307,7 @@ function SkeletonCard() {
       <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <div style={{ height: '12px', background: 'rgba(255,255,255,0.06)', borderRadius: '6px', animation: 'pulse 1.5s ease-in-out infinite' }} />
         <div style={{ height: '10px', width: '60%', background: 'rgba(255,255,255,0.04)', borderRadius: '6px', animation: 'pulse 1.5s ease-in-out infinite' }} />
-        <div style={{ height: '32px', background: 'rgba(99,102,241,0.1)', borderRadius: '8px', animation: 'pulse 1.5s ease-in-out infinite' }} />
+        <div style={{ height: '32px', background: 'rgba(201,147,46,0.1)', borderRadius: '8px', animation: 'pulse 1.5s ease-in-out infinite' }} />
       </div>
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
     </div>

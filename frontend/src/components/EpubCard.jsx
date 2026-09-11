@@ -68,7 +68,7 @@ export function EpubCard({ novel }) {
         </Link>
 
         {novel.genre ? (
-          <div style={{ fontSize: '0.8125rem', color: '#818cf8', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {novel.genre}
           </div>
         ) : null}
@@ -97,7 +97,7 @@ export function EpubCard({ novel }) {
               to={`/novel/${novel.slug}`}
               style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                padding: '7px 4px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                padding: '7px 4px', background: 'var(--accent-gradient)',
                 color: '#fff', borderRadius: '8px', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 600,
                 transition: 'opacity 0.15s',
               }}
@@ -111,7 +111,7 @@ export function EpubCard({ novel }) {
               to={`/novel/${novel.slug}/epub-reader`}
               style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                padding: '7px 4px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                padding: '7px 4px', background: 'var(--accent-gradient)',
                 color: '#fff', borderRadius: '8px', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 600,
                 transition: 'opacity 0.15s',
               }}

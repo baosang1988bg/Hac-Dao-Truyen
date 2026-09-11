@@ -327,7 +327,7 @@ export default function EpubReader() {
         <div style={{ flexShrink: 0, padding: '6px 16px 8px', background: panelBg, borderTop: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ flex: 1, height: '3px', background: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: '2px', transition: 'width 0.4s ease' }} />
+              <div style={{ height: '100%', width: `${progress}%`, background: 'var(--accent-gradient)', borderRadius: '2px', transition: 'width 0.4s ease' }} />
             </div>
             <span style={{ fontSize: '0.72rem', color: textColor, opacity: 0.5, minWidth: '36px', textAlign: 'right' }}>{progress}%</span>
           </div>
@@ -346,9 +346,9 @@ function TocItem({ item, currentHref, onGoTo, textColor, theme, depth = 0 }) {
         style={{
           display: 'block', width: '100%', textAlign: 'left',
           padding: `9px ${16 + depth * 16}px`, border: 'none', cursor: 'pointer',
-          background: isActive ? 'rgba(99,102,241,0.2)' : 'transparent',
-          color: isActive ? '#818cf8' : textColor,
-          fontSize: '0.875rem', borderLeft: isActive ? '3px solid #6366f1' : '3px solid transparent',
+          background: isActive ? 'rgba(201,147,46,0.2)' : 'transparent',
+          color: isActive ? 'var(--accent)' : textColor,
+          fontSize: '0.875rem', borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
           transition: 'all 0.15s',
         }}
       >

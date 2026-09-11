@@ -48,7 +48,7 @@ export default function LoginPage() {
         <div style={{
           background: 'var(--accent-gradient)', width: '60px', height: '60px',
           borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 1.5rem', boxShadow: '0 0 20px rgba(59,130,246,0.4)'
+          margin: '0 auto 1.5rem', boxShadow: '0 0 20px rgba(201,147,46,0.4)'
         }}>
           <BookOpen size={30} color="white" />
         </div>

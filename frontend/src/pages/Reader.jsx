@@ -481,7 +481,7 @@ export default function Reader() {
             style={{
               background: 'var(--accent)', color: 'white',
               border: 'none', opacity: nextChapter ? 1 : 0.3, padding: '0 1.5rem', height: '58px',
-              borderRadius: '18px', boxShadow: '0 8px 25px rgba(59,130,246,0.4)',
+              borderRadius: '18px', boxShadow: '0 8px 25px rgba(201,147,46,0.4)',
               flex: isBottom ? 1 : 'unset', // Make it larger at bottom
               minWidth: '100px'
             }}
