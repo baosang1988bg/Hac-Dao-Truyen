@@ -15,7 +15,7 @@ import threading
 from config import GOOGLE_API_KEYS, GEMINI_MODEL
 from providers.key_manager import (
     _QUOTA_RESET_HOURS, _RATE_LIMIT_SKIP_HOURS,
-    _load_key_status, _save_key_status, _now_iso,
+    _load_key_status, _now_iso, update_key_status,
 )
 
 # Model fallback list: rotate khi model bị daily quota
@@ -98,31 +98,41 @@ class GeminiBackend:
         return self._key_status.get(key, {}).get("status", "working")
 
     def _set_status(self, key: str, status: str, note: str = ""):
-        self._key_status[key] = {
-            "status": status,
-            "since":  _now_iso(),
-            "note":   note,
-            "suffix": f"...{key[-6:]}",
-        }
-        _save_key_status(self._key_status)
+        # D03 follow-up: đọc self._key_status (snapshot cũ trong bộ nhớ) rồi
+        # tự _save_key_status() tách rời có race — 2 GeminiBackend instance
+        # (2 process dịch song song) cùng sửa 2 key khác nhau có thể ghi đè
+        # mất update của nhau. update_key_status() đọc lại MỚI NHẤT từ đĩa
+        # dưới lock ngay trước khi sửa+ghi, nguyên tử.
+        def mutate(status_dict):
+            status_dict[key] = {
+                "status": status,
+                "since":  _now_iso(),
+                "note":   note,
+                "suffix": f"...{key[-6:]}",
+            }
+        self._key_status = update_key_status(mutate)
 
     def _maybe_recover_keys(self):
         """Keys bị quota_exceeded (24h) hoặc rate_limited (1h) → reset về working."""
         from providers.key_manager import _hours_since
         recovered = 0
-        for key, info in self._key_status.items():
-            st    = info.get("status", "working")
-            hours = _hours_since(info.get("since", ""))
-            if st == "quota_exceeded" and hours >= _QUOTA_RESET_HOURS:
-                self._key_status[key]["status"] = "working"
-                self._key_status[key]["note"] = f"auto-recovered (quota) after {hours:.1f}h"
-                recovered += 1
-            elif st == "rate_limited" and hours >= _RATE_LIMIT_SKIP_HOURS:
-                self._key_status[key]["status"] = "working"
-                self._key_status[key]["note"] = f"auto-recovered (rate-limit) after {hours:.1f}h"
-                recovered += 1
+
+        def mutate(status_dict):
+            nonlocal recovered
+            for key, info in status_dict.items():
+                st    = info.get("status", "working")
+                hours = _hours_since(info.get("since", ""))
+                if st == "quota_exceeded" and hours >= _QUOTA_RESET_HOURS:
+                    status_dict[key]["status"] = "working"
+                    status_dict[key]["note"] = f"auto-recovered (quota) after {hours:.1f}h"
+                    recovered += 1
+                elif st == "rate_limited" and hours >= _RATE_LIMIT_SKIP_HOURS:
+                    status_dict[key]["status"] = "working"
+                    status_dict[key]["note"] = f"auto-recovered (rate-limit) after {hours:.1f}h"
+                    recovered += 1
+
+        self._key_status = update_key_status(mutate)
         if recovered:
-            _save_key_status(self._key_status)
             print(f"  [Gemini] Auto-recovered {recovered} key(s)")
 
     def _first_working_key(self) -> str | None:
@@ -201,13 +211,16 @@ class GeminiBackend:
                 if model not in self._exhausted_models:
                     print(f"  [Gemini] Model {self._current_model} exhausted → switching to {model}")
                     self._current_model = model
-                    # Reset quota_exceeded và rate_limited keys cho model mới
-                    for key in self._all_keys:
-                        st = self._get_status(key)
-                        if st in ("quota_exceeded", "rate_limited"):
-                            self._key_status[key]["status"] = "working"
-                            self._key_status[key]["note"] = f"reset for new model {model}"
-                    _save_key_status(self._key_status)
+                    # Reset quota_exceeded và rate_limited keys cho model mới —
+                    # đọc-sửa-ghi nguyên tử (D03 follow-up), không dựa vào
+                    # snapshot self._key_status có thể đã cũ so với đĩa.
+                    def mutate(status_dict, _all_keys=self._all_keys, _model=model):
+                        for key in _all_keys:
+                            st = status_dict.get(key, {}).get("status", "working")
+                            if st in ("quota_exceeded", "rate_limited"):
+                                status_dict.setdefault(key, {})["status"] = "working"
+                                status_dict[key]["note"] = f"reset for new model {_model}"
+                    self._key_status = update_key_status(mutate)
                     first = self._first_working_key()
                     if first:
                         self._apply_key(first)
