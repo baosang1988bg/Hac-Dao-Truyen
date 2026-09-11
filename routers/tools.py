@@ -20,7 +20,7 @@ from security_utils import validate_slug, safe_novel_dir, validate_chapter_title
 router = APIRouter()
 
 
-@router.get("/api/novels/{slug}/tools/merge_split_parts", dependencies=[Depends(require_admin)])
+@router.post("/api/novels/{slug}/tools/merge_split_parts", dependencies=[Depends(require_admin)])
 async def tool_merge_split_parts(slug: str):
     """
     Streaming tool: Tìm và merge các chương split (xxx-1_VI.md + xxx-2_VI.md → xxx_VI.md).
@@ -193,9 +193,15 @@ async def cleanup_split_parts(slug: str):
     }
 
 
-@router.get("/api/novels/{slug}/tools/{tool}", dependencies=[Depends(require_admin)])
+@router.post("/api/novels/{slug}/tools/{tool}", dependencies=[Depends(require_admin)])
 async def run_tool(slug: str, tool: str, chapter_title: str = ""):
-    """Chạy tool bảo trì (subprocess, allowlist cứng). (admin)"""
+    """Chạy tool bảo trì (subprocess, allowlist cứng). (admin)
+
+    A02: đổi GET → POST — đây là thao tác ghi/chạy subprocess sửa dữ liệu,
+    không nên dùng GET (browser prefetch/cache/link crawler có thể vô tình
+    trigger). `chapter_title` giữ nguyên dạng query param cho đơn giản (không
+    cần body/Content-Type ở caller), chỉ đổi method.
+    """
     validate_slug(slug)
     allowed_tools = {
         "fix_chapters":   ["python3", "tools/fix_chapters.py",   "--novel", slug],

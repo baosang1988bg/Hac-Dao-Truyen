@@ -87,9 +87,12 @@ export default function ToolsPanel({ slug }) {
     const controller = new AbortController()
     abortRef.current = controller
     try {
+      // A02: tool chạy subprocess/ghi dữ liệu → POST (trước đây GET, có thể
+      // vô tình bị trigger bởi browser prefetch/link crawler).
       const params = toolId === 'fix_one' ? `?chapter_title=${encodeURIComponent(chapterTitle)}` : ''
       const token = localStorage.getItem('authToken')
       const response = await fetch(`/api/novels/${slug}/tools/${toolId}${params}`, {
+        method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         signal: controller.signal,
       })
