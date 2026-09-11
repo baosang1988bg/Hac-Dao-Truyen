@@ -17,30 +17,6 @@ export function extractNovels(data) {
 }
 
 /**
- * Lấy TOÀN BỘ danh sách truyện công khai bằng cách phân trang thật (không chỉ
- * page=1 rồi bỏ qua phần còn lại) — dùng cho các trang cần duyệt/lọc toàn bộ
- * catalog trên client (HomePage...).
- *
- * apiInstance: instance axios (`api` hoặc `userApi`).
- */
-export async function fetchAllNovels(apiInstance, extraParams = {}, { signal, limitPerPage = 200, maxPages = 100 } = {}) {
-  const all = []
-  let page = 1
-  let pages = 1
-  do {
-    const res = await apiInstance.get('/novels', {
-      params: { ...extraParams, page, limit: limitPerPage },
-      signal,
-    })
-    const data = res.data
-    all.push(...extractNovels(data))
-    pages = Number.isInteger(data?.pages) && data.pages > 0 ? data.pages : 1
-    page += 1
-  } while (page <= pages && page <= maxPages)
-  return all
-}
-
-/**
  * Lấy nhiều truyện theo slug cụ thể (vd danh sách bookmark/lịch sử đọc của 1
  * user) bằng cách gọi song song GET /api/novels/:slug, thay vì tải cả catalog
  * rồi `.find()` — cách cũ vừa tốn băng thông vừa có thể bỏ sót truyện nằm ở

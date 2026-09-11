@@ -1,16 +1,40 @@
-import { novelType } from '../../utils/propTypes'
-
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Flame, Play, Eye, BookOpen } from 'lucide-react'
+import api from '../../api'
+import { extractNovels } from '../../utils/novelsApi'
 import NovelCover from '../../components/NovelCover'
 import SectionHeader from '../../components/ui/SectionHeader'
 import { fmtNovelTitle, fmtNumber } from '../../utils/format'
 
 /**
- * MonthlyPopularSection — Section "Nhân Khí Tháng" (Chuẩn Truyentrung.com)
- * Thể hiện truyện hot nhất tháng với card bìa lớn 180px, tóm tắt và nút Đọc Ngay.
+ * MonthlyPopularSection — Section "Nhân Khí Tháng" (Chuẩn Truyentrung.com).
+ * Tự fetch riêng truyện xem nhiều nhất (limit=1) — KHÔNG nhận cả catalog từ
+ * HomePage như trước (tránh kéo theo việc tải toàn bộ danh sách truyện chỉ để
+ * lấy 1 novel).
  */
-export default function MonthlyPopularSection({ novel }) {
+export default function MonthlyPopularSection() {
+  const [novel, setNovel] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let alive = true
+    const controller = new AbortController()
+    api.get('/novels', { params: { sort: 'views', order: 'desc', limit: 1 }, signal: controller.signal })
+      .then(res => { if (alive) setNovel(extractNovels(res.data)[0] || null) })
+      .catch(() => { /* im lặng — section tự ẩn nếu không tải được */ })
+      .finally(() => { if (alive) setLoading(false) })
+    return () => { alive = false; controller.abort() }
+  }, [])
+
+  if (loading) {
+    return (
+      <section className="home-section" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
+        <SectionHeader icon={<Flame size={16} style={{ color: '#f59e0b' }} />} title="Nhân Khí Tháng" />
+        <div className="glass-panel" style={{ height: '212px', borderRadius: '16px' }} />
+      </section>
+    )
+  }
   if (!novel) return null
 
   const formattedTitle = fmtNovelTitle(novel.title, novel.slug)
@@ -83,6 +107,3 @@ export default function MonthlyPopularSection({ novel }) {
     </section>
   )
 }
-MonthlyPopularSection.propTypes = {
-  novel: novelType,
-};

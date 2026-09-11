@@ -93,6 +93,12 @@ async function handleApi(request, url, env, ctx) {
     return getGenres(env);
   }
 
+  // GET /api/stats — tổng số truyện/chương/thuật ngữ, tính bằng SQL aggregate
+  // ở server thay vì client tự tải toàn bộ catalog rồi cộng dồn (HomePage cũ).
+  if (path === '/api/stats' && method === 'GET') {
+    return getStats(env);
+  }
+
   // GET /api/server-info
   if (path === '/api/server-info' && method === 'GET') {
     return jsonResponse({ server_start: new Date().toISOString(), mode: 'cloudflare' });
@@ -495,6 +501,26 @@ async function getGenres(env) {
   `).all();
   return jsonResponse(results.map(r => r.genre), 200, {
     'Cache-Control': 'public, max-age=600, s-maxage=600'
+  });
+}
+
+// GET /api/stats — 3 số tổng cho StatsSection trang chủ. Aggregate thẳng
+// trong SQL (COUNT/SUM) — không tải cả catalog về client rồi cộng dồn.
+async function getStats(env) {
+  const row = await env.DB.prepare(`
+    SELECT
+      (SELECT COUNT(*) FROM novels WHERE published = 1) AS total_novels,
+      (SELECT COUNT(*) FROM chapters c
+         JOIN novels n ON n.slug = c.novel_slug
+         WHERE n.published = 1) AS total_chapters,
+      (SELECT COALESCE(SUM(glossary_count), 0) FROM novels WHERE published = 1) AS total_glossary
+  `).first();
+  return jsonResponse({
+    total_novels: row?.total_novels || 0,
+    total_chapters: row?.total_chapters || 0,
+    total_glossary: row?.total_glossary || 0,
+  }, 200, {
+    'Cache-Control': 'public, max-age=300, s-maxage=300'
   });
 }
 

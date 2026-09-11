@@ -1,8 +1,8 @@
-import PropTypes from 'prop-types'
-import { novelType } from '../../utils/propTypes'
-
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { History, Clock, BookOpen, BookMarked } from 'lucide-react'
+import api from '../../api'
+import { fetchNovelsBySlugs } from '../../utils/novelsApi'
 import NovelCover from '../../components/NovelCover'
 import SectionHeader from '../../components/ui/SectionHeader'
 import { getAllHistory, fmtChapterLabel } from '../../utils/readingHistory'
@@ -10,20 +10,37 @@ import { fmtTimeAgo, fmtNovelTitle } from '../../utils/format'
 
 /**
  * RecentlyReadSection – Truyện vừa đọc gần đây từ localStorage (Web + EPUB).
- * Props:
- *   novels – toàn bộ danh sách novel để khớp slug
+ * Chỉ gọi API cho đúng vài slug đã đọc (fetchNovelsBySlugs, song song) — không
+ * cần cả catalog để "tìm" novel như trước.
  */
-export default function RecentlyReadSection({ novels }) {
-  const history = getAllHistory()
-  if (!history || history.length === 0) return null
+export default function RecentlyReadSection() {
+  const [items, setItems] = useState(null) // null = đang tải, [] = tải xong nhưng rỗng
 
-  const items = history
-    .map(h => {
-      const novel = novels.find(n => n.slug === h.slug)
-      return novel ? { ...h, novel } : null
+  useEffect(() => {
+    let alive = true
+    const history = getAllHistory()
+    if (!history || history.length === 0) {
+      setItems([])
+      return
+    }
+    fetchNovelsBySlugs(api, history.map(h => h.slug)).then(novelMap => {
+      if (!alive) return
+      setItems(history.map(h => {
+        const novel = novelMap.get(h.slug)
+        return novel ? { ...h, novel } : null
+      }).filter(Boolean))
     })
-    .filter(Boolean)
+    return () => { alive = false }
+  }, [])
 
+  if (items === null) {
+    return (
+      <section className="home-section" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
+        <SectionHeader icon={<History size={16} style={{ color: 'var(--accent)' }} />} title="Vừa Đọc Gần Đây" />
+        <div className="glass-panel" style={{ height: '140px', borderRadius: '14px' }} />
+      </section>
+    )
+  }
   if (items.length === 0) return null
 
   return (
@@ -104,6 +121,3 @@ export default function RecentlyReadSection({ novels }) {
     </section>
   )
 }
-RecentlyReadSection.propTypes = {
-  novels: PropTypes.arrayOf(novelType),
-};

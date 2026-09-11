@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle } from 'lucide-react'
 import api from '../api'
-import { extractNovels, fetchAllNovels } from '../utils/novelsApi'
+import { extractNovels } from '../utils/novelsApi'
 
 // ── Truyentrung.com UI Components ──
 import SearchSection from './homepage/SearchSection'
@@ -25,35 +24,18 @@ import StatsSection from './homepage/StatsSection'
  *   3. [Cột chính] Recently Updated Table → GenreChips → All Novels Tabbed List
  *   4. [Sidebar] Recently Read → Multi-Ranking Widgets → Khung thông báo tĩnh
  *      → Bình luận mới nhất → Thống kê hệ thống
+ *
+ * KHÔNG còn tải cả catalog ở đây (trước đây fetchAllNovels kéo tới hàng chục
+ * nghìn truyện chỉ để các section con tự lọc/sort trong RAM — nguyên nhân
+ * chính khiến trang chủ chậm và làm cạn quota D1 rows-read, 2026-09-11).
+ * Mỗi section bên dưới tự gọi API riêng, nhỏ, độc lập — section nào tải xong
+ * trước thì hiện trước, không còn 1 màn hình loading chờ tất cả.
  */
 export default function HomePage() {
-  const [novels, setNovels] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState(null)
   const [searchLoading, setSearchLoading] = useState(false)
   const [activeGenre, setActiveGenre] = useState('')
-
-  // Nạp TOÀN BỘ danh sách truyện trang chủ — phân trang thật (không chỉ
-  // page=1) để không bỏ sót truyện khi catalog lớn hơn 1 trang (B01).
-  useEffect(() => {
-    let alive = true
-    fetchAllNovels(api)
-      .then(list => {
-        if (alive) {
-          setNovels(list)
-          setLoading(false)
-        }
-      })
-      .catch(() => {
-        if (alive) {
-          setError('Không thể kết nối máy chủ. Vui lòng thử lại sau.')
-          setLoading(false)
-        }
-      })
-    return () => { alive = false }
-  }, [])
 
   // Xử lý tìm kiếm — B02: tham số đúng contract là `q` (không phải `search`).
   // Dùng AbortController + so sánh request id để bỏ qua response cũ đến muộn
@@ -85,31 +67,6 @@ export default function HomePage() {
     return () => { clearTimeout(handle); controller.abort() }
   }, [searchQuery])
 
-  if (loading) {
-    return (
-      <div className="container" style={{ paddingTop: '3rem', color: 'var(--text-muted)' }}>
-        Đang tải trang chủ Truyện Trung...
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="container" style={{ paddingTop: '2rem' }}>
-        <div className="glass-panel p-6" style={{ color: '#fca5a5', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <AlertCircle size={18} /> {error}
-        </div>
-      </div>
-    )
-  }
-
-  const visible = novels.filter(n => (n.chapter_count || 0) > 0 || n.total_chapters > 0)
-  const popularMonthly = visible.find(n => n.views && n.views > 0) || visible[0]
-
-  const recentlyUpdated = visible
-    .filter(n => n.last_translated_at && (n.chapter_count || 0) > 0)
-    .sort((a, b) => b.last_translated_at - a.last_translated_at)
-
   const isSearching = searchQuery.trim().length > 0
 
   return (
@@ -128,7 +85,7 @@ export default function HomePage() {
           {/* 1. Anchor chính above-the-fold: Section "Nhân Khí Tháng" ngay sau
               thanh tìm kiếm — trước đây bị Thông báo/GenreChips/Recently Read
               che mất phía trên, không có điểm nhấn thị giác rõ ràng khi vào trang. */}
-          <MonthlyPopularSection novel={popularMonthly} />
+          <MonthlyPopularSection />
 
           {/* Top Notice Bar: Khung Truy Thư Lệnh & Thông Báo Tìm Truyện */}
           <TruyThuNoticeSection />
@@ -138,24 +95,24 @@ export default function HomePage() {
             {/* ── Cột Trái: Main Content (68%) ── */}
             <div className="hp-main-col">
               {/* Recently Updated Table: Bảng Mới Cập Nhật dạng Table chuẩn 5 cột */}
-              <UpdatesSection novels={recentlyUpdated} />
+              <UpdatesSection />
 
               {/* Chip lọc thể loại — đặt sát trên All Novels vì đây là nơi nó
                   thực sự lọc, thay vì đứng tách biệt ở đầu trang. */}
               <GenreChips activeGenre={activeGenre} onSelect={setActiveGenre} />
 
               {/* All Novels Tabbed List: Tất cả truyện dạng Tab */}
-              <AllNovelsSection novels={visible} activeGenre={activeGenre} />
+              <AllNovelsSection activeGenre={activeGenre} />
             </div>
 
             {/* ── Cột Phải: Sidebar Widgets (32%) ── */}
             <div className="hp-sidebar-col">
               {/* Vừa đọc gần đây — nội dung cá nhân, hợp với sidebar hơn là
                   chiếm full-width ngay đầu trang cho mọi khách vãng lai. */}
-              <RecentlyReadSection novels={visible} />
+              <RecentlyReadSection />
 
               {/* Multi-Ranking Widgets: 5 BXH Tổng Hợp/Nhiều Chương/Lượt Đọc/Sách Mới/Đánh Giá */}
-              <TruyenTrungRankings novels={visible} />
+              <TruyenTrungRankings />
 
               {/* Khung thông báo tĩnh (KHÔNG phải chat realtime) */}
               <TruyenTrungChatboxWidget />
@@ -164,7 +121,7 @@ export default function HomePage() {
               <RecentCommentsSection />
 
               {/* Thống kê hệ thống */}
-              <StatsSection novels={visible} />
+              <StatsSection />
             </div>
           </div>
         </>

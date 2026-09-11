@@ -1,9 +1,23 @@
-import PropTypes from 'prop-types'
-import { novelType } from '../../utils/propTypes'
-import { useState, useMemo } from 'react';
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trophy, Flame, Eye, Star, Sparkles } from 'lucide-react';
+import api from '../../api'
+import { extractNovels } from '../../utils/novelsApi'
 import { fmtNovelTitle, fmtNumber } from '../../utils/format'
+
+// Mỗi tab tương ứng 1 cột sort mà backend hỗ trợ (xem SORT_COLS trong
+// src/index.js getNovels) — server trả sẵn top 10, không cần tải cả catalog
+// về rồi tự sort/slice trên client như trước.
+const SORT_BY_CATEGORY = {
+  luotdoc: 'views',
+  banchay: 'chapter_count',
+  sachmoi: 'updated_at',
+  danhgia: 'rating',
+}
+// "Tổng Hợp" dùng công thức nội bộ (views + rating*150 + chapter_count*2),
+// backend không có cột sort tương ứng — lấy 30 truyện xem nhiều nhất làm tập
+// xấp xỉ rồi tự tính công thức trên tập nhỏ này (không cần cả 28k+ truyện).
+const TONGHOP_SAMPLE_SIZE = 30
 
 /**
  * TruyenTrungRankings — Khối 5 Bảng Xếp Hạng Độc Lập chuẩn Truyentrung.com
@@ -16,9 +30,15 @@ import { fmtNovelTitle, fmtNumber } from '../../utils/format'
  *   phải điểm phiếu bầu của người dùng.
  * - "Nhiều Chương": sắp theo chapter_count (không phải doanh số bán).
  * Đổi nhãn để không gây hiểu nhầm có tính năng bán hàng/vote thật.
+ *
+ * Mỗi tab tự fetch top 10 riêng theo tab đang chọn — không nhận cả catalog
+ * từ HomePage (trước đây HomePage tải toàn bộ truyện chỉ để component này
+ * tự sort/slice trên client, một trong các nguyên nhân chính gây quá tải D1).
  */
-export default function TruyenTrungRankings({ novels = [] }) {
+export default function TruyenTrungRankings() {
   const [activeCategory, setActiveCategory] = useState('tonghop')
+  const [currentList, setCurrentList] = useState([])
+  const [loading, setLoading] = useState(true)
 
   const categories = [
     { key: 'tonghop',   label: 'BXH Tổng Hợp',      icon: <Flame size={13} /> },
@@ -28,43 +48,38 @@ export default function TruyenTrungRankings({ novels = [] }) {
     { key: 'danhgia',   label: 'BXH Đánh Giá',      icon: <Star size={13} /> },
   ]
 
-  const currentList = useMemo(() => {
-    if (!novels || novels.length === 0) return []
+  useEffect(() => {
+    let alive = true
+    setLoading(true)
+    const controller = new AbortController()
 
-    const list = [...novels]
+    const request = activeCategory === 'tonghop'
+      ? api.get('/novels', { params: { sort: 'views', order: 'desc', limit: TONGHOP_SAMPLE_SIZE }, signal: controller.signal })
+      : api.get('/novels', { params: { sort: SORT_BY_CATEGORY[activeCategory], order: 'desc', limit: 10 }, signal: controller.signal })
 
-    if (activeCategory === 'luotdoc') {
-      return list
-        .sort((a, b) => (b.views || 0) - (a.views || 0))
-        .slice(0, 10)
-    }
-    if (activeCategory === 'banchay') {
-      return list
-        .sort((a, b) => (b.chapter_count || 0) - (a.chapter_count || 0))
-        .slice(0, 10)
-    }
-    if (activeCategory === 'sachmoi') {
-      return list
-        .sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''))
-        .slice(0, 10)
-    }
-    if (activeCategory === 'danhgia') {
-      return list
-        .sort((a, b) => (b.rating || 0) - (a.rating || 0) || (b.rating_count || 0) - (a.rating_count || 0))
-        .slice(0, 10)
-    }
+    request.then(res => {
+      if (!alive) return
+      let list = extractNovels(res.data)
+      if (activeCategory === 'tonghop') {
+        list = [...list].sort((a, b) => {
+          const sA = (a.views || 0) + (a.rating || 0) * 150 + (a.chapter_count || 0) * 2
+          const sB = (b.views || 0) + (b.rating || 0) * 150 + (b.chapter_count || 0) * 2
+          return sB - sA
+        }).slice(0, 10)
+      }
+      setCurrentList(list)
+    }).catch(() => { /* im lặng — giữ danh sách cũ (nếu có) khi lỗi */ })
+      .finally(() => { if (alive) setLoading(false) })
 
-    // Default: Tổng Hợp (công thức nội bộ, không phải điểm phiếu bầu thật)
-    return list
-      .sort((a, b) => {
-        const sA = (a.views || 0) + (a.rating || 0) * 150 + (a.chapter_count || 0) * 2
-        const sB = (b.views || 0) + (b.rating || 0) * 150 + (b.chapter_count || 0) * 2
-        return sB - sA
-      })
-      .slice(0, 10)
-  }, [novels, activeCategory])
+    return () => { alive = false; controller.abort() }
+  }, [activeCategory])
 
-  if (!novels || novels.length === 0) return null
+  if (loading && currentList.length === 0) {
+    return (
+      <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '16px', marginBottom: '1.5rem', height: '420px' }} />
+    )
+  }
+  if (currentList.length === 0) return null
 
   return (
     <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '16px', marginBottom: '1.5rem' }}>
@@ -129,6 +144,3 @@ export default function TruyenTrungRankings({ novels = [] }) {
     </div>
   )
 }
-TruyenTrungRankings.propTypes = {
-  novels: PropTypes.arrayOf(novelType),
-};

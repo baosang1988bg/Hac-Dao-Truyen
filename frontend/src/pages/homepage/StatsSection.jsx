@@ -1,25 +1,33 @@
-import PropTypes from 'prop-types'
-import { novelType } from '../../utils/propTypes'
-
+import { useEffect, useState } from 'react'
+import api from '../../api'
 import { fmtNumber } from '../../utils/format'
 
 /**
  * StatsSection – Thống kê tổng số truyện, chương, thuật ngữ.
- * Phase 3: redesign với hp-stats CSS (gradient text + border).
- * Props:
- *   novels – toàn bộ danh sách novel
+ * Lấy từ GET /api/stats — server tự SUM/COUNT bằng SQL aggregate, không cần
+ * tải cả catalog về client rồi cộng dồn (cách cũ chính là một phần nguyên
+ * nhân HomePage quá tải D1 rows-read).
  */
-export default function StatsSection({ novels }) {
-  if (!novels || novels.length === 0) return null
+export default function StatsSection() {
+  const [stats, setStats] = useState(null)
 
-  const totalNovels = novels.length
-  const totalChapters = novels.reduce((a, n) => a + (n.chapter_count || 0), 0)
-  const totalGlossary = novels.reduce((a, n) => a + (n.glossary_count || 0), 0)
+  useEffect(() => {
+    let alive = true
+    const controller = new AbortController()
+    api.get('/stats', { signal: controller.signal })
+      .then(res => { if (alive) setStats(res.data) })
+      .catch(() => { /* im lặng — section tự ẩn nếu không tải được */ })
+    return () => { alive = false; controller.abort() }
+  }, [])
+
+  if (!stats) {
+    return <div className="hp-stats" style={{ height: '76px' }} />
+  }
 
   const items = [
-    { value: fmtNumber(totalNovels), label: 'Bộ truyện' },
-    { value: fmtNumber(totalChapters), label: 'Chương đã dịch' },
-    { value: fmtNumber(totalGlossary), label: 'Thuật ngữ glossary' },
+    { value: fmtNumber(stats.total_novels), label: 'Bộ truyện' },
+    { value: fmtNumber(stats.total_chapters), label: 'Chương đã dịch' },
+    { value: fmtNumber(stats.total_glossary), label: 'Thuật ngữ glossary' },
   ]
 
   return (
@@ -33,6 +41,3 @@ export default function StatsSection({ novels }) {
     </div>
   )
 }
-StatsSection.propTypes = {
-  novels: PropTypes.arrayOf(novelType),
-};
