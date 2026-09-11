@@ -23,7 +23,10 @@ export default function AllNovelsSection({ novels, activeGenre = '' }) {
   const [viewMode, setViewMode] = useState('list') // 'list' (default) | 'grid' | 'table'
 
   const filtered = novels.filter(n => {
-    if (activeGenre && n.genre !== activeGenre) return false
+    if (activeGenre) {
+      const genres = (n.genre || '').split(',').map(g => g.trim())
+      if (!genres.includes(activeGenre)) return false
+    }
     if (activeTab === 'all') return true
     if (activeTab === 'ongoing')   return (n.chapter_count || 0) > 0 && (n.total_chapters === 0 || n.chapter_count < n.total_chapters)
     if (activeTab === 'completed') return n.total_chapters > 0 && n.chapter_count >= n.total_chapters
