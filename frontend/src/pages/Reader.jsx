@@ -661,7 +661,7 @@ export default function Reader() {
           display: 'flex', alignItems: 'flex-end'
         }} onClick={() => setShowSettings(false)}>
           <div style={{
-            width: '100%', background: '#1e293b', color: 'white',
+            width: '100%', background: 'var(--reader-panel)', color: 'var(--reader-text)',
             borderTopLeftRadius: '24px', borderTopRightRadius: '24px',
             padding: '1.5rem',
             paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
@@ -669,25 +669,25 @@ export default function Reader() {
             boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
             animation: 'slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
           }} onClick={e => e.stopPropagation()}>
-            <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', margin: '0 auto 1.5rem' }} />
+            <div style={{ width: '40px', height: '4px', background: 'var(--reader-border)', borderRadius: '2px', margin: '0 auto 1.5rem' }} />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
               <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Tuỳ chỉnh</h3>
-              <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', minWidth: '44px', minHeight: '44px' }}>✕</button>
+              <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', color: 'var(--reader-muted)', cursor: 'pointer', minWidth: '44px', minHeight: '44px' }}>✕</button>
             </div>
 
             <ReaderSettingsPanel settings={settings} onChange={onChange} ttsVoices={tts.voices} />
 
             {/* Đọc offline: tải trước N chương kế tiếp để service worker cache */}
             <div style={{ marginBottom: '0.5rem' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', marginBottom: '0.8rem', letterSpacing: '0.05em' }}>ĐỌC OFFLINE</div>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--reader-muted)', marginBottom: '0.8rem', letterSpacing: '0.05em' }}>ĐỌC OFFLINE</div>
               <button
                 onClick={downloadNextChapters}
                 disabled={downloading || !nextChapter}
                 style={{
                   width: '100%', minHeight: '52px', borderRadius: '16px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                  background: downloading ? 'rgba(255,255,255,0.1)' : 'var(--accent)',
+                  background: downloading ? 'var(--reader-border)' : 'var(--accent)',
                   color: 'white', border: 'none', fontSize: '1rem', fontWeight: 700,
                   cursor: downloading || !nextChapter ? 'not-allowed' : 'pointer',
                   opacity: !nextChapter ? 0.4 : 1, transition: 'all 0.2s',
@@ -700,7 +700,7 @@ export default function Reader() {
                     ? `Đã tải ${dlProgress.done}/${dlProgress.total} chương`
                     : `Tải ${OFFLINE_BATCH_SIZE} chương tiếp`}
               </button>
-              <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.6rem', lineHeight: 1.5 }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--reader-muted)', marginTop: '0.6rem', lineHeight: 1.5 }}>
                 {nextChapter
                   ? 'Chương đã tải sẽ đọc được cả khi mất mạng.'
                   : 'Đây là chương cuối — không còn chương kế tiếp để tải.'}

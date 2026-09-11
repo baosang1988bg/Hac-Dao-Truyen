@@ -144,6 +144,9 @@ a:hover {
   --reader-text: #5b4636;
   --reader-border: #dcd1b3;
   --reader-panel: #efe5cd;
+  /* Text phụ (nhãn, hint) — tự tính từ --reader-text theo theme đang chọn,
+     không hard-code rgba(255,255,255,x) vốn chỉ hợp theme tối. */
+  --reader-muted: color-mix(in srgb, var(--reader-text) 60%, transparent);
 }
 .reader--white {
   --reader-bg: #ffffff;
