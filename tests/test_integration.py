@@ -194,6 +194,15 @@ def test_glossary_update_requires_admin():
     assert r.status_code == 401
 
 
+def test_health_requires_admin():
+    # A02 follow-up (phát hiện bởi agent F04): /health đọc text_raw/ để đếm
+    # chương missing/failed/suspicious — trước đây không có auth dù chỉ admin
+    # UI (HealthPanel.jsx) gọi tới.
+    slug = _first_translated_slug()
+    assert client.get(f"/api/novels/{slug}/health").status_code == 401
+    assert client.get(f"/api/novels/{slug}/health", headers=_admin_headers()).status_code in (200, 404)
+
+
 def test_path_traversal_blocked():
     for evil in ("..%2F..%2Fetc", "..", "a/../../etc"):
         r = client.get(f"/api/novels/{evil}")

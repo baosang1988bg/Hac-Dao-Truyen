@@ -9,11 +9,12 @@ import hashlib
 import os
 import re
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from security_utils import safe_novel_dir, safe_join
 from chapter_utils import extract_chapter_number_from_text
 from publish_status import is_published
+from auth import require_admin
 
 router = APIRouter()
 
@@ -183,7 +184,7 @@ def _is_split_part_merged(stem: str, trans_dir: str, all_trans: set) -> bool:
     return _find_merged_vi(stem, all_trans) is not None
 
 
-@router.get("/api/novels/{slug}/health")
+@router.get("/api/novels/{slug}/health", dependencies=[Depends(require_admin)])
 def health_check(slug: str):
     """
     So sánh text_raw/ và translated/ để tìm:
