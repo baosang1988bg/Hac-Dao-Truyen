@@ -115,11 +115,11 @@ export default function TruyenTrungRankings({ novels = [] }) {
                 <span className="qidian-rank-title" title={formattedTitle}>
                   {formattedTitle}
                 </span>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
                   {novel.author || 'Tác giả'}
                 </span>
               </div>
-              <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 600, flexShrink: 0 }}>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 600, flexShrink: 0 }}>
                 {metricText}
               </span>
             </Link>

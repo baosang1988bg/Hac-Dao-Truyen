@@ -493,7 +493,7 @@ a:hover {
   right: 0;
   bottom: 0;
   padding: 5px 8px;
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-align: center;
@@ -597,7 +597,7 @@ a:hover {
   min-height: 56px;
   color: var(--text-muted);
   text-decoration: none;
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   -webkit-tap-highlight-color: transparent;
 }
@@ -677,69 +677,6 @@ a:hover {
 }
 @media (min-width: 1000px) {
   .section-row-scroll > * { flex: 0 0 165px; }
-}
-
-/* Hàng "Mới lên chương" */
-.update-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px;
-  min-height: 44px;
-  border-radius: 12px;
-  color: var(--text-main);
-  text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
-}
-@media (hover: hover) {
-  .update-row:hover { background: rgba(255, 255, 255, 0.05); }
-}
-.update-row:active { background: rgba(255, 255, 255, 0.08); }
-.update-row__body { flex: 1; min-width: 0; }
-.update-row__title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-main);
-}
-.update-row__chapter {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-top: 2px;
-}
-.update-row__ago {
-  flex-shrink: 0;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-/* Dải thống kê 3 cột */
-.stats-strip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-}
-.stats-strip__item {
-  text-align: center;
-  padding: 1rem 0.5rem;
-}
-.stats-strip__value {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--accent);
-}
-.stats-strip__label {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  margin-top: 2px;
 }
 
 /* ── NovelPage (guest) ── */
@@ -1220,7 +1157,7 @@ a:hover {
 .comment-item__body { flex: 1; min-width: 0; }
 .comment-item__meta { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
 .comment-item__name { font-weight: 700; font-size: 0.85rem; }
-.comment-item__time { font-size: 0.72rem; opacity: 0.55; }
+.comment-item__time { font-size: 0.8125rem; opacity: 0.55; }
 .comment-item__content { line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
 
 /* Spinner dùng chung (Loader2 của lucide) */
@@ -1397,57 +1334,6 @@ a:hover {
   .hp-tab:hover:not(.active) { color: var(--text-main); }
 }
 
-/* ── UpdatesSection List redesign ── */
-.update-row-v2 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 6px;
-  min-height: 52px;
-  border-radius: 8px;
-  color: var(--text-main);
-  text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
-}
-@media (hover: hover) {
-  .update-row-v2:hover { background: rgba(255, 255, 255, 0.05); }
-}
-.update-row-v2:active { background: rgba(255, 255, 255, 0.08); }
-.update-row-v2__cover {
-  flex-shrink: 0;
-  width: 36px;
-  border-radius: 5px;
-  overflow: hidden;
-  aspect-ratio: 2/3;
-  background: #1e293b;
-}
-.update-row-v2__body { flex: 1; min-width: 0; }
-.update-row-v2__title {
-  font-size: 0.88rem;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-main);
-  display: block;
-}
-.update-row-v2__chapter {
-  font-size: 0.75rem;
-  color: var(--accent);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-top: 2px;
-  display: block;
-}
-.update-row-v2__ago {
-  flex-shrink: 0;
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
 /* ── Stats redesign ── */
 .hp-stats {
   display: grid;
@@ -1475,7 +1361,7 @@ a:hover {
   color: transparent;
 }
 .hp-stats__label {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
   margin-top: 3px;
   letter-spacing: 0.02em;
@@ -1836,25 +1722,6 @@ a:hover {
   text-overflow: ellipsis;
   display: block;
 }
-.qidian-rank-sub {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-.qidian-rank-sub .genre-tag {
-  color: var(--accent);
-}
-.qidian-rank-metric {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  flex-shrink: 0;
-}
-
 /* Settings dùng chung cho Reader và EPUB, không đổi bảng màu đọc. */
 .reader-settings-panel { display: grid; gap: 1.25rem; padding: 1rem; color: inherit; }
 .reader-settings-panel fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }

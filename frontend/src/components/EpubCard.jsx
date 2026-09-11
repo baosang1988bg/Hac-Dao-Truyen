@@ -68,13 +68,13 @@ export function EpubCard({ novel }) {
         </Link>
 
         {novel.genre ? (
-          <div style={{ fontSize: '0.68rem', color: '#818cf8', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontSize: '0.8125rem', color: '#818cf8', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {novel.genre}
           </div>
         ) : null}
 
         {/* Stats */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
             <BookOpen size={11} /> {fmtNumber(novel.chapter_count || novel.total_chapters || 0)} chương
           </span>
