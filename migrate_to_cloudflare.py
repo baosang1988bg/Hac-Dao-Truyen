@@ -64,9 +64,11 @@ def get_novel_sync_info(slug: str) -> dict:
     """Lấy thông tin sync của 1 novel. Trả về dict rỗng nếu chưa sync lần nào."""
     return load_sync_state().get(slug, {})
 
-def get_synced_filenames(slug: str) -> set:
-    """Query D1 để lấy danh sách filenames đã có — dùng để detect author notes mới."""
-    sql = f"SELECT filename FROM chapters WHERE novel_slug={q(slug)};"
+def _query_d1_rows(sql: str) -> list:
+    """Chạy 1 câu SELECT qua `wrangler d1 execute --json` và trả list[dict] rows.
+    Trả None khi lỗi (network/parse/wrangler) — caller KHÔNG được coi None là
+    'không có gì', vì điều đó có thể khiến ghi đè dữ liệu đã có một cách mù
+    quáng (xem get_r2_keys_for_filenames dùng cho kiểm tra expected_r2_key)."""
     with tempfile.NamedTemporaryFile(mode='w', suffix='.sql', encoding='utf-8', delete=False) as f:
         f.write(sql)
         tmp = f.name
@@ -94,8 +96,7 @@ def get_synced_filenames(slug: str) -> set:
             print(f"    [D1-query-ERR] Không có data. stdout: {stdout[:300]}")
             return None
 
-        rows = data[0].get('results', []) if data else []
-        return {row['filename'] for row in rows if 'filename' in row}
+        return data[0].get('results', []) if data else []
 
     except json.JSONDecodeError as e:
         print(f"    [D1-query-ERR] JSON parse: {e}")
@@ -106,36 +107,181 @@ def get_synced_filenames(slug: str) -> set:
     finally:
         os.unlink(tmp)
 
+
+def get_synced_filenames(slug: str) -> set:
+    """Query D1 để lấy danh sách filenames đã có — dùng để detect author notes mới."""
+    rows = _query_d1_rows(f"SELECT filename FROM chapters WHERE novel_slug={q(slug)};")
+    if rows is None:
+        return None
+    return {row['filename'] for row in rows if 'filename' in row}
+
+
+def get_r2_keys_for_filenames(slug: str, filenames: list) -> dict:
+    """Đọc r2_key HIỆN CÓ trong D1 cho một danh sách filenames.
+
+    [E03] Dùng làm "expected key" (giống `expected_r2_key` mà Worker
+    src/index.js:syncNovelBatch dùng để check conflict) TRƯỚC khi ghi đè —
+    tránh CLI ghi đè mù lên thay đổi đồng thời từ nơi khác (Worker HTTP sync,
+    admin sửa qua debug endpoint, hoặc 1 lượt migrate khác chạy song song).
+
+    Trả None nếu query lỗi. Caller phải coi None khác với {} (rỗng thật sự):
+    {} = xác nhận KHÔNG có row nào (an toàn ghi mới); None = không biết được
+    trạng thái hiện tại (không nên tự tin ghi đè có điều kiện, xem cách dùng
+    trong migrate_novel())."""
+    if not filenames:
+        return {}
+    in_list = ",".join(q(f) for f in filenames)
+    rows = _query_d1_rows(
+        f"SELECT filename, r2_key FROM chapters WHERE novel_slug={q(slug)} AND filename IN ({in_list});"
+    )
+    if rows is None:
+        return None
+    return {row['filename']: row.get('r2_key') for row in rows if 'filename' in row}
+
+
+def build_chapter_upsert_sql(slug: str, fname: str, ctitle: str, num: int, r2key: str, old_key) -> str:
+    """[E03] Sinh câu SQL upsert 1 chương với guard giống Worker:
+    chỉ UPDATE khi r2_key hiện tại (lúc commit) khớp `old_key` ta vừa đọc
+    trước đó (không ai ghi đè song song) HOẶC đã khớp sẵn `r2key` mới (retry
+    idempotent, cùng nội dung). Nếu `old_key` là None, ON CONFLICT chỉ có thể
+    kích hoạt khi CÓ MỘT row xuất hiện giữa lúc đọc và lúc ghi (race) — WHERE
+    sẽ chặn ghi đè trong trường hợp đó thay vì âm thầm thắng.
+    Khi row CHƯA từng tồn tại, nhánh INSERT chạy bình thường, WHERE của
+    DO UPDATE không được xét tới (SQLite chỉ áp WHERE cho nhánh UPDATE)."""
+    old_sql = q(old_key) if old_key else 'NULL'
+    return (
+        f"INSERT INTO chapters (novel_slug,filename,title,chapter_number,r2_key) "
+        f"VALUES ({q(slug)},{q(fname)},{q(ctitle[:200])},{num},{q(r2key)}) "
+        f"ON CONFLICT(novel_slug,filename) DO UPDATE SET "
+        f"title=excluded.title,r2_key=excluded.r2_key,chapter_number=excluded.chapter_number "
+        f"WHERE chapters.r2_key = {old_sql} OR chapters.r2_key = excluded.r2_key;"
+    )
+
 def update_novel_sync(slug: str, last_chapter: int, last_filename: str, total_synced: int):
-    """Cập nhật trạng thái sync sau khi hoàn tất."""
+    """Cập nhật trạng thái sync sau khi hoàn tất. Merge vào entry cũ (không
+    ghi đè toàn bộ) để không làm mất `glossary_snapshot` (xem [E05]) hay các
+    field khác đã lưu trong cùng 1 lượt chạy trước khi hàm này được gọi."""
     state = load_sync_state()
-    state[slug] = {
+    entry = state.get(slug, {}) or {}
+    entry.update({
         "last_synced_at":      datetime.now().isoformat(),
         "last_chapter_number": last_chapter,
         "last_filename":       last_filename,
         "total_synced":        total_synced,
-    }
+    })
+    state[slug] = entry
     save_sync_state(state)
     print(f"  💾 Sync state saved → last chapter: {last_chapter}, total: {total_synced}")
 
+
+def get_glossary_snapshot(slug: str) -> dict:
+    """[E05] Bản glossary chung gần nhất mà local & remote từng thấy giống
+    nhau (lưu lại sau mỗi lần merge/sync thành công) — dùng làm "base" cho
+    three-way merge, cho phép phân biệt "term bị XÓA" với "term chưa từng
+    có" và tránh phục sinh term đã xóa khi merge lần sau."""
+    return (load_sync_state().get(slug, {}) or {}).get('glossary_snapshot', {}) or {}
+
+
+def save_glossary_snapshot(slug: str, glossary: dict):
+    state = load_sync_state()
+    entry = state.get(slug, {}) or {}
+    entry['glossary_snapshot'] = glossary
+    state[slug] = entry
+    save_sync_state(state)
+
+
+class GlossaryFetchError(Exception):
+    """[E05] R2 glossary download/parse thất bại THẬT SỰ (mạng, JSON hỏng,
+    wrangler crash) — PHẢI phân biệt với "object chưa từng tồn tại" (hợp lệ,
+    trả {}). Caller (migrate_novel) bắt lỗi này để bỏ qua toàn bộ bước đồng
+    bộ glossary lần chạy này (không merge, không ghi đè R2/D1), tránh hiểu
+    nhầm lỗi tải thành "glossary trống" rồi xóa mất dữ liệu online."""
+
+
 def r2_get_glossary(slug: str) -> dict:
-    """Tải file glossary.json từ R2 về dưới dạng dict (dùng để gộp với local glossary)."""
-    import tempfile
+    """Tải file glossary.json từ R2. Trả {} khi object THỰC SỰ CHƯA TỒN TẠI
+    (chưa từng upload glossary cho slug này — hợp lệ, không phải lỗi). Với
+    MỌI lỗi khác (network, JSON hỏng, wrangler lỗi không rõ nguyên nhân) ném
+    GlossaryFetchError thay vì âm thầm trả {} — xem GlossaryFetchError."""
     with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as tmp:
         tmp_path = tmp.name
     try:
         r = run_safe([get_wrangler(), 'r2', 'object', 'get',
                       f"{R2_BUCKET}/{slug}/glossary.json", f"--file={tmp_path}", '--remote'])
         if r.returncode == 0:
-            with open(tmp_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {}
+            try:
+                with open(tmp_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, OSError) as e:
+                raise GlossaryFetchError(f"glossary.json trên R2 lỗi định dạng: {e}") from e
+        stderr_low = (r.stderr or '').lower()
+        not_found_markers = ('does not exist', 'no such key', 'not found', 'object not found')
+        if any(m in stderr_low for m in not_found_markers):
+            return {}
+        raise GlossaryFetchError(
+            f"Không tải được glossary từ R2 (rc={r.returncode}): "
+            f"{(r.stderr or r.stdout or '').strip()[:200]}"
+        )
+    except GlossaryFetchError:
+        raise
     except Exception as e:
-        print(f"    [R2-glossary-ERR] Không thể đọc glossary từ R2: {e}")
-        return {}
+        raise GlossaryFetchError(f"Lỗi không xác định khi tải glossary R2: {e}") from e
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
+
+
+_MISSING = object()
+
+
+def merge_glossary_three_way(base: dict, local: dict, remote: dict):
+    """[E05] Three-way merge glossary dựa trên `base` (bản chung gần nhất 2
+    bên từng đồng nhất — xem get_glossary_snapshot/save_glossary_snapshot).
+
+    - Term chỉ đổi (hoặc bị XÓA) ở 1 bên so với base → lấy giá trị của bên đã
+      đổi, kể cả khi đó là XÓA (không có trong bên đó nữa) — tombstone tự
+      nhiên: term đã xóa ở 1 bên sẽ KHÔNG bị bên còn lại "phục sinh" miễn bên
+      còn lại không tự thêm/sửa lại term đó.
+    - Term đổi khác nhau ở CẢ HAI bên so với base (true conflict) → KHÔNG tự
+      chọn bên thắng: giữ tạm giá trị local (sẽ được ghi lại novel.json/D1
+      lượt này) nhưng liệt kê vào `conflicts` để log/báo cáo rõ ràng, cần rà
+      thủ công.
+    - base rỗng (lần đầu sync, chưa từng có snapshot chung): term chỉ ở 1 bên
+      được coi là "bên đó vừa thêm" (không phải xóa, vì base không có gì để
+      xóa) nên tự động được giữ lại — vẫn dùng chung logic ở trên (b=MISSING
+      khớp với vế "không đổi so với base" của bên còn lại).
+
+    Trả (merged: dict, conflicts: list[dict])."""
+    merged = {}
+    conflicts = []
+    for term in set(base) | set(local) | set(remote):
+        b = base.get(term, _MISSING)
+        l = local.get(term, _MISSING)
+        r = remote.get(term, _MISSING)
+        if l == r:
+            if l is not _MISSING:
+                merged[term] = l
+            continue
+        if l == b:
+            # Chỉ remote đổi (hoặc xóa so với base) → lấy remote.
+            if r is not _MISSING:
+                merged[term] = r
+            continue
+        if r == b:
+            # Chỉ local đổi (hoặc xóa so với base) → lấy local.
+            if l is not _MISSING:
+                merged[term] = l
+            continue
+        # Cả 2 khác base VÀ khác nhau → conflict thật.
+        conflicts.append({
+            'term': term,
+            'base': None if b is _MISSING else b,
+            'local': None if l is _MISSING else l,
+            'remote': None if r is _MISSING else r,
+        })
+        if l is not _MISSING:
+            merged[term] = l
+    return merged, conflicts
 
 def migrate_synopsis(slug: str, dry_run=False, skip_r2=False, skip_d1=False) -> bool:
     """
@@ -542,19 +688,41 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
     title = data.get('title', slug)
     print(f"\n📚 {title} ({slug})")
 
-    # ── Tải và đồng bộ glossary từ R2 để tránh ghi đè mất dữ liệu đã chỉnh sửa online ──
+    # ── [E05] Đồng bộ glossary với R2 bằng three-way merge + tombstone ──────
+    # KHÔNG dùng lỗi tải remote như "glossary trống" (r2_get_glossary ném
+    # GlossaryFetchError cho mọi lỗi thật, chỉ trả {} khi object thực sự chưa
+    # tồn tại) — nếu tải lỗi, bỏ qua toàn bộ bước sync glossary lượt này
+    # (không merge, không ghi đè R2 ở bước 2 bên dưới) để không xóa mất dữ
+    # liệu online do hiểu nhầm.
+    glossary_fetch_failed = False
     if not skip_r2 and not dry_run:
         print("  🔄 Đang kiểm tra & đồng bộ glossary từ R2...")
-        remote_gloss = r2_get_glossary(slug)
-        if remote_gloss:
-            local_gloss = data.get('glossary', {})
-            # Gộp 2 glossary (ưu tiên các từ vừa sửa/thêm online, nhưng giữ lại các từ local có sẵn)
-            merged_gloss = {**local_gloss, **remote_gloss}
+        try:
+            remote_gloss = r2_get_glossary(slug)
+        except GlossaryFetchError as e:
+            glossary_fetch_failed = True
+            print(f"  ⚠️  Lỗi tải glossary từ R2 ({e}) — BỎ QUA đồng bộ glossary "
+                  f"lượt này (không merge, không ghi đè R2) để tránh mất dữ liệu.")
+        else:
+            local_gloss = data.get('glossary', {}) or {}
+            base_snapshot = get_glossary_snapshot(slug)
+            merged_gloss, conflicts = merge_glossary_three_way(base_snapshot, local_gloss, remote_gloss)
+            if conflicts:
+                print(f"  ⚠️  GLOSSARY CONFLICT — {len(conflicts)} thuật ngữ bị sửa "
+                      f"khác nhau ở local và remote kể từ lần đồng bộ chung gần nhất, "
+                      f"cần rà thủ công (giữ tạm giá trị local):")
+                for c in conflicts[:10]:
+                    print(f"      • {c['term']!r}: base={c['base']!r} local={c['local']!r} remote={c['remote']!r}")
+                if len(conflicts) > 10:
+                    print(f"      ... và {len(conflicts) - 10} thuật ngữ khác")
             if merged_gloss != local_gloss:
                 data['glossary'] = merged_gloss
                 with open(nj, 'w', encoding='utf-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
-                print(f"  💾 Đã gộp glossary từ R2 (tổng cộng {len(merged_gloss)} terms)")
+                print(f"  💾 Đã merge glossary 3 chiều với R2 (tổng cộng {len(merged_gloss)} terms)")
+            # Lưu snapshot MỚI (kết quả merge) làm "base" chung cho lần sync sau —
+            # dùng để phân biệt xóa thật với chưa từng có ở lượt kế tiếp.
+            save_glossary_snapshot(slug, merged_gloss)
 
     # ── 1. Novel metadata → D1 ──────────────────────────────────────────
     novel_sql = (
@@ -586,7 +754,12 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
 
     # ── 2. Glossary → R2 ────────────────────────────────────────────────
     glossary = data.get('glossary', {})
-    if glossary and not skip_r2:
+    if glossary and not skip_r2 and glossary_fetch_failed:
+        # [E05] Lỗi tải glossary remote lượt này — KHÔNG ghi đè glossary.json
+        # trên R2 bằng bản local (có thể thiếu term remote-only do tải lỗi).
+        print(f"  ⏭  Bỏ qua upload glossary lên R2 do lỗi tải remote lượt này "
+              f"(tránh ghi đè nhầm — chạy lại khi hết lỗi mạng/quyền).")
+    elif glossary and not skip_r2:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json',
                                          encoding='utf-8', delete=False) as f:
             json.dump(glossary, f, ensure_ascii=False, indent=2)
@@ -661,8 +834,22 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
 
     for i in range(0, total, BATCH_SIZE):
         batch = files[i : i + BATCH_SIZE]
+        batch_names = [fp.name for fp in batch]
         sql_lines = []
         r2_batch  = []  # files cần upload R2 trong batch này
+        expected  = {}  # fname -> (old_key, new_key) — chỉ chứa các file "at risk"
+                        # (đã có row với r2_key KHÁC key mới sắp ghi) để verify sau commit
+
+        # [E03] Đọc r2_key hiện có trước khi ghi — dùng làm "expected key" giống
+        # Worker (src/index.js:syncNovelBatch dùng c.expected_r2_key). Nếu query
+        # lỗi (None), KHÔNG có gì để guard — fallback về hành vi cũ (ghi không
+        # điều kiện) nhưng cảnh báo rõ để biết lượt chạy này thiếu bảo vệ.
+        existing_keys = {} if (dry_run or skip_d1) else get_r2_keys_for_filenames(slug, batch_names)
+        guard_enabled = existing_keys is not None
+        if not guard_enabled:
+            print(f"    [conflict-check-WARN] Không đọc được r2_key hiện có cho batch "
+                  f"{i//BATCH_SIZE + 1} — ghi KHÔNG có guard xung đột lượt này")
+            existing_keys = {}
 
         for fp in batch:
             fname  = fp.name
@@ -676,12 +863,22 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
             if already_uploaded:
                 skip_n += 1
 
-            sql_lines.append(
-                f"INSERT INTO chapters (novel_slug,filename,title,chapter_number,r2_key) "
-                f"VALUES ({q(slug)},{q(fname)},{q(ctitle[:200])},{num},{q(r2key)}) "
-                f"ON CONFLICT(novel_slug,filename) DO UPDATE SET "
-                f"title=excluded.title,r2_key=excluded.r2_key,chapter_number=excluded.chapter_number;"
-            )
+            old_key = existing_keys.get(fname)
+            if guard_enabled and old_key and old_key != r2key:
+                # Row đã tồn tại với r2_key KHÁC — nội dung đổi thật (re-dịch lại
+                # 1 chương chẳng hạn). Cần verify sau khi commit để chắc không ai
+                # ghi song song giữa lúc đọc và lúc ghi (xem post-verify bên dưới).
+                expected[fname] = (old_key, r2key)
+
+            if guard_enabled:
+                sql_lines.append(build_chapter_upsert_sql(slug, fname, ctitle, num, r2key, old_key))
+            else:
+                sql_lines.append(
+                    f"INSERT INTO chapters (novel_slug,filename,title,chapter_number,r2_key) "
+                    f"VALUES ({q(slug)},{q(fname)},{q(ctitle[:200])},{num},{q(r2key)}) "
+                    f"ON CONFLICT(novel_slug,filename) DO UPDATE SET "
+                    f"title=excluded.title,r2_key=excluded.r2_key,chapter_number=excluded.chapter_number;"
+                )
             if not already_uploaded:
                 r2_batch.append((fp, r2key))
 
@@ -715,10 +912,34 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
                         r2_ok_all = False
 
         d1_ok = r2_ok_all and (skip_d1 or d1_file("\n".join(sql_lines), dry_run))
-        if d1_ok:
-            ok_n += len(sql_lines)
-        else:
-            fail_n += len(sql_lines)
+
+        # [E03] Verify: chỉ với các file "at risk" (đã tồn tại với r2_key khác
+        # key mới) — đọc lại sau commit, so khớp key mong đợi. Nếu WHERE guard
+        # chặn UPDATE do ai đó ghi song song, r2_key hiện tại sẽ KHÔNG khớp
+        # r2key mới ta định ghi → phải báo CONFLICT rõ ràng, KHÔNG được tính
+        # là thành công (giữ nguyên object R2 mới đã PUT — an toàn để retry).
+        conflict_names = []
+        if d1_ok and expected and not dry_run and not skip_d1:
+            committed = get_r2_keys_for_filenames(slug, list(expected.keys()))
+            if committed is None:
+                print(f"    [conflict-verify-WARN] Không xác minh được kết quả ghi "
+                      f"cho {len(expected)} chương thay đổi nội dung — coi là chưa "
+                      f"chắc chắn, không tính thành công")
+                conflict_names = list(expected.keys())
+            else:
+                for fname, (old_key, new_key) in expected.items():
+                    if committed.get(fname) != new_key:
+                        conflict_names.append(fname)
+
+        if conflict_names:
+            print(f"    ⚠️  CONFLICT (ghi đè đồng thời bị chặn, cần reconcile thủ "
+                  f"công): {', '.join(conflict_names[:5])}"
+                  + (f" (+{len(conflict_names)-5} khác)" if len(conflict_names) > 5 else ""))
+
+        ok_this = len(sql_lines) - len(conflict_names) if d1_ok else 0
+        fail_this = len(sql_lines) - ok_this
+        ok_n += ok_this
+        fail_n += fail_this
 
         end = min(i + BATCH_SIZE, total)
         if end % 100 == 0 or end == total or fail_n > 0:

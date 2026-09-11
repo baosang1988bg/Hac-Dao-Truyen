@@ -9,6 +9,7 @@ import re
 import json
 import math
 import importlib.util
+from datetime import datetime, timezone
 from typing import Dict
 
 from fastapi import APIRouter, HTTPException, Depends, Header
@@ -18,6 +19,7 @@ from pydantic import BaseModel
 from novel_manager import load_novel
 from auth import require_admin, _is_valid as _is_valid_token
 from security_utils import validate_slug, safe_novel_dir
+from publish_status import is_published
 
 router = APIRouter()
 
@@ -145,6 +147,11 @@ def list_novels(
                 data = json.load(f)
         except json.JSONDecodeError:
             continue
+        # F03: truyện bị gỡ (takedown) không xuất hiện trong danh sách công
+        # khai — không xóa dữ liệu, chỉ ẩn. Đây là bộ lọc SỚM NHẤT có thể
+        # (trước cả whitelist field) để không lộ dù chỉ 1 field qua leak khác.
+        if not data.get("published", True):
+            continue
         item = _public_view(data)
         item["slug"] = item.get("slug") or slug
         item["glossary_count"] = len(data.get("glossary", {}) or {})
@@ -181,7 +188,6 @@ def list_novels(
     page_items = novels[start:start + limit]
 
     return {"novels": page_items, "total": total, "page": page, "limit": limit, "pages": pages}
-    return novels
 
 
 @router.get("/api/novels/{slug}")
@@ -199,10 +205,17 @@ def get_novel(slug: str, authorization: str = Header(default="")):
         data = json.load(f)
 
     if _is_admin_request(authorization):
+        # Admin vẫn xem được truyện đã gỡ (để quản lý/restore) — field
+        # `published` nằm sẵn trong `data` (novel.json), không cần thêm gì.
         data.setdefault("slug", slug)
         data.update(_translated_stats(slug))
         data["glossary_count"] = len(data.get("glossary", {}) or {})
         return data
+
+    if not data.get("published", True):
+        # F03: guest coi truyện bị gỡ như KHÔNG tồn tại — không phân biệt với
+        # 404 thật để tránh xác nhận sự tồn tại của nội dung đã bị gỡ.
+        raise HTTPException(status_code=404, detail="Novel not found")
 
     item = _public_view(data)
     item["slug"] = item.get("slug") or slug
@@ -224,6 +237,69 @@ def update_glossary(slug: str, req: GlossaryUpdateRequest):
         raise HTTPException(status_code=404, detail="Novel not found")
 
 
+# ── F03: Takedown / restore ─────────────────────────────────────────────────
+# Nhật ký thao tác admin — append-only, KHÔNG có API sửa/xóa dòng đã ghi.
+_ADMIN_ACTIONS_LOG = os.path.join("data", "admin_actions.log")
+
+
+class TakedownRequest(BaseModel):
+    reason: str = ""
+    license_note: str = ""
+
+
+def _log_admin_action(action: str, slug: str, note: str) -> None:
+    os.makedirs(os.path.dirname(_ADMIN_ACTIONS_LOG), exist_ok=True)
+    entry = {
+        "action": action, "slug": slug, "note": note,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    with open(_ADMIN_ACTIONS_LOG, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+@router.post("/api/admin/novels/{slug}/takedown", dependencies=[Depends(require_admin)])
+def takedown_novel(slug: str, req: TakedownRequest):
+    """Gỡ xuất bản 1 truyện (khỏi mọi đường đọc công khai) — KHÔNG xóa dữ liệu.
+    Tách biệt hoàn toàn khỏi status ongoing/completed."""
+    validate_slug(slug)
+    try:
+        profile = load_novel(slug)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Novel not found")
+    profile.published = False
+    profile.takedown_reason = req.reason
+    profile.takedown_at = datetime.now(timezone.utc).isoformat()
+    if req.license_note:
+        profile.license_note = req.license_note
+    profile.save()
+    _log_admin_action("takedown", slug, req.reason)
+    return {"status": "success", "published": False}
+
+
+@router.post("/api/admin/novels/{slug}/restore", dependencies=[Depends(require_admin)])
+def restore_novel(slug: str):
+    """Khôi phục xuất bản 1 truyện đã bị gỡ."""
+    validate_slug(slug)
+    try:
+        profile = load_novel(slug)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Novel not found")
+    profile.published = True
+    profile.takedown_reason = ""
+    profile.takedown_at = ""
+    profile.save()
+    _log_admin_action("restore", slug, "")
+    return {"status": "success", "published": True}
+
+
+@router.get("/api/config")
+def get_public_config():
+    """Cấu hình public cho frontend — hiện chỉ kênh liên hệ (vd cho form báo
+    cáo bản quyền/takedown). Không bịa địa chỉ liên hệ: rỗng nếu chưa cấu
+    hình qua env, frontend tự ẩn phần liên hệ khi rỗng."""
+    return {"contact_email": os.getenv("CONTACT_EMAIL", "")}
+
+
 @router.get("/api/novels/{slug}/epub")
 def download_epub(slug: str):
     """
@@ -235,6 +311,8 @@ def download_epub(slug: str):
     validate_slug(slug)
     novel_dir = os.path.join(NOVELS_DIR, slug)
     if not os.path.isfile(os.path.join(novel_dir, "novel.json")):
+        raise HTTPException(status_code=404, detail="Novel not found")
+    if not is_published(slug):
         raise HTTPException(status_code=404, detail="Novel not found")
 
     trans_dir = os.path.join(novel_dir, "translated")
@@ -324,6 +402,8 @@ def get_qa_report(slug: str, refresh: int = 0):
 @router.get("/api/novels/{slug}/catalog")
 def get_novel_catalog(slug: str):
     """Lấy danh sách catalog chương của truyện từ catalog.json."""
+    if not is_published(slug):
+        raise HTTPException(status_code=404, detail="Novel not found")
     catalog_path = os.path.join(safe_novel_dir(slug), "catalog.json")
     if not os.path.exists(catalog_path):
         return []

@@ -174,8 +174,37 @@ NEVER merge two chapters into one. NEVER skip a chapter. Output ALL {num_ch} cha
 %%GLOSSARY%%
 [Extract 3-5 NEW character names, place names, or martial arts terms introduced in these chapters. Return ONLY valid JSON format: {{"Chinese Name": "Vietnamese Name"}}. If no new important terms, return {{}}]"""
 
-def parse_batch_response(raw: str, num_chapters: int) -> tuple[list[str], str, dict]:
-    """Parse batch response into list of chapter texts, a single summary, and new glossary terms."""
+# Marker phân tách chương trong batch response. Có capture group số chương —
+# đây là NGUỒN SỰ THẬT duy nhất để gán nội dung vào đúng chương (D01).
+_CHAPTER_MARKER_RE = re.compile(r'===\s*CHAPTER\s+(\d+)\s*===')
+
+
+def parse_batch_response(raw: str, num_chapters: int) -> tuple[list, str, dict, list]:
+    """Parse batch response thành (validated, summary, new_glossary, errors).
+
+    validated: list dài num_chapters, validated[i] = nội dung chương i hoặc
+    None nếu chương i không có nội dung tin cậy (thiếu/trùng/rỗng/nghi bị cắt)
+    — caller (translate_batch) chỉ retry riêng lẻ đúng những chương None này,
+    không dịch lại toàn batch.
+
+    QUAN TRỌNG (D01 — parser batch gán sai chương): việc gán nội dung vào
+    đúng chương PHẢI dựa vào SỐ ghi trong marker "=== CHAPTER N ===" (dùng
+    làm index trực tiếp vào validated[N]), TUYỆT ĐỐI KHÔNG dựa vào thứ tự
+    xuất hiện của các đoạn trong response — nếu không, marker thiếu/trùng/đảo
+    thứ tự hoặc lời dẫn ngoài marker sẽ làm lệch toàn bộ index về sau và nội
+    dung chương B có thể bị ghi nhầm vào file chương A.
+
+    Các bất thường sau được phát hiện và trả về trong `errors` thay vì âm
+    thầm gán bừa:
+      - marker bị THIẾU (một số N trong [0, num_chapters) không xuất hiện)
+      - marker bị TRÙNG (cùng số N xuất hiện nhiều lần, nội dung mâu thuẫn)
+      - marker bị ĐẢO THỨ TỰ so với thứ tự tăng dần — vẫn gán ĐÚNG nhờ dùng
+        index làm nguồn sự thật, chỉ cảnh báo để biết response không theo protocol
+      - có lời dẫn/text nằm NGOÀI marker (trước marker đầu tiên) — bị bỏ,
+        không gộp nhầm vào nội dung chương đầu
+      - có chương THỪA ngoài phạm vi yêu cầu (N < 0 hoặc N >= num_chapters)
+    """
+    errors: list = []
     summary = ""
     new_glossary = {}
 
@@ -185,7 +214,6 @@ def parse_batch_response(raw: str, num_chapters: int) -> tuple[list[str], str, d
         glossary_raw = parts[1].strip()
         # Parse JSON
         import json
-        import re
         # Find the JSON block inside the text
         match = re.search(r'\{.*\}', glossary_raw, re.DOTALL)
         if match:
@@ -199,37 +227,90 @@ def parse_batch_response(raw: str, num_chapters: int) -> tuple[list[str], str, d
         raw = parts[0]
         summary = parts[1].strip()
 
-    chapters = []
-    # Split by === CHAPTER X ===
-    import re
-    chunks = re.split(r'===\s*CHAPTER\s+\d+\s*===', raw)
-    for chunk in chunks:
-        chunk = chunk.strip()
-        if chunk:
-            chapters.append(chunk)
+    validated = [None] * num_chapters
+    matches = list(_CHAPTER_MARKER_RE.finditer(raw))
 
-    # Fallback: model không dùng marker → trả về raw làm 1 chương
-    if len(chapters) == 0:
-        chapters = [raw.strip()]
-
-    # Phát hiện chunk quá ngắn (< 100 chars) — dấu hiệu bị cắt/thiếu nội dung
-    # Đánh dấu để caller biết cần retry riêng lẻ
-    validated = []
-    for i, chunk in enumerate(chapters):
-        if len(chunk.strip()) < 100 and i > 0:
-            # Chunk đầu tiên có thể ngắn hợp lệ (chương cực ngắn),
-            # nhưng chunk giữa/cuối mà < 100 chars thì nghi ngờ bị cắt
-            print(f"  [⚠] Chunk {i} rất ngắn ({len(chunk.strip())} chars) — có thể bị cắt")
-            validated.append(None)   # None = cần retry riêng lẻ
+    if not matches:
+        # Không có marker nào. Nếu batch chỉ có 1 chương, model có thể đã bỏ
+        # marker một cách vô hại — coi cả raw là nội dung chương 0.
+        # Nếu batch có nhiều chương thì KHÔNG thể tách an toàn — không đoán,
+        # để caller retry riêng lẻ toàn bộ.
+        if num_chapters == 1:
+            validated[0] = raw.strip()
         else:
-            validated.append(chunk)
+            errors.append(
+                f"Không tìm thấy marker '=== CHAPTER N ===' nào trong response "
+                f"cho batch {num_chapters} chương — không thể gán nội dung an toàn, "
+                f"toàn bộ chương trong batch sẽ được retry riêng lẻ."
+            )
+        return validated, summary, new_glossary, errors
 
-    # Nếu số chunk ít hơn mong đợi → pad None để caller biết vị trí thiếu
-    while len(validated) < num_chapters:
-        print(f"  [⚠] Thiếu chunk {len(validated)}/{num_chapters} — sẽ retry riêng lẻ")
-        validated.append(None)
+    # Lời dẫn trước marker đầu tiên — không được gộp vào chương nào cả
+    preamble = raw[:matches[0].start()].strip()
+    if preamble:
+        errors.append(
+            "Response có lời dẫn/text nằm NGOÀI marker (trước marker chương đầu "
+            f"tiên): {preamble[:120]!r} — đã bỏ qua, không gộp vào nội dung chương."
+        )
 
-    return validated, summary, new_glossary
+    # Gom nội dung theo SỐ chương ghi trong marker (index = nguồn sự thật)
+    by_index: dict = {}
+    appearance_order = []
+    for i, m in enumerate(matches):
+        idx = int(m.group(1))
+        start = m.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(raw)
+        content = raw[start:end].strip()
+        by_index.setdefault(idx, []).append(content)
+        appearance_order.append(idx)
+
+    if appearance_order != sorted(appearance_order):
+        errors.append(
+            "Marker xuất hiện KHÔNG theo thứ tự tăng dần trong response "
+            f"(thứ tự thực tế trong raw: {appearance_order}) — đã gán đúng theo "
+            "số marker (không theo thứ tự xuất hiện), nhưng response không theo protocol."
+        )
+
+    for idx, contents in by_index.items():
+        if idx < 0 or idx >= num_chapters:
+            errors.append(
+                f"Response có chương THỪA không được yêu cầu: CHAPTER {idx} "
+                f"(batch chỉ yêu cầu {num_chapters} chương, index hợp lệ 0..{num_chapters - 1}) "
+                "— đã bỏ qua."
+            )
+            continue
+
+        if len(contents) > 1:
+            errors.append(
+                f"Marker CHAPTER {idx} bị TRÙNG ({len(contents)} lần) trong response "
+                "— không thể xác định bản nào đúng, chương này sẽ được retry riêng lẻ."
+            )
+            continue  # validated[idx] giữ None → retry riêng lẻ
+
+        content = contents[0]
+        if not content:
+            errors.append(f"CHAPTER {idx} có marker nhưng nội dung RỖNG — sẽ retry riêng lẻ.")
+            continue
+
+        # Chunk quá ngắn (< 100 chars) ở chương giữa/cuối batch — nghi ngờ bị
+        # cắt. Chương 0 có thể ngắn hợp lệ (author note...) nên bỏ qua check.
+        if idx > 0 and len(content) < 100:
+            errors.append(
+                f"CHAPTER {idx} rất ngắn ({len(content)} ký tự) — có thể bị cắt, "
+                "sẽ retry riêng lẻ."
+            )
+            continue
+
+        validated[idx] = content
+
+    missing = [i for i in range(num_chapters) if validated[i] is None]
+    if missing:
+        errors.append(
+            f"Thiếu nội dung hợp lệ cho chương index {missing} — sẽ retry riêng lẻ "
+            "CHỈ các chương này, không dịch lại toàn batch."
+        )
+
+    return validated, summary, new_glossary, errors
 
 
 # Regex chữ Hán — compile 1 lần, dùng lại cho estimate/cleanup (tránh recompile)
@@ -573,6 +654,13 @@ class NovelTranslator:
             elif p == "groq" and self._groq:
                 try:
                     raw = self._call_groq(prompt, max_retries)
+                    # B06: trước đây _used_model KHÔNG được set ở nhánh Groq
+                    # → usage log/report luôn ghi "unknown" dù Groq dịch thành
+                    # công, khiến báo cáo model/chi phí sai lệch. GROQ_MODEL
+                    # là model thực sự được gửi lên API (GroqBackend.call
+                    # luôn dùng đúng hằng số này, không có auto-select phía
+                    # Groq), nên đây là tên chính xác để ghi log.
+                    _used_model = GROQ_MODEL
                     print(f"  [✓] Groq success")
                     break
                 except Exception as e:
@@ -581,17 +669,17 @@ class NovelTranslator:
                         return f"[Translation failed]\nError: {e}", "", {}
                     print("  [→] Falling back...")
 
-            # elif p == "ollama" and self._ollama:
-            #     try:
-            #         raw = self._call_ollama(prompt, max_retries)
-            #         _used_model = self._ollama._model if self._ollama else 'ollama'
-            #         print(f"  [✓] Ollama success")
-            #         break
-            #     except Exception as e:
-            #         print(f"  [!] Ollama failed: {e}")
-            #         if self._provider == "ollama":
-            #             return f"[Translation failed]\nError: {e}", ""
-            #         print("  [→] Falling back...")
+            elif p == "ollama" and self._ollama:
+                try:
+                    raw = self._call_ollama(prompt, max_retries)
+                    _used_model = self._ollama._model if self._ollama else 'ollama'
+                    print(f"  [✓] Ollama success")
+                    break
+                except Exception as e:
+                    print(f"  [!] Ollama failed: {e}")
+                    if self._provider == "ollama":
+                        return f"[Translation failed]\nError: {e}", "", {}
+                    print("  [→] Falling back...")
 
         if raw is None:
             return "[Translation failed]\nError: No backend available", "", {}
@@ -625,8 +713,8 @@ class NovelTranslator:
                     cleaned = self._call_gemini(cleanup_prompt, max_retries=2)
                 elif self._deepseek:
                     cleaned = self._call_deepseek(cleanup_prompt, max_retries=2)
-                # elif self._ollama:
-                #     cleaned = self._call_ollama(cleanup_prompt, max_retries=2)
+                elif self._ollama:
+                    cleaned = self._call_ollama(cleanup_prompt, max_retries=2)
                 else:
                     cleaned = translated
                 remaining = count_chinese_chars(cleaned)
@@ -703,6 +791,7 @@ class NovelTranslator:
             elif p == "groq" and self._groq:
                 try:
                     raw = self._call_groq(prompt, max_retries)
+                    _batch_model = GROQ_MODEL   # B06: xem giải thích ở translate_chapter
                     print(f"  [✓] Groq success")
                     break
                 except Exception as e:
@@ -711,24 +800,24 @@ class NovelTranslator:
                         return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
                     print("  [→] Falling back...")
 
-            # elif p == "ollama" and self._ollama:
-            #     try:
-            #         raw = self._call_ollama(prompt, max_retries)
-            #         _batch_model = self._ollama._model if self._ollama else "ollama"
-            #         print(f"  [✓] Ollama success")
-            #         break
-            #     except Exception as e:
-            #         print(f"  [!] Ollama failed: {e}")
-            #         if self._provider == "ollama":
-            #             return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
-            #         print("  [→] Falling back...")
-
-
+            elif p == "ollama" and self._ollama:
+                try:
+                    raw = self._call_ollama(prompt, max_retries)
+                    _batch_model = self._ollama._model if self._ollama else "ollama"
+                    print(f"  [✓] Ollama success")
+                    break
+                except Exception as e:
+                    print(f"  [!] Ollama failed: {e}")
+                    if self._provider == "ollama":
+                        return [f"[Translation failed]\nError: {e}"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
+                    print("  [→] Falling back...")
 
         if raw is None:
             return ["[Translation failed]\nError: No backend available"] * len(chapters), "", {}, {"model":"unknown","input_tokens":0,"output_tokens":0,"total_tokens":0,"cost_usd":0.0}
 
-        translated_chapters, summary, new_glossary = parse_batch_response(raw, len(chapters))
+        translated_chapters, summary, new_glossary, parse_errors = parse_batch_response(raw, len(chapters))
+        for _err in parse_errors:
+            print(f"  [⚠] {_err}")
 
         # ── Bước 3.5: Sửa lỗi dính chữ cho từng chương ──
         translated_chapters = [self._fix_stuck_paragraphs(ch) if ch else ch for ch in translated_chapters]
@@ -748,8 +837,8 @@ class NovelTranslator:
                         cleaned = self._call_gemini(cleanup_prompt, max_retries=2)
                     elif self._deepseek:
                         cleaned = self._call_deepseek(cleanup_prompt, max_retries=2)
-                    # elif self._ollama:
-                    #     cleaned = self._call_ollama(cleanup_prompt, max_retries=2)
+                    elif self._ollama:
+                        cleaned = self._call_ollama(cleanup_prompt, max_retries=2)
                     else:
                         cleaned = translated
                     if not has_chinese_chars(cleaned):
@@ -775,6 +864,7 @@ class NovelTranslator:
             "total_tokens":  in_tok + out_tok,
             "cost_usd":      cost,
             "chapters":      len(chapters),
+            "parse_errors":  parse_errors,   # D01: bất thường parser phát hiện được (thiếu/trùng/đảo marker...)
         }
         return cleaned_chapters, summary, new_glossary, _batch_usage
 

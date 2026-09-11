@@ -9,6 +9,7 @@ import os
 import time
 import json
 import ssl
+import hashlib
 import http.client
 import argparse
 import urllib.request
@@ -69,6 +70,48 @@ def send_chunk_persistent(conn, payload, max_retries=5, budget=None):
     return send_chunk(conn,payload,host=HOST,sync_key=SYNC_KEY,budget=budget,max_retries=max_retries)
 
 
+# ── [E04] Chunk theo cả số chương lẫn số byte, expected_r2_key, reconcile ──
+
+MAX_CHUNK_CHAPTERS = 25
+# Dưới hard cap 2 MiB của Worker (readLimitedJson/syncNovelBatch) — chừa dư
+# cho các field khác trong payload (title/author/genre/synopsis...).
+MAX_CHUNK_BYTES = 1_500_000
+
+
+def compute_content_key(slug: str, title: str, content: str) -> str:
+    """Tính lại CHÍNH XÁC r2_key mà Worker sẽ tính (src/index.js:syncNovelBatch):
+    sha256 của nội dung sau khi thêm heading nếu chưa có. Dùng để tự suy ra
+    'expected_r2_key' cục bộ (key MỚI ta sắp gửi) mà không cần round-trip đọc
+    D1 riêng — kết hợp với chapter_keys đã ghi nhận ở lần sync trước để biết
+    'key CŨ' hợp lệ cần gửi kèm khi nội dung 1 chương thay đổi."""
+    body = content if content.startswith('#') else f"# {title}\n\n{content}"
+    digest = hashlib.sha256(body.encode('utf-8')).hexdigest()
+    return f"{slug}/content/{digest}.md"
+
+
+def chunk_chapters(chapters: list, max_count: int = MAX_CHUNK_CHAPTERS,
+                    max_bytes: int = MAX_CHUNK_BYTES) -> list:
+    """[E04] Chia `chapters` thành nhiều chunk theo CẢ số lượng (max_count) LẪN
+    tổng số byte JSON ước tính (max_bytes). Chỉ giới hạn theo số lượng (như
+    trước) không đủ: 25 chương rất dài (hoặc lỡ gộp nhầm nhiều raw) vẫn có thể
+    vượt 2 MiB, khiến request bị Worker từ chối (413) lặp đi lặp lại mà không
+    bao giờ tự chia nhỏ lại được. 1 chương ĐƠN LẺ vượt max_bytes vẫn phải đứng
+    riêng 1 chunk — không thể chia nhỏ hơn được nữa, lỗi sẽ được báo rõ thay
+    vì âm thầm gộp sai chương."""
+    chunks = []
+    current, current_bytes = [], 0
+    for chap in chapters:
+        size = len(json.dumps(chap, ensure_ascii=False).encode('utf-8'))
+        if current and (len(current) >= max_count or current_bytes + size > max_bytes):
+            chunks.append(current)
+            current, current_bytes = [], 0
+        current.append(chap)
+        current_bytes += size
+    if current:
+        chunks.append(current)
+    return chunks
+
+
 def fetch_file_content_from_drive(service, file_id: str, retries: int = 5) -> bytes:
     """Tự động retry & khôi phục socket kết nối khi gặp WinError 10054/10053 mạng chập chờn."""
     last_err = None
@@ -88,7 +131,15 @@ def fetch_file_content_from_drive(service, file_id: str, retries: int = 5) -> by
     raise RuntimeError(f"Fetch Drive file {file_id} failed: {last_err}")
 
 
-def sync_novel_from_drive(slug: str, novel_data: dict, budget: 'SyncBudget') -> dict:
+def sync_novel_from_drive(slug: str, novel_data: dict, budget: 'SyncBudget', known_keys: dict = None) -> dict:
+    """`known_keys`: {filename: r2_key} đã ghi nhận sau lần sync thành công gần
+    nhất (đọc/ghi bởi main() qua .cloud_sync_state.json['chapter_keys']).
+    Dùng để tự tính `expected_r2_key` gửi kèm mỗi chương [E04] — Worker chỉ
+    chấp nhận ghi đè 1 chương đã tồn tại nếu content không đổi (idempotent)
+    hoặc client gửi đúng key cũ đã biết; nếu không, trả 409 và ta phải BÁO
+    CÁO rõ (không tự động retry mù, không đè bừa).
+    """
+    known_keys = known_keys or {}
     files_info = novel_data.get('files', {})
     chaps_file_id = files_info.get('chapters', {}).get('id')
     meta_file_id = files_info.get('meta', {}).get('id')
@@ -98,6 +149,8 @@ def sync_novel_from_drive(slug: str, novel_data: dict, budget: 'SyncBudget') -> 
         return {'slug': slug, 'success': False, 'error': 'Không tìm thấy chapters.json trên Google Drive'}
 
     conn = None
+    synced_so_far = 0
+    updated_keys = {}
     try:
         service = get_thread_service()
         # Lấy nội dung chapters.json từ Google Drive
@@ -127,13 +180,26 @@ def sync_novel_from_drive(slug: str, novel_data: dict, budget: 'SyncBudget') -> 
             except Exception:
                 pass
 
-        CHUNK_SIZE = 25
         total_chapters = len(all_chapters)
-        chunks = [all_chapters[i:i + CHUNK_SIZE] for i in range(0, total_chapters, CHUNK_SIZE)]
+        chunks = chunk_chapters(all_chapters)
 
         conn = http.client.HTTPSConnection(HOST, context=SSL_CTX, timeout=60)
 
         for idx, chunk in enumerate(chunks):
+            # [E04] Gắn expected_r2_key cho từng chương dựa trên key ĐÃ BIẾT từ
+            # lần sync trước (nếu có) — cho phép Worker phân biệt "content
+            # không đổi/đúng như lần trước ta thấy" (ghi bình thường) với
+            # "content đã đổi ở phía Cloudflare mà client không hay biết"
+            # (409, cần reconcile thủ công).
+            chunk_with_keys = []
+            for chap in chunk:
+                fname = chap.get('filename')
+                item = dict(chap)
+                expected = known_keys.get(fname)
+                if expected:
+                    item['expected_r2_key'] = expected
+                chunk_with_keys.append(item)
+
             payload = {
                 'slug': slug,
                 'title': title,
@@ -141,21 +207,61 @@ def sync_novel_from_drive(slug: str, novel_data: dict, budget: 'SyncBudget') -> 
                 'author': author,
                 'genre': genre,
                 'synopsis': synopsis if idx == 0 else "",
-                'chapters': chunk,
+                'chapters': chunk_with_keys,
                 'is_first_chunk': (idx == 0),
                 'total_chapter_count': total_chapters,
-                'drive_file_id': files_info.get('epub', {}).get('id') or chaps_file_id
+                # [E06] KHÔNG được fallback về chaps_file_id (ID của
+                # chapters.json) khi thiếu EPUB — đó là 2 loại tài nguyên khác
+                # nhau trên Drive. Worker (src/index.js:getEpub) dùng
+                # `novel.drive_file_id` để tải TRỰC TIẾP từ Google Drive và
+                # trả về cho client coi như file .epub; gán nhầm ID của
+                # chapters.json vào đây sẽ khiến getEpub tải & trả về nội dung
+                # JSON của chapters.json như thể là EPUB. Thiếu EPUB thật thì
+                # để trống — Worker tự fallback sang R2 "<slug>/book.epub"
+                # (xem getEpub, bước 2). Việc getEpub cần tự kiểm tra response
+                # đúng định dạng EPUB (Content-Type/magic bytes) là phần sửa
+                # phía Worker (src/index.js), KHÔNG thuộc phạm vi file này.
+                'drive_file_id': files_info.get('epub', {}).get('id') or ''
             }
 
             res, conn = send_chunk_persistent(conn, payload, budget=budget)
             if not res['success']:
                 if conn:
                     conn.close()
-                return {'slug': slug, 'success': False, 'budget_exceeded': res.get('budget_exceeded', False), 'error': f"Chunk {idx+1}/{len(chunks)} lỗi: {res['error']}"}
+                if res.get('conflict'):
+                    # [E04] KHÔNG tự động retry mù — báo rõ chương nào cần
+                    # reconcile thủ công, cùng số chương ĐàSYNC được (partial
+                    # success) trước khi gặp conflict.
+                    return {
+                        'slug': slug, 'success': False, 'conflict': True,
+                        'conflict_filename': res.get('filename'),
+                        'chapters_synced_before_failure': synced_so_far,
+                        'updated_keys': updated_keys,
+                        'error': (f"Chunk {idx + 1}/{len(chunks)}: chương "
+                                  f"{res.get('filename') or '?'} đã đổi trên Cloudflare "
+                                  f"— cần reconcile thủ công trước khi sync lại "
+                                  f"({synced_so_far}/{total_chapters} chương đã đồng bộ OK "
+                                  f"trước khi dừng).")
+                    }
+                return {
+                    'slug': slug, 'success': False,
+                    'budget_exceeded': res.get('budget_exceeded', False),
+                    'chapters_synced_before_failure': synced_so_far,
+                    'updated_keys': updated_keys,
+                    'error': (f"Chunk {idx+1}/{len(chunks)} lỗi: {res['error']} "
+                              f"({synced_so_far}/{total_chapters} chương đã đồng bộ OK "
+                              f"trước khi dừng — KHÔNG phải toàn bộ truyện đã lỗi).")
+                }
+
+            synced_so_far += len(chunk)
+            for chap in chunk:
+                fname = chap.get('filename')
+                if fname:
+                    updated_keys[fname] = compute_content_key(slug, chap.get('title', ''), chap.get('content', ''))
 
         if conn:
             conn.close()
-        return {'slug': slug, 'success': True, 'chapters': total_chapters}
+        return {'slug': slug, 'success': True, 'chapters': total_chapters, 'updated_keys': updated_keys}
 
     except Exception as e:
         if conn:
@@ -200,10 +306,15 @@ def main():
 
     cloud_sync_path = state_path.parent / ".cloud_sync_state.json"
     synced_slugs = set()
+    # [E04] chapter_keys[slug][filename] = r2_key đã biết từ lần sync trước —
+    # dùng làm expected_r2_key để phân biệt "content không đổi" (ghi lại được)
+    # với "content đã đổi ở Cloudflare mà ta không biết" (409, cần reconcile).
+    chapter_keys = {}
     if cloud_sync_path.exists():
         try:
             cdata = json.loads(cloud_sync_path.read_text(encoding='utf-8'))
             synced_slugs = set(cdata.get('synced_slugs', []))
+            chapter_keys = cdata.get('chapter_keys', {}) or {}
         except Exception as exc:
             raise RuntimeError("Checkpoint không hợp lệ; không tự reset tiến độ") from exc
 
@@ -225,9 +336,12 @@ def main():
     stop_all = False
     had_failure = False
 
+    conflict_slugs = {}  # slug -> conflict_filename, báo cáo cuối cùng cần reconcile thủ công
+
     def save_cloud_state():
         atomic_json(cloud_sync_path, {'last_updated':datetime.now().isoformat(),
-                    'total_synced':len(synced_slugs),'synced_slugs':sorted(synced_slugs)})
+                    'total_synced':len(synced_slugs),'synced_slugs':sorted(synced_slugs),
+                    'chapter_keys':chapter_keys})
 
     while not stop_all:
         pending_slugs = [s for s in uploaded_novels.keys() if s not in synced_slugs]
@@ -240,7 +354,8 @@ def main():
         try:
             with ThreadPoolExecutor(max_workers=args.workers) as executor:
                 futures = {
-                    executor.submit(sync_novel_from_drive, slug, uploaded_novels[slug], budget): slug
+                    executor.submit(sync_novel_from_drive, slug, uploaded_novels[slug], budget,
+                                     chapter_keys.get(slug, {})): slug
                     for slug in batch
                 }
 
@@ -250,6 +365,8 @@ def main():
 
                     if res['success']:
                         synced_slugs.add(slug)
+                        if res.get('updated_keys'):
+                            chapter_keys[slug] = res['updated_keys']
                         uploaded_session += 1
                         save_cloud_state()
 
@@ -262,15 +379,40 @@ def main():
                         sys.stdout.flush()
                     elif res.get('budget_exceeded'):
                         had_failure = True
+                        # [E04] Partial success: giữ lại chapter_keys của các chunk ĐÃ
+                        # commit thành công trước khi hết ngân sách — KHÔNG đánh dấu
+                        # slug là "đã sync" (vẫn nằm trong pending_slugs lần chạy sau).
+                        if res.get('updated_keys'):
+                            chapter_keys[slug] = {**chapter_keys.get(slug, {}), **res['updated_keys']}
+                            save_cloud_state()
                         # Ngân sách Cloudflare đã hết (tháng/ngày UTC hoặc giới hạn per-run) —
                         # DỪNG NGAY toàn bộ, không thử slug khác (ngân sách dùng chung cho cả
                         # lần chạy). Tiến độ (synced_slugs) đã lưu sau mỗi novel thành công
                         # nên chạy lại script sau sẽ tiếp tục đúng chỗ, không mất gì.
                         sys.stderr.write(f"\n\n🛑 DỪNG DO NGÂN SÁCH CLOUDFLARE: {res.get('error')}\n")
                         stop_all = True
+                    elif res.get('conflict'):
+                        # [E04] Conflict thật (Worker từ chối vì chương đã đổi ở
+                        # Cloudflare) — KHÔNG tự động retry mù, KHÔNG đánh dấu
+                        # slug hoàn tất; báo cáo rõ chương nào cần rà thủ công.
+                        had_failure = True
+                        conflict_slugs[slug] = res.get('conflict_filename') or '?'
+                        if res.get('updated_keys'):
+                            chapter_keys[slug] = {**chapter_keys.get(slug, {}), **res['updated_keys']}
+                            save_cloud_state()
+                        sys.stderr.write(
+                            f"\n⚠️  CONFLICT [{slug}] chương '{res.get('conflict_filename')}' đã "
+                            f"đổi trên Cloudflare — CẦN RECONCILE THỦ CÔNG. {res.get('error')}\n"
+                        )
                     else:
                         had_failure = True
                         stop_all = True
+                        # [E04] Partial success: giữ chapter_keys của các chunk đã
+                        # commit trước khi lỗi, để lần chạy sau không phải coi các
+                        # chương đó là "chưa từng sync" (tránh 409 giả khi retry).
+                        if res.get('updated_keys'):
+                            chapter_keys[slug] = {**chapter_keys.get(slug, {}), **res['updated_keys']}
+                            save_cloud_state()
                         sys.stderr.write(f"\n❌ Lỗi sync [{slug}]: {res.get('error')}\n")
 
 
@@ -280,6 +422,10 @@ def main():
             sys.stderr.write(f"\nĐồng bộ thất bại: {e}\n")
 
     print(f"\n💰 Ngân sách sau khi chạy: {budget.summary()}")
+    if conflict_slugs:
+        print(f"\n⚠️  {len(conflict_slugs)} truyện có CONFLICT cần reconcile thủ công trước khi sync lại:")
+        for slug, fname in conflict_slugs.items():
+            print(f"    • {slug}: chương '{fname}'")
     if had_failure:
         raise SystemExit(1)
 

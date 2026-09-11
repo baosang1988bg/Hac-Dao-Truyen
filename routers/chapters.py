@@ -13,6 +13,7 @@ from fastapi import APIRouter, HTTPException
 
 from security_utils import safe_novel_dir, safe_join
 from chapter_utils import extract_chapter_number_from_text
+from publish_status import is_published
 
 router = APIRouter()
 
@@ -31,6 +32,8 @@ def list_chapters(slug: str):
     Lọc bỏ các file phần split (xxx-N_VI.md) nếu file gốc đã được merge
     (xxx_VI.md tồn tại) — tránh hiển thị trùng lặp trên UI.
     """
+    if not is_published(slug):
+        raise HTTPException(status_code=404, detail="Novel not found")
     translated_dir = safe_novel_dir(slug, "translated")
     if not os.path.exists(translated_dir):
         return []
@@ -109,6 +112,8 @@ def get_chapter_content(slug: str, identifier: str):
     """Lấy nội dung Markdown của chương.
     identifier: filename đầy đủ HOẶC số chương (ví dụ: '1497')
     """
+    if not is_published(slug):
+        raise HTTPException(status_code=404, detail="Novel not found")
     translated_dir = safe_novel_dir(slug, "translated")
     if not os.path.exists(translated_dir):
         raise HTTPException(status_code=404, detail="Novel not found")

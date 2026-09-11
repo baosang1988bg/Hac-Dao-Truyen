@@ -26,9 +26,17 @@ def send_chunk(conn,payload,*,host,sync_key,budget,max_retries=5,sleep=time.slee
             res=conn.getresponse();text=res.read().decode('utf-8',errors='replace')
             if res.status==200:
                 data=json.loads(text)
-                return {'success':bool(data.get('success')),'error':data.get('error','')},conn
+                return {'success':bool(data.get('success')),'error':data.get('error',''),'status':200},conn
             last_error=f'HTTP {res.status}: {text[:120]}'
-            if res.status not in (429,500,502,503,504):return {'success':False,'error':last_error},conn
+            if res.status==409:
+                # [E04] Conflict thật (Worker phát hiện chương đã đổi, không có
+                # expected_r2_key khớp) — KHÔNG retry mù, trả về đủ thông tin để
+                # caller báo cáo rõ chương nào cần reconcile thủ công.
+                try:body_json=json.loads(text)
+                except Exception:body_json={}
+                return {'success':False,'error':body_json.get('error') or last_error,
+                        'status':409,'conflict':True,'filename':body_json.get('filename')},conn
+            if res.status not in (429,500,502,503,504):return {'success':False,'error':last_error,'status':res.status},conn
             retry=res.getheader('Retry-After')
             if retry and retry.isdigit():delay=min(120,max(delay,int(retry)))
         except (OSError,http.client.HTTPException,ValueError) as exc:

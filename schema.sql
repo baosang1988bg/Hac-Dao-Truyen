@@ -23,7 +23,25 @@ CREATE TABLE IF NOT EXISTS novels (
   rating_count      INTEGER DEFAULT 0,
   has_epub          INTEGER DEFAULT 0,
   drive_file_id     TEXT DEFAULT '',
-  updated_at        TEXT DEFAULT (datetime('now'))
+  updated_at        TEXT DEFAULT (datetime('now')),
+  -- F03: gỡ xuất bản (takedown) TÁCH BIỆT khỏi status ongoing/completed —
+  -- 1 truyện completed vẫn có thể bị gỡ vì lý do bản quyền. published=0 ẩn
+  -- khỏi mọi đường đọc công khai (list/detail/chapters/epub/synopsis) nhưng
+  -- KHÔNG xóa dữ liệu — admin có thể restore. license_note là bằng chứng
+  -- provenance/license tùy chọn do admin tự ghi, KHÔNG suy luận tự động.
+  published         INTEGER DEFAULT 1,
+  takedown_reason   TEXT DEFAULT '',
+  takedown_at       TEXT,
+  license_note      TEXT DEFAULT ''
+);
+
+-- F03: nhật ký thao tác admin (takedown/restore...) — audit trail, không cho sửa/xóa qua API thường.
+CREATE TABLE IF NOT EXISTS admin_actions (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  action     TEXT NOT NULL,           -- 'takedown' | 'restore'
+  slug       TEXT NOT NULL,
+  note       TEXT DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS chapters (

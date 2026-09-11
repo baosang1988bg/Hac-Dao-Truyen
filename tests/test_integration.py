@@ -121,6 +121,65 @@ def test_chapter_content_has_version_for_cache_invalidation():
     assert "version" in data and isinstance(data["version"], str) and len(data["version"]) > 0
 
 
+def _admin_headers():
+    r = client.post("/api/auth/login", json={"password": "test-admin-password"})
+    assert r.status_code == 200, r.text
+    return {"Authorization": f"Bearer {r.json()['token']}"}
+
+
+def test_takedown_hides_novel_from_every_public_path_and_restore_undoes_it():
+    """F03: gỡ xuất bản phải ẩn khỏi list/detail/chapters/chapter-content/epub/
+    catalog cho guest, KHÔNG xóa dữ liệu, và admin vẫn xem được để quản lý.
+    Dọn dẹp bằng restore ở finally — KHÔNG được để lại thay đổi vĩnh viễn trên
+    truyện thật dùng chung bởi các test khác."""
+    slug = _first_translated_slug()
+    assert slug
+    admin_h = _admin_headers()
+    chapters = client.get(f"/api/novels/{slug}/chapters").json()
+    ident = chapters[0]["filename"]
+
+    try:
+        r = client.post(f"/api/admin/novels/{slug}/takedown", json={"reason": "test bản quyền"}, headers=admin_h)
+        assert r.status_code == 200 and r.json()["published"] is False
+
+        # Guest: mọi đường đọc công khai đều coi như không tồn tại
+        assert client.get(f"/api/novels/{slug}").status_code == 404
+        assert client.get("/api/novels").json()["novels"] == [
+            n for n in client.get("/api/novels").json()["novels"] if n["slug"] != slug
+        ]
+        assert client.get(f"/api/novels/{slug}/chapters").status_code == 404
+        assert client.get(f"/api/novels/{slug}/chapters/{ident}").status_code == 404
+        assert client.get(f"/api/novels/{slug}/epub").status_code == 404
+        assert client.get(f"/api/novels/{slug}/catalog").status_code == 404
+
+        # Admin vẫn quản lý được (để restore) — không bị 404
+        r_admin = client.get(f"/api/novels/{slug}", headers=admin_h)
+        assert r_admin.status_code == 200
+        assert r_admin.json()["published"] is False
+
+        # Restore
+        r = client.post(f"/api/admin/novels/{slug}/restore", headers=admin_h)
+        assert r.status_code == 200 and r.json()["published"] is True
+        assert client.get(f"/api/novels/{slug}").status_code == 200
+        assert client.get(f"/api/novels/{slug}/chapters").status_code == 200
+    finally:
+        # Đảm bảo phục hồi dù assertion ở trên fail giữa chừng.
+        client.post(f"/api/admin/novels/{slug}/restore", headers=admin_h)
+
+
+def test_takedown_requires_admin():
+    slug = _first_translated_slug()
+    r = client.post(f"/api/admin/novels/{slug}/takedown", json={"reason": "x"})
+    assert r.status_code == 401
+
+
+def test_public_config_contact_email_not_fabricated_when_unset():
+    r = client.get("/api/config")
+    assert r.status_code == 200
+    # Không cấu hình CONTACT_EMAIL trong môi trường test -> phải rỗng, không bịa.
+    assert r.json()["contact_email"] == os.getenv("CONTACT_EMAIL", "")
+
+
 # ── Bảo mật ──────────────────────────────────────────────────────────────────
 
 def test_translate_requires_admin():

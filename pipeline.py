@@ -50,20 +50,118 @@ from chapter_utils import (
 _novel_profile_lock = threading.Lock()
 
 
-def update_profile_glossary_safely(slug: str, new_terms: dict, logger=None) -> tuple[int, dict]:
-    """Cập nhật glossary vào novel.json một cách thread-safe."""
+# ── D02: Glossary metadata (provenance/status/revision/conflict) ─────────────
+#
+# profile.glossary (novel_manager.py, NovelProfile) vẫn là 1 dict phẳng
+# {term: nghĩa} — routers/novels.py, main.py và admin UI đọc/ghi trực tiếp
+# dạng này, KHÔNG được đổi shape ở đây (ngoài phạm vi sửa của agent này).
+# Để có provenance/trạng thái/revision/conflict mà không phá vỡ contract đó,
+# pipeline.py lưu 1 sidecar file `novels/<slug>/glossary_meta.json` riêng:
+#   {"revision": int, "conflicts": [ {term, current_value, suggested_value,
+#                                     revision_seen, ts} ... ]}
+# revision tăng dần mỗi khi có term MỚI được ghi nhận (không tính term bị từ
+# chối do validate hoặc bị conflict) — dùng để biết batch nào đã "thấy"
+# glossary ở version nào (snapshot chụp tại `_translate_batch_call`).
+def _glossary_meta_path(slug: str) -> str:
+    return os.path.join("novels", slug, "glossary_meta.json")
+
+
+def _load_glossary_meta(slug: str) -> dict:
+    path = _glossary_meta_path(slug)
+    if os.path.isfile(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                data.setdefault("revision", 0)
+                data.setdefault("conflicts", [])
+                return data
+        except Exception:
+            pass
+    return {"revision": 0, "conflicts": []}
+
+
+def _save_glossary_meta(slug: str, meta: dict):
+    path = _glossary_meta_path(slug)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False, indent=2)
+
+
+def current_glossary_revision(slug: str) -> int:
+    """Đọc revision glossary hiện tại (chỉ đọc, không lock — dùng để gắn nhãn
+    snapshot; sai lệch 1 đơn vị do race chỉ ảnh hưởng thông tin hiển thị,
+    không ảnh hưởng tính đúng đắn của việc ghi glossary)."""
+    return _load_glossary_meta(slug).get("revision", 0)
+
+
+def _is_valid_glossary_term(key, value) -> bool:
+    """D02: validate shape 1 term glossary — key/value PHẢI là string không
+    rỗng (sau khi strip). Term không hợp lệ (None, số, list, chuỗi rỗng...)
+    bị loại, không được ghi vào profile.glossary."""
+    return (
+        isinstance(key, str) and isinstance(value, str)
+        and key.strip() != "" and value.strip() != ""
+    )
+
+
+def update_profile_glossary_safely(slug: str, new_terms: dict, logger=None) -> tuple[int, dict, list]:
+    """Cập nhật glossary vào novel.json một cách thread-safe.
+
+    D02 — Glossary nhất quán:
+      - Validate shape từng term (key/value phải là string không rỗng); term
+        không hợp lệ bị bỏ qua và không được ghi.
+      - KHÔNG bao giờ tự động ghi đè 1 term ĐÃ CÓ (coi như đã chốt/đã duyệt)
+        bằng nghĩa mới do AI đề xuất trong batch tiếp theo. Nếu nghĩa mới
+        khác nghĩa đang lưu, đây là MÂU THUẪN — không ghi đè, trả lại trong
+        `conflicts` (và ghi vào glossary_meta.json) để admin xử lý, thay vì
+        âm thầm bỏ qua như trước.
+      - Mỗi term MỚI ghi thành công làm revision glossary tăng thêm 1.
+
+    Trả về (added, glossary, conflicts).
+    """
     with _novel_profile_lock:
         profile = load_novel(slug)
+        meta = _load_glossary_meta(slug)
         added = 0
-        for k, v in new_terms.items():
+        conflicts = []
+        for raw_k, raw_v in new_terms.items():
+            if not _is_valid_glossary_term(raw_k, raw_v):
+                if logger:
+                    logger.warning(f"[D02] Bỏ qua glossary term không hợp lệ: {raw_k!r} -> {raw_v!r}")
+                continue
+            k, v = raw_k.strip(), raw_v.strip()
             if k not in profile.glossary:
                 profile.glossary[k] = v
+                meta["revision"] = meta.get("revision", 0) + 1
                 added += 1
+            elif profile.glossary[k] != v:
+                # Term đã tồn tại nhưng AI đề xuất nghĩa khác → mâu thuẫn.
+                # KHÔNG ghi đè (giữ nguyên hành vi an toàn cũ), nhưng giờ được
+                # ghi lại rõ ràng thay vì lặng lẽ biến mất.
+                conflict = {
+                    "term": k,
+                    "current_value": profile.glossary[k],
+                    "suggested_value": v,
+                    "revision_seen": meta.get("revision", 0),
+                    "ts": datetime.now().isoformat(timespec="seconds"),
+                }
+                conflicts.append(conflict)
+                if logger:
+                    logger.warning(
+                        f"[D02] Glossary conflict: '{k}' hiện là "
+                        f"'{profile.glossary[k]}', AI đề xuất '{v}' — giữ nguyên "
+                        "bản đã có, cần admin duyệt."
+                    )
         if added > 0:
             if logger:
                 logger.info(f"[*] Thread-safe auto-learned {added} new glossary term(s)")
             profile.save()
-        return added, profile.glossary
+        if conflicts:
+            meta["conflicts"] = meta.get("conflicts", []) + conflicts
+        if added > 0 or conflicts:
+            _save_glossary_meta(slug, meta)
+        return added, profile.glossary, conflicts
 
 
 def update_profile_progress_safely(slug: str, chapter_url: str, chapter_number: int):
@@ -570,6 +668,14 @@ class TranslationContext:
         self.background_tasks: set = set()
         self.pending_merges: dict[str, int] = {}  # {original_title: num_parts}
 
+        # D02: các batch được dispatch tuần tự (seq tăng dần) nhưng có thể
+        # HOÀN THÀNH không theo thứ tự đó (chạy song song, retry...). Dùng
+        # next_batch_seq/last_applied_summary_seq để previous_summary chỉ
+        # được cập nhật bởi batch có seq MỚI HƠN batch đã áp dụng gần nhất —
+        # tránh batch cũ hơn hoàn thành trễ làm summary "tụt lùi".
+        self.next_batch_seq = 0
+        self.last_applied_summary_seq = -1
+
         self.session_usage = {
             "total_tokens":  0,
             "input_tokens":  0,
@@ -578,6 +684,7 @@ class TranslationContext:
             "models":        set(),
             "chapters_saved": [],
             "errors":        [],
+            "glossary_conflicts": [],   # D02: mâu thuẫn glossary phát hiện trong phiên (chưa admin duyệt)
         }
 
 
@@ -721,13 +828,29 @@ async def _translate_batch_call(ctx: TranslationContext, batch_copy, summary_cop
         batch_detail={"id": batch_id, "chapters": batch_titles, "status": "translating", "model": "...", "tokens": 0},
     )
 
+    # D02: chụp snapshot glossary NGAY TRƯỚC khi gọi provider — gắn với output
+    # để biết batch này đã dùng version glossary nào. Dùng bản COPY (không
+    # phải ctx.profile.glossary trực tiếp) vì các batch khác chạy song song
+    # (asyncio.to_thread) có thể đang ghi thêm term mới vào profile.glossary
+    # cùng lúc translator lặp qua dict này để build prompt — copy tránh cả
+    # race "dictionary changed size during iteration" lẫn việc 1 batch vô
+    # tình dùng glossary mới hơn glossary nó thực sự "thấy" lúc dispatch.
+    glossary_snapshot = dict(ctx.profile.glossary)
+    glossary_revision = current_glossary_revision(ctx.profile.slug)
+
     translated_chapters, summary, new_glossary, batch_usage = await asyncio.to_thread(
         ctx.translator.translate_batch,
         chapters=batch_copy,
-        glossary=ctx.profile.glossary,
+        glossary=glossary_snapshot,
         translation_style=ctx.profile.translation_style,
         previous_summary=summary_copy,
         max_retries=3
+    )
+    batch_usage["glossary_snapshot_terms"] = len(glossary_snapshot)
+    batch_usage["glossary_revision"] = glossary_revision
+    logger.info(
+        f"[D02] Batch dùng glossary snapshot revision={glossary_revision} "
+        f"({len(glossary_snapshot)} terms) chụp lúc dispatch."
     )
 
     ctx.session_usage["total_tokens"]  += batch_usage.get("total_tokens", 0)
@@ -739,6 +862,11 @@ async def _translate_batch_call(ctx: TranslationContext, batch_copy, summary_cop
     _bc  = batch_usage.get("cost_usd", 0.0)
     if _m and _m != "unknown":
         ctx.session_usage["models"].add(_m)
+    # D01: bất thường parser (marker thiếu/trùng/đảo/lời dẫn ngoài marker...) — ghi log
+    # rõ ràng, không âm thầm nuốt; các chương bị ảnh hưởng đã là None và sẽ được
+    # retry riêng lẻ bên dưới (process_batch_async), không dịch lại cả batch.
+    for _perr in batch_usage.get("parse_errors", []):
+        logger.warning(f"  [⚠][D01 parser] {_perr}")
     _bc_str = "free" if _bc == 0 else f"${_bc:.5f}"
     logger.info(
         f"[💰] {_m}: batch {batch_len}ch "
@@ -913,7 +1041,8 @@ def _tally_chapter_result(ctx: TranslationContext, title: str, chunk: str):
                                 f"✓ Đã lưu: {title}", chapter_ok=title)
 
 
-def _finish_batch(ctx: TranslationContext, batch_copy, urls_copy, new_glossary, summary):
+def _finish_batch(ctx: TranslationContext, batch_copy, urls_copy, new_glossary, summary,
+                  batch_seq=None):
     """Sau khi lưu hết batch: cập nhật glossary + tiến độ profile + summary chuyền tiếp."""
     args, profile = ctx.args, ctx.profile
     batch_len = len(batch_copy)
@@ -924,8 +1053,11 @@ def _finish_batch(ctx: TranslationContext, batch_copy, urls_copy, new_glossary, 
 
     # Auto-update glossary with newly extracted terms
     if new_glossary:
-        added, latest_glossary = update_profile_glossary_safely(profile.slug, new_glossary, ctx.logger)
+        added, latest_glossary, conflicts = update_profile_glossary_safely(
+            profile.slug, new_glossary, ctx.logger)
         profile.glossary = latest_glossary
+        if conflicts:
+            ctx.session_usage["glossary_conflicts"].extend(conflicts)
 
     if urls_copy:
         if ctx.catalog_active:
@@ -938,7 +1070,22 @@ def _finish_batch(ctx: TranslationContext, batch_copy, urls_copy, new_glossary, 
         else:
             update_profile_progress_safely(profile.slug, urls_copy[-1], profile.last_chapter_number + batch_len)
 
-    ctx.previous_summary = summary
+    # D02: previous_summary chỉ được ghi đè bởi batch có seq MỚI HƠN batch đã
+    # áp dụng gần nhất — các batch chạy song song có thể hoàn thành không
+    # theo đúng thứ tự dispatch (vd batch 2 xong trước batch 1 vì batch 1 bị
+    # rate-limit/retry lâu hơn); nếu không chặn, batch 1 xong trễ sẽ ghi đè
+    # summary mới hơn của batch 2 bằng summary cũ hơn của chính nó → tụt lùi.
+    if batch_seq is None or batch_seq > ctx.last_applied_summary_seq:
+        ctx.previous_summary = summary
+        if batch_seq is not None:
+            ctx.last_applied_summary_seq = batch_seq
+    else:
+        ctx.logger.info(
+            f"[D02] Batch seq={batch_seq} hoàn thành SAU batch mới hơn đã áp dụng "
+            f"(last_applied_seq={ctx.last_applied_summary_seq}) — bỏ qua summary "
+            "của batch này để tránh làm tụt lùi context cho batch tiếp theo."
+        )
+
     # Update active_batches count after this batch completes
     ctx.report_progress(ctx.translated_count, args.chapters, "running",
                         active_batches=max(0, len(ctx.background_tasks) - 1),
@@ -946,7 +1093,7 @@ def _finish_batch(ctx: TranslationContext, batch_copy, urls_copy, new_glossary, 
 
 
 async def process_batch_async(ctx: TranslationContext, batch_copy, urls_copy,
-                              summary_copy, orig_chapter_count=None):
+                              summary_copy, orig_chapter_count=None, batch_seq=None):
     """Dịch 1 batch (chạy song song) rồi lưu từng chương + cập nhật tiến độ."""
     if not batch_copy:
         return
@@ -980,7 +1127,7 @@ async def process_batch_async(ctx: TranslationContext, batch_copy, urls_copy,
         _write_chapter_file(ctx, title, chunk, _chap_url, _model_used)
         _tally_chapter_result(ctx, title, chunk)
 
-    _finish_batch(ctx, batch_copy, urls_copy, new_glossary, summary)
+    _finish_batch(ctx, batch_copy, urls_copy, new_glossary, summary, batch_seq=batch_seq)
 
 
 async def flush_batch(ctx: TranslationContext):
@@ -992,9 +1139,16 @@ async def flush_batch(ctx: TranslationContext):
         done, pending = await asyncio.wait(ctx.background_tasks, return_when=asyncio.FIRST_COMPLETED)
         ctx.background_tasks.intersection_update(pending)
 
+    # D02: seq tăng dần theo thứ tự DISPATCH (vòng lặp chính là tuần tự, nên
+    # thứ tự gán seq ở đây phản ánh đúng thứ tự chương gốc trong truyện) —
+    # dùng để _finish_batch phát hiện batch hoàn thành không đúng thứ tự.
+    batch_seq = ctx.next_batch_seq
+    ctx.next_batch_seq += 1
+
     task = asyncio.create_task(
         process_batch_async(ctx, list(ctx.batch), list(ctx.batch_urls),
-                            ctx.previous_summary, orig_chapter_count=ctx.batch_orig_count)
+                            ctx.previous_summary, orig_chapter_count=ctx.batch_orig_count,
+                            batch_seq=batch_seq)
     )
     ctx.background_tasks.add(task)
     ctx.batch.clear()

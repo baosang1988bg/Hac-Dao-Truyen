@@ -12,6 +12,10 @@ def test_failed_upload_does_not_publish_chapters_delete_or_advance_state(tmp_pat
     (root/'translated'/'Chương 1.md').write_text('# Chương 1\n\nBody')
     monkeypatch.setattr(migrate,'NOVELS_DIR',novels)
     monkeypatch.setattr(migrate,'r2_get_glossary',lambda slug:{})
+    # [E03] migrate_novel giờ đọc r2_key hiện có trước khi ghi đè (expected-key
+    # guard giống Worker) — không có chương nào trong D1 thật, không cần mock
+    # phức tạp: trả {} (không có row nào) là đủ để không kích hoạt guard.
+    monkeypatch.setattr(migrate,'get_r2_keys_for_filenames',lambda slug,filenames:{})
     sql=[]
     monkeypatch.setattr(migrate,'d1_file',lambda text,*args:sql.append(text) or True)
     monkeypatch.setattr(migrate,'r2_put',lambda *args:False)
