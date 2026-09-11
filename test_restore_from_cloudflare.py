@@ -178,3 +178,133 @@ def test_r2_glossary_status_classifies_absent_vs_error(monkeypatch, tmp_path):
     restore._R2_LAST_ERROR["stderr"] = ""
     monkeypatch.setattr(restore, "download_r2_object", unknown_failure)
     assert restore._r2_glossary_status("k", dest) == "error"
+
+
+# ── E09: file local tồn tại không đủ để skip — verify hash thật ─────────────
+
+def test_local_chapter_matches_content_addressed_hash(tmp_path):
+    import hashlib
+    content = "# Chương 1\n\nnội dung"
+    h = hashlib.sha256(content.encode("utf-8")).hexdigest()
+    path = tmp_path / "c1.md"
+    path.write_text(content, encoding="utf-8")
+    assert restore._local_chapter_matches(path, f"demo/content/{h}.md") is True
+
+
+def test_local_chapter_mismatch_is_detected(tmp_path):
+    import hashlib
+    correct_hash = hashlib.sha256(b"noi dung dung").hexdigest()
+    path = tmp_path / "c1.md"
+    path.write_text("noi dung SAI hoac cu", encoding="utf-8")
+    assert restore._local_chapter_matches(path, f"demo/content/{correct_hash}.md") is False
+
+
+def test_local_chapter_legacy_key_without_hash_cannot_be_verified(tmp_path):
+    """r2_key dạng cũ (không content-addressed) không mang hash để so — phải
+    trả False (buộc tải lại) thay vì tin tưởng mù theo file tồn tại."""
+    path = tmp_path / "c1.md"
+    path.write_text("bat ky noi dung nao", encoding="utf-8")
+    assert restore._local_chapter_matches(path, "demo/b64_xyz") is False
+
+
+def test_local_chapter_missing_file_never_matches(tmp_path):
+    assert restore._local_chapter_matches(tmp_path / "khong-ton-tai.md", "demo/content/" + "a" * 64 + ".md") is False
+
+
+def test_restore_redownloads_chapter_when_local_content_stale(novel_root, monkeypatch):
+    """E09 — bug cũ: `if local_chap_path.exists(): skip` khiến 1 chương cục bộ
+    ĐÃ CŨ/HỎNG (khác nội dung thật trên R2) không bao giờ được cập nhật lại dù
+    chạy restore() nhiều lần. Sau khi sửa: hash không khớp -> tải lại."""
+    import hashlib
+    fresh_content = "# Chương 1\n\nbản MỚI đã sửa lỗi dịch"
+    fresh_hash = hashlib.sha256(fresh_content.encode("utf-8")).hexdigest()
+    r2_key = f"demo/content/{fresh_hash}.md"
+
+    novel_dir = novel_root / "demo"
+    (novel_dir / "translated").mkdir(parents=True)
+    stale_path = novel_dir / "translated" / "c1.md"
+    stale_path.write_text("# Chương 1\n\nbản CŨ trước khi sửa lỗi dịch", encoding="utf-8")
+
+    def query(sql):
+        if sql == "SELECT * FROM novels;":
+            return [_novel_row()]
+        if "FROM chapters" in sql:
+            return [{"filename": "c1.md", "title": "Chương 1", "chapter_number": 1, "r2_key": r2_key}]
+        return []
+    monkeypatch.setattr(restore, "query_d1", query)
+
+    def fake_download(key, path):
+        restore._R2_LAST_ERROR["stderr"] = "Error: The specified key does not exist."
+        if key == r2_key:
+            Path(path).write_text(fresh_content, encoding="utf-8")
+            return True
+        return False  # glossary.json absent — không liên quan tới test này
+    monkeypatch.setattr(restore, "download_r2_object", fake_download)
+
+    assert restore.restore() is True
+    assert stale_path.read_text(encoding="utf-8") == fresh_content
+
+
+def test_restore_skips_chapter_when_local_content_already_matches(novel_root, monkeypatch):
+    """Ngược lại: nội dung local đã đúng hash -> KHÔNG tải lại (vẫn giữ hành
+    vi 'skip' cho trường hợp hợp lệ, không phải lúc nào cũng re-download)."""
+    import hashlib
+    content = "# Chương 1\n\nnội dung đã đúng"
+    h = hashlib.sha256(content.encode("utf-8")).hexdigest()
+    r2_key = f"demo/content/{h}.md"
+
+    novel_dir = novel_root / "demo"
+    (novel_dir / "translated").mkdir(parents=True)
+    (novel_dir / "translated" / "c1.md").write_text(content, encoding="utf-8")
+
+    def query(sql):
+        if sql == "SELECT * FROM novels;":
+            return [_novel_row()]
+        if "FROM chapters" in sql:
+            return [{"filename": "c1.md", "title": "Chương 1", "chapter_number": 1, "r2_key": r2_key}]
+        return []
+    monkeypatch.setattr(restore, "query_d1", query)
+
+    called = {"n": 0}
+    def fake_download(key, path):
+        called["n"] += 1
+        restore._R2_LAST_ERROR["stderr"] = "Error: The specified key does not exist."
+        return False
+    monkeypatch.setattr(restore, "download_r2_object", fake_download)
+
+    assert restore.restore() is True
+    # glossary.json absent gây đúng 1 lần gọi download (glossary) — KHÔNG có
+    # lần gọi nào cho chương c1.md vì đã khớp hash, được skip thật sự.
+    assert called["n"] == 1
+
+
+def test_verify_chapters_reports_drift_without_writing_anything(novel_root, monkeypatch, capsys):
+    """verify_chapters() (--verify-only) không được ghi/tải bất kỳ file nào —
+    chỉ in báo cáo."""
+    import hashlib
+    correct_hash = hashlib.sha256(b"noi dung dung").hexdigest()
+    r2_key = f"demo/content/{correct_hash}.md"
+
+    novel_dir = novel_root / "demo"
+    (novel_dir / "translated").mkdir(parents=True)
+    stale_path = novel_dir / "translated" / "c1.md"
+    stale_path.write_text("noi dung SAI", encoding="utf-8")
+    before = stale_path.read_text(encoding="utf-8")
+
+    def query(sql):
+        if sql == "SELECT slug FROM novels;":
+            return [{"slug": "demo"}]
+        if "FROM chapters" in sql:
+            return [{"filename": "c1.md", "r2_key": r2_key}]
+        return []
+    monkeypatch.setattr(restore, "query_d1", query)
+
+    def fail_if_called(*a, **k):
+        raise AssertionError("verify_chapters() không được gọi download_r2_object")
+    monkeypatch.setattr(restore, "download_r2_object", fail_if_called)
+
+    result = restore.verify_chapters()
+    assert result is False  # có drift (hash không khớp)
+    assert stale_path.read_text(encoding="utf-8") == before  # không bị ghi đè
+    out = capsys.readouterr().out
+    assert "hash không khớp" in out

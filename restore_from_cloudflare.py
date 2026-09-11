@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+import hashlib
 import os
+import re
 import sys
 import json
 import subprocess
@@ -174,6 +176,32 @@ def restore_chapter(slug, chapter, destination):
             return False
 
 
+# E09: r2_key nội dung chương là content-addressed dạng "<slug>/content/<sha256>.md"
+# (xem syncNovelBatch trong src/index.js) — hash trong tên key CHÍNH LÀ checksum
+# thật của nội dung. Trước đây restore chỉ kiểm tra file local đã TỒN TẠI là đủ
+# để skip, không xác minh nội dung có đúng bản mới nhất/không hỏng hay không.
+_CONTENT_HASH_RE = re.compile(r'/content/([0-9a-f]{64})\.md$')
+
+
+def _local_chapter_matches(local_path: Path, r2_key: str) -> bool:
+    """True nếu file local đã khớp ĐÚNG nội dung mong đợi theo r2_key — chỉ
+    verify được khi r2_key content-addressed (chứa hash thật). Với r2_key
+    dạng cũ (vd `<slug>/b64_...`, không mang hash) KHÔNG thể verify an toàn
+    bằng cách đọc tên file — trả False để buộc tải lại thay vì tin tưởng mù
+    theo việc file tồn tại (đúng hành vi trước khi sửa)."""
+    if not local_path.exists():
+        return False
+    m = _CONTENT_HASH_RE.search(r2_key or '')
+    if not m:
+        return False
+    expected = m.group(1)
+    try:
+        actual = hashlib.sha256(local_path.read_bytes()).hexdigest()
+    except OSError:
+        return False
+    return actual == expected
+
+
 _REQUIRED_PROFILE_FIELDS = ("slug", "title")
 
 
@@ -186,6 +214,66 @@ def _validate_profile(profile: dict) -> list:
     if not isinstance(profile.get("glossary"), dict):
         problems.append("glossary không phải object")
     return problems
+
+
+def verify_chapters(slug_filter: str | None = None) -> bool:
+    """E09: chế độ CHỈ KIỂM TRA, không ghi/tải bất kỳ file nào — so hash
+    local (khi r2_key content-addressed) với r2_key trên D1, báo cáo chương
+    nào thiếu / hash không khớp (drift), không đụng tới novel.json/glossary
+    (đó là việc của restore(), có test riêng — hàm này tách biệt để không
+    rủi ro ghi đè logic đã tested)."""
+    print("=== VERIFY-ONLY: KHÔNG ghi/tải file nào, chỉ kiểm tra checksum chương ===")
+    novels = query_d1("SELECT slug FROM novels;")
+    if novels is None:
+        print("[-] Could not retrieve novels. Please make sure wrangler is authenticated.")
+        return False
+
+    any_drift = False
+    for novel in novels:
+        slug = novel['slug']
+        if slug_filter and slug != slug_filter:
+            continue
+        try:
+            validate_slug(slug)
+        except Exception as e:
+            print(f"  [-] Bỏ qua slug không hợp lệ ({slug!r}): {e}")
+            continue
+
+        trans_dir = Path(safe_novel_dir(slug)) / "translated"
+        chapters = query_d1(f"SELECT filename, r2_key FROM chapters WHERE novel_slug={q(slug)};")
+        if chapters is None:
+            print(f"  [-] {slug}: không lấy được danh sách chương từ D1.")
+            any_drift = True
+            continue
+
+        missing, mismatched, unverifiable, ok = 0, 0, 0, 0
+        for chap in chapters:
+            try:
+                local_path = Path(safe_join(str(trans_dir), chap['filename']))
+            except Exception:
+                continue
+            if not local_path.exists():
+                missing += 1
+                continue
+            r2_key = chap['r2_key'] or ''
+            if not _CONTENT_HASH_RE.search(r2_key):
+                unverifiable += 1  # key dạng cũ, không có hash để so — không kết luận được
+                continue
+            if _local_chapter_matches(local_path, r2_key):
+                ok += 1
+            else:
+                mismatched += 1
+
+        drift = missing or mismatched
+        any_drift = any_drift or bool(drift)
+        print(f"  {slug}: {ok} khớp, {missing} thiếu, {mismatched} hash không khớp (cần tải lại), "
+              f"{unverifiable} không xác minh được (r2_key dạng cũ không mang hash)")
+
+    if any_drift:
+        print("\n[!] Phát hiện drift — chạy `python restore_from_cloudflare.py` (không có --verify-only) để tải lại.")
+    else:
+        print("\n[+] Không phát hiện drift trong các chương có thể xác minh.")
+    return not any_drift
 
 
 def restore():
@@ -342,7 +430,11 @@ def restore():
                 failed_count += 1
                 continue
 
-            if local_chap_path.exists():
+            # E09: file tồn tại KHÔNG đủ để skip — verify hash thật khi r2_key
+            # content-addressed; r2_key dạng cũ (không mang hash) không thể
+            # xác minh an toàn nên vẫn re-download để chắc chắn đúng nội dung
+            # mới nhất (khác hành vi cũ: tin tưởng mù theo tên file tồn tại).
+            if _local_chapter_matches(local_chap_path, r2_key):
                 skipped_count += 1
                 continue
 
@@ -375,4 +467,6 @@ def restore():
     return True
 
 if __name__ == "__main__":
+    if "--verify-only" in sys.argv:
+        raise SystemExit(0 if verify_chapters() else 1)
     raise SystemExit(0 if restore() else 1)
