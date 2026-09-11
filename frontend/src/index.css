@@ -485,23 +485,6 @@ a:hover {
 .novel-cover--sm .novel-cover__title { font-size: 0.62rem; -webkit-line-clamp: 3; }
 .novel-cover--lg .novel-cover__title { font-size: 1rem; }
 
-/* Badge góc trên trái: FULL / MỚI */
-.novel-cover__badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  padding: 2px 7px;
-  border-radius: 5px;
-  color: #fff;
-  z-index: 2;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-.novel-cover__badge.is-full { background: var(--success); }
-.novel-cover__badge.is-new { background: var(--accent); }
-
 /* Dải thể loại đáy bìa — chỉ size lg */
 .novel-cover__genre {
   position: absolute;
@@ -519,38 +502,6 @@ a:hover {
   -webkit-backdrop-filter: blur(6px);
   z-index: 2;
 }
-
-/* ── NovelCard v2: bìa + tên + meta, cả thẻ là Link ── */
-.novel-card-v2 {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  color: var(--text-main);
-  text-decoration: none;
-  min-height: 44px;
-  -webkit-tap-highlight-color: transparent;
-  border-radius: 12px;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.novel-card-v2__title {
-  font-size: 0.85rem;
-  font-weight: 600;
-  line-height: 1.35;
-  color: var(--text-main);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.novel-card-v2__meta {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-@media (hover: hover) {
-  .novel-card-v2:hover { transform: translateY(-4px); }
-  .novel-card-v2:hover .novel-card-v2__title { color: var(--accent); }
-}
-.novel-card-v2:active { transform: scale(0.97); }
 
 /* ── SiteHeader (guest) ── */
 .site-header {
@@ -1428,12 +1379,17 @@ a:hover {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
-.novel-grid__badge {
+/* Vị trí phủ badge (FULL/MỚI/EPUB/TRỰC TIẾP...) lên góc bìa truyện — dùng
+   chung cho NovelGrid, EpubCard. Nguồn style của bản thân badge nằm ở
+   components/ui/Badge.jsx, đây chỉ là positioning wrapper. */
+.badge-overlay {
   position: absolute;
   top: 6px;
-  left: 6px;
   z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
+.badge-overlay--left { left: 6px; }
+.badge-overlay--right { right: 6px; }
 
 .novel-grid__info {
   display: flex;

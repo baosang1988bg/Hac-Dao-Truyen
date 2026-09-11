@@ -8,10 +8,11 @@ import { fmtNovelTitle } from '../utils/format'
  * Bìa truyện tỉ lệ 2/3.
  * - Có cover_url → hiện ảnh; ảnh lỗi → fallback gradient sinh từ slug.
  * - Không có ảnh → gradient + chữ cái đầu mờ + tên truyện (clamp 3 dòng).
- * - badge: 'FULL' (xanh lá) | 'MỚI' (accent) — góc trên trái.
  * - size 'lg' hiện thêm dải thể loại ở đáy.
+ * Badge trạng thái (FULL/MỚI/EPUB...) không phải việc của component này —
+ * nơi gọi tự phủ `components/ui/Badge.jsx` trong span `.badge-overlay` lên trên.
  */
-export default function NovelCover({ novel, size = 'md', badge }) {
+export default function NovelCover({ novel, size = 'md' }) {
   const [imgError, setImgError] = useState(false)
   const gradient = coverGradient(novel?.slug || '')
   const title = fmtNovelTitle(novel?.title, novel?.slug) || '?'
@@ -48,12 +49,6 @@ export default function NovelCover({ novel, size = 'md', badge }) {
         </div>
       )}
 
-      {badge && (
-        <span className={`novel-cover__badge ${badge === 'FULL' ? 'is-full' : 'is-new'}`}>
-          {badge}
-        </span>
-      )}
-
       {size === 'lg' && novel?.genre && (
         <span className="novel-cover__genre">{novel.genre}</span>
       )}
@@ -63,5 +58,4 @@ export default function NovelCover({ novel, size = 'md', badge }) {
 NovelCover.propTypes = {
   novel: novelType,
   size: PropTypes.string,
-  badge: PropTypes.node,
 };

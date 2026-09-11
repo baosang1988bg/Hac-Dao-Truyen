@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BookOpen, Eye, Star, BookMarked, Download, Check } from 'lucide-react'
 import NovelCover from './NovelCover'
+import Badge from './ui/Badge'
 import { fmtNumber, fmtNovelTitle } from '../utils/format'
 import { isEpubDownloaded, downloadEpubOffline } from '../utils/epubOffline'
 
@@ -49,18 +50,12 @@ export function EpubCard({ novel }) {
       <Link to={`/novel/${novel.slug}`} style={{ position: 'relative', display: 'block', aspectRatio: '2/3', overflow: 'hidden' }}>
         <NovelCover novel={novel} size="lg" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         {hasChapters ? (
-          <span style={{ position: 'absolute', top: '8px', left: '8px', background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', fontSize: '0.65rem', fontWeight: 700, padding: '3px 7px', borderRadius: '6px', letterSpacing: '0.05em' }}>
-            TRỰC TIẾP
-          </span>
+          <span className="badge-overlay badge-overlay--left"><Badge variant="live">TRỰC TIẾP</Badge></span>
         ) : novel.has_epub ? (
-          <span style={{ position: 'absolute', top: '8px', left: '8px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontSize: '0.65rem', fontWeight: 700, padding: '3px 7px', borderRadius: '6px', letterSpacing: '0.05em' }}>
-            EPUB
-          </span>
+          <span className="badge-overlay badge-overlay--left"><Badge variant="epub">EPUB</Badge></span>
         ) : null}
         {novel.total_chapters > 0 && novel.chapter_count >= novel.total_chapters && (
-          <span style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(16,185,129,0.9)', color: '#fff', fontSize: '0.6rem', fontWeight: 700, padding: '2px 6px', borderRadius: '5px' }}>
-            FULL
-          </span>
+          <span className="badge-overlay badge-overlay--right"><Badge variant="full">FULL</Badge></span>
         )}
       </Link>
 

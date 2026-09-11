@@ -37,7 +37,7 @@ export default function NovelGrid({ novels, cols, getBadge }) {
             <div className="novel-grid__cover-wrap">
               <NovelCover novel={n} size="md" />
               {badge && (
-                <span className="novel-grid__badge">
+                <span className="badge-overlay badge-overlay--left">
                   <Badge variant={badge.variant}>{badge.label}</Badge>
                 </span>
               )}
