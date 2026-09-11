@@ -121,8 +121,14 @@ a:hover {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* KHÔNG dùng "forwards": nó giữ transform: translateY(0) vĩnh viễn sau khi
+   chạy xong, tạo containing block mới cho MỌI phần tử position:fixed lồng
+   bên trong (modal/overlay bị "nhốt" trong .container thay vì phủ toàn
+   viewport). Không có forwards, sau khi chạy xong phần tử quay lại style
+   bình thường (opacity mặc định 1, không transform) — kết quả thị giác
+   giống hệt, chỉ khác là không còn side-effect này. */
 .animate-fade-in {
-  animation: fadeIn 0.4s ease forwards;
+  animation: fadeIn 0.4s ease;
 }
 
 /* Scrollbar */

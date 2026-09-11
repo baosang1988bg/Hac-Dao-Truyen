@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import api from '../api'
 import userApi, { isLoggedIn, getIdentityNamespace } from '../userApi'
 import ChapterComments from '../components/ChapterComments'
+import Modal from '../components/ui/Modal'
 import ReaderSettingsPanel from '../components/ReaderSettingsPanel'
 import useReaderSettings, { THEMES } from '../hooks/useReaderSettings'
 import useTextToSpeech from '../hooks/useTextToSpeech'
@@ -655,59 +656,59 @@ export default function Reader() {
 
       {/* Settings Panel (Mobile Drawer Style) */}
       {showSettings && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 1000,
-          background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'flex-end'
-        }} onClick={() => setShowSettings(false)}>
-          <div style={{
+        <Modal
+          onClose={() => setShowSettings(false)}
+          ariaLabel="Tuỳ chỉnh đọc truyện"
+          overlayStyle={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', alignItems: 'flex-end', padding: 0 }}
+          panelClassName=""
+          panelStyle={{
             width: '100%', background: 'var(--reader-panel)', color: 'var(--reader-text)',
             borderTopLeftRadius: '24px', borderTopRightRadius: '24px',
             padding: '1.5rem',
             paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
             maxHeight: '85dvh', overflowY: 'auto',
             boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
-            animation: 'slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-          }} onClick={e => e.stopPropagation()}>
-            <div style={{ width: '40px', height: '4px', background: 'var(--reader-border)', borderRadius: '2px', margin: '0 auto 1.5rem' }} />
+            animation: 'slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        >
+          <div style={{ width: '40px', height: '4px', background: 'var(--reader-border)', borderRadius: '2px', margin: '0 auto 1.5rem' }} />
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Tuỳ chỉnh</h3>
-              <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', color: 'var(--reader-muted)', cursor: 'pointer', minWidth: '44px', minHeight: '44px' }}>✕</button>
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Tuỳ chỉnh</h3>
+            <button onClick={() => setShowSettings(false)} aria-label="Đóng" style={{ background: 'none', border: 'none', color: 'var(--reader-muted)', cursor: 'pointer', minWidth: '44px', minHeight: '44px' }}>✕</button>
+          </div>
 
-            <ReaderSettingsPanel settings={settings} onChange={onChange} ttsVoices={tts.voices} />
+          <ReaderSettingsPanel settings={settings} onChange={onChange} ttsVoices={tts.voices} />
 
-            {/* Đọc offline: tải trước N chương kế tiếp để service worker cache */}
-            <div style={{ marginBottom: '0.5rem' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--reader-muted)', marginBottom: '0.8rem', letterSpacing: '0.05em' }}>ĐỌC OFFLINE</div>
-              <button
-                onClick={downloadNextChapters}
-                disabled={downloading || !nextChapter}
-                style={{
-                  width: '100%', minHeight: '52px', borderRadius: '16px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                  background: downloading ? 'var(--reader-border)' : 'var(--accent)',
-                  color: 'white', border: 'none', fontSize: '1rem', fontWeight: 700,
-                  cursor: downloading || !nextChapter ? 'not-allowed' : 'pointer',
-                  opacity: !nextChapter ? 0.4 : 1, transition: 'all 0.2s',
-                }}
-              >
-                <Download size={18} />
-                {downloading
-                  ? `Đang tải... đã tải ${dlProgress?.done ?? 0}/${dlProgress?.total ?? OFFLINE_BATCH_SIZE}`
-                  : dlProgress
-                    ? `Đã tải ${dlProgress.done}/${dlProgress.total} chương`
-                    : `Tải ${OFFLINE_BATCH_SIZE} chương tiếp`}
-              </button>
-              <div style={{ fontSize: '0.75rem', color: 'var(--reader-muted)', marginTop: '0.6rem', lineHeight: 1.5 }}>
-                {nextChapter
-                  ? 'Chương đã tải sẽ đọc được cả khi mất mạng.'
-                  : 'Đây là chương cuối — không còn chương kế tiếp để tải.'}
-              </div>
+          {/* Đọc offline: tải trước N chương kế tiếp để service worker cache */}
+          <div style={{ marginBottom: '0.5rem' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--reader-muted)', marginBottom: '0.8rem', letterSpacing: '0.05em' }}>ĐỌC OFFLINE</div>
+            <button
+              onClick={downloadNextChapters}
+              disabled={downloading || !nextChapter}
+              style={{
+                width: '100%', minHeight: '52px', borderRadius: '16px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                background: downloading ? 'var(--reader-border)' : 'var(--accent)',
+                color: 'white', border: 'none', fontSize: '1rem', fontWeight: 700,
+                cursor: downloading || !nextChapter ? 'not-allowed' : 'pointer',
+                opacity: !nextChapter ? 0.4 : 1, transition: 'all 0.2s',
+              }}
+            >
+              <Download size={18} />
+              {downloading
+                ? `Đang tải... đã tải ${dlProgress?.done ?? 0}/${dlProgress?.total ?? OFFLINE_BATCH_SIZE}`
+                : dlProgress
+                  ? `Đã tải ${dlProgress.done}/${dlProgress.total} chương`
+                  : `Tải ${OFFLINE_BATCH_SIZE} chương tiếp`}
+            </button>
+            <div style={{ fontSize: '0.75rem', color: 'var(--reader-muted)', marginTop: '0.6rem', lineHeight: 1.5 }}>
+              {nextChapter
+                ? 'Chương đã tải sẽ đọc được cả khi mất mạng.'
+                : 'Đây là chương cuối — không còn chương kế tiếp để tải.'}
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* FAB cuộn lên đầu — góc dưới TRÁI, nhỏ gọn, không che tap-zone phải.
