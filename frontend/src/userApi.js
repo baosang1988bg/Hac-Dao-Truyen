@@ -61,4 +61,16 @@ export function isLoggedIn() {
   return Boolean(localStorage.getItem('userToken'));
 }
 
+/**
+ * C04: định danh namespace cho dữ liệu local KHÔNG thuộc tài khoản server
+ * (hàng đợi progress offline, v.v.) — 2 user dùng chung 1 trình duyệt (đăng
+ * xuất rồi đăng nhập tài khoản khác) không được đọc/ghi đè dữ liệu của nhau.
+ * 'guest' khi chưa đăng nhập, 'user:<id>' khi đã đăng nhập — DÙNG id thật
+ * (không phải email, tránh lệch khi user đổi email).
+ */
+export function getIdentityNamespace() {
+  const info = getUserInfo();
+  return info && info.id != null ? `user:${info.id}` : 'guest';
+}
+
 export default userApi;

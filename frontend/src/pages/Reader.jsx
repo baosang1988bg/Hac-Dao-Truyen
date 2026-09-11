@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Home, ChevronUp, Settings, Download, Volume2, Pause, Square, Loader2, Check, AlertTriangle } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import api from '../api'
-import userApi, { isLoggedIn } from '../userApi'
+import userApi, { isLoggedIn, getIdentityNamespace } from '../userApi'
 import ChapterComments from '../components/ChapterComments'
 import ReaderSettingsPanel from '../components/ReaderSettingsPanel'
 import useReaderSettings, { THEMES } from '../hooks/useReaderSettings'
@@ -21,7 +21,13 @@ const OFFLINE_BATCH_SIZE = 10
 const PROGRESS_RETRY_LIMIT = 3
 const PROGRESS_RETRY_BASE_DELAY_MS = 4000
 
-function progressQueueKey(slug) { return `progressQueue_${slug}` }
+// C04: namespace hàng đợi offline theo danh tính hiện tại (guest hoặc
+// user:<id>) — trước đây key chỉ theo slug, nên 2 tài khoản dùng chung trình
+// duyệt (đăng xuất rồi đăng nhập tài khoản khác) có thể khiến hàng đợi của
+// người trước bị flush lên bằng token của người sau (gán nhầm tiến độ đọc
+// giữa các tài khoản).
+const PROGRESS_QUEUE_PREFIX = 'progressQueue_'
+function progressQueueKey(slug) { return `${PROGRESS_QUEUE_PREFIX}${getIdentityNamespace()}_${slug}` }
 
 // Hàng đợi offline chỉ giữ BẢN MỚI NHẤT (ghi đè, không append lịch sử cũ).
 function writeQueuedProgress(slug, chapterNum) {
@@ -42,17 +48,21 @@ function clearQueuedProgress(slug) {
   try { localStorage.removeItem(progressQueueKey(slug)) } catch { /* ignore */ }
 }
 
-// Gửi lại TOÀN BỘ hàng đợi offline (mỗi slug tối đa 1 bản ghi = bản mới nhất)
-// — chạy khi mount và khi có lại kết nối mạng.
+// Gửi lại TOÀN BỘ hàng đợi offline CỦA DANH TÍNH HIỆN TẠI (mỗi slug tối đa 1
+// bản ghi = bản mới nhất) — chạy khi mount và khi có lại kết nối mạng. CHỈ
+// đọc key thuộc namespace hiện tại — hàng đợi của tài khoản khác (đăng xuất
+// mà chưa kịp flush) nằm im dưới key khác, không bị người đang đăng nhập vô
+// tình flush hộ.
 async function flushAllQueuedProgress() {
   if (typeof localStorage === 'undefined') return
+  const namespacePrefix = `${PROGRESS_QUEUE_PREFIX}${getIdentityNamespace()}_`
   const keys = []
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i)
-    if (k && k.startsWith('progressQueue_')) keys.push(k)
+    if (k && k.startsWith(namespacePrefix)) keys.push(k)
   }
   for (const key of keys) {
-    const slugFromKey = key.slice('progressQueue_'.length)
+    const slugFromKey = key.slice(namespacePrefix.length)
     const queued = readQueuedProgress(slugFromKey)
     if (!queued) continue
     try {
