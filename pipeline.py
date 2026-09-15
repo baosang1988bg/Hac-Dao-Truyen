@@ -725,6 +725,14 @@ def init_catalog(ctx: TranslationContext, start_url: str):
         except Exception as e:
             logger.error(f"[!] Error loading catalog.json: {e}")
 
+    # Catalog phục hồi từ file .md đã dịch (không còn URL nguồn gốc) không thể
+    # dùng để resume theo URL — coi như không có catalog, để scraper tự đi
+    # theo link "chương tiếp theo" từ start_url thay vì crash KeyError.
+    if catalog_active and any("url" not in item for item in catalog):
+        logger.warning("[!] catalog.json thiếu field 'url' ở một số chương. Bỏ qua catalog, dùng dynamic scraping.")
+        catalog_active = False
+        catalog = []
+
     current_idx = -1
     current_url = None
     if catalog_active:
