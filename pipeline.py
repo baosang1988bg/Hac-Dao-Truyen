@@ -725,20 +725,17 @@ def init_catalog(ctx: TranslationContext, start_url: str):
         except Exception as e:
             logger.error(f"[!] Error loading catalog.json: {e}")
 
-    # Catalog phục hồi từ file .md đã dịch (không còn URL nguồn gốc) không thể
-    # dùng để resume theo URL — coi như không có catalog, để scraper tự đi
-    # theo link "chương tiếp theo" từ start_url thay vì crash KeyError.
-    if catalog_active and any("url" not in item for item in catalog):
-        logger.warning("[!] catalog.json thiếu field 'url' ở một số chương. Bỏ qua catalog, dùng dynamic scraping.")
-        catalog_active = False
-        catalog = []
-
+    # Một số catalog.json được khôi phục từ file .md đã dịch sẵn (không còn URL
+    # nguồn gốc — chỉ có number/title/filename) có thể xen lẫn với các mục mới
+    # ĐƯỢC THÊM VÀO SAU (auto_check_lanh_chua.py) mà CÓ url thật. Dùng .get("url")
+    # thay vì item["url"] để mục cũ thiếu url không làm crash toàn bộ catalog —
+    # chỉ đơn giản không khớp được, thay vì KeyError.
     current_idx = -1
     current_url = None
     if catalog_active:
         if args.url:
             for idx, item in enumerate(catalog):
-                if item["url"] == args.url:
+                if item.get("url") == args.url:
                     current_idx = idx
                     current_url = args.url
                     logger.info(f"[*] Found target URL in catalog at index {current_idx}: {current_url}")
@@ -750,14 +747,23 @@ def init_catalog(ctx: TranslationContext, start_url: str):
         else:
             if profile.last_translated_url:
                 for idx, item in enumerate(catalog):
-                    if item["url"] == profile.last_translated_url:
+                    if item.get("url") == profile.last_translated_url:
                         current_idx = idx
                         break
+                # Catalog cũ có thể không lưu url cho chương vừa dịch xong (mất
+                # khi khôi phục) — thử khớp thêm theo SỐ CHƯƠNG trước khi bỏ cuộc.
+                if current_idx == -1:
+                    for idx, item in enumerate(catalog):
+                        if item.get("number") == profile.last_chapter_number:
+                            current_idx = idx
                 if current_idx != -1:
                     current_idx += 1
                     if current_idx < len(catalog):
-                        current_url = catalog[current_idx]["url"]
-                        logger.info(f"[*] Resuming from next catalog chapter at index {current_idx}: {current_url}")
+                        current_url = catalog[current_idx].get("url")
+                        if current_url:
+                            logger.info(f"[*] Resuming from next catalog chapter at index {current_idx}: {current_url}")
+                        else:
+                            logger.warning(f"[!] Catalog item at index {current_idx} thiếu url. Dừng ở đây thay vì đoán bừa.")
                     else:
                         current_url = None
                         logger.info("[*] Catalog index out of range (all chapters translated).")
@@ -765,16 +771,16 @@ def init_catalog(ctx: TranslationContext, start_url: str):
                 else:
                     if 0 <= profile.last_chapter_number < len(catalog):
                         current_idx = profile.last_chapter_number
-                        current_url = catalog[current_idx]["url"]
+                        current_url = catalog[current_idx].get("url")
                         logger.info(f"[*] Map to catalog index {current_idx} using last_chapter_number={profile.last_chapter_number}")
                     else:
                         current_idx = 0
-                        current_url = catalog[0]["url"]
+                        current_url = catalog[0].get("url")
                         logger.info(f"[*] Fallback to catalog index 0")
                     ctx.resume_from_next = False
             else:
                 current_idx = 0
-                current_url = catalog[0]["url"]
+                current_url = catalog[0].get("url")
                 logger.info(f"[*] Starting from catalog index 0: {current_url}")
                 ctx.resume_from_next = False
     else:
@@ -817,7 +823,8 @@ def prepare_session(ctx: TranslationContext, scraper_factory):
     ctx.url_to_catalog_item = {}
     if ctx.catalog_active:
         for _ci in ctx.catalog:
-            ctx.url_to_catalog_item[_ci["url"]] = _ci
+            if _ci.get("url"):
+                ctx.url_to_catalog_item[_ci["url"]] = _ci
 
 
 # ── Phase: dịch batch + lưu kết quả ───────────────────────────────────────────
@@ -1071,7 +1078,7 @@ def _finish_batch(ctx: TranslationContext, batch_copy, urls_copy, new_glossary, 
         if ctx.catalog_active:
             ch_num = profile.last_chapter_number
             for idx, item in enumerate(ctx.catalog):
-                if item["url"] == urls_copy[-1]:
+                if item.get("url") == urls_copy[-1]:
                     ch_num = item["number"]
                     break
             update_profile_progress_safely(profile.slug, urls_copy[-1], ch_num)
@@ -1239,7 +1246,10 @@ async def run_catalog_flow(ctx: TranslationContext):
             break
 
         item = ctx.catalog[idx]
-        url = item["url"]
+        url = item.get("url")
+        if not url:
+            logger.warning(f"[!] Catalog item tại index {idx} thiếu url. Dừng batch ở đây thay vì đoán bừa.")
+            break
         chap_num = item.get("number")
         title_base = item.get("original_title") or item.get("title") or f"Chương {chap_num if chap_num is not None else idx}"
         title_orig = f"Chương {chap_num} - {title_base}" if chap_num is not None else title_base
