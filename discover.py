@@ -21,8 +21,11 @@ Cách dùng:
 """
 
 import argparse
+import asyncio
 import os
 from datetime import datetime
+
+import source_finder
 
 # ── Genre map ─────────────────────────────────────────────────────────────────
 
@@ -166,7 +169,17 @@ def interactive_search(client, model):
     if not novel_name:
         return
 
-    print(f"\n[*] Đang tìm thông tin '{novel_name}'...")
+    print(f"\n[*] Đang tìm nguồn thật cho '{novel_name}'...")
+    result = asyncio.run(source_finder.find_source(novel_name))
+    best = result["best"] if result else None
+
+    if best:
+        print(f"\n✅ Tìm thấy nguồn: {best['source']} — {best['chapter_count']} chương")
+        print(f"   URL: {best['url']}")
+        print(f"   👉 Chạy: python main.py import --url {best['url']}")
+        return
+
+    print("[*] Không tìm thấy nguồn thật, thử hỏi Gemini gợi ý...")
     prompt = build_search_help_prompt(novel_name)
     result = ask_gemini(client, model, prompt)
     print("\n" + result)
