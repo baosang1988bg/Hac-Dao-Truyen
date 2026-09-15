@@ -25,6 +25,7 @@ import asyncio
 import argparse
 import os
 import logging
+import sys
 from datetime import datetime
 
 # NovelScraper và NovelTranslator được import lazy trong hàm cần dùng
@@ -39,6 +40,7 @@ from novel_manager import (
 from config import LOG_DIR
 
 import pipeline
+import source_finder
 
 # ── Re-exports tương thích ngược ─────────────────────────────────────────────
 # Code cũ (tools/, scratch/) import các tên này từ main — giữ nguyên hoạt động.
@@ -527,6 +529,29 @@ def cmd_import(args):
     asyncio.run(async_import_novel(args.url, args.slug))
 
 
+def cmd_find_source(args):
+    result = asyncio.run(source_finder.find_source(args.query))
+
+    if not result or not result["all"]:
+        print(f"❌ Không tìm thấy nguồn nào cho \"{args.query}\" trên Qidian/novel543/69shuba.")
+        sys.exit(1)
+
+    print(f"\n🔍 Kết quả tìm nguồn cho \"{args.query}\":")
+    print(f"{'Nguồn':<10} | {'Số chương':<10} | {'Hợp lệ':<6} | URL")
+    print("-" * 90)
+    ranked = sorted(result["all"], key=lambda c: c["chapter_count"], reverse=True)
+    for c in ranked:
+        print(f"{c['source']:<10} | {c['chapter_count']:<10} | {str(c['valid']):<6} | {c['url']}")
+
+    best = result["best"]
+    if best:
+        print(f"\n✅ Nguồn tốt nhất: {best['source']} — {best['chapter_count']} chương")
+        print(f"👉 Chạy: python main.py import --url {best['url']}")
+    else:
+        print("\n⚠️  Có candidate nhưng không cái nào scrape được (bị chặn/lỗi).")
+        sys.exit(1)
+
+
 # ── CLI setup ─────────────────────────────────────────────────────────────────
 
 def main():
@@ -553,6 +578,13 @@ def main():
     )
     p_import.add_argument("--url", required=True, type=str, help="URL của trang truyện bên Trung")
     p_import.add_argument("--slug", type=str, default="", help="Tùy chọn slug riêng")
+
+    # ── find-source ──
+    p_find = subparsers.add_parser(
+        "find-source",
+        help="Tìm URL trang truyện thật trên Qidian/novel543/69shuba theo tên",
+    )
+    p_find.add_argument("query", type=str, help="Tên truyện cần tìm (tiếng Trung hoặc Việt)")
 
     # ── glossary ──
     p_glossary = subparsers.add_parser("glossary", help="Xem và chỉnh sửa glossary của truyện")
@@ -595,6 +627,7 @@ def main():
         "translate": cmd_translate,
         "retranslate": cmd_retranslate,
         "import": cmd_import,
+        "find-source": cmd_find_source,
     }
 
     if args.command in commands:
