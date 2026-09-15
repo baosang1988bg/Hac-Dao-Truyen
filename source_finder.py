@@ -26,6 +26,7 @@ SOURCE_DOMAINS = {
     "ixdzs.com": "ixdzs",
     "fanqienovel.com": "fanqie",
     "faloo.com": "faloo",
+    "truyendich.ai": "truyendich",
 }
 
 _SOURCE_PRIORITY = {
@@ -36,6 +37,7 @@ _SOURCE_PRIORITY = {
     "fanqie": 4,
     "faloo": 5,
     "qidian": 6,
+    "truyendich": 7,
 }
 
 _UA = (
@@ -44,6 +46,15 @@ _UA = (
 )
 
 _CHINESE_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
+_MIRROR_SITE_FILTER = (
+    "小说 (site:69shuba.com OR site:novel543.com OR "
+    "site:ixdzs8.com OR site:truyendich.ai)"
+)
+
+
+def _normalize_title(title: str) -> str:
+    """Bỏ khoảng trắng/dấu câu để so khớp tiêu đề tiếng Trung."""
+    return re.sub(r"[\W_]+", "", title, flags=re.UNICODE).lower()
 
 
 def _generate_chinese_query_text(prompt: str) -> str:
@@ -126,7 +137,28 @@ def _extract_book_id(source: str, url: str) -> str | None:
     if source in ("ixdzs8", "ixdzs"):
         m = re.search(r"/(?:read/)?([A-Za-z0-9_-]*\d[A-Za-z0-9_-]*)(?:/|\.|$)", path)
         return m.group(1) if m else None
+    if source == "truyendich":
+        parts = [part for part in path.split("/") if part]
+        return parts[1] if len(parts) >= 2 and parts[0] == "doc-truyen" else None
     return None
+
+
+def _normalize_catalog_url(source: str, book_id: str, url: str) -> str:
+    """Chuẩn hóa mọi result/chapter URL về trang catalog mà scraper hiểu."""
+    if source == "qidian":
+        return f"https://www.qidian.com/book/{book_id}/"
+    if source == "novel543":
+        return f"https://www.novel543.com/{book_id}/dir"
+    if source == "ixdzs8":
+        return f"https://ixdzs8.com/read/{book_id}/"
+    if source == "ixdzs":
+        return f"https://ixdzs.com/read/{book_id}/"
+    if source == "truyendich":
+        return f"https://truyendich.ai/doc-truyen/{book_id}"
+    if source == "69shuba":
+        parsed = urllib.parse.urlparse(url)
+        return f"{parsed.scheme or 'https'}://{parsed.netloc}/book/{book_id}/"
+    return url
 
 
 def _extract_duckduckgo_links(html: str) -> list[str]:
@@ -172,7 +204,11 @@ def search_candidates(query: str, max_results: int = 15) -> list[dict]:
         if key in seen_keys:
             continue
         seen_keys.add(key)
-        candidates.append({"source": source, "book_id": book_id, "url": link})
+        candidates.append({
+            "source": source,
+            "book_id": book_id,
+            "url": _normalize_catalog_url(source, book_id, link),
+        })
 
     candidates.sort(key=lambda c: _SOURCE_PRIORITY.get(c["source"], 99))
     return candidates[:max_results]
@@ -217,7 +253,11 @@ async def find_source(query: str, max_results: int = 15, author: str = "") -> di
 
     candidates = []
     seen_keys = set()
+    expanded_queries = []
     for search_query in search_queries:
+        expanded_queries.extend((search_query, f"{search_query} {_MIRROR_SITE_FILTER}"))
+
+    for search_query in expanded_queries:
         print(f"[*] Đang tìm với query: {search_query}")
         for candidate in search_candidates(search_query, max_results):
             key = (candidate["source"], candidate["book_id"])
@@ -236,13 +276,23 @@ async def find_source(query: str, max_results: int = 15, author: str = "") -> di
     scraper = NovelScraper()
     await scraper.start()
     probed = []
+    expected_title = _normalize_title(query) if _CHINESE_RE.search(query) else ""
     try:
         for candidate in candidates:
-            probed.append(await probe_candidate(scraper, candidate))
+            item = await probe_candidate(scraper, candidate)
+            item["title_match"] = (
+                _normalize_title(item["title"]) == expected_title
+                if expected_title and item["title"]
+                else None
+            )
+            probed.append(item)
     finally:
         await scraper.close()
 
-    valid = [c for c in probed if c["import_ready"]]
+    valid = [
+        c for c in probed
+        if c["import_ready"] and c["title_match"] is not False
+    ]
     valid.sort(
         key=lambda c: (
             -c["chapter_count"],

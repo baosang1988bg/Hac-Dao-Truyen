@@ -20,6 +20,7 @@ def test_detect_source_matches_known_domains():
     assert detect_source("https://www.ixdzs8.com/read/123/") == "ixdzs8"
     assert detect_source("https://fanqienovel.com/page/123456") == "fanqie"
     assert detect_source("https://b.faloo.com/123456.html") == "faloo"
+    assert detect_source("https://truyendich.ai/doc-truyen/phia-tren-thap-cao") == "truyendich"
 
 
 def test_detect_source_returns_none_for_unknown_domain():
@@ -66,6 +67,22 @@ def test_search_candidates_dedupes_same_book_id():
 
     assert len(candidates) == 1
     assert candidates[0]["book_id"] == "43484"
+
+
+def test_search_candidates_normalizes_chapter_url_to_catalog_url():
+    html = """
+    <a href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fixdzs8.com%2Fread%2F508570%2Fp10.html">a</a>
+    <a href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fwww.novel543.com%2F0808693583%2F8096_10.html">b</a>
+    """
+    fake_resp = MagicMock()
+    fake_resp.read.return_value = html.encode("utf-8")
+    fake_resp.__enter__.return_value = fake_resp
+
+    with patch.object(urllib.request, "urlopen", return_value=fake_resp):
+        candidates = search_candidates("测试")
+
+    assert candidates[0]["url"] == "https://www.novel543.com/0808693583/dir"
+    assert candidates[1]["url"] == "https://ixdzs8.com/read/508570/"
 
 
 def test_search_candidates_returns_empty_list_on_network_error():
@@ -208,6 +225,41 @@ def test_find_source_prefers_complete_mirror_over_incomplete_qidian(monkeypatch)
     assert result["best"]["import_ready"] is True
 
 
+def test_find_source_rejects_complete_mirror_with_different_chinese_title(monkeypatch):
+    candidates = [
+        {"source": "qidian", "book_id": "1", "url": "https://www.qidian.com/book/1"},
+        {"source": "69shuba", "book_id": "2", "url": "https://www.69shuba.com/book/2"},
+    ]
+
+    class _TitleScraper(_FakeScraper):
+        async def fetch_novel_metadata(self, url: str):
+            if "qidian" in url:
+                return {
+                    "title": "高塔之上！",
+                    "author": "风风忙忙",
+                    "reported_chapter_count": 717,
+                    "chapters": [{"number": 1, "title": "C1", "url": url}],
+                }
+            return {
+                "title": "高天之上",
+                "author": "阴天神隐",
+                "reported_chapter_count": 1142,
+                "chapters": [
+                    {"number": i, "title": f"C{i}", "url": f"{url}/{i}"}
+                    for i in range(1, 1143)
+                ],
+            }
+
+    monkeypatch.setattr("source_finder.search_candidates", lambda query, max_results=15: candidates)
+    monkeypatch.setattr("source_finder.NovelScraper", lambda: _TitleScraper({}))
+
+    result = run(find_source("高塔之上", max_results=2))
+
+    assert result["best"] is None
+    mirror = next(item for item in result["all"] if item["source"] == "69shuba")
+    assert mirror["title_match"] is False
+
+
 def test_probe_candidate_swallows_exceptions():
     class _RaisingScraper(_FakeScraper):
         async def fetch_novel_metadata(self, url: str):
@@ -284,6 +336,9 @@ def test_find_source_searches_chinese_queries_before_vietnamese_fallback(monkeyp
     assert result is None
     assert searched == [
         "高塔之上 风风忙忙",
+        "高塔之上 风风忙忙 小说 (site:69shuba.com OR site:novel543.com OR site:ixdzs8.com OR site:truyendich.ai)",
         "塔楼之上",
+        "塔楼之上 小说 (site:69shuba.com OR site:novel543.com OR site:ixdzs8.com OR site:truyendich.ai)",
         "Phía trên tháp cao Phong Phong Mang Mang",
+        "Phía trên tháp cao Phong Phong Mang Mang 小说 (site:69shuba.com OR site:novel543.com OR site:ixdzs8.com OR site:truyendich.ai)",
     ]

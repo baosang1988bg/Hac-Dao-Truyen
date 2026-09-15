@@ -169,11 +169,58 @@ def test_fetch_novel_metadata_reports_total_separately_from_scraped_links():
     </body></html>
     """
     scraper.fetch_html = AsyncMock(return_value=html)
+    scraper.fetch_novel_catalog = AsyncMock(return_value=None)
 
     meta = _run(scraper.fetch_novel_metadata("https://www.qidian.com/book/1046904755/"))
 
     assert meta["reported_chapter_count"] == 717
     assert meta["scraped_chapter_count"] == 1
+
+
+def test_parse_qidian_catalog_counts_all_but_only_returns_free_chapters():
+    data = {
+        "code": 0,
+        "data": {
+            "vs": [
+                {
+                    "vVip": 0,
+                    "cs": [
+                        {"cName": "第一章", "uuid": "u1", "vipStatus": 0},
+                        {"cName": "第二章", "uuid": "u2", "vipStatus": 1},
+                    ],
+                },
+                {
+                    "vVip": 1,
+                    "cs": [{"cName": "第三章", "uuid": "u3", "vipStatus": 0}],
+                },
+            ]
+        },
+    }
+
+    catalog = NovelScraper._parse_qidian_catalog(data, "1046904755")
+
+    assert catalog["reported_chapter_count"] == 3
+    assert len(catalog["chapters"]) == 1
+    assert catalog["chapters"][0]["url"].endswith("/1046904755/u1/")
+
+
+def test_fetch_novel_metadata_uses_longer_specialized_catalog():
+    scraper = NovelScraper()
+    scraper.fetch_html = AsyncMock(return_value="<html><body><h1>测试书</h1></body></html>")
+    full_catalog = [
+        {"number": i, "title": f"第{i}章", "url": f"https://example.com/{i}"}
+        for i in range(1, 718)
+    ]
+    scraper.fetch_novel_catalog = AsyncMock(return_value={
+        "chapters": full_catalog,
+        "reported_chapter_count": 717,
+    })
+
+    meta = _run(scraper.fetch_novel_metadata("https://ixdzs8.com/read/123/"))
+
+    assert len(meta["chapters"]) == 717
+    assert meta["reported_chapter_count"] == 717
+    assert meta["scraped_chapter_count"] == 717
 
 
 # ── Chạy trực tiếp không cần pytest ─────────────────────────────────────────

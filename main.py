@@ -537,15 +537,17 @@ def cmd_find_source(args):
         sys.exit(1)
 
     print(f"\n🔍 Kết quả tìm nguồn cho \"{args.query}\":")
-    print(f"{'Nguồn':<10} | {'Tổng':<7} | {'Crawl':<7} | {'Import':<6} | URL")
-    print("-" * 100)
+    print(f"{'Nguồn':<10} | {'Tổng':<7} | {'Crawl':<7} | {'Khớp':<5} | {'Import':<6} | URL")
+    print("-" * 110)
     ranked = sorted(result["all"], key=lambda c: c["chapter_count"], reverse=True)
     for c in ranked:
         scraped_count = c.get("scraped_chapter_count", c["chapter_count"])
         import_ready = c.get("import_ready", c["valid"])
+        title_match = c.get("title_match")
+        match_text = "?" if title_match is None else str(title_match)
         print(
             f"{c['source']:<10} | {c['chapter_count']:<7} | "
-            f"{scraped_count:<7} | {str(import_ready):<6} | {c['url']}"
+            f"{scraped_count:<7} | {match_text:<5} | {str(import_ready):<6} | {c['url']}"
         )
 
     best = result["best"]

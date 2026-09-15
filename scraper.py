@@ -7,8 +7,11 @@ Tự động xử lý encoding (UTF-8 / GBK / GB2312) và relative URL.
 """
 
 import asyncio
+import json
 import re
 import time
+import urllib.parse
+import urllib.request
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
@@ -182,6 +185,134 @@ class NovelScraper:
             elem = soup.select_one(sel)
             if elem:
                 return elem
+        return None
+
+    async def _request_json(self, url: str, data: dict | None = None) -> dict:
+        """GET/POST JSON qua cùng SSRF check và HostRateLimiter của scraper."""
+        if not await self._is_url_safe(url):
+            raise ValueError(f"URL catalog không an toàn: {url}")
+        await self._rate_limiter.wait(url)
+
+        def request():
+            body = urllib.parse.urlencode(data).encode("utf-8") if data is not None else None
+            headers = {"User-Agent": self.user_agent, "Accept": "application/json"}
+            if body is not None:
+                headers["Content-Type"] = "application/x-www-form-urlencoded"
+            req = urllib.request.Request(url, data=body, headers=headers)
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+
+        try:
+            result = await asyncio.to_thread(request)
+            self._rate_limiter.record_success(url)
+            return result
+        except Exception:
+            self._rate_limiter.record_error(url)
+            raise
+
+    @staticmethod
+    def _parse_qidian_catalog(data: dict, book_id: str) -> dict:
+        """Parse catalog Qidian; đếm tất cả chương nhưng chỉ trả URL chương miễn phí."""
+        chapters = []
+        reported_count = 0
+        for volume in data.get("data", {}).get("vs", []):
+            volume_is_vip = any(volume.get(key) == 1 for key in ("vVip", "isVip", "vipStatus"))
+            for chapter in volume.get("cs", []):
+                reported_count += 1
+                chapter_is_vip = volume_is_vip or any(
+                    chapter.get(key) in (1, True)
+                    for key in ("vipStatus", "isVip", "vip")
+                )
+                title = chapter.get("cName")
+                uuid = chapter.get("uuid")
+                if chapter_is_vip or not title or not uuid:
+                    continue
+                chapters.append({
+                    "number": len(chapters) + 1,
+                    "title": title,
+                    "url": f"https://www.qidian.com/chapter/{book_id}/{uuid}/",
+                })
+        return {"chapters": chapters, "reported_chapter_count": reported_count}
+
+    async def fetch_novel_catalog(self, url: str) -> dict | None:
+        """Lấy catalog qua API chuyên biệt đã được kiểm chứng trong AgentReach."""
+        parsed = urlparse(url)
+        host = parsed.netloc.lower()
+
+        try:
+            if "qidian.com" in host:
+                match = re.search(r"/book/(\d+)", parsed.path)
+                if not match:
+                    return None
+                book_id = match.group(1)
+                data = await self._request_json(
+                    f"https://m.qidian.com/majax/book/category?bookId={book_id}"
+                )
+                if data.get("code") != 0:
+                    return None
+                return self._parse_qidian_catalog(data, book_id)
+
+            if "ixdzs8.com" in host or "ixdzs.com" in host or "ixdzs.tw" in host:
+                match = re.search(r"/(?:read|book)/(\d+)", parsed.path)
+                if not match:
+                    return None
+                book_id = match.group(1)
+                data = await self._request_json(
+                    "https://ixdzs8.com/novel/clist/", {"bid": book_id}
+                )
+                if data.get("rs") != 200:
+                    return None
+                chapters = []
+                for item in data.get("data", []):
+                    if item.get("ctype") == 1:
+                        continue
+                    title, ordernum = item.get("title"), item.get("ordernum")
+                    if not title or ordernum is None:
+                        continue
+                    chapters.append({
+                        "number": int(ordernum),
+                        "title": title,
+                        "url": f"https://ixdzs8.com/read/{book_id}/p{ordernum}.html",
+                    })
+                chapters.sort(key=lambda chapter: chapter["number"])
+                return {
+                    "chapters": chapters,
+                    "reported_chapter_count": len(chapters),
+                }
+
+            if "truyendich.ai" in host:
+                parts = [part for part in parsed.path.split("/") if part]
+                if len(parts) < 2 or parts[0] != "doc-truyen":
+                    return None
+                slug = parts[1]
+                chapters = []
+                page, size, total = 1, 100, 0
+                while True:
+                    data = await self._request_json(
+                        f"https://truyendich.ai/api/novels/{slug}/chapters?page={page}&size={size}"
+                    )
+                    total = int(data.get("total") or total)
+                    items = data.get("items") or []
+                    for item in items:
+                        number = item.get("chapter_number")
+                        title = item.get("title")
+                        if number is None or not title:
+                            continue
+                        chapters.append({
+                            "number": int(number),
+                            "title": title.strip(),
+                            "url": f"https://truyendich.ai/doc-truyen/{slug}/chuong-{number}",
+                        })
+                    if not items or len(chapters) >= total or len(items) < size:
+                        break
+                    page += 1
+                chapters.sort(key=lambda chapter: chapter["number"])
+                return {
+                    "chapters": chapters,
+                    "reported_chapter_count": total or len(chapters),
+                }
+        except Exception as e:
+            print(f"[!] Không thể lấy catalog chuyên biệt cho {url}: {e}")
         return None
 
     # Từ khóa xuất hiện phổ biến trong trang chặn bot / Cloudflare / captcha.
@@ -621,6 +752,17 @@ class NovelScraper:
             reported_counts + [len(chapters)],
             default=len(chapters),
         )
+
+        specialized = await self.fetch_novel_catalog(url)
+        if specialized:
+            specialized_chapters = specialized.get("chapters") or []
+            if len(specialized_chapters) > len(meta["chapters"]):
+                meta["chapters"] = specialized_chapters
+                meta["scraped_chapter_count"] = len(specialized_chapters)
+            meta["reported_chapter_count"] = max(
+                meta["reported_chapter_count"],
+                int(specialized.get("reported_chapter_count") or 0),
+            )
         return meta
 
 
