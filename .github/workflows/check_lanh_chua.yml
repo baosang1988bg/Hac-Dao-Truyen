@@ -56,6 +56,7 @@ jobs:
           python tools/auto_check_lanh_chua.py
 
       - name: Commit và push kết quả
+        if: always()
         run: |
           bash tools/commit_sync_state.sh "auto(translate): cập nhật chương mới" novels/lanh-chua-cau-sinh-thien-phu-hop-thanh/ frontend/src/content/announcements.json
 
