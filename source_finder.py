@@ -12,6 +12,8 @@ import re
 import urllib.parse
 import urllib.request
 
+from scraper import NovelScraper
+
 SOURCE_DOMAINS = {
     "qidian.com": "qidian",
     "novel543.com": "novel543",
@@ -96,3 +98,49 @@ def search_candidates(query: str, max_results: int = 15) -> list[dict]:
 
     candidates.sort(key=lambda c: _SOURCE_PRIORITY.get(c["source"], 99))
     return candidates[:max_results]
+
+
+async def probe_candidate(scraper: "NovelScraper", candidate: dict) -> dict:
+    """
+    Verify 1 candidate bằng cách scrape thật metadata + mục lục.
+    Không bao giờ raise — lỗi bất kỳ (network/Playwright) → valid=False.
+    """
+    try:
+        meta = await scraper.fetch_novel_metadata(candidate["url"])
+    except Exception as e:
+        print(f"[!] probe_candidate: lỗi probe {candidate['url']}: {e}")
+        meta = None
+
+    chapters = (meta or {}).get("chapters") or []
+    return {
+        **candidate,
+        "valid": bool(meta) and len(chapters) > 0,
+        "chapter_count": len(chapters),
+        "title": (meta or {}).get("title", ""),
+        "author": (meta or {}).get("author", ""),
+    }
+
+
+async def find_source(query: str, max_results: int = 15) -> dict | None:
+    """
+    Tìm + verify nguồn thật cho `query`. Trả None nếu không có candidate nào
+    (search rỗng) — phân biệt với {"best": None, "all": [...]} khi có
+    candidate nhưng không cái nào scrape được.
+    """
+    candidates = search_candidates(query, max_results)
+    if not candidates:
+        return None
+
+    scraper = NovelScraper()
+    await scraper.start()
+    probed = []
+    try:
+        for candidate in candidates:
+            probed.append(await probe_candidate(scraper, candidate))
+    finally:
+        await scraper.close()
+
+    valid = [c for c in probed if c["valid"]]
+    valid.sort(key=lambda c: c["chapter_count"], reverse=True)
+
+    return {"best": valid[0] if valid else None, "all": probed}
