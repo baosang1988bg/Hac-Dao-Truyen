@@ -8,9 +8,11 @@ verify từng candidate bằng cách scrape thật (source_finder.probe_candidat
 dùng NovelScraper.fetch_novel_metadata đã có sẵn trong scraper.py).
 """
 
+import json
 import re
 import urllib.parse
 import urllib.request
+from collections.abc import Callable
 
 from scraper import NovelScraper
 
@@ -28,6 +30,61 @@ _UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
+
+_CHINESE_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
+
+
+def _generate_chinese_query_text(prompt: str) -> str:
+    """Gọi Gemini qua hạ tầng key/model rotation sẵn có của NovelTranslator."""
+    from translator import NovelTranslator
+
+    translator = NovelTranslator()
+    if translator._gemini is None:
+        raise RuntimeError("Gemini không khả dụng để đề xuất tên tiếng Trung")
+    return translator._call_gemini(prompt, max_retries=2)
+
+
+def suggest_chinese_queries(
+    query: str,
+    author: str = "",
+    generator: Callable[[str], str] | None = None,
+) -> list[str]:
+    """
+    Đề xuất tối đa 3 query tiếng Trung để search.
+
+    Gemini chỉ sinh cụm từ tìm kiếm, không sinh URL. Lỗi API hoặc output sai
+    định dạng trả về [] để find_source() fallback sang query gốc.
+    """
+    original = " ".join(part for part in (query.strip(), author.strip()) if part)
+    if _CHINESE_RE.search(original):
+        return [original]
+
+    prompt = f"""Bạn hỗ trợ tìm tiểu thuyết mạng Trung Quốc từ thông tin tiếng Việt.
+Hãy suy luận tối đa 3 cụm từ tìm kiếm tiếng Trung có khả năng cao nhất.
+Tên truyện: {query.strip()}
+Tác giả: {author.strip() or '(không có)'}
+
+Chỉ trả về một JSON array gồm các chuỗi query. Không trả URL, markdown hay giải thích.
+Mỗi query nên chứa tên truyện tiếng Trung và thêm tên tác giả tiếng Trung nếu suy luận được.
+"""
+    try:
+        raw = (generator or _generate_chinese_query_text)(prompt).strip()
+        start, end = raw.find("["), raw.rfind("]")
+        if start < 0 or end < start:
+            return []
+        parsed = json.loads(raw[start:end + 1])
+    except Exception as e:
+        print(f"[!] suggest_chinese_queries: không thể tạo query tiếng Trung: {e}")
+        return []
+
+    queries = []
+    for item in parsed if isinstance(parsed, list) else []:
+        candidate = " ".join(str(item).split())
+        if candidate and _CHINESE_RE.search(candidate) and candidate not in queries:
+            queries.append(candidate)
+        if len(queries) == 3:
+            break
+    return queries
 
 
 def detect_source(url: str) -> str | None:
@@ -121,13 +178,32 @@ async def probe_candidate(scraper: "NovelScraper", candidate: dict) -> dict:
     }
 
 
-async def find_source(query: str, max_results: int = 15) -> dict | None:
+async def find_source(query: str, max_results: int = 15, author: str = "") -> dict | None:
     """
     Tìm + verify nguồn thật cho `query`. Trả None nếu không có candidate nào
     (search rỗng) — phân biệt với {"best": None, "all": [...]} khi có
     candidate nhưng không cái nào scrape được.
     """
-    candidates = search_candidates(query, max_results)
+    original_query = " ".join(part for part in (query.strip(), author.strip()) if part)
+    search_queries = suggest_chinese_queries(query, author)
+    if original_query and original_query not in search_queries:
+        search_queries.append(original_query)
+
+    candidates = []
+    seen_keys = set()
+    for search_query in search_queries:
+        print(f"[*] Đang tìm với query: {search_query}")
+        for candidate in search_candidates(search_query, max_results):
+            key = (candidate["source"], candidate["book_id"])
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            candidates.append(candidate)
+            if len(candidates) == max_results:
+                break
+        if len(candidates) == max_results:
+            break
+
     if not candidates:
         return None
 

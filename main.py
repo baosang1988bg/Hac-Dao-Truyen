@@ -530,7 +530,7 @@ def cmd_import(args):
 
 
 def cmd_find_source(args):
-    result = asyncio.run(source_finder.find_source(args.query))
+    result = asyncio.run(source_finder.find_source(args.query, author=args.author))
 
     if not result or not result["all"]:
         print(f"❌ Không tìm thấy nguồn nào cho \"{args.query}\" trên Qidian/novel543/69shuba.")
@@ -585,6 +585,7 @@ def main():
         help="Tìm URL trang truyện thật trên Qidian/novel543/69shuba theo tên",
     )
     p_find.add_argument("query", type=str, help="Tên truyện cần tìm (tiếng Trung hoặc Việt)")
+    p_find.add_argument("--author", type=str, default="", help="Tên tác giả tiếng Việt hoặc Trung")
 
     # ── glossary ──
     p_glossary = subparsers.add_parser("glossary", help="Xem và chỉnh sửa glossary của truyện")

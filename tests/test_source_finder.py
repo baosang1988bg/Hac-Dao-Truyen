@@ -8,6 +8,7 @@ from source_finder import (
     find_source,
     probe_candidate,
     search_candidates,
+    suggest_chinese_queries,
 )
 
 
@@ -67,6 +68,25 @@ def test_search_candidates_dedupes_same_book_id():
 def test_search_candidates_returns_empty_list_on_network_error():
     with patch.object(urllib.request, "urlopen", side_effect=OSError("network down")):
         assert search_candidates("bat ky") == []
+
+
+def test_suggest_chinese_queries_parses_json_and_filters_non_chinese():
+    raw = '["高塔之上 风风忙忙", "塔楼之上", "không hợp lệ", "高塔之上 风风忙忙"]'
+
+    queries = suggest_chinese_queries(
+        "Phía trên tháp cao",
+        "Phong Phong Mang Mang",
+        generator=lambda prompt: raw,
+    )
+
+    assert queries == ["高塔之上 风风忙忙", "塔楼之上"]
+
+
+def test_suggest_chinese_queries_keeps_existing_chinese_without_calling_generator():
+    def raising_generator(prompt):
+        raise AssertionError("không được gọi Gemini")
+
+    assert suggest_chinese_queries("高塔之上", generator=raising_generator) == ["高塔之上"]
 
 
 def run(coro):
@@ -147,6 +167,7 @@ def test_find_source_picks_candidate_with_most_chapters(monkeypatch):
         {"source": "novel543", "book_id": "2", "url": "https://www.novel543.com/2"},
     ]
     monkeypatch.setattr("source_finder.search_candidates", lambda query, max_results=15: candidates)
+    monkeypatch.setattr("source_finder.suggest_chinese_queries", lambda query, author="": [])
     monkeypatch.setattr(
         "source_finder.NovelScraper",
         lambda *a, **k: _FakeScraper(chapter_counts={"1": 50, "2": 200}),
@@ -162,6 +183,7 @@ def test_find_source_picks_candidate_with_most_chapters(monkeypatch):
 def test_find_source_returns_none_best_when_no_candidate_valid(monkeypatch):
     candidates = [{"source": "qidian", "book_id": "1", "url": "https://www.qidian.com/book/1"}]
     monkeypatch.setattr("source_finder.search_candidates", lambda query, max_results=15: candidates)
+    monkeypatch.setattr("source_finder.suggest_chinese_queries", lambda query, author="": [])
     monkeypatch.setattr(
         "source_finder.NovelScraper",
         lambda *a, **k: _FakeScraper(chapter_counts={}, fail_ids={"1"}),
@@ -175,7 +197,32 @@ def test_find_source_returns_none_best_when_no_candidate_valid(monkeypatch):
 
 def test_find_source_returns_none_when_no_candidates(monkeypatch):
     monkeypatch.setattr("source_finder.search_candidates", lambda query, max_results=15: [])
+    monkeypatch.setattr("source_finder.suggest_chinese_queries", lambda query, author="": [])
 
     result = run(find_source("truyen khong ton tai"))
 
     assert result is None
+
+
+def test_find_source_searches_chinese_queries_before_vietnamese_fallback(monkeypatch):
+    searched = []
+
+    monkeypatch.setattr(
+        "source_finder.suggest_chinese_queries",
+        lambda query, author="": ["高塔之上 风风忙忙", "塔楼之上"],
+    )
+
+    def fake_search(query, max_results=15):
+        searched.append(query)
+        return []
+
+    monkeypatch.setattr("source_finder.search_candidates", fake_search)
+
+    result = run(find_source("Phía trên tháp cao", author="Phong Phong Mang Mang"))
+
+    assert result is None
+    assert searched == [
+        "高塔之上 风风忙忙",
+        "塔楼之上",
+        "Phía trên tháp cao Phong Phong Mang Mang",
+    ]

@@ -29,10 +29,10 @@ def test_cmd_find_source_prints_best_and_import_hint(capsys):
         }],
     }
 
-    async def _fake_find_source(query, max_results=15):
+    async def _fake_find_source(query, max_results=15, author=""):
         return fake_result
 
-    args = type("Args", (), {"query": "Phía trên tháp cao"})()
+    args = type("Args", (), {"query": "Phía trên tháp cao", "author": "Phong Phong Mang Mang"})()
 
     with patch("main.source_finder.find_source", side_effect=_fake_find_source):
         main_module.cmd_find_source(args)
@@ -43,10 +43,10 @@ def test_cmd_find_source_prints_best_and_import_hint(capsys):
 
 
 def test_cmd_find_source_exits_nonzero_when_nothing_found(capsys):
-    async def _fake_find_source(query, max_results=15):
+    async def _fake_find_source(query, max_results=15, author=""):
         return None
 
-    args = type("Args", (), {"query": "truyen khong ton tai"})()
+    args = type("Args", (), {"query": "truyen khong ton tai", "author": ""})()
 
     with patch("main.source_finder.find_source", side_effect=_fake_find_source):
         with pytest.raises(SystemExit) as exc_info:
