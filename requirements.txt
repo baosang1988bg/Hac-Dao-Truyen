@@ -9,3 +9,4 @@ beautifulsoup4==4.15.0
 playwright==1.62.0
 python-dotenv==1.2.3
 ebooklib==0.20
+python-slugify==9.0.0
