@@ -92,12 +92,15 @@ def sync_via_worker_api(slug: str, novel_meta: dict, pending: list, base_dir: Pa
         })
 
     if len(chapters_to_sync) != len(pending):
+        # Chưa đủ chương (nguồn chặn giữa chừng...) — KHÔNG phải lỗi hạ tầng,
+        # trả None để main() không coi đây là failure thật (không raise, exit 0).
+        # Vẫn giữ đúng "all-or-nothing": không công bố batch dở dang lên public.
         print("Thiếu bản dịch; không công bố batch chưa đủ chương")
-        return False
+        return None
 
     if not chapters_to_sync:
         print("⚠️ Không có nội dung chương nào để sync qua Worker API.")
-        return False
+        return None
 
     print(f"📡 Đang đẩy {len(chapters_to_sync)} chương lên Cloudflare D1 + R2 qua Worker API (/api/admin/sync-novel)...")
     payload = {
@@ -254,6 +257,12 @@ def main():
 
     if not synced:
         synced = sync_via_worker_api(NOVEL_SLUG, novel_meta, pending, BASE_DIR)
+    if synced is None:
+        # Chưa đủ chương để công bố (bị chặn giữa chừng) — tiến độ dịch đã
+        # được lưu (bước "Commit và push kết quả" chạy cả khi script fail
+        # trước đây; giờ không cần fail nữa vì đây không phải lỗi thật).
+        print("ℹ️ Đã lưu tiến độ dịch; chưa đủ chương để công bố công khai. Lần chạy sau sẽ tiếp tục.")
+        return
     if not synced:
         raise RuntimeError("Đồng bộ thất bại; không công bố thông báo thành công")
 
