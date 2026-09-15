@@ -533,22 +533,27 @@ def cmd_find_source(args):
     result = asyncio.run(source_finder.find_source(args.query, author=args.author))
 
     if not result or not result["all"]:
-        print(f"❌ Không tìm thấy nguồn nào cho \"{args.query}\" trên Qidian/novel543/69shuba.")
+        print(f"❌ Không tìm thấy nguồn nào có thể import đầy đủ cho \"{args.query}\".")
         sys.exit(1)
 
     print(f"\n🔍 Kết quả tìm nguồn cho \"{args.query}\":")
-    print(f"{'Nguồn':<10} | {'Số chương':<10} | {'Hợp lệ':<6} | URL")
-    print("-" * 90)
+    print(f"{'Nguồn':<10} | {'Tổng':<7} | {'Crawl':<7} | {'Import':<6} | URL")
+    print("-" * 100)
     ranked = sorted(result["all"], key=lambda c: c["chapter_count"], reverse=True)
     for c in ranked:
-        print(f"{c['source']:<10} | {c['chapter_count']:<10} | {str(c['valid']):<6} | {c['url']}")
+        scraped_count = c.get("scraped_chapter_count", c["chapter_count"])
+        import_ready = c.get("import_ready", c["valid"])
+        print(
+            f"{c['source']:<10} | {c['chapter_count']:<7} | "
+            f"{scraped_count:<7} | {str(import_ready):<6} | {c['url']}"
+        )
 
     best = result["best"]
     if best:
         print(f"\n✅ Nguồn tốt nhất: {best['source']} — {best['chapter_count']} chương")
         print(f"👉 Chạy: python main.py import --url {best['url']}")
     else:
-        print("\n⚠️  Có candidate nhưng không cái nào scrape được (bị chặn/lỗi).")
+        print("\n⚠️  Có candidate nhưng không nguồn nào crawl đủ catalog để import.")
         sys.exit(1)
 
 
@@ -582,7 +587,7 @@ def main():
     # ── find-source ──
     p_find = subparsers.add_parser(
         "find-source",
-        help="Tìm URL trang truyện thật trên Qidian/novel543/69shuba theo tên",
+        help="Tìm URL truyện có catalog import được trên nhiều nguồn web Trung Quốc",
     )
     p_find.add_argument("query", type=str, help="Tên truyện cần tìm (tiếng Trung hoặc Việt)")
     p_find.add_argument("--author", type=str, default="", help="Tên tác giả tiếng Việt hoặc Trung")

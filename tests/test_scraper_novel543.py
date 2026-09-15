@@ -159,6 +159,23 @@ def test_fetch_novel_metadata_jina_markdown_links_still_parsed():
     assert len(meta["chapters"]) == 2
 
 
+def test_fetch_novel_metadata_reports_total_separately_from_scraped_links():
+    scraper = NovelScraper()
+    html = """
+    <html><body>
+      <h1>高塔之上！</h1>
+      <div class="book-info">连载 · 717章</div>
+      <a href="https://www.qidian.com/chapter/1/1/">第一章</a>
+    </body></html>
+    """
+    scraper.fetch_html = AsyncMock(return_value=html)
+
+    meta = _run(scraper.fetch_novel_metadata("https://www.qidian.com/book/1046904755/"))
+
+    assert meta["reported_chapter_count"] == 717
+    assert meta["scraped_chapter_count"] == 1
+
+
 # ── Chạy trực tiếp không cần pytest ─────────────────────────────────────────
 
 if __name__ == "__main__":

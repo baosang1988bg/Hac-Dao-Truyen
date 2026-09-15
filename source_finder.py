@@ -22,9 +22,21 @@ SOURCE_DOMAINS = {
     "69shuba.com": "69shuba",
     "69shuba.tw": "69shuba",
     "69shu.com": "69shuba",
+    "ixdzs8.com": "ixdzs8",
+    "ixdzs.com": "ixdzs",
+    "fanqienovel.com": "fanqie",
+    "faloo.com": "faloo",
 }
 
-_SOURCE_PRIORITY = {"69shuba": 0, "novel543": 1, "qidian": 2}
+_SOURCE_PRIORITY = {
+    "69shuba": 0,
+    "novel543": 1,
+    "ixdzs8": 2,
+    "ixdzs": 3,
+    "fanqie": 4,
+    "faloo": 5,
+    "qidian": 6,
+}
 
 _UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -88,7 +100,7 @@ Mỗi query nên chứa tên truyện tiếng Trung và thêm tên tác giả ti
 
 
 def detect_source(url: str) -> str | None:
-    """Trả về tên nguồn ('qidian'/'novel543'/'69shuba') hoặc None nếu domain lạ."""
+    """Trả về tên nguồn được hỗ trợ hoặc None nếu domain lạ."""
     netloc = urllib.parse.urlparse(url).netloc.lower()
     for domain, source in SOURCE_DOMAINS.items():
         if netloc == domain or netloc.endswith("." + domain):
@@ -105,6 +117,15 @@ def _extract_book_id(source: str, url: str) -> str | None:
     if source == "novel543":
         parts = [p for p in path.split("/") if p]
         return parts[0] if parts and parts[0].isdigit() else None
+    if source == "fanqie":
+        m = re.search(r"/page/(\d+)", path)
+        return m.group(1) if m else None
+    if source == "faloo":
+        m = re.search(r"/(\d+)\.html", path)
+        return m.group(1) if m else None
+    if source in ("ixdzs8", "ixdzs"):
+        m = re.search(r"/(?:read/)?([A-Za-z0-9_-]*\d[A-Za-z0-9_-]*)(?:/|\.|$)", path)
+        return m.group(1) if m else None
     return None
 
 
@@ -124,8 +145,8 @@ def _extract_duckduckgo_links(html: str) -> list[str]:
 def search_candidates(query: str, max_results: int = 15) -> list[dict]:
     """
     Search DuckDuckGo Lite cho `query`, trả về candidate thuộc
-    Qidian/novel543/69shuba, đã khử trùng lặp theo book_id, sắp theo độ ưu
-    tiên nguồn (69shuba > novel543 > qidian).
+    các site trong SOURCE_DOMAINS, đã khử trùng lặp theo book_id và sắp theo
+    độ ưu tiên nguồn dễ scrape trước.
 
     Không raise khi lỗi mạng — trả về [] để find_source() fallback êm.
     """
@@ -169,10 +190,15 @@ async def probe_candidate(scraper: "NovelScraper", candidate: dict) -> dict:
         meta = None
 
     chapters = (meta or {}).get("chapters") or []
+    scraped_count = len(chapters)
+    reported_count = (meta or {}).get("reported_chapter_count") or scraped_count
+    import_ready = bool(meta) and scraped_count > 0 and scraped_count >= reported_count
     return {
         **candidate,
-        "valid": bool(meta) and len(chapters) > 0,
-        "chapter_count": len(chapters),
+        "valid": bool(meta) and scraped_count > 0,
+        "import_ready": import_ready,
+        "chapter_count": reported_count,
+        "scraped_chapter_count": scraped_count,
         "title": (meta or {}).get("title", ""),
         "author": (meta or {}).get("author", ""),
     }
@@ -216,7 +242,12 @@ async def find_source(query: str, max_results: int = 15, author: str = "") -> di
     finally:
         await scraper.close()
 
-    valid = [c for c in probed if c["valid"]]
-    valid.sort(key=lambda c: c["chapter_count"], reverse=True)
+    valid = [c for c in probed if c["import_ready"]]
+    valid.sort(
+        key=lambda c: (
+            -c["chapter_count"],
+            _SOURCE_PRIORITY.get(c["source"], 99),
+        )
+    )
 
     return {"best": valid[0] if valid else None, "all": probed}

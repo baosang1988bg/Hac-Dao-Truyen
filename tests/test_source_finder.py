@@ -17,6 +17,9 @@ def test_detect_source_matches_known_domains():
     assert detect_source("https://www.novel543.com/0808693583/dir") == "novel543"
     assert detect_source("https://www.69shuba.com/book/43484/") == "69shuba"
     assert detect_source("https://69shuba.tw/book/43484/") == "69shuba"
+    assert detect_source("https://www.ixdzs8.com/read/123/") == "ixdzs8"
+    assert detect_source("https://fanqienovel.com/page/123456") == "fanqie"
+    assert detect_source("https://b.faloo.com/123456.html") == "faloo"
 
 
 def test_detect_source_returns_none_for_unknown_domain():
@@ -145,6 +148,64 @@ def test_probe_candidate_marks_invalid_when_metadata_none():
 
     assert result["valid"] is False
     assert result["chapter_count"] == 0
+
+
+def test_probe_candidate_distinguishes_reported_total_from_scraped_catalog():
+    class _IncompleteScraper(_FakeScraper):
+        async def fetch_novel_metadata(self, url: str):
+            return {
+                "title": "高塔之上！",
+                "author": "风风忙忙",
+                "reported_chapter_count": 717,
+                "chapters": [{"number": 1, "title": "第一章", "url": url}],
+            }
+
+    candidate = {
+        "source": "qidian",
+        "book_id": "1046904755",
+        "url": "https://www.qidian.com/book/1046904755/",
+    }
+
+    result = run(probe_candidate(_IncompleteScraper({}), candidate))
+
+    assert result["chapter_count"] == 717
+    assert result["scraped_chapter_count"] == 1
+    assert result["import_ready"] is False
+
+
+def test_find_source_prefers_complete_mirror_over_incomplete_qidian(monkeypatch):
+    candidates = [
+        {"source": "qidian", "book_id": "1", "url": "https://www.qidian.com/book/1"},
+        {"source": "ixdzs8", "book_id": "2", "url": "https://www.ixdzs8.com/read/2"},
+    ]
+
+    class _CatalogScraper(_FakeScraper):
+        async def fetch_novel_metadata(self, url: str):
+            if "qidian" in url:
+                return {
+                    "title": "T",
+                    "author": "A",
+                    "reported_chapter_count": 717,
+                    "chapters": [{"number": 1, "title": "C1", "url": url}],
+                }
+            return {
+                "title": "T",
+                "author": "A",
+                "reported_chapter_count": 717,
+                "chapters": [
+                    {"number": i, "title": f"C{i}", "url": f"{url}/{i}"}
+                    for i in range(1, 718)
+                ],
+            }
+
+    monkeypatch.setattr("source_finder.suggest_chinese_queries", lambda query, author="": [])
+    monkeypatch.setattr("source_finder.search_candidates", lambda query, max_results=15: candidates)
+    monkeypatch.setattr("source_finder.NovelScraper", lambda: _CatalogScraper({}))
+
+    result = run(find_source("T"))
+
+    assert result["best"]["source"] == "ixdzs8"
+    assert result["best"]["import_ready"] is True
 
 
 def test_probe_candidate_swallows_exceptions():

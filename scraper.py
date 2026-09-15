@@ -545,8 +545,18 @@ class NovelScraper:
             "cover_url": "",
             "genre": "Tiên Hiệp, Hệ Thống",
             "synopsis": "",
-            "chapters": []
+            "chapters": [],
+            "reported_chapter_count": 0,
+            "scraped_chapter_count": 0,
         }
+
+        # Tổng chương được trang nguồn công bố có thể lớn hơn số link hiện diện
+        # trong HTML (đặc biệt Qidian qua Jina chỉ lộ vài chương gần nhất).
+        page_text = soup.get_text(" ", strip=True)
+        reported_counts = [
+            int(value)
+            for value in re.findall(r"(?<!\d)(\d{1,6})\s*章", page_text)
+        ]
 
         # 1. Title & Original Title
         title_elem = soup.select_one("h1, .book-name, .book-info h1, .title, meta[property='og:title']")
@@ -576,7 +586,10 @@ class NovelScraper:
             meta["synopsis"] = syn_elem.get("content") if syn_elem.name == "meta" else syn_elem.get_text(strip=True)
 
         # 6. Chapters catalog links
-        chap_links = soup.select("a[href*='read'], a[href*='.html'], a[href*='/txt/'], .catalog a, .volume a")
+        chap_links = soup.select(
+            "a[href*='read'], a[href*='.html'], a[href*='/txt/'], "
+            "a[href*='/chapter/'], .catalog a, .volume a"
+        )
         chapters = []
         seen_urls = set()
         ch_idx = 1
@@ -603,6 +616,11 @@ class NovelScraper:
             ch_idx += 1
 
         meta["chapters"] = chapters
+        meta["scraped_chapter_count"] = len(chapters)
+        meta["reported_chapter_count"] = max(
+            reported_counts + [len(chapters)],
+            default=len(chapters),
+        )
         return meta
 
 
