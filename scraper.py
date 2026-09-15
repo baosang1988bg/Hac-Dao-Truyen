@@ -140,6 +140,31 @@ class HostRateLimiter:
         return count
 
 
+# Jina Reader trả về nguyên <title> của trang (thường dạng
+# "<Tên truyện>章節列表 - <Tên site>") thay vì tên truyện sạch — mock_html dựng
+# từ đây dùng title này làm <h1>, khiến fetch_novel_metadata lấy nhầm cả hậu
+# tố site/từ khoá mục lục vào meta["title"]. Dọn 2 lớp noise phổ biến trước
+# khi dùng: (1) hậu tố "- <tên site>" cuối chuỗi, (2) từ khoá mục lục/chương
+# còn sót lại ngay trước đó.
+_JINA_TITLE_SITE_SUFFIX_RE = re.compile(r"\s*[-–—|｜]\s*[^-–—|｜]{1,24}$")
+_JINA_TITLE_CATALOG_KEYWORDS_RE = re.compile(
+    r"(章節列表|章节列表|章節目錄|章节目录|最新章節|最新章节|全文閱讀|全文阅读)+$"
+)
+
+
+def _clean_jina_title(raw_title: str) -> str:
+    """Dọn noise (hậu tố site, từ khoá mục lục) khỏi <title> thô do Jina Reader trả về."""
+    title = raw_title.strip()
+    if not title:
+        return title
+    without_suffix = _JINA_TITLE_SITE_SUFFIX_RE.sub("", title).strip()
+    # Chỉ chấp nhận bỏ hậu tố nếu phần còn lại vẫn có nội dung đáng kể —
+    # tránh xoá sạch tiêu đề ngắn thật sự chứa dấu "-" (vd "A - B" 2 từ ngắn).
+    if without_suffix:
+        title = without_suffix
+    return _JINA_TITLE_CATALOG_KEYWORDS_RE.sub("", title).strip()
+
+
 class NovelScraper:
     def __init__(self, rate_limiter: "HostRateLimiter | None" = None):
         self.user_agent = USER_AGENT
@@ -513,7 +538,7 @@ class NovelScraper:
                                 title_val = ""
                                 for line in lines:
                                     if line.startswith("Title:"):
-                                        title_val = line.replace("Title:", "").strip()
+                                        title_val = _clean_jina_title(line.replace("Title:", "").strip())
                                         break
                                 content_body = jina_md
                                 # Jina trả về markdown thô, không có thẻ <a> — nếu trang là

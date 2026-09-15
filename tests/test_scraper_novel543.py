@@ -28,7 +28,7 @@ from unittest.mock import AsyncMock  # noqa: E402
 
 import pytest  # noqa: E402
 
-from scraper import NovelScraper  # noqa: E402
+from scraper import NovelScraper, _clean_jina_title  # noqa: E402
 
 
 NOVEL543_CATALOG_URL = "https://www.novel543.com/0001/dir"
@@ -221,6 +221,45 @@ def test_fetch_novel_metadata_uses_longer_specialized_catalog():
     assert len(meta["chapters"]) == 717
     assert meta["reported_chapter_count"] == 717
     assert meta["scraped_chapter_count"] == 717
+
+
+# ── _clean_jina_title: dọn noise khỏi <title> thô do Jina Reader trả về ─────
+#
+# Bug: mock_html dựng từ Jina Reader dùng nguyên <title> của trang (dạng
+# "<Tên truyện>章節列表 - <Tên site>") làm <h1>, khiến fetch_novel_metadata
+# lấy nhầm cả hậu tố site + từ khoá mục lục vào meta["title"]. Phát hiện khi
+# kiểm thử end-to-end find-source → import với novel543 thật.
+
+def test_clean_jina_title_strips_site_suffix_and_catalog_keyword():
+    assert _clean_jina_title(
+        "挖我龍骨？滅你滿門不過分吧章節列表 - 稷下書院"
+    ) == "挖我龍骨？滅你滿門不過分吧"
+
+
+def test_clean_jina_title_leaves_clean_title_unchanged():
+    assert _clean_jina_title("高塔之上！") == "高塔之上！"
+
+
+def test_clean_jina_title_handles_empty_string():
+    assert _clean_jina_title("") == ""
+
+
+def test_fetch_novel_metadata_title_cleaned_when_using_jina_fallback():
+    """fetch_html trả về mock_html dựng từ Jina (đã qua _clean_jina_title) —
+    fetch_novel_metadata phải lấy title sạch, không còn hậu tố site/mục lục."""
+    scraper = NovelScraper()
+    jina_style_mock_html = (
+        "<html><body><h1>挖我龍骨？滅你滿門不過分吧</h1>"
+        "<div id='content'>Mục lục chương</div>"
+        "<div id='jina-links'>"
+        "<a href='https://www.novel543.com/0612617609/read_1.html'>Chương 1</a>"
+        "</div></body></html>"
+    )
+    scraper.fetch_html = AsyncMock(return_value=jina_style_mock_html)
+
+    meta = _run(scraper.fetch_novel_metadata("https://www.novel543.com/0612617609/dir"))
+
+    assert meta["title"] == "挖我龍骨？滅你滿門不過分吧"
 
 
 # ── Chạy trực tiếp không cần pytest ─────────────────────────────────────────
