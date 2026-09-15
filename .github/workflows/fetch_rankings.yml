@@ -1,0 +1,31 @@
+name: Fetch external rankings daily
+
+on:
+  schedule:
+    - cron: '30 17 * * *' # 00:30 Vietnam
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-rankings-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  fetch_rankings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - name: Install dependencies
+        run: pip install -r requirements.lock
+      - name: Fetch and sync rankings
+        env:
+          HACDAO_SYNC_KEY: ${{ secrets.HACDAO_SYNC_KEY }}
+        run: python tools/fetch_rankings.py

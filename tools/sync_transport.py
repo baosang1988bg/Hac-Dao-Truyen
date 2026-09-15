@@ -21,9 +21,7 @@ def send_chunk(conn,payload,*,host,sync_key,budget,max_retries=5,sleep=time.slee
             return {'success':False,'budget_exceeded':True,'error':budget.stopped_reason},conn
         delay=min(60,2**attempt)
         try:
-            if conn is None:conn=http.client.HTTPSConnection(host,context=ssl.create_default_context(),timeout=60)
-            conn.request('POST','/api/admin/sync-novel',body=body,headers={'Content-Type':'application/json','x-sync-key':sync_key})
-            res=conn.getresponse();text=res.read().decode('utf-8',errors='replace')
+            conn,res,text=send_sync_request(conn,'/api/admin/sync-novel',body,host=host,sync_key=sync_key)
             if res.status==200:
                 data=json.loads(text)
                 return {'success':bool(data.get('success')),'error':data.get('error',''),'status':200},conn
@@ -45,3 +43,18 @@ def send_chunk(conn,payload,*,host,sync_key,budget,max_retries=5,sleep=time.slee
             conn.close();conn=None
         if attempt+1<max_retries:sleep(delay)
     return {'success':False,'error':last_error},conn
+
+
+def send_sync_request(conn, path, body, *, host, sync_key):
+    """Shared HTTPS request/header handling for authenticated Worker sync APIs."""
+    if conn is None:
+        conn = http.client.HTTPSConnection(host, context=ssl.create_default_context(), timeout=60)
+    try:
+        conn.request('POST', path, body=body,
+                     headers={'Content-Type': 'application/json', 'x-sync-key': sync_key})
+        response = conn.getresponse()
+        text = response.read().decode('utf-8', errors='replace')
+        return conn, response, text
+    except Exception:
+        conn.close()
+        raise

@@ -9,6 +9,7 @@ import RecentlyReadSection from './homepage/RecentlyReadSection'
 import TruyThuNoticeSection from './homepage/TruyThuNoticeSection'
 import MonthlyPopularSection from './homepage/MonthlyPopularSection'
 import UpdatesSection from './homepage/UpdatesSection'
+import ExternalRankingsSection from './homepage/ExternalRankingsSection'
 import TruyenTrungRankings from './homepage/TruyenTrungRankings'
 import TruyenTrungChatboxWidget from './homepage/TruyenTrungChatboxWidget'
 import AllNovelsSection from './homepage/AllNovelsSection'
@@ -96,6 +97,7 @@ export default function HomePage() {
             <div className="hp-main-col">
               {/* Recently Updated Table: Bảng Mới Cập Nhật dạng Table chuẩn 5 cột */}
               <UpdatesSection />
+              <ExternalRankingsSection />
 
               {/* Chip lọc thể loại — đặt sát trên All Novels vì đây là nơi nó
                   thực sự lọc, thay vì đứng tách biệt ở đầu trang. */}

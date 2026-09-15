@@ -46,7 +46,7 @@ async function handleApi(request, url, env, ctx) {
   const path = url.pathname;
   const method = request.method;
 
-  const isSync = path === '/api/admin/sync-novel' && method === 'POST';
+  const isSync = ['/api/admin/sync-novel', '/api/admin/sync-rankings'].includes(path) && method === 'POST';
   // Chỉ phân loại sync sau khi xác minh key; header giả không được bypass.
   const verifiedSync = isSync && env.SYNC_KEY && timingSafeEqualStr(request.headers.get('x-sync-key') || '', env.SYNC_KEY);
   const isLogin = ['/api/auth/login','/api/user/login','/api/user/register'].includes(path);
@@ -77,6 +77,9 @@ async function handleApi(request, url, env, ctx) {
   if (path === '/api/admin/sync-novel' && method === 'POST') {
     return syncNovelBatch(env, request);
   }
+
+  if (path === '/api/admin/sync-rankings' && method === 'POST') return syncRankings(env, request);
+  if (path === '/api/rankings' && method === 'GET') return getRankings(env);
 
   // GET /api/proxy-cover?url=...
   if (path === '/api/proxy-cover' && method === 'GET') {
@@ -506,6 +509,70 @@ async function getGenres(env) {
 
 // GET /api/stats — 3 số tổng cho StatsSection trang chủ. Aggregate thẳng
 // trong SQL (COUNT/SUM) — không tải cả catalog về client rồi cộng dồn.
+// External discovery snapshots are independent of translated novels.
+async function syncRankings(env, request) {
+  if (!env.SYNC_KEY || !timingSafeEqualStr(request.headers.get('x-sync-key') || '', env.SYNC_KEY)) {
+    return jsonResponse({ error: 'Unauthorized sync key' }, 401);
+  }
+  let data;
+  try { data = await request.json(); }
+  catch { return jsonResponse({ error: 'Invalid JSON' }, 400); }
+  const nonempty = value => typeof value === 'string' && value.trim().length > 0;
+  if (!data || !nonempty(data.source) || !nonempty(data.snapshot_date) || !Array.isArray(data.entries)) {
+    return jsonResponse({ error: 'Expected source, snapshot_date and entries' }, 400);
+  }
+  const httpUrl = value => {
+    try { return ['http:', 'https:'].includes(new URL(value).protocol); } catch { return false; }
+  };
+  const optional = value => typeof value === 'string' ? value.trim() : '';
+  const statements = [];
+  let skipped = 0;
+  for (const entry of data.entries) {
+    if (!entry || !['category', 'window', 'title', 'source_url'].every(k => nonempty(entry[k])) ||
+        !Number.isSafeInteger(entry.rank) || entry.rank <= 0 || !httpUrl(entry.source_url)) {
+      skipped++;
+      continue;
+    }
+    statements.push(env.DB.prepare(`
+      INSERT INTO external_rankings
+        (source, category, window, rank, title, author, cover_url, stat_label, source_url, snapshot_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(source, category, window, rank) DO UPDATE SET
+        title=excluded.title, author=excluded.author, cover_url=excluded.cover_url,
+        stat_label=excluded.stat_label, source_url=excluded.source_url,
+        snapshot_date=excluded.snapshot_date, updated_at=datetime('now')
+    `).bind(data.source.trim(), entry.category.trim(), entry.window.trim(), entry.rank,
+      entry.title.trim(), optional(entry.author), httpUrl(entry.cover_url) ? entry.cover_url : '',
+      optional(entry.stat_label), entry.source_url.trim(), data.snapshot_date.trim()));
+  }
+  if (statements.length) await env.DB.batch(statements);
+  return jsonResponse({ upserted: statements.length, skipped });
+}
+
+async function getRankings(env) {
+  // Filter old tail slots if a later snapshot contains fewer items.
+  const { results } = await env.DB.prepare(`
+    SELECT r.* FROM external_rankings r
+    JOIN (SELECT source, category, window, MAX(snapshot_date) AS snapshot_date
+          FROM external_rankings GROUP BY source, category, window) latest
+      USING (source, category, window, snapshot_date)
+    ORDER BY r.source, r.category, r.window, r.rank
+  `).all();
+  const groups = new Map();
+  for (const row of results) {
+    const key = JSON.stringify([row.source, row.category, row.window]);
+    if (!groups.has(key)) groups.set(key, {
+      source: row.source, category: row.category, window: row.window,
+      snapshot_date: row.snapshot_date, items: [],
+    });
+    const { rank, title, author, cover_url, stat_label, source_url } = row;
+    groups.get(key).items.push({ rank, title, author, cover_url, stat_label, source_url });
+  }
+  return jsonResponse({ groups: [...groups.values()] }, 200, {
+    'Cache-Control': 'public, max-age=10800, s-maxage=10800',
+  });
+}
+
 async function getStats(env) {
   const row = await env.DB.prepare(`
     SELECT
