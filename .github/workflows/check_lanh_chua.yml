@@ -56,7 +56,8 @@ jobs:
           python tools/auto_check_lanh_chua.py
 
       - name: Commit và push kết quả
-        run: bash tools/commit_sync_state.sh "auto(translate): cập nhật chương mới" novels/lanh-chua-cau-sinh-thien-phu-hop-thanh/ frontend/src/content/announcements.json
+        run: |
+          bash tools/commit_sync_state.sh "auto(translate): cập nhật chương mới" novels/lanh-chua-cau-sinh-thien-phu-hop-thanh/ frontend/src/content/announcements.json
 
       - name: Lưu ngân sách kể cả khi tác vụ thất bại
         if: always()
@@ -69,4 +70,5 @@ jobs:
 
       - name: Commit ngân sách đã sử dụng
         if: always()
-        run: bash tools/commit_sync_state.sh "auto(sync): lưu ngân sách đã sử dụng" tools/.cloud_sync_budget.json
+        run: |
+          bash tools/commit_sync_state.sh "auto(sync): lưu ngân sách đã sử dụng" tools/.cloud_sync_budget.json
