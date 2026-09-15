@@ -28,4 +28,5 @@ jobs:
       - name: Fetch and sync rankings
         env:
           HACDAO_SYNC_KEY: ${{ secrets.HACDAO_SYNC_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python tools/fetch_rankings.py

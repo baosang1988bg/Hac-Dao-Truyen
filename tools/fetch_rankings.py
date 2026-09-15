@@ -27,6 +27,10 @@ RANKING_SOURCES = [
      "rank_url": "https://www.qidian.com/rank/yuepiao/", "parser": "parse_qidian_rank"},
     {"source": "qidian", "category": "recommend", "window": "weekly",
      "rank_url": "https://www.qidian.com/rank/recom/", "parser": "parse_qidian_rank"},
+    {"source": "qidian", "category": "follows", "window": "all_time",
+     "rank_url": "https://www.qidian.com/rank/collect/", "parser": "parse_qidian_rank"},
+    {"source": "qidian", "category": "views", "window": "daily",
+     "rank_url": "https://www.qidian.com/rank/hotsales/", "parser": "parse_qidian_rank"},
     {"source": "faloo", "category": "views", "window": "weekly",
      "rank_url": "https://b.faloo.com/y_0_0_0_0_0_1_1.html", "parser": "parse_faloo_rank"},
     {"source": "faloo", "category": "views", "window": "monthly",
@@ -52,7 +56,7 @@ def _item(rank, title, url, author='', cover='', stat=''):
 
 def parse_qidian_rank(text):
     """Qidian: numbered list items with inline H2 book title and author link."""
-    if not re.search(r'### (?:月票榜|推荐榜)', text):
+    if not re.search(r'### (?:月票榜|推荐榜|收藏榜|畅销榜)', text):
         raise ValueError('Qidian ranking heading missing')
     items = []
     for block in re.split(r'(?m)^\*\s+(?=\d+\[)', text)[1:]:
@@ -134,6 +138,46 @@ def parse_faloo_rank(text):
     return items
 
 
+def _make_gemini_backend():
+    from providers.gemini import GeminiBackend
+    return GeminiBackend()
+
+
+def translate_entries_vi(entries, make_backend=_make_gemini_backend):
+    """Dịch title/author sang tiếng Việt bằng Gemini (key có sẵn cho pipeline dịch chương).
+    Không có key, lỗi mạng, hay phản hồi không hợp lệ đều fallback về văn bản gốc —
+    dịch chỉ là tiện ích thêm, không được phép chặn việc sync bảng xếp hạng."""
+    if not entries:
+        return entries
+    try:
+        backend = make_backend()
+    except Exception as exc:
+        LOG.warning('Translation skipped: %s', exc)
+        return entries
+    payload = [{'title': e['title'], 'author': e['author']} for e in entries]
+    prompt = (
+        'Dịch sang tiếng Việt trường "title" và "author" của mỗi phần tử JSON sau '
+        '(tên người dịch phiên âm Hán Việt nếu là tên riêng). Chỉ trả về đúng một mảng '
+        'JSON cùng độ dài, cùng thứ tự, dạng [{"title":"...","author":"..."}], '
+        'không thêm chữ giải thích nào khác.\n\n' + json.dumps(payload, ensure_ascii=False)
+    )
+    try:
+        match = re.search(r'\[.*\]', backend.call(prompt), re.S)
+        translated = json.loads(match.group(0)) if match else []
+        if len(translated) != len(entries):
+            raise ValueError('translated length mismatch')
+    except Exception as exc:
+        LOG.warning('Translation failed, keeping original text: %s', exc)
+        return entries
+    for entry, item in zip(entries, translated):
+        if isinstance(item, dict):
+            if item.get('title'):
+                entry['title'] = str(item['title']).strip()
+            if item.get('author'):
+                entry['author'] = str(item['author']).strip()
+    return entries
+
+
 def fetch_markdown(url):
     request = urllib.request.Request('https://r.jina.ai/' + url,
                                      headers={'User-Agent': 'Mozilla/5.0'})
@@ -213,6 +257,7 @@ def main():
     batches = collect_rankings()
     failed = not batches
     for source, entries in batches.items():
+        translate_entries_vi(entries)
         if args.dry_run:
             LOG.info('Dry run: %s would sync %d entries', source, len(entries))
             continue

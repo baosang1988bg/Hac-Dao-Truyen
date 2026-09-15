@@ -6,7 +6,7 @@ import './ExternalRankingsSection.css'
 
 const SOURCES = { qidian: 'Qidian', '69shuba': '69shuba', novel543: 'Novel543', fanqie: 'Fanqie', faloo: 'Faloo' }
 const CATEGORIES = { views: 'Lượt đọc', follows: 'Theo dõi', recommend: 'Đề cử', general: 'Tổng quát' }
-const WINDOWS = { daily: 'Ngày', weekly: 'Tuần', monthly: 'Tháng', quarterly: 'Quý' }
+const WINDOWS = { daily: 'Ngày', weekly: 'Tuần', monthly: 'Tháng', quarterly: 'Quý', all_time: 'Toàn thời gian' }
 const safeUrl = value => /^https?:\/\//i.test(value || '')
 
 export default function ExternalRankingsSection() {

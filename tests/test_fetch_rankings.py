@@ -87,6 +87,33 @@ def test_sync_retries_and_sends_same_payload(monkeypatch):
     assert conn.close.call_count == 2
 
 
+@pytest.mark.parametrize('heading', ['收藏榜 历史总作品收藏数排行', '畅销榜 本日作品销量排行'])
+def test_qidian_accepts_collect_and_hotsales_headings(heading):
+    text = fixture('qidian').replace('### 月票榜', f'### {heading}')
+    items = rankings.parse_qidian_rank(text)
+    assert [i['rank'] for i in items] == [1, 2]
+
+
+def test_translate_entries_vi_replaces_title_and_author():
+    entries = [{'title': '夜无疆', 'author': '辰东'}]
+    backend = Mock()
+    backend.call.return_value = '[{"title": "Dạ Vô Cương", "author": "Thần Đông"}]'
+    result = rankings.translate_entries_vi(entries, make_backend=lambda: backend)
+    assert result[0]['title'] == 'Dạ Vô Cương'
+    assert result[0]['author'] == 'Thần Đông'
+
+
+@pytest.mark.parametrize('make_backend,call_result', [
+    (lambda: (_ for _ in ()).throw(RuntimeError('no key')), None),
+    (lambda: Mock(call=Mock(return_value='not json')), None),
+    (lambda: Mock(call=Mock(return_value='[{"title": "A"}]')), None),
+])
+def test_translate_entries_vi_falls_back_to_original_on_any_failure(make_backend, call_result):
+    entries = [{'title': '夜无疆', 'author': '辰东'}, {'title': '玄鉴仙族', 'author': '季越人'}]
+    result = rankings.translate_entries_vi(entries, make_backend=make_backend)
+    assert result[0]['title'] == '夜无疆' and result[0]['author'] == '辰东'
+
+
 def test_sync_unauthorized_is_not_retried(monkeypatch):
     monkeypatch.setenv('HACDAO_SYNC_KEY', 'test-key')
     transport = Mock(return_value=(Mock(), Mock(status=401), ''))
