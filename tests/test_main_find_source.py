@@ -1,8 +1,16 @@
+import asyncio
 from unittest.mock import patch
 
 import pytest
 
 import main as main_module
+
+
+@pytest.fixture(autouse=True)
+def restore_event_loop_after_test():
+    """Không để asyncio.run() trong CLI làm mất loop của các test async cũ."""
+    yield
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
 
 def test_cmd_find_source_prints_best_and_import_hint(capsys):
