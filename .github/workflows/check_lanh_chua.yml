@@ -1,6 +1,9 @@
 name: Auto Check & Translate Lanh Chua (Daily 12:00 AM VN Time)
 
 on:
+  push:
+    branches:
+      - codex/translate-1512-20260916
   schedule:
     - cron: '0 17 * * *' # 00:00 giờ Việt Nam; chỉ chạy khi đã bật biến kiểm soát chi phí
   workflow_dispatch:

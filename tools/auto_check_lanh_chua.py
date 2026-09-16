@@ -33,7 +33,11 @@ def fetch_latest_chapters():
     print(f"🔍 Đang truy cập trang nguồn novel543: {SOURCE_PAGE}...")
     req = urllib.request.Request(
         SOURCE_PAGE,
-        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "X-No-Cache": "true",
+            "X-Cache-Tolerance": "0",
+        }
     )
     with urllib.request.urlopen(req, timeout=30) as resp:
         content = resp.read().decode("utf-8", errors="ignore")
