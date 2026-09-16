@@ -23,19 +23,19 @@ export default function AnnouncementsSection() {
   if (!items.length) return null
 
   return (
-    <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '16px', marginBottom: '1.5rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.875rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.6rem' }}>
+    <div className="glass-panel" style={{ padding: 'var(--space-4, 16px)', borderRadius: '16px', marginBottom: 'var(--space-5, 24px)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2, 8px)', marginBottom: 'var(--space-3, 12px)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: 'var(--space-2, 8px)' }}>
         <Megaphone size={16} style={{ color: 'var(--accent)' }} />
         <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, fontFamily: 'Outfit, sans-serif' }}>
           Thông Báo Cập Nhật
         </h3>
       </div>
-      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-2, 8px)' }}>
         {items.map(a => (
           <li key={`${a.novel_slug}:${a.chapter}`} style={{ fontSize: '0.8rem' }}>
-            <Link to={`/novel/${a.novel_slug}/read/${a.chapter}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-              <div style={{ color: 'var(--text-muted)' }}>{a.text}</div>
-              <time dateTime={a.date} style={{ color: 'var(--accent)', fontSize: '0.72rem' }}>{a.date}</time>
+            <Link className="hp-announcement-link" to={`/novel/${a.novel_slug}/read/${a.chapter}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+              <div className="hp-announcement-text" style={{ color: 'var(--text-muted)' }}>{a.text}</div>
+              <time dateTime={a.date} style={{ color: 'var(--accent)', fontSize: 'var(--font-xs, 0.75rem)' }}>{a.date}</time>
             </Link>
           </li>
         ))}

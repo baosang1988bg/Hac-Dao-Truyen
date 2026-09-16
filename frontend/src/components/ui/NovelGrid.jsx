@@ -19,7 +19,7 @@ export default function NovelGrid({ novels, cols, getBadge }) {
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${mobile}, 1fr)`,
-        gap: '10px',
+        gap: 'var(--space-3, 12px)',
       }}
       data-cols-mobile={mobile}
       data-cols-tablet={tablet}

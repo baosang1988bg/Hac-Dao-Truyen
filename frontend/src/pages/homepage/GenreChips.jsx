@@ -23,9 +23,10 @@ export default function GenreChips({ activeGenre, onSelect }) {
   if (genres.length === 0) return null
 
   return (
-    <div className="hp-genre-chips" style={{ marginBottom: '1.5rem' }}>
+    <div className="hp-genre-chips" style={{ marginBottom: 'var(--space-5, 24px)' }}>
       <button
         className={`hp-genre-chip${!activeGenre ? ' active' : ''}`}
+        aria-pressed={!activeGenre}
         onClick={() => onSelect('')}
       >
         Tất cả
@@ -34,6 +35,7 @@ export default function GenreChips({ activeGenre, onSelect }) {
         <button
           key={g}
           className={`hp-genre-chip${activeGenre === g ? ' active' : ''}`}
+          aria-pressed={activeGenre === g}
           onClick={() => onSelect(activeGenre === g ? '' : g)}
         >
           {g}

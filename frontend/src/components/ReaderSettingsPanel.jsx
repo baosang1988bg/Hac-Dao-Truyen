@@ -15,6 +15,7 @@ const FONTS = [
 // EpubReader.jsx chưa có tính năng TTS, không tự thêm ở đợt này).
 export default function ReaderSettingsPanel({ settings, onChange, ttsVoices }) {
   const themeId = THEMES[settings.theme] ? settings.theme : 'sepia'
+  const previewLineHeight = Math.max(settings.lineHeight, 1.5)
   const showTts = Array.isArray(ttsVoices)
   // Ưu tiên hiện giọng tiếng Việt lên đầu danh sách cho dễ chọn.
   const sortedVoices = showTts
@@ -28,7 +29,7 @@ export default function ReaderSettingsPanel({ settings, onChange, ttsVoices }) {
   return (
     <div className="reader-settings-panel">
       <div className={`reader-settings-preview reader--${themeId}`} style={{
-        fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily, lineHeight: settings.lineHeight,
+        fontSize: `${settings.fontSize}px`, fontFamily: settings.fontFamily, lineHeight: previewLineHeight,
       }}>
         Hắc phong gào thét, trăng lạnh treo cao. Hắn khoác áo bào đen, một mình bước vào màn đêm.
       </div>
@@ -53,7 +54,7 @@ export default function ReaderSettingsPanel({ settings, onChange, ttsVoices }) {
       {[
         ['fontSize', 'Cỡ chữ', 12, 36, 1, 'px'],
         ['contentWidth', 'Độ rộng', 400, 1200, 50, 'px'],
-        ['lineHeight', 'Giãn dòng', 1, 3, 0.1, ''],
+        ['lineHeight', 'Giãn dòng', 1.5, 3, 0.1, ''],
       ].map(([key, label, min, max, step, unit]) => (
         <label key={key}>
           {label}: {settings[key]}{unit}

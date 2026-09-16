@@ -92,7 +92,7 @@ export default function NovelPage() {
       {/* ── Hero ── */}
       <div className="novel-hero">
         <NovelCover novel={novel} size="lg" />
-        <div style={{ minWidth: 0 }}>
+        <div className="novel-hero__info">
           <h1 className="novel-hero__title">{novel.title}</h1>
           <div className="novel-hero__sub">
             {[novel.original_title, novel.author].filter(Boolean).join(' • ')}
@@ -239,12 +239,10 @@ function CollapsibleNotes({ notes }) {
         {notes}
       </p>
       <button
+        type="button"
+        className="novel-notes-toggle"
         onClick={() => setExpanded(v => !v)}
-        style={{
-          background: 'none', border: 'none', color: 'var(--accent)',
-          fontSize: '0.78rem', cursor: 'pointer', padding: '6px 0', minHeight: '32px',
-          display: 'inline-flex', alignItems: 'center', gap: '3px',
-        }}
+        aria-expanded={expanded}
       >
         {expanded ? <>Thu gọn <ChevronUp size={13} /></> : <>Xem thêm <ChevronDown size={13} /></>}
       </button>
@@ -270,6 +268,7 @@ function ChapterList({ slug, chapters }) {
 
   // Set các chương đã đọc (helper dùng chung với Reader — key read_chapters_<slug>)
   const readChapters = useMemo(() => getReadChapters(slug), [slug])
+  const currentChapter = getLastReadForSlug(slug)
 
   const filtered = useMemo(() => {
     const q = searchTerm.toLowerCase()
@@ -293,37 +292,34 @@ function ChapterList({ slug, chapters }) {
   const remaining = filtered.length - shown.length
 
   return (
-    <div className="glass-panel" style={{ padding: '1rem' }}>
+    <div className="glass-panel chapter-list-panel">
       {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.85rem', flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: '1 1 170px', minWidth: 0 }}>
+      <div className="chapter-list-toolbar">
+        <div className="chapter-list-search">
           <Search size={14} style={{
             position: 'absolute', left: '10px', top: '50%',
             transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none',
           }} />
           <input
             type="text"
+            inputMode="search"
+            enterKeyHint="search"
             className="input-field"
             placeholder="Tìm chương..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            style={{ paddingLeft: '32px', fontSize: '0.875rem', height: '40px' }}
+            style={{ paddingLeft: '32px', fontSize: '0.875rem' }}
           />
         </div>
-        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+        <span className="chapter-list-count">
           {searchTerm
             ? <>{filtered.length} / {chapters.length}</>
             : <><strong style={{ color: 'var(--text-main)' }}>{chapters.length}</strong> chương</>}
         </span>
         <button
+          type="button"
+          className="chapter-sort-button"
           onClick={() => setSortDesc(v => !v)}
-          style={{
-            flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px',
-            padding: '0 12px', height: '40px', minHeight: '40px', borderRadius: '8px',
-            background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-panel)',
-            color: 'var(--text-muted)', cursor: 'pointer',
-            fontSize: '0.78rem', fontWeight: 500,
-          }}
         >
           <ArrowUpDown size={13} />
           {sortDesc ? 'Mới → Cũ' : 'Cũ → Mới'}
@@ -340,16 +336,20 @@ function ChapterList({ slug, chapters }) {
           {shown.map(chap => {
             const num = getChapNum(chap.title)
             const isRead = readChapters.has(chap.filename) || (num && readChapters.has(String(num)))
+            const currentCandidates = [chap.number, chap.chapter_number, num, chap.filename]
+              .filter(value => value !== null && value !== undefined)
+              .map(String)
+            const isCurrent = currentChapter != null && currentCandidates.includes(String(currentChapter))
             return (
               <Link
                 key={chap.filename}
-                className="chapter-list-row"
+                className={`chapter-list-row${isRead ? ' is-read' : ''}${isCurrent ? ' is-current' : ''}`}
                 to={chapterUrl(slug, chap)}
-                style={{ opacity: isRead ? 0.6 : 1 }}
+                aria-current={isCurrent ? 'page' : undefined}
               >
                 <span style={{
                   flexShrink: 0, minWidth: '42px', textAlign: 'right',
-                  fontSize: '0.72rem', fontWeight: 600,
+                  fontSize: 'var(--font-xs, 0.75rem)', fontWeight: 600,
                   color: num ? 'var(--accent)' : '#fbbf24',
                   fontVariantNumeric: 'tabular-nums',
                 }}>
@@ -357,17 +357,14 @@ function ChapterList({ slug, chapters }) {
                 </span>
                 <span style={{ width: '1px', height: '14px', background: 'var(--border-panel)', flexShrink: 0 }} />
                 <span style={{
-                  flex: 1, fontSize: '0.875rem',
+                  flex: 1, minWidth: 0, fontSize: '0.875rem',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
                   {cleanTitle(chap.title)}
                 </span>
-                {isRead && (
-                  <span style={{
-                    fontSize: '0.68rem', color: '#10b981', background: 'rgba(16,185,129,0.1)',
-                    padding: '1px 6px', borderRadius: '4px', flexShrink: 0, fontWeight: 500,
-                  }}>
-                    ✓
+                {(isRead || isCurrent) && (
+                  <span className="chapter-list-row__state">
+                    {isCurrent ? 'Đang đọc' : '✓'}
                   </span>
                 )}
                 <span style={{ color: 'var(--text-muted)', opacity: 0.4, flexShrink: 0, fontSize: '0.75rem' }}>›</span>

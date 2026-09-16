@@ -86,6 +86,8 @@ export default function SynopsisPanel({ slug, synopsis, hasMore = false, maxLine
       {/* Nút xem thêm / thu gọn */}
       {(clamped || hasMore || expanded) && (
         <button
+          type="button"
+          className="synopsis-toggle"
           onClick={handleExpandClick}
           disabled={loading}
           style={styles.toggleBtn}
@@ -116,13 +118,13 @@ const styles = {
     background: 'var(--glass-bg, rgba(255,255,255,0.04))',
     border: '1px solid var(--border, rgba(255,255,255,0.08))',
     borderRadius: '12px',
-    padding: '16px 20px',
-    marginBottom: '16px',
+    padding: 'var(--space-4, 16px)',
+    marginBottom: 'var(--space-4, 16px)',
   },
   header: {
     display: 'flex',
     alignItems: 'center',
-    marginBottom: '10px',
+    marginBottom: 'var(--space-3, 12px)',
   },
   title: {
     fontWeight: 700,
@@ -153,8 +155,9 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
-    marginTop: '10px',
-    padding: '5px 12px',
+    minHeight: 'var(--tap-target-min, 44px)',
+    marginTop: 'var(--space-2, 8px)',
+    padding: 'var(--space-2, 8px) var(--space-3, 12px)',
     background: 'transparent',
     border: '1px solid var(--border, rgba(255,255,255,0.12))',
     borderRadius: '6px',
@@ -166,7 +169,7 @@ const styles = {
     letterSpacing: '0.02em',
   },
   chevron: {
-    fontSize: '0.7em',
+    fontSize: 'var(--font-xs, 0.75rem)',
     opacity: 0.8,
   },
   loadingDot: {

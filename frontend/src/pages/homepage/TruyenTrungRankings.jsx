@@ -82,26 +82,27 @@ export default function TruyenTrungRankings() {
   if (currentList.length === 0) return null
 
   return (
-    <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '16px', marginBottom: '1.5rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.6rem' }}>
+    <div className="glass-panel" style={{ padding: 'var(--space-4, 16px)', borderRadius: '16px', marginBottom: 'var(--space-5, 24px)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2, 8px)', marginBottom: 'var(--space-3, 12px)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: 'var(--space-2, 8px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Trophy size={17} style={{ color: '#f59e0b' }} />
           <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, fontFamily: 'Outfit, sans-serif' }}>
             Bảng Xếp Hạng Truyện Trung
           </h3>
         </div>
-        <Link to="/epub" style={{ fontSize: '0.75rem', color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>
+        <Link to="/epub" className="hp-secondary-link" style={{ fontSize: 'var(--font-xs, 0.75rem)', color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>
           Xem Thêm
         </Link>
       </div>
 
       {/* Tabs Chuyển Bảng */}
-      <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', paddingBottom: '6px', marginBottom: '0.75rem' }}>
+      <div className="qidian-rank-tabs" style={{ display: 'flex', gap: 'var(--space-2, 8px)', overflowX: 'auto', padding: '0 var(--space-1, 4px) var(--space-2, 8px)', marginBottom: 'var(--space-3, 12px)', scrollSnapType: 'x proximity', scrollPaddingInline: 'var(--space-1, 4px)' }}>
         {categories.map(cat => (
           <button
             key={cat.key}
             onClick={() => setActiveCategory(cat.key)}
             className={`qidian-rank-tab ${activeCategory === cat.key ? 'active' : ''}`}
+            style={{ scrollSnapAlign: 'start' }}
           >
             {cat.icon} {cat.label}
           </button>
@@ -130,11 +131,11 @@ export default function TruyenTrungRankings() {
                 <span className="qidian-rank-title" title={formattedTitle}>
                   {formattedTitle}
                 </span>
-                <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                <span className="qidian-rank-author">
                   {novel.author || 'Tác giả'}
                 </span>
               </div>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 600, flexShrink: 0 }}>
+              <span className="qidian-rank-metric">
                 {metricText}
               </span>
             </Link>

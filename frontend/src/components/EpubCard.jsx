@@ -60,8 +60,8 @@ export function EpubCard({ novel }) {
       </Link>
 
       {/* Info */}
-      <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 }}>
-        <Link to={`/novel/${novel.slug}`} style={{ color: 'var(--text-main)', textDecoration: 'none' }}>
+      <div style={{ padding: 'var(--space-3, 12px)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2, 8px)', flex: 1, minWidth: 0 }}>
+        <Link to={`/novel/${novel.slug}`} style={{ display: 'flex', minHeight: '24px', color: 'var(--text-main)', textDecoration: 'none' }}>
           <div style={{ fontWeight: 600, fontSize: '0.82rem', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {fmtNovelTitle(novel.title, novel.slug)}
           </div>
@@ -74,7 +74,7 @@ export function EpubCard({ novel }) {
         ) : null}
 
         {/* Stats */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2, 8px)', flexWrap: 'wrap', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
             <BookOpen size={11} /> {fmtNumber(novel.chapter_count || novel.total_chapters || 0)} chương
           </span>
@@ -91,13 +91,13 @@ export function EpubCard({ novel }) {
         </div>
 
         {/* Action buttons */}
-        <div style={{ display: 'flex', gap: '6px', marginTop: 'auto' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2, 8px)', marginTop: 'auto', minWidth: 0 }}>
           {hasChapters ? (
             <Link
               to={`/novel/${novel.slug}`}
               style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                padding: '7px 4px', background: 'var(--accent-gradient)',
+                minWidth: 0, minHeight: 'var(--tap-target-min, 44px)', padding: 'var(--space-2, 8px) var(--space-1, 4px)', background: 'var(--accent-gradient)',
                 color: '#fff', borderRadius: '8px', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 600,
                 transition: 'opacity 0.15s',
               }}
@@ -111,7 +111,7 @@ export function EpubCard({ novel }) {
               to={`/novel/${novel.slug}/epub-reader`}
               style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                padding: '7px 4px', background: 'var(--accent-gradient)',
+                minWidth: 0, minHeight: 'var(--tap-target-min, 44px)', padding: 'var(--space-2, 8px) var(--space-1, 4px)', background: 'var(--accent-gradient)',
                 color: '#fff', borderRadius: '8px', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 600,
                 transition: 'opacity 0.15s',
               }}
@@ -127,9 +127,10 @@ export function EpubCard({ novel }) {
               onClick={handleDownload}
               disabled={downloading || downloaded}
               title={downloaded ? 'Đã tải để đọc offline' : 'Tải để đọc offline'}
+              aria-label={downloaded ? 'Đã tải để đọc offline' : 'Tải để đọc offline'}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: '32px', padding: 0, borderRadius: '8px', border: '1px solid var(--border)',
+                minWidth: 'var(--tap-target-min, 44px)', minHeight: 'var(--tap-target-min, 44px)', padding: 0, borderRadius: '8px', border: '1px solid var(--border)',
                 background: downloaded ? 'rgba(16,185,129,0.15)' : 'transparent',
                 color: downloaded ? '#10b981' : 'var(--text-muted)',
                 cursor: downloading || downloaded ? 'default' : 'pointer',

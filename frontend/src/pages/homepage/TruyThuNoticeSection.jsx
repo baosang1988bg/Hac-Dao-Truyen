@@ -13,18 +13,18 @@ export default function TruyThuNoticeSection() {
   return (
     <>
     <div className="glass-panel truy-thu-banner" style={{
-      padding: '0.85rem 1.2rem',
+      padding: 'var(--space-3, 12px) var(--space-4, 16px)',
       borderRadius: '14px',
-      marginBottom: '1.25rem',
+      marginBottom: 'var(--space-5, 24px)',
       border: '1px solid rgba(201, 147, 46, 0.3)',
       background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: '12px',
+      gap: 'var(--space-3, 12px)',
       flexWrap: 'wrap'
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2, 8px)', minWidth: 0 }}>
         <div style={{
           width: '36px',
           height: '36px',
@@ -50,7 +50,7 @@ export default function TruyThuNoticeSection() {
         <button
           type="button"
           className="btn btn-primary"
-          style={{ fontSize: '0.78rem', padding: '5px 12px', minHeight: '32px' }}
+          style={{ fontSize: '0.78rem', padding: 'var(--space-2, 8px) var(--space-3, 12px)', minHeight: 'var(--tap-target-min, 44px)' }}
           onClick={() => setModalOpen(true)}
         >
           <Send size={13} /> Yêu cầu truyện mới

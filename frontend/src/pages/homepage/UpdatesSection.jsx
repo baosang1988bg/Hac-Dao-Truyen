@@ -39,7 +39,7 @@ export default function UpdatesSection() {
 
   return (
     <section className="home-section" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+      <div className="hp-updates-heading">
         <SectionHeader
           icon={<Sparkles size={16} style={{ color: 'var(--accent)' }} />}
           title="Truyện Mới Cập Nhật"
@@ -47,7 +47,7 @@ export default function UpdatesSection() {
         />
         <Link
           to="/epub"
-          style={{ fontSize: '0.8rem', color: 'var(--accent)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}
+          className="hp-secondary-link hp-updates-more"
         >
           Xem thêm truyện nguồn Qidian <ArrowRight size={13} />
         </Link>

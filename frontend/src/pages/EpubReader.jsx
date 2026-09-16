@@ -234,7 +234,7 @@ export default function EpubReader() {
         padding: '10px 16px', borderBottom: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}`,
         background: panelBg, backdropFilter: 'blur(12px)', flexShrink: 0, zIndex: 10,
       }}>
-        <Link to={`/novel/${slug}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: textColor, opacity: 0.7, textDecoration: 'none', fontSize: '0.85rem' }}>
+        <Link to={`/novel/${slug}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: 'var(--tap-target-min, 44px)', color: textColor, opacity: 0.7, textDecoration: 'none', fontSize: '0.85rem' }}>
           <ArrowLeft size={16} /> Quay lại
         </Link>
 
@@ -329,7 +329,7 @@ export default function EpubReader() {
             <div style={{ flex: 1, height: '3px', background: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${progress}%`, background: 'var(--accent-gradient)', borderRadius: '2px', transition: 'width 0.4s ease' }} />
             </div>
-            <span style={{ fontSize: '0.72rem', color: textColor, opacity: 0.5, minWidth: '36px', textAlign: 'right' }}>{progress}%</span>
+            <span style={{ fontSize: 'var(--font-xs, 0.75rem)', color: textColor, opacity: 0.5, minWidth: '36px', textAlign: 'right' }}>{progress}%</span>
           </div>
         </div>
       )}
@@ -345,7 +345,7 @@ function TocItem({ item, currentHref, onGoTo, textColor, theme, depth = 0 }) {
         onClick={() => onGoTo(item.href)}
         style={{
           display: 'block', width: '100%', textAlign: 'left',
-          padding: `9px ${16 + depth * 16}px`, border: 'none', cursor: 'pointer',
+          minHeight: 'var(--tap-target-min, 44px)', padding: `9px ${16 + depth * 16}px`, border: 'none', cursor: 'pointer',
           background: isActive ? 'rgba(201,147,46,0.2)' : 'transparent',
           color: isActive ? 'var(--accent)' : textColor,
           fontSize: '0.875rem', borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
@@ -370,7 +370,7 @@ TocItem.propTypes = {
 };
 
 
-function iconBtnStyle(textColor, size = '34px') {
+function iconBtnStyle(textColor, size = '44px') {
   return {
     background: 'transparent', border: 'none', cursor: 'pointer', color: textColor,
     opacity: 0.7, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -384,6 +384,7 @@ function navBtnStyle(side, textColor) {
     position: 'absolute', [side]: 0, top: '50%', transform: 'translateY(-50%)',
     zIndex: 5, background: 'transparent', border: 'none', cursor: 'pointer',
     color: textColor, opacity: 0.3, padding: '16px 8px',
+    minWidth: 'var(--tap-target-min, 44px)', minHeight: 'var(--tap-target-min, 44px)',
     transition: 'opacity 0.2s',
     display: 'flex', alignItems: 'center',
   }

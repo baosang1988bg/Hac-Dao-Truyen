@@ -153,11 +153,7 @@ export default function ChapterComments({ slug, chapter }) {
                       aria-label="Xóa bình luận"
                       disabled={deletingId === c.id}
                       onClick={() => handleDelete(c)}
-                      style={{
-                        marginLeft: 'auto', background: 'none', border: 'none',
-                        color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex',
-                        padding: '2px', opacity: deletingId === c.id ? 0.5 : 1,
-                      }}
+                      style={{ opacity: deletingId === c.id ? 0.5 : 1 }}
                     >
                       {deletingId === c.id ? <Loader2 size={13} className="spin" /> : <Trash2 size={13} />}
                     </button>

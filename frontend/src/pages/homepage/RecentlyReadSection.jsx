@@ -51,7 +51,7 @@ export default function RecentlyReadSection() {
         count={items.length}
       />
 
-      <div className="section-row-scroll" style={{ paddingBottom: '0.5rem' }}>
+      <div className="section-row-scroll" style={{ paddingBottom: 'var(--space-2, 8px)' }}>
         {items.map(item => {
           const isEpub = item.chapter === 'EPUB' || !item.chapter || item.chapter === 'null'
           const readUrl = isEpub
@@ -64,12 +64,8 @@ export default function RecentlyReadSection() {
             <div
               key={item.slug}
               className="rr-card"
-              style={{
-                minWidth: '200px',
-                maxWidth: '240px',
-              }}
             >
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', gap: 'var(--space-2, 8px)', alignItems: 'flex-start' }}>
                 <NovelCover novel={item.novel} size="sm" />
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <Link
@@ -83,16 +79,17 @@ export default function RecentlyReadSection() {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                       lineHeight: 1.3,
+                      minHeight: '24px',
                     }}
                     title={formattedTitle}
                   >
                     {formattedTitle}
                   </Link>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600, marginTop: '3px' }}>
+                  <div style={{ fontSize: 'var(--font-xs, 0.75rem)', color: 'var(--accent)', fontWeight: 600, marginTop: 'var(--space-1, 4px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {isEpub ? 'File EPUB' : `Đã đọc: ${fmtChapterLabel(item.chapter)}`}
                   </div>
                   {item.timestamp > 0 && (
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ fontSize: 'var(--font-xs, 0.75rem)', color: 'var(--text-muted)', marginTop: 'var(--space-1, 4px)', display: 'flex', alignItems: 'center', gap: 'var(--space-1, 4px)' }}>
                       <Clock size={11} /> {fmtTimeAgo(Math.floor(item.timestamp / 1000))}
                     </div>
                   )}
@@ -104,9 +101,9 @@ export default function RecentlyReadSection() {
                 className="btn btn-primary"
                 style={{
                   width: '100%',
-                  padding: '6px 12px',
+                  padding: 'var(--space-2, 8px) var(--space-3, 12px)',
                   fontSize: '0.8rem',
-                  minHeight: '34px',
+                  minHeight: 'var(--tap-target-min, 44px)',
                   justifyContent: 'center',
                   borderRadius: '8px',
                 }}

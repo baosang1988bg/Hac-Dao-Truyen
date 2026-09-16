@@ -51,7 +51,7 @@ export default function LibraryPage() {
       </div>
 
       {items.length === 0 ? (
-        <div className="glass-panel p-6 text-center" style={{ padding: '3rem 1.5rem' }}>
+        <div className="glass-panel p-6 text-center library-empty-state">
           <div style={{ fontSize: '2.2rem', marginBottom: '0.75rem' }}>📚</div>
           <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Tủ truyện đang trống</div>
           <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '1.25rem' }}>
@@ -65,39 +65,27 @@ export default function LibraryPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {items.map(({ slug, chapter, novel, isCurrent }) => (
             <div key={slug} className="glass-panel library-card">
-              <Link to={`/novel/${slug}`} style={{ flexShrink: 0 }}>
+              <Link to={`/novel/${slug}`} className="library-card__cover-link" aria-label={`Xem ${novel.title}`}>
                 <NovelCover novel={novel} size="sm" />
               </Link>
               <div className="library-card__body">
                 {isCurrent && (
-                  <span style={{
-                    fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.08em',
-                    color: 'var(--accent)', background: 'rgba(201,147,46,0.18)',
-                    padding: '2px 7px', borderRadius: '4px', display: 'inline-block', marginBottom: '4px',
-                  }}>
+                  <span className="library-card__recent">
                     GẦN NHẤT
                   </span>
                 )}
-                <Link to={`/novel/${slug}`} style={{ display: 'block', color: 'var(--text-main)' }}>
-                  <div style={{
-                    fontWeight: 600, fontSize: '0.95rem',
-                    display: '-webkit-box', WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                  }}>
+                <Link to={`/novel/${slug}`} className="library-card__title-link">
+                  <div className="library-card__title">
                     {novel.title}
                   </div>
                 </Link>
-                <div style={{
-                  fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '3px',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
+                <div className="library-card__progress">
                   Đang đọc: {fmtChapterLabel(chapter)}
                 </div>
               </div>
               <Link
                 to={`/novel/${slug}/read/${chapter}`}
-                className="btn btn-primary"
-                style={{ padding: '10px 16px', fontSize: '0.85rem', minHeight: '44px', flexShrink: 0 }}
+                className="btn btn-primary library-card__action"
               >
                 <BookOpen size={15} /> Đọc tiếp
               </Link>

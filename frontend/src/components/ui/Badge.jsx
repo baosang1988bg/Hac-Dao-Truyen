@@ -23,9 +23,9 @@ export default function Badge({ variant = 'default', children, style }) {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        fontSize: '0.65rem',
+        fontSize: 'var(--font-xs, 0.75rem)',
         letterSpacing: '0.04em',
-        padding: '2px 6px',
+        padding: 'var(--space-1, 4px) var(--space-2, 8px)',
         borderRadius: '4px',
         lineHeight: 1.4,
         textTransform: 'uppercase',

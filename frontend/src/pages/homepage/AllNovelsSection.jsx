@@ -104,11 +104,12 @@ export default function AllNovelsSection({ activeGenre = '' }) {
           ))}
         </div>
 
-        <div className="hp-view-toggle" style={{ display: 'flex', gap: '4px' }}>
+        <div className="hp-view-toggle">
           <button
             className={viewMode === 'list' ? 'active' : ''}
             onClick={() => setViewMode('list')}
             title="Dạng danh sách gọn"
+            aria-label="Dạng danh sách gọn"
           >
             <AlignJustify size={14} />
           </button>
@@ -116,6 +117,7 @@ export default function AllNovelsSection({ activeGenre = '' }) {
             className={viewMode === 'grid' ? 'active' : ''}
             onClick={() => setViewMode('grid')}
             title="Dạng lưới"
+            aria-label="Dạng lưới"
           >
             <LayoutGrid size={14} />
           </button>
@@ -123,6 +125,7 @@ export default function AllNovelsSection({ activeGenre = '' }) {
             className={viewMode === 'table' ? 'active' : ''}
             onClick={() => setViewMode('table')}
             title="Dạng bảng"
+            aria-label="Dạng bảng"
           >
             <List size={14} />
           </button>
@@ -154,12 +157,12 @@ export default function AllNovelsSection({ activeGenre = '' }) {
           )}
 
           {hasMore && (
-            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+            <div style={{ textAlign: 'center', marginTop: 'var(--space-4, 16px)' }}>
               <button
                 className="btn btn-secondary"
                 onClick={loadMore}
                 disabled={loadingMore}
-                style={{ minWidth: '160px', justifyContent: 'center' }}
+                style={{ minWidth: '160px', minHeight: 'var(--tap-target-min, 44px)', justifyContent: 'center' }}
               >
                 {loadingMore ? <><Loader2 size={16} className="spin" /> Đang tải...</> : 'Xem thêm truyện'}
               </button>

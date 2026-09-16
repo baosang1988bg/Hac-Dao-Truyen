@@ -10,7 +10,7 @@ import BottomTabBar from '../components/BottomTabBar'
  */
 export default function GuestLayout() {
   const location = useLocation()
-  const isReaderPage = location.pathname.includes('/read/')
+  const isReaderPage = /^\/novel\/[^/]+\/(?:read\/[^/]+|epub-reader)\/?$/.test(location.pathname)
 
   if (isReaderPage) {
     // Reader toàn màn hình: tự quản lý theme nền + nav riêng (có nút Home),

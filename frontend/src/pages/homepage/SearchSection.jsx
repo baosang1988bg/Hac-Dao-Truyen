@@ -21,14 +21,10 @@ export default function SearchSection({
   return (
     <>
       {/* Thanh tìm kiếm */}
-      <div style={{ marginBottom: '1.75rem' }}>
+      <div className="hp-search-wrap">
         <div
-          className="glass-panel"
+          className="glass-panel hp-search-bar"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '12px 18px',
             borderRadius: '14px',
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
             border: '1px solid var(--border-color, rgba(255,255,255,0.12))',
@@ -41,31 +37,19 @@ export default function SearchSection({
           )}
           <input
             type="text"
+            inputMode="search"
+            enterKeyHint="search"
+            aria-label="Tìm kiếm truyện hoặc EPUB"
+            className="hp-search-input"
             placeholder="Tìm kiếm truyện, EPUB theo tên, tác giả (ví dụ: Xích Tâm, Huyền Giám...)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: 'var(--text-main)',
-              fontSize: '0.98rem',
-              fontFamily: 'inherit',
-            }}
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-muted)',
-                cursor: 'pointer',
-                padding: '4px',
-                display: 'flex',
-                alignItems: 'center',
-              }}
+              className="hp-search-clear"
+              aria-label="Xóa tìm kiếm"
               title="Xóa tìm kiếm"
             >
               <X size={18} />
@@ -90,7 +74,7 @@ export default function SearchSection({
               Không tìm thấy truyện nào phù hợp với từ khóa &quot;<strong>{searchQuery}</strong>&quot;.
             </div>
           ) : searchResults ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '14px' }}>
+            <div className="hp-search-results-grid">
               {searchResults.map(n => (
                 <EpubCard key={n.slug} novel={n} />
               ))}

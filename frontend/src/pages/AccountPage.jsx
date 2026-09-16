@@ -102,7 +102,7 @@ function AuthForm({ onSuccess }) {
           <input
             type="email" className="input-field" placeholder="Email"
             value={email} onChange={e => setEmail(e.target.value)}
-            required autoComplete="email"
+            required inputMode="email" autoComplete="email"
           />
           <input
             type="password" className="input-field"

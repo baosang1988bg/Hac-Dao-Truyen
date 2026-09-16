@@ -50,26 +50,25 @@ export default function RequestNovelModal({ onClose }) {
     <Modal
       onClose={onClose}
       ariaLabel="Yêu cầu truyện mới"
+      panelClassName="glass-panel request-novel-modal"
       panelStyle={{
         position: 'relative', width: '100%', maxWidth: '440px',
         background: 'var(--glass-bg)', border: '1px solid var(--border)',
-        borderRadius: '16px', padding: '1.5rem',
+        borderRadius: '16px', padding: 'var(--space-5, 24px)',
+        maxHeight: 'calc(100dvh - var(--space-6, 32px))', overflowY: 'auto',
         boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
       }}
     >
       <button
+        type="button"
+        className="request-novel-modal__close"
         onClick={onClose}
         aria-label="Đóng"
-        style={{
-          position: 'absolute', top: '12px', right: '12px',
-          background: 'transparent', border: 'none', color: 'var(--text-muted)',
-          cursor: 'pointer', padding: '4px', lineHeight: 0,
-        }}
       >
         <X size={20} />
       </button>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.9rem' }}>
+      <div className="request-novel-modal__header">
         <span style={{
           width: '36px', height: '36px', borderRadius: '10px',
           background: 'var(--accent-gradient)', display: 'inline-flex',
@@ -89,7 +88,7 @@ export default function RequestNovelModal({ onClose }) {
             to="/account"
             onClick={onClose}
             className="btn btn-primary"
-            style={{ width: '100%', justifyContent: 'center' }}
+            style={{ width: '100%', minHeight: 'var(--tap-target-min, 44px)', justifyContent: 'center' }}
           >
             <LogIn size={16} /> Đăng nhập / Đăng ký
           </Link>
@@ -103,19 +102,21 @@ export default function RequestNovelModal({ onClose }) {
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.1rem' }}>
             Admin sẽ xem xét và phản hồi sớm nhất có thể.
           </p>
-          <button className="btn btn-secondary" onClick={onClose} style={{ width: '100%', justifyContent: 'center' }}>
+          <button type="button" className="btn btn-secondary" onClick={onClose} style={{ width: '100%', minHeight: 'var(--tap-target-min, 44px)', justifyContent: 'center' }}>
             Đóng
           </button>
         </div>
       )}
 
       {loggedIn && !done && (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+        <form className="request-novel-form" onSubmit={handleSubmit}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>
             Dán link truyện Trung bạn muốn được dịch — team sẽ xem xét và duyệt.
           </p>
           <input
             type="url"
+            inputMode="url"
+            autoComplete="url"
             className="input-field"
             placeholder="https://..."
             value={url}
@@ -136,7 +137,7 @@ export default function RequestNovelModal({ onClose }) {
 
           {error && <div className="auth-error" role="alert">{error}</div>}
 
-          <button type="submit" className="btn btn-primary" disabled={busy} style={{ justifyContent: 'center' }}>
+          <button type="submit" className="btn btn-primary" disabled={busy} style={{ minHeight: 'var(--tap-target-min, 44px)', justifyContent: 'center' }}>
             {busy ? <><Loader2 size={16} className="spin" /> Đang gửi...</> : <><Send size={16} /> Gửi yêu cầu</>}
           </button>
         </form>

@@ -415,6 +415,7 @@ export default function Reader() {
     border: 'var(--reader-border)',
     panel: 'var(--reader-panel)',
   }
+  const readerLineHeight = Math.max(settings.lineHeight, 1.5)
 
   const NavBar = ({ position }) => {
     const isBottom = position === 'bottom'
@@ -429,17 +430,17 @@ export default function Reader() {
           Không tải được danh sách chương, nút điều hướng có thể không chính xác
         </div>
       )}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: isBottom ? '2rem 0 calc(4rem + env(safe-area-inset-bottom, 0px))' : '1rem 0', gap: '12px',
-        flexWrap: 'wrap', position: 'relative', zIndex: 60
+      <div className={`reader-nav reader-nav--${position}`} style={{
+        padding: isBottom ? '2rem 0 calc(4rem + env(safe-area-inset-bottom, 0px))' : '1rem 0',
       }}>
         <Link
           to={`/novel/${slug}`}
           title="Về trang chi tiết"
+          aria-label="Về trang chi tiết"
+          className="reader-nav__icon-button"
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: '58px', height: '58px', borderRadius: '18px',
+            borderRadius: '18px',
             background: currentTheme.panel, color: currentTheme.text,
             border: `2px solid ${currentTheme.border}`, textDecoration: 'none',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
@@ -448,45 +449,46 @@ export default function Reader() {
           <Home size={24} />
         </Link>
 
-        <div style={{ display: 'flex', gap: '12px', flex: 1, justifyContent: 'center' }}>
+        <div className="reader-nav__primary">
           <button
-            className="btn"
+            className="btn reader-nav__chapter-button reader-nav__chapter-button--prev"
             onClick={goPrev}
             disabled={!prevChapter}
+            aria-label="Chương trước"
             style={{
               background: currentTheme.panel, color: currentTheme.text,
               border: `2px solid ${currentTheme.border}`,
-              opacity: prevChapter ? 1 : 0.3, padding: '0 1.5rem', height: '58px',
-              borderRadius: '18px', minWidth: '80px'
+              opacity: prevChapter ? 1 : 0.3,
+              borderRadius: '18px'
             }}
           >
             <ArrowLeft size={22} />
-            <span className="hide-mobile" style={{ marginLeft: '8px', fontWeight: 700 }}>Trước</span>
+            <span className="hide-mobile" style={{ fontWeight: 700 }}>Trước</span>
           </button>
 
-          <div style={{
+          <div className="reader-nav__chapter-index" style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: currentTheme.panel, color: currentTheme.text,
             border: `2px solid ${currentTheme.border}`,
-            borderRadius: '18px', padding: '0 20px', fontSize: '1.1rem', fontWeight: 800,
-            opacity: 0.9, minWidth: '90px'
+            borderRadius: '18px', fontWeight: 800,
+            opacity: 0.9
           }}>
             {isAuthorNote ? '📝' : `${currentChapterIndex + 1}/${chapters.length}`}
           </div>
 
           <button
-            className="btn"
+            className="btn reader-nav__chapter-button reader-nav__chapter-button--next"
             onClick={goNext}
             disabled={!nextChapter}
+            aria-label="Chương tiếp"
             style={{
               background: 'var(--accent)', color: 'white',
-              border: 'none', opacity: nextChapter ? 1 : 0.3, padding: '0 1.5rem', height: '58px',
+              border: 'none', opacity: nextChapter ? 1 : 0.3,
               borderRadius: '18px', boxShadow: '0 8px 25px rgba(201,147,46,0.4)',
               flex: isBottom ? 1 : 'unset', // Make it larger at bottom
-              minWidth: '100px'
             }}
           >
-            <span style={{ marginRight: '8px', fontWeight: 800 }}>{isBottom ? 'CHƯƠNG TIẾP' : 'Tiếp'}</span>
+            <span style={{ fontWeight: 800 }}>{isBottom ? 'CHƯƠNG TIẾP' : 'Tiếp'}</span>
             <ArrowRight size={22} />
           </button>
         </div>
@@ -499,9 +501,11 @@ export default function Reader() {
               else tts.play(stripMarkdown(content), { voiceName: settings.ttsVoice, rate: settings.ttsRate })
             }}
             title={tts.isPlaying && !tts.isPaused ? 'Tạm dừng đọc' : 'Nghe chương này'}
+            aria-label={tts.isPlaying && !tts.isPaused ? 'Tạm dừng đọc' : 'Nghe chương này'}
+            className="reader-nav__icon-button"
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: '58px', height: '58px', borderRadius: '18px',
+              borderRadius: '18px',
               background: currentTheme.panel, color: currentTheme.text,
               border: `2px solid ${currentTheme.border}`, cursor: 'pointer',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
@@ -515,9 +519,11 @@ export default function Reader() {
           <button
             onClick={tts.stop}
             title="Dừng đọc"
+            aria-label="Dừng đọc"
+            className="reader-nav__icon-button"
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: '58px', height: '58px', borderRadius: '18px',
+              borderRadius: '18px',
               background: currentTheme.panel, color: currentTheme.text,
               border: `2px solid ${currentTheme.border}`, cursor: 'pointer',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
@@ -530,9 +536,11 @@ export default function Reader() {
         <button
           onClick={() => setShowSettings(true)}
           title="Cài đặt giao diện"
+          aria-label="Cài đặt giao diện"
+          className="reader-nav__icon-button"
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: '58px', height: '58px', borderRadius: '18px',
+            borderRadius: '18px',
             background: currentTheme.panel, color: currentTheme.text,
             border: `2px solid ${currentTheme.border}`, cursor: 'pointer',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
@@ -586,7 +594,7 @@ export default function Reader() {
             padding: '1rem 0 3rem',
             fontSize: `${settings.fontSize}px`,
             fontFamily: settings.fontFamily,
-            lineHeight: settings.lineHeight,
+            lineHeight: readerLineHeight,
             transition: 'font-size 0.2s',
             wordBreak: 'normal', overflowWrap: 'break-word'
           }}
@@ -660,52 +668,52 @@ export default function Reader() {
           onClose={() => setShowSettings(false)}
           ariaLabel="Tuỳ chỉnh đọc truyện"
           overlayStyle={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', alignItems: 'flex-end', padding: 0 }}
-          panelClassName=""
+          panelClassName="reader-settings-sheet"
           panelStyle={{
             width: '100%', background: 'var(--reader-panel)', color: 'var(--reader-text)',
             borderTopLeftRadius: '24px', borderTopRightRadius: '24px',
-            padding: '1.5rem',
-            paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
-            maxHeight: '85dvh', overflowY: 'auto',
+            maxHeight: '85dvh',
             boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
             animation: 'slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
         >
-          <div style={{ width: '40px', height: '4px', background: 'var(--reader-border)', borderRadius: '2px', margin: '0 auto 1.5rem' }} />
+          <div className="reader-settings-sheet__handle" aria-hidden="true" />
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+          <div className="reader-settings-sheet__header">
             <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Tuỳ chỉnh</h3>
-            <button onClick={() => setShowSettings(false)} aria-label="Đóng" style={{ background: 'none', border: 'none', color: 'var(--reader-muted)', cursor: 'pointer', minWidth: '44px', minHeight: '44px' }}>✕</button>
+            <button className="reader-settings-sheet__close" onClick={() => setShowSettings(false)} aria-label="Đóng">✕</button>
           </div>
 
-          <ReaderSettingsPanel settings={settings} onChange={onChange} ttsVoices={tts.voices} />
+          <div className="reader-settings-sheet__body">
+            <ReaderSettingsPanel settings={settings} onChange={onChange} ttsVoices={tts.voices} />
 
-          {/* Đọc offline: tải trước N chương kế tiếp để service worker cache */}
-          <div style={{ marginBottom: '0.5rem' }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--reader-muted)', marginBottom: '0.8rem', letterSpacing: '0.05em' }}>ĐỌC OFFLINE</div>
-            <button
-              onClick={downloadNextChapters}
-              disabled={downloading || !nextChapter}
-              style={{
-                width: '100%', minHeight: '52px', borderRadius: '16px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                background: downloading ? 'var(--reader-border)' : 'var(--accent)',
-                color: 'white', border: 'none', fontSize: '1rem', fontWeight: 700,
-                cursor: downloading || !nextChapter ? 'not-allowed' : 'pointer',
-                opacity: !nextChapter ? 0.4 : 1, transition: 'all 0.2s',
-              }}
-            >
-              <Download size={18} />
-              {downloading
-                ? `Đang tải... đã tải ${dlProgress?.done ?? 0}/${dlProgress?.total ?? OFFLINE_BATCH_SIZE}`
-                : dlProgress
-                  ? `Đã tải ${dlProgress.done}/${dlProgress.total} chương`
-                  : `Tải ${OFFLINE_BATCH_SIZE} chương tiếp`}
-            </button>
-            <div style={{ fontSize: '0.75rem', color: 'var(--reader-muted)', marginTop: '0.6rem', lineHeight: 1.5 }}>
-              {nextChapter
-                ? 'Chương đã tải sẽ đọc được cả khi mất mạng.'
-                : 'Đây là chương cuối — không còn chương kế tiếp để tải.'}
+            {/* Đọc offline: tải trước N chương kế tiếp để service worker cache */}
+            <div style={{ marginTop: 'var(--space-5, 24px)', marginBottom: '0.5rem' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--reader-muted)', marginBottom: '0.8rem', letterSpacing: '0.05em' }}>ĐỌC OFFLINE</div>
+              <button
+                onClick={downloadNextChapters}
+                disabled={downloading || !nextChapter}
+                style={{
+                  width: '100%', minHeight: '52px', borderRadius: '16px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                  background: downloading ? 'var(--reader-border)' : 'var(--accent)',
+                  color: 'white', border: 'none', fontSize: '1rem', fontWeight: 700,
+                  cursor: downloading || !nextChapter ? 'not-allowed' : 'pointer',
+                  opacity: !nextChapter ? 0.4 : 1, transition: 'all 0.2s',
+                }}
+              >
+                <Download size={18} />
+                {downloading
+                  ? `Đang tải... đã tải ${dlProgress?.done ?? 0}/${dlProgress?.total ?? OFFLINE_BATCH_SIZE}`
+                  : dlProgress
+                    ? `Đã tải ${dlProgress.done}/${dlProgress.total} chương`
+                    : `Tải ${OFFLINE_BATCH_SIZE} chương tiếp`}
+              </button>
+              <div style={{ fontSize: 'var(--font-xs, 0.75rem)', color: 'var(--reader-muted)', marginTop: '0.6rem', lineHeight: 1.5 }}>
+                {nextChapter
+                  ? 'Chương đã tải sẽ đọc được cả khi mất mạng.'
+                  : 'Đây là chương cuối — không còn chương kế tiếp để tải.'}
+              </div>
             </div>
           </div>
         </Modal>
@@ -742,7 +750,7 @@ export default function Reader() {
             zIndex: 90,
             display: 'flex', alignItems: 'center', gap: '5px',
             padding: '5px 11px', borderRadius: '999px',
-            fontSize: '0.72rem', fontWeight: 600,
+            fontSize: 'var(--font-xs, 0.75rem)', fontWeight: 600,
             background: currentTheme.panel, color: currentTheme.text,
             border: `1px solid ${currentTheme.border}`,
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)', opacity: 0.9,
@@ -780,7 +788,7 @@ export default function Reader() {
           .tap-zone-right { right: 0; }
         }
 
-        @media (max-width: 800px) {
+        @media (max-width: 768px) {
           .reader-container { max-width: 100% !important; padding: 0 0.85rem !important; }
         }
         @media (max-width: 600px) {

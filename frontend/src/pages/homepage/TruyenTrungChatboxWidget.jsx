@@ -16,9 +16,9 @@ import { MessageSquare, Zap } from 'lucide-react'
  */
 export default function TruyenTrungChatboxWidget() {
   return (
-    <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '16px', marginBottom: '1.5rem' }}>
+    <div className="glass-panel" style={{ padding: 'var(--space-4, 16px)', borderRadius: '16px', marginBottom: 'var(--space-5, 24px)' }}>
       {/* Header thông báo (KHÔNG phải chat realtime) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.875rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.6rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2, 8px)', marginBottom: 'var(--space-3, 12px)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: 'var(--space-2, 8px)' }}>
         <MessageSquare size={16} style={{ color: 'var(--accent)' }} />
         <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, fontFamily: 'Outfit, sans-serif' }}>
           Thông Báo Đạo Hữu
@@ -29,14 +29,14 @@ export default function TruyenTrungChatboxWidget() {
       <div style={{
         background: 'rgba(0, 0, 0, 0.2)',
         borderRadius: '10px',
-        padding: '10px',
+        padding: 'var(--space-3, 12px)',
         minHeight: '80px',
         fontSize: '0.8rem',
         color: 'var(--text-muted)',
         marginBottom: '0.75rem',
         border: '1px solid rgba(255, 255, 255, 0.04)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent)', fontWeight: 600, marginBottom: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2, 8px)', color: 'var(--accent)', fontWeight: 600, marginBottom: 'var(--space-1, 4px)' }}>
           <Zap size={13} /> Chào mừng các Đạo Hữu đến Hắc Đạo Truyện!
         </div>
         <div>Cấm bàn luận về Chính trị, nội dung vi phạm pháp luật hoặc 18+...</div>

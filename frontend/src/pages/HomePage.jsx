@@ -93,7 +93,7 @@ export default function HomePage() {
           <TruyThuNoticeSection />
 
           {/* Bố cục 2 Cột Portal chuẩn Truyentrung.com */}
-          <div className="hp-portal-layout" style={{ marginTop: '1.25rem' }}>
+          <div className="hp-portal-layout" style={{ marginTop: 'var(--space-5, 24px)' }}>
             {/* ── Cột Trái: Main Content (68%) ── */}
             <div className="hp-main-col">
               {/* Recently Updated Table: Bảng Mới Cập Nhật dạng Table chuẩn 5 cột */}

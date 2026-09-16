@@ -39,10 +39,10 @@ export default function LoginPage() {
     <div className="login-container" style={{
       minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'radial-gradient(circle at top right, #1e293b, #0f172a)',
-      padding: '20px'
+      padding: 'var(--space-4, 16px)'
     }}>
       <div className="glass-panel animate-fade-in" style={{
-        width: '100%', maxWidth: '400px', padding: '2.5rem', textAlign: 'center',
+        width: '100%', maxWidth: '400px', padding: 'clamp(1.5rem, 8vw, 2.5rem)', textAlign: 'center',
         border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
       }}>
         <div style={{
@@ -69,12 +69,13 @@ export default function LoginPage() {
               value={password}
               onChange={e => { setPassword(e.target.value); if (error) setError('') }}
               onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
+              autoComplete="current-password"
               autoFocus
               style={{
                 width: '100%', padding: '0.8rem 1rem 0.8rem 2.5rem', borderRadius: '10px',
                 background: 'rgba(0,0,0,0.2)',
                 border: error ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
-                color: 'white', outline: 'none', fontSize: '1rem'
+                color: 'white', outline: 'none', fontSize: '1rem', minHeight: '48px'
               }}
             />
           </div>
