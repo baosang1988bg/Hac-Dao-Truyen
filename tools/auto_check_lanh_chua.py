@@ -35,6 +35,8 @@ def fetch_latest_chapters():
         SOURCE_PAGE,
         headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            # Trang danh mục thay đổi thường xuyên. Jina Reader có cache URL;
+            # luôn buộc lấy bản mới để cron không bỏ sót chương vừa đăng.
             "X-No-Cache": "true",
             "X-Cache-Tolerance": "0",
         }
