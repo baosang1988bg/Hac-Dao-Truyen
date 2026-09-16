@@ -473,7 +473,12 @@ async function getNovels(env, params = new URLSearchParams()) {
            CASE WHEN n.rating_count > 0 THEN ROUND(CAST(n.rating_sum AS REAL) / n.rating_count, 1) ELSE 0.0 END AS rating,
            n.rating_count,
            (SELECT COUNT(*) FROM chapters c WHERE c.novel_slug = n.slug) AS chapter_count,
-           '' AS latest_chapter_title,
+           COALESCE((
+             SELECT c.title FROM chapters c
+             WHERE c.novel_slug = n.slug
+             ORDER BY c.chapter_number DESC, c.filename DESC
+             LIMIT 1
+           ), '') AS latest_chapter_title,
            n.updated_at AS last_created_at,
            n.glossary_count
     FROM novels n
@@ -724,20 +729,16 @@ async function getNovel(env, slug, request) {
   // chapter_count phải dùng CÙNG công thức với getNovels() (đếm từ bảng D1
   // `chapters`, nguồn sự thật), KHÔNG dùng độ dài catalog.json (có thể lệch
   // với dữ liệu D1 thật, gây bug tương tự chapter_count sai ở getNovels()).
-  const chapCountRow = await env.DB.prepare(
-    `SELECT COUNT(*) AS cnt FROM chapters WHERE novel_slug = ?`
-  ).bind(slug).first();
-  let chapter_count = chapCountRow?.cnt || 0;
-  let latest_chapter_title = null;
-  try {
-    const catObj = await env.CHAPTERS.get(`${slug}/catalog.json`);
-    if (catObj) {
-      const catalog = await catObj.json();
-      if (catalog.length > 0) {
-        latest_chapter_title = catalog[catalog.length - 1].title || null;
-      }
-    }
-  } catch {}
+  const chapStatsRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS cnt,
+            (SELECT title FROM chapters
+             WHERE novel_slug = ?
+             ORDER BY chapter_number DESC, filename DESC
+             LIMIT 1) AS latest_title
+     FROM chapters WHERE novel_slug = ?`
+  ).bind(slug, slug).first();
+  const chapter_count = chapStatsRow?.cnt || 0;
+  const latest_chapter_title = chapStatsRow?.latest_title || null;
 
   const common = {
     chapter_count,

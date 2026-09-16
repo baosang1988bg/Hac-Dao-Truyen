@@ -32,7 +32,12 @@ test('D1 bootstrap supports public list and EPUB, sync is concurrent and repeata
   assert.deepEqual(catalog.map(c=>c.chapter_number),[1,2,3]);
   const list = await call('novels');
   assert.equal(list.status,200,await list.clone().text());
-  assert.equal((await list.json()).novels[0].chapter_count,2);
+  const listNovel = (await list.json()).novels[0];
+  assert.equal(listNovel.chapter_count,2);
+  assert.equal(listNovel.latest_chapter_title,'Chương 2');
+  const detailNovel = await (await call('novels/demo')).json();
+  assert.equal(detailNovel.chapter_count,2);
+  assert.equal(detailNovel.latest_chapter_title,'Chương 2');
   assert.equal((await call('novels/demo/epub')).status,404);
   await bucket.put('demo/book.epub','epub fixture');
   assert.equal((await call('novels/demo/epub')).status,200);
