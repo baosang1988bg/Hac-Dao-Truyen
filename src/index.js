@@ -79,7 +79,9 @@ async function handleApi(request, url, env, ctx) {
   }
 
   if (path === '/api/admin/sync-rankings' && method === 'POST') return syncRankings(env, request);
-  if (path === '/api/rankings' && method === 'GET') return getRankings(env);
+  if (path === '/api/rankings' && method === 'GET') {
+    return cachedJsonResponse(request, ctx, 3600, () => getRankings(env));
+  }
 
   // GET /api/proxy-cover?url=...
   if (path === '/api/proxy-cover' && method === 'GET') {
@@ -88,18 +90,18 @@ async function handleApi(request, url, env, ctx) {
 
   // GET /api/novels?q=&sort=&order=&genre=&status=&has_epub=&page=&limit=
   if (path === '/api/novels' && method === 'GET') {
-    return getNovels(env, url.searchParams);
+    return cachedJsonResponse(request, ctx, 120, () => getNovels(env, url.searchParams));
   }
 
   // GET /api/novels/genres — danh sách thể loại distinct
   if (path === '/api/novels/genres' && method === 'GET') {
-    return getGenres(env);
+    return cachedJsonResponse(request, ctx, 3600, () => getGenres(env));
   }
 
   // GET /api/stats — tổng số truyện/chương/thuật ngữ, tính bằng SQL aggregate
   // ở server thay vì client tự tải toàn bộ catalog rồi cộng dồn (HomePage cũ).
   if (path === '/api/stats' && method === 'GET') {
-    return getStats(env);
+    return cachedJsonResponse(request, ctx, 300, () => getStats(env));
   }
 
   // GET /api/server-info
@@ -129,7 +131,7 @@ async function handleApi(request, url, env, ctx) {
   // GET /api/novels/:slug
   const novelMatch = path.match(/^\/api\/novels\/([^/]+)$/);
   if (novelMatch && method === 'GET') {
-    return getNovel(env, novelMatch[1], request);
+    return cachedJsonResponse(request, ctx, 300, () => getNovel(env, novelMatch[1], request));
   }
 
   // GET /api/novels/:slug/epub — tải EPUB đã build (upload lên R2 bởi migrate)
@@ -159,7 +161,7 @@ async function handleApi(request, url, env, ctx) {
   // GET /api/novels/:slug/chapters
   const chaptersMatch = path.match(/^\/api\/novels\/([^/]+)\/chapters$/);
   if (chaptersMatch && method === 'GET') {
-    return getChapters(env, chaptersMatch[1], ctx);
+    return cachedJsonResponse(request, ctx, 600, () => getChapters(env, chaptersMatch[1], ctx));
   }
 
   // GET /api/novels/:slug/chapters/:filename
@@ -496,7 +498,7 @@ async function getNovels(env, params = new URLSearchParams()) {
   }));
 
   return jsonResponse({ novels, total, page, limit, pages: Math.ceil(total / limit) }, 200, {
-    'Cache-Control': 'public, max-age=60, s-maxage=120'
+    'Cache-Control': 'public, max-age=120, s-maxage=120'
   });
 }
 
@@ -508,7 +510,7 @@ async function getGenres(env) {
     ORDER BY genre ASC
   `).all();
   return jsonResponse(results.map(r => r.genre), 200, {
-    'Cache-Control': 'public, max-age=600, s-maxage=600'
+    'Cache-Control': 'public, max-age=3600, s-maxage=3600'
   });
 }
 
@@ -574,18 +576,18 @@ async function getRankings(env) {
     groups.get(key).items.push({ rank, title, author, cover_url, stat_label, source_url });
   }
   return jsonResponse({ groups: [...groups.values()] }, 200, {
-    'Cache-Control': 'public, max-age=10800, s-maxage=10800',
+    'Cache-Control': 'public, max-age=3600, s-maxage=3600',
   });
 }
 
 async function getStats(env) {
   const row = await env.DB.prepare(`
     SELECT
-      (SELECT COUNT(*) FROM novels WHERE published = 1) AS total_novels,
-      (SELECT COUNT(*) FROM chapters c
-         JOIN novels n ON n.slug = c.novel_slug
-         WHERE n.published = 1) AS total_chapters,
-      (SELECT COALESCE(SUM(glossary_count), 0) FROM novels WHERE published = 1) AS total_glossary
+      COUNT(*) AS total_novels,
+      COALESCE(SUM(total_chapters), 0) AS total_chapters,
+      COALESCE(SUM(glossary_count), 0) AS total_glossary
+    FROM novels
+    WHERE published = 1
   `).first();
   return jsonResponse({
     total_novels: row?.total_novels || 0,
@@ -1857,6 +1859,65 @@ async function proxyToBackend(request, url, env) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+async function cachedJsonResponse(request, ctx, ttlSeconds, loadResponse) {
+  const withCacheHeaders = (response, status, cacheControl) => {
+    const result = new Response(response.body, response);
+    result.headers.set('Cache-Control', cacheControl);
+    result.headers.set('X-Worker-Cache', status);
+    const vary = result.headers.get('Vary');
+    if (!vary || !vary.split(',').some(value => value.trim().toLowerCase() === 'authorization')) {
+      result.headers.append('Vary', 'Authorization');
+    }
+    return result;
+  };
+
+  // Có Authorization thì luôn đọc dữ liệu thật. Ngoài việc không dùng Cache
+  // API, no-store còn ngăn response admin (ví dụ full glossary ở getNovel)
+  // bị browser hay một Cache Rule bên ngoài lưu nhầm.
+  if (request.method !== 'GET' || request.headers.has('Authorization')) {
+    const response = await loadResponse();
+    return withCacheHeaders(response, 'BYPASS', 'private, no-store');
+  }
+
+  const cache = globalThis.caches?.default;
+  const publicCacheControl = `public, max-age=${ttlSeconds}, s-maxage=${ttlSeconds}`;
+  if (!cache) {
+    const response = await loadResponse();
+    return withCacheHeaders(response, 'UNAVAILABLE', publicCacheControl);
+  }
+
+  // Chuẩn hóa query để crawler không thể thêm tham số rác nhằm tạo vô hạn
+  // cache miss. Chỉ /api/novels có query ảnh hưởng response; các route còn
+  // lại gọi helper này đều không đọc query string.
+  const cacheUrl = new URL(request.url);
+  if (cacheUrl.pathname === '/api/novels') {
+    const allowed = ['genre', 'has_epub', 'limit', 'order', 'page', 'q', 'sort', 'status'];
+    const normalized = new URLSearchParams();
+    for (const name of allowed) {
+      if (cacheUrl.searchParams.has(name)) normalized.set(name, cacheUrl.searchParams.get(name));
+    }
+    cacheUrl.search = normalized.toString();
+  } else {
+    cacheUrl.search = '';
+  }
+
+  // Không cache CORS ở đây: corsResponse() chạy sau helper nên từng Origin
+  // vẫn nhận đúng header, không thể làm nhiễm cache dùng chung.
+  const cacheKey = new Request(cacheUrl.toString(), { method: 'GET' });
+  const cached = await cache.match(cacheKey);
+  if (cached) return withCacheHeaders(cached, 'HIT', publicCacheControl);
+
+  const response = withCacheHeaders(await loadResponse(), 'MISS', publicCacheControl);
+  if (response.ok) {
+    const cacheWrite = cache.put(cacheKey, response.clone()).catch(err => {
+      console.warn('Edge cache put failed:', err && err.message ? err.message : err);
+    });
+    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(cacheWrite);
+    else await cacheWrite;
+  }
+  return response;
+}
+
 function jsonResponse(data, status = 200, customHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,

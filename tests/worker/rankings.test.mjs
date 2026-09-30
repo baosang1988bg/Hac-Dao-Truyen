@@ -21,7 +21,9 @@ async function setup(t) {
   const post = (body, key = 'test-key') => mf.dispatchFetch('http://test.invalid/api/admin/sync-rankings', {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'x-sync-key': key }, body: JSON.stringify(body),
   });
-  const get = () => mf.dispatchFetch('http://test.invalid/api/rankings');
+  const get = (fresh = false) => mf.dispatchFetch('http://test.invalid/api/rankings', fresh ? {
+    headers: { Authorization: 'Bearer test-admin' },
+  } : undefined);
   return { post, get, db };
 }
 const entry = (rank = 1, extra = {}) => ({ category: 'views', window: 'weekly', rank, title: `Book ${rank}`, source_url: `https://www.qidian.com/book/${rank}/`, ...extra });
@@ -43,7 +45,9 @@ test('rankings: unauthorized requests never access D1; verified key uses sync li
 
 test('rankings: insert/upsert, skip invalid entries, retain failed combos and group sorted snapshots', async t => {
   const { post, get, db } = await setup(t);
-  assert.deepEqual(await (await get()).json(), { groups: [] });
+  const empty = await get();
+  assert.equal(empty.headers.get('Cache-Control'), 'public, max-age=3600, s-maxage=3600');
+  assert.deepEqual(await empty.json(), { groups: [] });
   let res = await post(batch([entry(2), entry(), null, entry(0), entry(1.5), entry(3, { title: ' ' }), entry(4, { source_url: 'javascript:alert(1)' }), entry(5, { category: '' })]));
   assert.equal(res.status, 200);
   assert.deepEqual(await res.json(), { upserted: 2, skipped: 6 });
@@ -52,8 +56,8 @@ test('rankings: insert/upsert, skip invalid entries, retain failed combos and gr
   res = await post(batch([entry(1, { title: 'Updated' })], { snapshot_date: '2026-09-16' }));
   assert.deepEqual(await res.json(), { upserted: 1, skipped: 0 });
   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM external_rankings').first()).n, 4);
-  res = await get();
-  assert.equal(res.headers.get('Cache-Control'), 'public, max-age=10800, s-maxage=10800');
+  res = await get(true);
+  assert.equal(res.headers.get('Cache-Control'), 'private, no-store');
   const { groups } = await res.json();
   assert.equal(groups.length, 3);
   const weekly = groups.find(g => g.source === 'qidian' && g.window === 'weekly');
@@ -61,7 +65,7 @@ test('rankings: insert/upsert, skip invalid entries, retain failed combos and gr
   assert.deepEqual(weekly.items.map(i => i.title), ['Updated']);
   assert.equal(groups.find(g => g.window === 'monthly').snapshot_date, '2026-09-15');
   await post(batch([entry(2), entry(1)], { source: 'other' }));
-  const sorted = (await (await get()).json()).groups.find(g => g.source === 'other');
+  const sorted = (await (await get(true)).json()).groups.find(g => g.source === 'other');
   assert.deepEqual(sorted.items.map(i => i.rank), [1, 2]);
 });
 
