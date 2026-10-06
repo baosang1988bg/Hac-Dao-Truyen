@@ -161,6 +161,11 @@ def test_retry_failed_chapters_overwrites_original_file_and_restores_progress(tm
     meta = json.loads((novel_dir / "novel.json").read_text(encoding="utf-8"))
     assert meta["last_chapter_number"] == 1524 and meta["last_translated_url"] == "https://x/1524"
     assert not (novel_dir / "failed_chapters.json").exists()
+    # Key R2 của bản lỗi đang trên site được xếp hàng để lượt sync thay thế
+    # (Worker chỉ cho đè khi expected_r2_key khớp).
+    import hashlib
+    queue = json.loads((novel_dir / "republish_pending.json").read_text(encoding="utf-8"))
+    assert queue == {"1522": "truyen-loi/content/" + hashlib.sha256(FAILED_BODY.encode()).hexdigest() + ".md"}
 
 
 def test_retry_failed_chapters_reports_still_failed(tmp_path, monkeypatch):
@@ -195,3 +200,39 @@ def test_sync_via_worker_api_never_publishes_failed_translation(tmp_path, monkey
 
     assert result is False
     assert sent == [1523]
+
+
+def test_publish_republish_queue_sends_expected_key_and_clears_on_success(tmp_path, monkeypatch):
+    novels_dir, novel_dir, failed_file = _make_novel_with_failed_chapter(tmp_path)
+    failed_file.write_text("# Chương 1522: Thế Cục\nBản dịch mới\n", encoding="utf-8")
+    (novel_dir / "republish_pending.json").write_text(json.dumps({"1522": "truyen-loi/content/old.md"}), encoding="utf-8")
+    monkeypatch.setattr(auto_check_novel, "NOVELS_DIR", novels_dir)
+    monkeypatch.setattr(auto_check_novel, "BASE_DIR", tmp_path)
+    monkeypatch.setenv("HACDAO_SYNC_KEY", "k")
+    sent = []
+
+    def fake_send_chunk(conn, payload, **kw):
+        sent.extend(payload["chapters"])
+        return {"success": True}, None
+
+    import tools.sync_transport as st
+    monkeypatch.setattr(st, "send_chunk", fake_send_chunk)
+
+    assert auto_check_novel.publish_republish_queue("truyen-loi", {"title": "T"}) is True
+    assert [(c["number"], c["expected_r2_key"]) for c in sent] == [(1522, "truyen-loi/content/old.md")]
+    assert not (novel_dir / "republish_pending.json").exists()
+
+
+def test_publish_republish_queue_keeps_queue_on_failure(tmp_path, monkeypatch):
+    novels_dir, novel_dir, failed_file = _make_novel_with_failed_chapter(tmp_path)
+    failed_file.write_text("# Chương 1522: Thế Cục\nBản dịch mới\n", encoding="utf-8")
+    (novel_dir / "republish_pending.json").write_text(json.dumps({"1522": "k"}), encoding="utf-8")
+    monkeypatch.setattr(auto_check_novel, "NOVELS_DIR", novels_dir)
+    monkeypatch.setattr(auto_check_novel, "BASE_DIR", tmp_path)
+    monkeypatch.setenv("HACDAO_SYNC_KEY", "k")
+
+    import tools.sync_transport as st
+    monkeypatch.setattr(st, "send_chunk", lambda conn, payload, **kw: ({"success": False, "error": "409"}, None))
+
+    assert auto_check_novel.publish_republish_queue("truyen-loi", {"title": "T"}) is False
+    assert (novel_dir / "republish_pending.json").exists()

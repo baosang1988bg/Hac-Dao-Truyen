@@ -16,6 +16,7 @@ không cần viết script/workflow riêng cho từng truyện nữa.
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -126,7 +127,11 @@ def retry_failed_chapters(slug: str):
 
     print(f"🔁 [{slug}] Dịch lại {len(failed)} chương lỗi: {sorted(failed)}")
     fixed, still_failed = [], []
+    queue = _load_republish_queue(slug)
     for num, old_fp in sorted(failed.items()):
+        # Bản lỗi đã lên site qua Worker API → r2_key = sha256(nội dung). Worker
+        # chỉ cho thay nội dung khi gửi kèm đúng key cũ (expected_r2_key).
+        old_key = f"{slug}/content/{hashlib.sha256(old_fp.read_bytes()).hexdigest()}.md"
         url = url_by_num.get(num)
         if not url:
             print(f"⚠️ [{slug}] Chương {num} không có URL trong catalog.json, bỏ qua.")
@@ -142,8 +147,10 @@ def retry_failed_chapters(slug: str):
                 break
         if old_fp.exists() and "[Translation failed" not in old_fp.read_text(encoding="utf-8")[:400]:
             fixed.append(num)
+            queue[str(num)] = old_key
         else:
             still_failed.append(num)
+    _save_republish_queue(slug, queue)
 
     meta = json.loads(novel_json_path.read_text(encoding="utf-8"))
     meta.update(progress)
@@ -160,6 +167,39 @@ def retry_failed_chapters(slug: str):
 
     print(f"🔁 [{slug}] Đã sửa: {fixed} — vẫn lỗi: {still_failed}")
     return fixed, still_failed
+
+
+def _republish_queue_path(slug: str) -> Path:
+    return NOVELS_DIR / slug / "republish_pending.json"
+
+
+def _load_republish_queue(slug: str) -> dict:
+    path = _republish_queue_path(slug)
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+
+
+def _save_republish_queue(slug: str, queue: dict):
+    path = _republish_queue_path(slug)
+    if queue:
+        path.write_text(json.dumps(queue, ensure_ascii=False, indent=2), encoding="utf-8")
+    elif path.exists():
+        path.unlink()
+
+
+def publish_republish_queue(slug: str, novel_meta: dict) -> bool:
+    """Đẩy các chương đã dịch lại (republish_pending.json: {số chương: r2_key
+    bản lỗi đang trên site}) lên thay bản lỗi. Hàng đợi được commit cùng repo
+    nên sync thất bại thì lượt sau vẫn thử lại; chỉ xóa khi đẩy thành công."""
+    queue = _load_republish_queue(slug)
+    if not queue:
+        return True
+    pending = [{"number": int(n), "expected_r2_key": k} for n, k in sorted(queue.items(), key=lambda kv: int(kv[0]))]
+    print(f"♻️ [{slug}] Công bố bản dịch lại thay bản lỗi: {[c['number'] for c in pending]}")
+    if sync_via_worker_api(slug, novel_meta, pending, BASE_DIR) is not True:
+        print(f"❌ [{slug}] Chưa công bố được bản dịch lại; giữ hàng đợi cho lượt sau.")
+        return False
+    _save_republish_queue(slug, {})
+    return True
 
 
 def sync_via_worker_api(slug: str, novel_meta: dict, pending: list, base_dir: Path):
@@ -204,7 +244,10 @@ def sync_via_worker_api(slug: str, novel_meta: dict, pending: list, base_dir: Pa
         content = found_file.read_text(encoding="utf-8")
         first_line = content.splitlines()[0] if content else f"Chương {ch_num}"
         title = first_line.lstrip("# ").strip()
-        chapters_to_sync.append({"filename": found_file.name, "title": title, "number": ch_num, "content": content})
+        item = {"filename": found_file.name, "title": title, "number": ch_num, "content": content}
+        if c.get("expected_r2_key"):
+            item["expected_r2_key"] = c["expected_r2_key"]
+        chapters_to_sync.append(item)
 
     if len(chapters_to_sync) != len(pending):
         # Chưa đủ chương (nguồn chặn giữa chừng...) — KHÔNG phải lỗi hạ tầng,
@@ -292,9 +335,8 @@ def check_and_translate_novel(slug: str) -> bool:
     if fixed:
         with open(novel_json_path, encoding='utf-8') as f:
             novel_meta = json.load(f)
-        if not sync_via_worker_api(slug, novel_meta, [{"number": n} for n in fixed], BASE_DIR):
-            print(f"❌ [{slug}] Không công bố được bản dịch lại: {fixed}")
-            retry_ok = False
+    if not publish_republish_queue(slug, novel_meta):
+        retry_ok = False
     if still_failed:
         retry_ok = False
 
