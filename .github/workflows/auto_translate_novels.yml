@@ -1,11 +1,18 @@
-name: Auto Check & Translate Lanh Chua (Daily 12:00 AM VN Time)
+name: Auto Check & Translate Novels (2x/ngày)
 
+# Tổng quát hóa từ check_lanh_chua.yml cũ (hardcode 1 truyện) — giờ chạy
+# tools/auto_check_novel.py KHÔNG kèm --slug, tự khám phá MỌI truyện có
+# `auto_check.enabled: true` trong novel.json rồi lần lượt kiểm tra + dịch.
+# Thêm truyện mới vào auto-check chỉ cần sửa novel.json, không cần sửa file này.
 on:
   schedule:
-    - cron: '0 17 * * *' # 00:00 giờ Việt Nam; chỉ chạy khi đã bật biến kiểm soát chi phí
-    # Nguồn có thể đăng chương sau lần kiểm tra lúc nửa đêm. Lần kiểm tra trưa
-    # giúp cập nhật trong cùng ngày; nếu chưa có chương mới thì script thoát sớm.
-    - cron: '0 5 * * *' # 12:00 giờ Việt Nam
+    # Cố tình LỆCH giờ tròn (không dùng "0 17"/"0 5") — GitHub khuyến cáo tránh
+    # đúng đầu giờ vì đó là lúc tải scheduled-workflow cao nhất trên toàn nền
+    # tảng, dễ bị trễ nhiều tiếng. Lệch vài phút không đổi ý nghĩa "~00h"/"~12h"
+    # nhưng giảm phần nào độ trễ (không loại bỏ hoàn toàn — đây là giới hạn của
+    # GitHub Actions free scheduler, không phải lỗi trong workflow này).
+    - cron: '7 17 * * *'  # ~00:07 giờ Việt Nam
+    - cron: '53 4 * * *'  # ~11:53 giờ Việt Nam
   workflow_dispatch:
 
 concurrency:
@@ -38,7 +45,7 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Run Auto Check & Translate
+      - name: Run Auto Check & Translate (mọi truyện auto_check.enabled)
         env:
           HEADLESS: "true"
           HACDAO_ALLOW_CLOUD_WRITES: 'false'
@@ -56,12 +63,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          python tools/auto_check_lanh_chua.py
+          python tools/auto_check_novel.py
 
       - name: Commit và push kết quả
         if: always()
         run: |
-          bash tools/commit_sync_state.sh "auto(translate): cập nhật chương mới" novels/lanh-chua-cau-sinh-thien-phu-hop-thanh/ frontend/src/content/announcements.json
+          bash tools/commit_sync_state.sh "auto(translate): cập nhật chương mới" novels/ frontend/src/content/announcements.json
 
       - name: Lưu ngân sách kể cả khi tác vụ thất bại
         if: always()
