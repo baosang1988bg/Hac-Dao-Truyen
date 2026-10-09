@@ -1,0 +1,80 @@
+name: Publish Range (chạy tay)
+
+# Công bố (không dịch) các chương ĐÃ CÓ bản dịch trong novels/<slug>/translated/
+# thuộc khoảng số [from, to], kèm hàng đợi republish_pending.json. Chạy lại an
+# toàn khi lần trước dừng giữa chừng (vd hết ngân sách).
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: 'Slug truyện (thư mục trong novels/)'
+        required: true
+      from:
+        description: 'Số chương đầu'
+        required: true
+      to:
+        description: 'Số chương cuối'
+        required: true
+
+concurrency:
+  group: cloud-sync-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish_range:
+    if: vars.ALLOW_CLOUD_WRITES == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python Dependencies
+        run: |
+          pip install -r requirements.lock
+
+      - name: Công bố khoảng chương
+        env:
+          HEADLESS: "true"
+          RANGE_SLUG: ${{ inputs.slug }}
+          RANGE_FROM: ${{ inputs.from }}
+          RANGE_TO: ${{ inputs.to }}
+          HACDAO_ALLOW_CLOUD_WRITES: 'false'
+          HACDAO_R2_WRITE_BUDGET: ${{ vars.HACDAO_R2_WRITE_BUDGET || '0' }}
+          HACDAO_D1_WRITE_BUDGET: ${{ vars.HACDAO_D1_WRITE_BUDGET || '0' }}
+          HACDAO_MAX_OPS_PER_RUN: ${{ vars.HACDAO_MAX_OPS_PER_RUN || '0' }}
+          HACDAO_BUDGET_FILE: tools/.cloud_sync_budget.json
+          HACDAO_SYNC_KEY: ${{ secrets.HACDAO_SYNC_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY || secrets.GEMINI_API_KEY }}
+          GOOGLE_API_KEYS: ${{ secrets.GOOGLE_API_KEYS || secrets.GEMINI_API_KEYS }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || secrets.GOOGLE_API_KEY }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS || secrets.GOOGLE_API_KEYS }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python tools/publish_range.py --slug "$RANGE_SLUG" --from "$RANGE_FROM" --to "$RANGE_TO"
+
+      - name: Commit và push kết quả
+        if: always()
+        env:
+          RANGE_SLUG: ${{ inputs.slug }}
+        run: |
+          case "$RANGE_SLUG" in *[!a-z0-9-]*|"") echo "slug không hợp lệ"; exit 1;; esac
+          # .gitignore bỏ qua novels/**/translated/ (chỉ whitelist vài truyện) →
+          # phải add -f, nếu không bản dịch mất theo runner (run 37904347648).
+          if [ -d "novels/$RANGE_SLUG/translated" ]; then git add -f -- "novels/$RANGE_SLUG/translated"; fi
+          bash tools/commit_sync_state.sh "auto(translate): công bố khoảng chương $RANGE_SLUG" "novels/$RANGE_SLUG/"
+
+      - name: Commit ngân sách đã sử dụng
+        if: always()
+        run: |
+          bash tools/commit_sync_state.sh "auto(sync): lưu ngân sách đã sử dụng" tools/.cloud_sync_budget.json

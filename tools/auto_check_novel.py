@@ -230,14 +230,15 @@ def sync_via_worker_api(slug: str, novel_meta: dict, pending: list, base_dir: Pa
             sync_via_worker_api(slug, novel_meta, publishable, base_dir)
         return False
 
+    # Lập chỉ mục 1 lần (trước đây quét lại cả thư mục cho TỪNG chương — chậm
+    # khi đẩy hàng trăm chương). Giữ file đầu tiên theo thứ tự glob như cũ.
+    file_by_num = {}
+    for fp in trans_dir.glob("*.md"):
+        file_by_num.setdefault(get_chapter_number(get_title(fp), fp.name), fp)
     chapters_to_sync = []
     for c in pending:
         ch_num = c["number"]
-        found_file = None
-        for fp in trans_dir.glob("*.md"):
-            if get_chapter_number(get_title(fp), fp.name) == ch_num:
-                found_file = fp
-                break
+        found_file = file_by_num.get(ch_num)
         if not found_file:
             print(f"⚠️ [{slug}] Không tìm thấy file dịch cho Chương {ch_num}")
             continue
