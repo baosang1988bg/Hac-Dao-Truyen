@@ -198,9 +198,28 @@ def get_vietnamese_translated_path(profile: NovelProfile, stem: str, chap_num: i
 
 # ── Crawl helpers ─────────────────────────────────────────────────────────────
 
+# Nguồn chặn bot (403) nên phần lớn trang đi qua Jina Reader fallback, vốn hay
+# lỗi tạm thời (rate-limit/timeout). Thử lại có giãn cách thay vì để 1 trang
+# lỗi làm hỏng cả phiên dịch nhiều chương.
+FETCH_ATTEMPTS = 3
+FETCH_RETRY_DELAYS = (5, 15)
+
+
+async def _fetch_html_with_retry(scraper, url: str, logger):
+    for attempt in range(FETCH_ATTEMPTS):
+        html = await scraper.fetch_html(url)
+        if html:
+            return html
+        if attempt + 1 < FETCH_ATTEMPTS:
+            delay = FETCH_RETRY_DELAYS[min(attempt, len(FETCH_RETRY_DELAYS) - 1)]
+            logger.warning(f"[!] Tải lỗi {url} (lần {attempt + 1}/{FETCH_ATTEMPTS}), thử lại sau {delay}s...")
+            await asyncio.sleep(delay)
+    return None
+
+
 async def fetch_and_merge_paginated_chapter_async(scraper, url: str, logger) -> tuple[str, str, str | None, str | None] | None:
     """Cào và tự động ghép các trang của chương nếu có phân trang (1/2), (2/2)..."""
-    html = await scraper.fetch_html(url)
+    html = await _fetch_html_with_retry(scraper, url, logger)
     if not html:
         return None
 
@@ -229,7 +248,7 @@ async def fetch_and_merge_paginated_chapter_async(scraper, url: str, logger) -> 
 
         while current_page < total_pages and current_url:
             logger.info(f"[*] Crawling page {current_page + 1}/{total_pages}: {current_url}")
-            next_html = await scraper.fetch_html(current_url)
+            next_html = await _fetch_html_with_retry(scraper, current_url, logger)
             if not next_html:
                 logger.error(f"[!] Lỗi cào trang {current_page + 1}/{total_pages} từ: {current_url}")
                 raise RuntimeError(f"Lỗi cào trang {current_page + 1}/{total_pages} của chương phân trang: {current_url}")
