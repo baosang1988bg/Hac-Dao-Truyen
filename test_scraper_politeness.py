@@ -12,7 +12,7 @@ Không khởi động Playwright thật, không gọi mạng thật:
 - Test tích hợp với `NovelScraper.fetch_html` dùng object "fake" mô phỏng
   API `context`/`page` của Playwright (cùng phong cách với
   `test_scraper_ssrf.py`) để xác nhận: khi 1 host đã bị circuit-breaker
-  chặn, `fetch_html` trả về None NGAY LẬP TỨC mà không mở page / gọi mạng.
+  chặn, `fetch_html` KHÔNG mở page / gọi thẳng host đó mà chuyển sang Jina Reader.
 """
 import asyncio
 
@@ -197,8 +197,18 @@ def test_fetch_html_dung_han_khong_mo_page_khi_host_da_bi_circuit_break(monkeypa
             raise AssertionError("Không được tạo page khi host đã bị circuit-break")
     scraper._context = _FakeContext()
 
+    jina_calls = []
+
+    async def _fake_jina(u):
+        jina_calls.append(u)
+        return "<html>qua jina</html>"
+    scraper._fetch_via_jina = _fake_jina
+
+    # Không chạm host bị chặn, nhưng vẫn lấy nội dung qua Jina Reader (host
+    # khác) — trước đây trả None làm hỏng cả phiên dịch novel543 sau 5 trang.
     result = run(scraper.fetch_html(url))
-    assert result is None
+    assert result == "<html>qua jina</html>"
+    assert jina_calls == [url]
 
 
 def test_fetch_html_khong_bi_chan_cheo_giua_2_host(monkeypatch):

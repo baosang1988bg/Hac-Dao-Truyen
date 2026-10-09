@@ -447,6 +447,50 @@ class NovelScraper:
             await self._playwright.stop()
             self._playwright = None
 
+    async def _fetch_via_jina(self, url: str) -> str | None:
+        """Lấy trang qua Jina Reader (host khác: r.jina.ai) rồi dựng lại HTML giả
+        lập để parse_content/fetch_novel_metadata dùng như HTML thật."""
+        for jina_attempt in range(1, 4):
+            try:
+                import urllib.request
+                jina_url = f"https://r.jina.ai/{url}"
+                req = urllib.request.Request(
+                    jina_url, 
+                    headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+                )
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    jina_md = resp.read().decode("utf-8")
+                    if jina_md and len(jina_md) > 100:
+                        lines = jina_md.split("\n")
+                        title_val = ""
+                        for line in lines:
+                            if line.startswith("Title:"):
+                                title_val = _clean_jina_title(line.replace("Title:", "").strip())
+                                break
+                        content_body = jina_md
+                        # Jina trả về markdown thô, không có thẻ <a> — nếu trang là
+                        # mục lục chương, link dạng "[Chương 1](url)" vẫn tồn tại
+                        # trong text. Trích xuất và dựng lại thành <a href> thật để
+                        # fetch_novel_metadata (selector a[href*='read'] ...) vẫn
+                        # lấy được danh sách chương thay vì luôn trả về 0 chapter.
+                        md_link_pattern = re.compile(r'\[([^\]\[]+)\]\((https?://[^\s\)]+)\)')
+                        chapter_links_html = "".join(
+                            f'<a href="{href}">{text}</a>'
+                            for text, href in md_link_pattern.findall(content_body)
+                        )
+                        mock_html = (
+                            f"<html><body><h1>{title_val}</h1>"
+                            f"<div id='content'>{content_body}</div>"
+                            f"<div id='jina-links'>{chapter_links_html}</div>"
+                            f"</body></html>"
+                        )
+                        return mock_html
+            except Exception as je:
+                print(f"[!] Jina Reader fallback attempt {jina_attempt}/3 failed: {je}")
+                if jina_attempt < 3:
+                    await asyncio.sleep(2)
+        return None
+
     async def fetch_html(self, url: str) -> str | None:
         """
         Fetch HTML dùng Playwright (tái sử dụng browser context).
@@ -471,8 +515,12 @@ class NovelScraper:
         try:
             await self._rate_limiter.wait(url)
         except ScraperBlockedError as exc:
-            print(f"[!] {exc}")
-            return None
+            # Host đã chặn truy cập trực tiếp → KHÔNG gọi thẳng nữa, nhưng vẫn
+            # lấy được nội dung qua Jina Reader (host khác). Trước đây trả None
+            # khiến novel543 (luôn 403 trực tiếp) hỏng sau 5 trang liên tiếp
+            # dù Jina vẫn đọc được bình thường.
+            print(f"[!] {exc} — chuyển sang Jina Reader")
+            return await self._fetch_via_jina(url)
 
         origin = f"{parsed.scheme}://{parsed.netloc}"
         page = await self._context.new_page()
@@ -523,47 +571,11 @@ class NovelScraper:
                 # tiếp vẫn cần được backoff cho các lần fetch trực tiếp sau.
                 self._rate_limiter.record_error(url, status_code)
                 print(f"[*] Content not found or blocked (title: {title_check.get_text(strip=True) if title_check else 'None'}), trying Jina Reader fallback...")
-                for jina_attempt in range(1, 4):
-                    try:
-                        import urllib.request
-                        jina_url = f"https://r.jina.ai/{url}"
-                        req = urllib.request.Request(
-                            jina_url, 
-                            headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
-                        )
-                        with urllib.request.urlopen(req, timeout=30) as resp:
-                            jina_md = resp.read().decode("utf-8")
-                            if jina_md and len(jina_md) > 100:
-                                lines = jina_md.split("\n")
-                                title_val = ""
-                                for line in lines:
-                                    if line.startswith("Title:"):
-                                        title_val = _clean_jina_title(line.replace("Title:", "").strip())
-                                        break
-                                content_body = jina_md
-                                # Jina trả về markdown thô, không có thẻ <a> — nếu trang là
-                                # mục lục chương, link dạng "[Chương 1](url)" vẫn tồn tại
-                                # trong text. Trích xuất và dựng lại thành <a href> thật để
-                                # fetch_novel_metadata (selector a[href*='read'] ...) vẫn
-                                # lấy được danh sách chương thay vì luôn trả về 0 chapter.
-                                md_link_pattern = re.compile(r'\[([^\]\[]+)\]\((https?://[^\s\)]+)\)')
-                                chapter_links_html = "".join(
-                                    f'<a href="{href}">{text}</a>'
-                                    for text, href in md_link_pattern.findall(content_body)
-                                )
-                                mock_html = (
-                                    f"<html><body><h1>{title_val}</h1>"
-                                    f"<div id='content'>{content_body}</div>"
-                                    f"<div id='jina-links'>{chapter_links_html}</div>"
-                                    f"</body></html>"
-                                )
-                                await page.close()
-                                return mock_html
-                    except Exception as je:
-                        print(f"[!] Jina Reader fallback attempt {jina_attempt}/3 failed: {je}")
-                        if jina_attempt < 3:
-                            await asyncio.sleep(2)
-                
+                jina_html = await self._fetch_via_jina(url)
+                if jina_html:
+                    await page.close()
+                    return jina_html
+
                 if is_blocked:
                     await page.close()
                     return None
