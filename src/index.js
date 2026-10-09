@@ -456,9 +456,14 @@ async function getNovels(env, params = new URLSearchParams()) {
     where.push("n.has_epub = 1");
   }
   if (q) {
-    where.push("(LOWER(n.title) LIKE ? OR LOWER(n.slug) LIKE ? OR LOWER(n.author) LIKE ? OR LOWER(n.original_title) LIKE ?)");
+    // SQLite LOWER() chỉ hạ chữ ASCII ("Đ" giữ nguyên) trong khi q đã qua JS
+    // toLowerCase() → tên có chữ hoa có dấu không bao giờ khớp. Slug là tên
+    // đã bỏ dấu, nên so thêm q dạng slug: có dấu/không dấu đều tìm được.
+    const qSlug = q.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    where.push("(LOWER(n.title) LIKE ? OR LOWER(n.slug) LIKE ? OR LOWER(n.author) LIKE ? OR LOWER(n.original_title) LIKE ? OR n.slug LIKE ?)");
     const qLike = `%${q}%`;
-    binds.push(qLike, qLike, qLike, qLike);
+    binds.push(qLike, qLike, qLike, qLike, qSlug ? `%${qSlug}%` : qLike);
   }
 
   const whereStr = where.join(' AND ');
