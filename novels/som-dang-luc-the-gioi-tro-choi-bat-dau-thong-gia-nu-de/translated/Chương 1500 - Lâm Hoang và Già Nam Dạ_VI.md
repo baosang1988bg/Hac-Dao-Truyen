@@ -94,7 +94,7 @@ Nhìn ánh mắt tò mò của Trương Sở Quân mấy người.
 
 Già Nam Dạ nhẹ giọng nói.
 
-"Ta đến từ Khoa Kỹ Đại Thế Giới, sư tòng Long Thụ Trì, ta cảm nhận được khí tức của sư phụ ta trên người các ngươi!"
+"Ta đến từ Khoa Kỹ Đại Thế Giới, sư tòng Long Thụ chủ trì, ta cảm nhận được khí tức của sư phụ ta trên người các ngươi!"
 
 ---
 
@@ -114,7 +114,7 @@ Già Nam Dạ đến từ Khoa Kỹ Đại Thế Giới. Lúc đầu, sau khi Đ
 
 Già Nam Dạ là người nhỏ tuổi nhất trong đội ngũ đó.
 
-Mấy năm nay, Già Nam Dạ vẫn ở tại Cửu Châu Thiên Hạ, theo Long Thụ Trì học Phật pháp.
+Mấy năm nay, Già Nam Dạ vẫn ở tại Cửu Châu Thiên Hạ, theo Long Thụ chủ trì học Phật pháp.
 
 Rõ ràng, hiện tại Phật pháp đã có thành tựu.
 
@@ -124,11 +124,11 @@ Trương Sở Quân mấy người kinh ngạc, bởi vì mấy nhóm người n
 
 Để xác minh con đường nào phù hợp với họ, họ đã học qua trăm nhà kinh nghĩa.
 
-Trong đó Phật pháp do Long Thụ Trì đích thân truyền thụ.
+Trong đó Phật pháp do Long Thụ chủ trì đích thân truyền thụ.
 
 Lạc Lưu Ly càng cẩn thận đánh giá thiếu niên này, nhỏ hơn cô vài tuổi.
 
-Long Thụ Trì muốn thu nhận đệ tử nhất chính là Lạc Lưu Ly, thứ hai là Dư Lệnh An.
+Long Thụ chủ trì muốn thu nhận đệ tử nhất chính là Lạc Lưu Ly, thứ hai là Dư Lệnh An.
 
 Chỉ tiếc cả hai người này Hạ Thần đều có an bài khác, cho nên họ chỉ có danh phận thầy trò.
 

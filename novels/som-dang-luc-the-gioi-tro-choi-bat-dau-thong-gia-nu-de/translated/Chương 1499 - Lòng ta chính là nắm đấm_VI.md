@@ -1,24 +1,24 @@
 # Chương 1499: Lòng ta chính là nắm đấm!
 
-Sáu vị Hoàng Phi xuất hiện, chỉ duy nhất không thấy Diêu Quang. Rất nhiều đại thần vẫn còn nhớ lần cuối Hạ Thần đích thân chủ trì yến tiệc đêm giao thừa, Diêu Quang đã đích thân xuất hiện.
+Sáu vị Hoàng Phi xuất hiện, chỉ duy nhất không thấy Dao Quang. Rất nhiều đại thần vẫn còn nhớ lần cuối Hạ Thần đích thân chủ trì yến tiệc đêm giao thừa, Dao Quang đã đích thân xuất hiện.
 
-Khi đó, mọi người đều cho rằng đây là một tín hiệu chính trị, bệ hạ rất có thể sẽ sách phong Diêu Quang làm Hoàng Hậu, suy cho cùng, có nàng ở đây, những người khác đều không thích hợp làm Hoàng Phi.
+Khi đó, mọi người đều cho rằng đây là một tín hiệu chính trị, bệ hạ rất có thể sẽ sách phong Dao Quang làm Hoàng Hậu, suy cho cùng, có nàng ở đây, những người khác đều không thích hợp làm Hoàng Phi.
 
-Kết quả lần này, Diêu Quang vậy mà không xuất hiện.
+Kết quả lần này, Dao Quang vậy mà không xuất hiện.
 
 Trong mắt Hạ Thần, thần quang lấp lánh, mọi ánh mắt, mọi biểu cảm của những người có mặt đều bị hắn thu vào.
 
-Diêu Quang lần này không trở về Cửu Châu Thiên Hạ, mà lưu lại Hồng Nguyệt Giới Vực để bế quan.
+Dao Quang lần này không trở về Cửu Châu Thiên Hạ, mà lưu lại Hồng Nguyệt Giới Vực để bế quan.
 
-Tốc độ trưởng thành của Diêu Quang cực kỳ nhanh, nhanh đến mức ngay cả Hạ Thần cũng cảm thấy áp lực.
+Tốc độ trưởng thành của Dao Quang cực kỳ nhanh, nhanh đến mức ngay cả Hạ Thần cũng cảm thấy áp lực.
 
-Diêu Quang mang trên mình một bí mật lớn, một nhân quả lớn, điểm này Hạ Thần đều biết rõ.
+Dao Quang mang trên mình một bí mật lớn, một nhân quả lớn, điểm này Hạ Thần đều biết rõ.
 
-Diêu Quang ở Hồng Nguyệt Giới Vực, tựa như được Đại Đạo gia trì, các loại Đạo Vận Thiên Địa tự động tuôn về phía nàng, điểm này ngay cả Hạ Thần cũng không sánh kịp.
+Dao Quang ở Hồng Nguyệt Giới Vực, tựa như được Đại Đạo gia trì, các loại Đạo Vận Thiên Địa tự động tuôn về phía nàng, điểm này ngay cả Hạ Thần cũng không sánh kịp.
 
-Hiện tại Diêu Quang đã đang xung kích cảnh giới thứ sáu.
+Hiện tại Dao Quang đã đang xung kích cảnh giới thứ sáu.
 
-Nửa năm trước, Diêu Quang lại lần nữa cảm nhận được tiếng gọi đó, lúc trước Diêu Quang có thể vượt qua sương mù, xuyên qua khu vực Lửa Siêu Phàm đã tắt để tìm được Tổ Địa thứ ba, chính là sự chỉ dẫn của tiếng gọi trong lòng.
+Nửa năm trước, Dao Quang lại lần nữa cảm nhận được tiếng gọi đó, lúc trước Dao Quang có thể vượt qua sương mù, xuyên qua khu vực Lửa Siêu Phàm đã tắt để tìm được Tổ Địa thứ ba, chính là sự chỉ dẫn của tiếng gọi trong lòng.
 
 "Nhân Vương đến rồi!"
 
