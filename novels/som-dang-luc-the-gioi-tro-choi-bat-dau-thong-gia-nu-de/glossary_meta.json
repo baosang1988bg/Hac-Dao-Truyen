@@ -1,4 +1,26 @@
 {
-  "revision": 13,
-  "conflicts": []
+  "revision": 78,
+  "conflicts": [
+    {
+      "term": "海洋精靈",
+      "current_value": "Hải Tinh Linh",
+      "suggested_value": "Tinh Linh Đại Dương",
+      "revision_seen": 24,
+      "ts": "2026-10-09T08:23:25"
+    },
+    {
+      "term": "坤鼎",
+      "current_value": "Khôn Đỉnh",
+      "suggested_value": "Côn Đỉnh",
+      "revision_seen": 31,
+      "ts": "2026-10-09T08:24:04"
+    },
+    {
+      "term": "戰天軍",
+      "current_value": "Chiến Thiên Quân",
+      "suggested_value": "Quân Chiến Thiên",
+      "revision_seen": 72,
+      "ts": "2026-10-09T08:29:26"
+    }
+  ]
 }
