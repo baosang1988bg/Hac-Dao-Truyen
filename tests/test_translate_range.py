@@ -27,3 +27,13 @@ def test_catalog_range_unknown_url(tmp_path, monkeypatch):
     _catalog(tmp_path, monkeypatch)
     with pytest.raises(SystemExit):
         translate_range.catalog_range("t", "https://x/99", None)
+
+
+def test_untranslated_numbers_skips_good_and_keeps_failed(tmp_path, monkeypatch):
+    trans = tmp_path / "novels" / "t" / "translated"
+    trans.mkdir(parents=True)
+    (trans / "Chương 1684 - A_VI.md").write_text("# Chương 1684: A\nnội dung\n", encoding="utf-8")
+    (trans / "Chương 1685 - B_VI.md").write_text("# Chương 1685: B\n[Translation failed]\n", encoding="utf-8")
+    monkeypatch.setattr(auto_check_novel, "NOVELS_DIR", tmp_path / "novels")
+
+    assert translate_range.untranslated_numbers("t", [1684, 1685, 1686]) == [1685, 1686]

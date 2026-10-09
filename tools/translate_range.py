@@ -35,6 +35,15 @@ def catalog_range(slug: str, start_url: str, chapters: int | None) -> list:
     return catalog[start:end]
 
 
+def untranslated_numbers(slug: str, numbers: list) -> list:
+    """Số chương trong `numbers` chưa có bản dịch tốt trong translated/."""
+    from migrate_to_cloudflare import get_chapter_number, get_title
+    trans_dir = auto_check_novel.NOVELS_DIR / slug / "translated"
+    failed = set(auto_check_novel.find_failed_chapters(trans_dir))
+    done = {get_chapter_number(get_title(fp), fp.name) for fp in trans_dir.glob("*.md")} if trans_dir.exists() else set()
+    return [n for n in numbers if n not in done or n in failed]
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--slug", required=True)
@@ -46,11 +55,17 @@ def main():
     numbers = [item["number"] for item in items]
     print(f"📚 [{args.slug}] Dịch {len(items)} chương: {numbers[0]} → {numbers[-1]}")
 
-    subprocess.run(
-        [sys.executable, "-u", "main.py", "translate", "--novel", args.slug,
-         "--url", args.url, "--chapters", str(len(items))],
-        cwd=BASE_DIR, check=True,
-    )
+    missing = untranslated_numbers(args.slug, numbers)
+    if missing:
+        subprocess.run(
+            [sys.executable, "-u", "main.py", "translate", "--novel", args.slug,
+             "--url", args.url, "--chapters", str(len(items))],
+            cwd=BASE_DIR, check=True,
+        )
+    else:
+        # Chạy lại sau khi lần trước dịch xong nhưng sync lỗi (vd hết ngân
+        # sách) → chỉ công bố, không tốn quota dịch lại.
+        print(f"♻️ [{args.slug}] Đã có đủ bản dịch, chỉ công bố lên Cloudflare.")
 
     novel_json = auto_check_novel.NOVELS_DIR / args.slug / "novel.json"
     novel_meta = json.loads(novel_json.read_text(encoding="utf-8"))

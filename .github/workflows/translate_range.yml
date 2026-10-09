@@ -71,12 +71,24 @@ jobs:
         run: |
           python tools/translate_range.py --slug "$RANGE_SLUG" --url "$RANGE_URL" --chapters "$RANGE_CHAPTERS"
 
+      - name: Lưu bản dịch làm artifact (dự phòng)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: translated-${{ inputs.slug }}
+          path: novels/${{ inputs.slug }}/translated/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Commit và push kết quả
         if: always()
         env:
           RANGE_SLUG: ${{ inputs.slug }}
         run: |
           case "$RANGE_SLUG" in *[!a-z0-9-]*|"") echo "slug không hợp lệ"; exit 1;; esac
+          # .gitignore bỏ qua novels/**/translated/ (chỉ whitelist vài truyện) →
+          # phải add -f, nếu không bản dịch mất theo runner (run 37904347648).
+          if [ -d "novels/$RANGE_SLUG/translated" ]; then git add -f -- "novels/$RANGE_SLUG/translated"; fi
           bash tools/commit_sync_state.sh "auto(translate): dịch khoảng chương $RANGE_SLUG" "novels/$RANGE_SLUG/"
 
       - name: Commit ngân sách đã sử dụng
