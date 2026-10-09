@@ -80,7 +80,7 @@ Tuy đã qua mấy ngày, nhưng trong thành vẫn còn rất nhiều người 
 
 Sau khi Hạ Thần trở về Dương Thành, hắn bắt đầu dọn dẹp chiến lợi phẩm.
 
-Trận đại chiến này, Hải Hoàng Đế, Hải Tinh Linh, Thương Long Vương, Thiên Bạng Vương, Long Tàm Vương đều bị hắn bắt giữ.
+Trận đại chiến này, Hải Hoàng Đế, Hải Dương Tinh Linh, Thương Long Vương, Thiên Bạng Vương, Long Tằm Vương đều bị hắn bắt giữ.
 
 Nhưng muốn cảm hóa 5 vị vương giả này, chắc chắn sẽ còn tốn nhiều công sức.
 
@@ -110,9 +110,9 @@ Hắn vẫn chưa phát hiện ra bí mật ẩn giấu trong ba kiện giới b
 
 Hạ Thần nắm ba kiện giới bảo trong tay, lẩm bẩm.
 
-Những ngày tiếp theo, hắn dồn toàn bộ tinh lực vào ba kiện giới bảo này. Ngay cả việc cảm hóa Hải Hoàng Đế, Hải Tinh Linh cũng gác lại.
+Những ngày tiếp theo, hắn dồn toàn bộ tinh lực vào ba kiện giới bảo này. Ngay cả việc cảm hóa Hải Hoàng Đế, Hải Dương Tinh Linh cũng gác lại.
 
-Tất nhiên, đây cũng là một chiến lược của Hạ Thần, đó là trước tiên làm cho tâm lý của Hải Hoàng Đế, Hải Tinh Linh và các vương giả khác suy sụp.
+Tất nhiên, đây cũng là một chiến lược của Hạ Thần, đó là trước tiên làm cho tâm lý của Hải Hoàng Đế, Hải Dương Tinh Linh và các vương giả khác suy sụp.
 
 Chỉ khi ý chí của chúng bị mài mòn, mới có thể cảm hóa.
 
@@ -146,7 +146,7 @@ Chiến trường tiền tuyến hoàn toàn ổn định.
 
 Mà Hạ Thần, sau thời gian dài nghiên cứu và luyện chế, cuối cùng đã có đột phá trên ba kiện giới bảo.
 
-Khi Hạ Thần hoàn toàn xóa bỏ dấu ấn của Hải Tinh Linh trên Hồng Nguyệt Bảo Châu, lập tức sự cộng hưởng liên kết của ba kiện giới bảo đã được tăng cường hơn nữa.
+Khi Hạ Thần hoàn toàn xóa bỏ dấu ấn của Hải Dương Tinh Linh trên Hồng Nguyệt Bảo Châu, lập tức sự cộng hưởng liên kết của ba kiện giới bảo đã được tăng cường hơn nữa.
 
 Với mối liên kết này, Hạ Thần phát hiện, nếu đặt ba kiện giới bảo theo các thứ tự khác nhau, tinh hoa Hồng Nguyệt mà chúng ngưng tụ ra không chỉ có sự đề thăng về chất, mà còn có những trọng tâm khác nhau.
 

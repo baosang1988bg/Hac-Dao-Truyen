@@ -69,6 +69,11 @@ def main():
 
     novel_json = auto_check_novel.NOVELS_DIR / args.slug / "novel.json"
     novel_meta = json.loads(novel_json.read_text(encoding="utf-8"))
+    # Chương đã đăng nhưng đổi nội dung (vd chuẩn hoá tên theo glossary) nằm
+    # trong republish_pending.json kèm r2_key cũ → đẩy trước, nếu không đợt
+    # đẩy thường bên dưới bị Worker trả 409 vì thiếu expected_r2_key.
+    if not auto_check_novel.publish_republish_queue(args.slug, novel_meta):
+        sys.exit(1)
     # sync_via_worker_api tự loại bản dịch lỗi và trả False nếu có chương lỗi.
     synced = auto_check_novel.sync_via_worker_api(
         args.slug, novel_meta, [{"number": n} for n in numbers], BASE_DIR)

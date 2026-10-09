@@ -58,7 +58,7 @@ Lại xuất hiện thêm một cường giả Cực Cảnh, hơn nữa còn thu
 
 Đây không phải là tin tốt cho các cường giả phe Hải Dương.
 
-Thiên Bạng Vương, Long Tàm Vương, và những người khác đều tỏ ra ngưng trọng. Nếu chỉ tính riêng cường giả Cực Cảnh, cục diện đã là ba đấu hai, phe Hải Dương là phe hai.
+Thiên Bạng Vương, Long Tằm Vương, và những người khác đều tỏ ra ngưng trọng. Nếu chỉ tính riêng cường giả Cực Cảnh, cục diện đã là ba đấu hai, phe Hải Dương là phe hai.
 
 Vào lúc này, với sự xuất hiện của Lục Cửu Ly, cán cân chiến trường dường như đã nghiêng về một phía.
 

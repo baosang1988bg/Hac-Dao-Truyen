@@ -16,7 +16,7 @@ Còn Hồng Nguyệt Tinh Linh cũng vận dụng Hồng Nguyệt Bảo Châu.
 
 Nhưng chúng vẫn không thể ngăn cản hết mọi đòn tấn công. Cuộc phục kích lần này rõ ràng đã được tính toán và sắp đặt kỹ lưỡng.
 
-Một số đòn tấn công khác đánh về phía Long Tàm Vương, Thiên Bạng Vương, và Minh Man Vương, vốn đã bị thương nặng khi rút lui ở tiền tuyến.
+Một số đòn tấn công khác đánh về phía Long Tằm Vương, Thiên Bạng Vương, và Minh Man Vương, vốn đã bị thương nặng khi rút lui ở tiền tuyến.
 
 Minh Man Vương, vốn đã yếu nhất, không thể chịu nổi cuộc tấn công khủng khiếp này, thân thể nó nổ tung.
 
@@ -38,7 +38,7 @@ Tuy nhiên, nó vẫn tốt hơn Minh Man Vương rất nhiều. Dù bị trọn
 
 Nó đã gắng gượng chống đỡ được.
 
-Còn Long Tàm Vương cũng vô cùng thảm hại. Cơ thể cứng rắn hơn cả thần kim của nó bị gãy làm đôi. Vốn có chín khúc, giờ chỉ còn lại hai khúc, nơi vết gãy máu thịt be bét.
+Còn Long Tằm Vương cũng vô cùng thảm hại. Cơ thể cứng rắn hơn cả thần kim của nó bị gãy làm đôi. Vốn có chín khúc, giờ chỉ còn lại hai khúc, nơi vết gãy máu thịt be bét.
 
 Riêng Thương Long Vương, vào thời khắc quan trọng, nó đã phản ứng nhanh chóng, trốn sau lưng Hải Hoàng Đế, nhờ vậy mà không bị trọng thương.
 

@@ -1,13 +1,6 @@
 {
-  "revision": 78,
+  "revision": 79,
   "conflicts": [
-    {
-      "term": "海洋精靈",
-      "current_value": "Hải Tinh Linh",
-      "suggested_value": "Tinh Linh Đại Dương",
-      "revision_seen": 24,
-      "ts": "2026-10-09T08:23:25"
-    },
     {
       "term": "坤鼎",
       "current_value": "Khôn Đỉnh",

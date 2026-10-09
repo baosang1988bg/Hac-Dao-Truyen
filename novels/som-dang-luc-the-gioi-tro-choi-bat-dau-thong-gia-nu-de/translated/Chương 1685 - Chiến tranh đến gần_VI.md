@@ -6,7 +6,7 @@ Lúc này, cơ quan tối cao của chính phủ liên bang là Võ Đức Đi�
 
 Cuộc họp này, ngay cả Lục Cửu Ly và Lạc Vi Na - những người trong hai năm qua phần lớn thời gian đều bế quan - cũng tham gia.
 
-"Hải Hoàng Đế và Hải Tinh Linh đã xuất hiện ở tiền tuyến, chiến tranh đã không còn cách chúng ta bao xa nữa rồi!"
+"Hải Hoàng Đế và Hải Dương Tinh Linh đã xuất hiện ở tiền tuyến, chiến tranh đã không còn cách chúng ta bao xa nữa rồi!"
 
 Câu nói đầu tiên mở lời của Hạ Thần đã khiến cho bầu không khí của cả Võ Đức Điện trở nên ngưng trọng.
 
@@ -34,7 +34,7 @@ Nhờ có sự hỗ trợ của hai món giới bảo này, không chỉ bản t
 
 Hồng Nguyệt Giới Bảo trân quý như vậy, trong tay Hạ Thần lại có tới hai món, trận đại chiến cách đây hai năm tuyệt đối đã lan truyền đến Hồng Nguyệt Hải.
 
-Hải Hoàng Đế và Hải Tinh Linh tuyệt đối sẽ không từ bỏ việc tranh giành Hồng Nguyệt Giới Bảo.
+Hải Hoàng Đế và Hải Dương Tinh Linh tuyệt đối sẽ không từ bỏ việc tranh giành Hồng Nguyệt Giới Bảo.
 
 Trong truyền thuyết, chỉ có thực sự nắm giữ ba món Hồng Nguyệt Giới Bảo thì mới có thể nắm giữ toàn bộ Hồng Nguyệt Giới Vực, trở thành chủ nhân của giới vực, từ đó đại đạo gia thân...
 

@@ -1,6 +1,6 @@
 # Chương 1701: Chư Thiên đại dung hợp!
 
-Toàn bộ Nguyên Thủy Tổ Địa dường như hóa thành một hạt nhân khổng lồ, hạt nhân này đang phóng thích ra lực hấp dẫn cực lớn, chủ động thu nạp những thế giới khác.
+Toàn bộ Đệ Nhất tổ địa dường như hóa thành một hạt nhân khổng lồ, hạt nhân này đang phóng thích ra lực hấp dẫn cực lớn, chủ động thu nạp những thế giới khác.
 
 Đại Hạ đế đô.
 
@@ -10,29 +10,29 @@ Hạ Thần thông qua thân thể trấn thủ ở khắp nơi cùng với nh�
 
 Hạ Thần lầm bầm lầu bầu, từ trước đến nay bọn họ vẫn luôn bị vết nứt khổng lồ trên bầu trời thu hút, cứ ngỡ rằng thứ đang dung hợp chỉ có thế giới rực rỡ ở phía đối diện vết nứt.
 
-Nhưng hiện tại nhìn từ xu hướng dung hợp, lấy Nguyên Thủy Tổ Địa làm trung tâm, Đông Nam Tây Bắc đều giống như đang tiếp giáp với các thế giới khác.
+Nhưng hiện tại nhìn từ xu hướng dung hợp, lấy Đệ Nhất tổ địa làm trung tâm, Đông Nam Tây Bắc đều giống như đang tiếp giáp với các thế giới khác.
 
-Mà trong Nguyên Thủy Tổ Địa, khắp nơi cũng xuất hiện các vết nứt không gian. Những Đại thế giới sắp hòa vào Nguyên Thủy Tổ Địa giống như bị chia cắt thành từng mảnh vỡ thế giới, những mảnh vỡ thế giới này tựa như mảnh ghép hình, ghép vào trong Nguyên Thủy Tổ Địa.
+Mà trong Đệ Nhất tổ địa, khắp nơi cũng xuất hiện các vết nứt không gian. Những Đại thế giới sắp hòa vào Đệ Nhất tổ địa giống như bị chia cắt thành từng mảnh vỡ thế giới, những mảnh vỡ thế giới này tựa như mảnh ghép hình, ghép vào trong Đệ Nhất tổ địa.
 
-Toàn bộ Nguyên Thủy Tổ Địa đang hồi phục, thế giới dung hợp hiện tại trông giống như đang tái hiện lại diện mạo ban đầu của Nguyên Thủy Tổ Địa hơn.
+Toàn bộ Đệ Nhất tổ địa đang hồi phục, thế giới dung hợp hiện tại trông giống như đang tái hiện lại diện mạo ban đầu của Đệ Nhất tổ địa hơn.
 
 Mà từ vô số năm tháng xa xôi trước kia, giữa các Đại thiên hạ dường như còn có những địa giới khác.
 
 Những địa giới đó sau này hóa thành mảnh vỡ, hình thành thế giới của riêng mình, nhưng bây giờ tất cả đều sắp quy về một mối.
 
-Tất cả đều sắp tái hiện lại địa mạo sơn xuyên năm xưa của Nguyên Thủy Tổ Địa.
+Tất cả đều sắp tái hiện lại địa mạo sơn xuyên năm xưa của Đệ Nhất tổ địa.
 
 Sự biến hóa kịch liệt này kéo dài hơn nửa tháng.
 
-Chỉ mới hơn nửa tháng mà thôi, diện mạo của toàn bộ Nguyên Thủy Tổ Địa đã có sự thay đổi long trời lở đất so với trước kia.
+Chỉ mới hơn nửa tháng mà thôi, diện mạo của toàn bộ Đệ Nhất tổ địa đã có sự thay đổi long trời lở đất so với trước kia.
 
-Trải qua mấy đợt linh khí hồi phục trước đó, chốn hoang dã của Nguyên Thủy Tổ Địa ban đầu đã mang hơi thở hoang vu.
+Trải qua mấy đợt linh khí hồi phục trước đó, chốn hoang dã của Đệ Nhất tổ địa ban đầu đã mang hơi thở hoang vu.
 
-Nhưng hiện tại, toàn bộ Nguyên Thủy Tổ Địa giống như đã hóa thành một thế giới hoang vu thực thụ.
+Nhưng hiện tại, toàn bộ Đệ Nhất tổ địa giống như đã hóa thành một thế giới hoang vu thực thụ.
 
 Cổ thụ cao mấy trăm mét có thể thấy khắp nơi như cỏ dại bên đường, chỉ có những cây cúp cao đến ngàn mét mới có thể coi là hùng vĩ.
 
-Nửa tháng nay, toàn bộ Nguyên Thủy Tổ Địa đều đổ mưa xối xả.
+Nửa tháng nay, toàn bộ Đệ Nhất tổ địa đều đổ mưa xối xả.
 
 Giống như muốn nhấn chìm thế giới này, nhưng trong cơn mưa xối xả lại ẩn chứa linh khí nồng đậm cùng Đạo Vận. Dưới trận mưa này, kích thước yêu thú trong hoang dã đều phóng đại lên một vòng lớn, thậm chí có con còn to gấp mấy lần.
 
@@ -52,13 +52,13 @@ Hơn nữa vì tích lũy trước đó quá mức hùng hậu, vừa đột ph�
 
 Hạ Thần lầm bầm lầu bầu, những ngày này, hắn vẫn luôn cảm nhận sự thay đổi của thiên địa.
 
-Nguyên Thủy Tổ Địa không chỉ linh khí nồng đậm mà Đạo Vận do thiên địa thai nghén cũng trở nên phong phú và hoàn chỉnh hơn.
+Đệ Nhất tổ địa không chỉ linh khí nồng đậm mà Đạo Vận do thiên địa thai nghén cũng trở nên phong phú và hoàn chỉnh hơn.
 
 Rất nhiều Đạo Vận dường như đến từ những mảnh vỡ thế giới kia.
 
-"Quả nhiên là thế, quá trình thế giới dung hợp cũng là quá trình Nguyên Thủy Tổ Địa hoàn thiện chính mình. Những mảnh vỡ thế giới này từ nhiều năm trước vốn dĩ đã là một phần của Nguyên Thủy Tổ Địa, hơn nữa có một số còn là phần cốt lõi,
+"Quả nhiên là thế, quá trình thế giới dung hợp cũng là quá trình Đệ Nhất tổ địa hoàn thiện chính mình. Những mảnh vỡ thế giới này từ nhiều năm trước vốn dĩ đã là một phần của Đệ Nhất tổ địa, hơn nữa có một số còn là phần cốt lõi,
 
-chỉ là không rõ vì nguyên nhân gì mà vỡ vụn tách rời. Hiện tại trạng thái này của Nguyên Thủy Tổ Địa giống như đang tự chữa lành, có lẽ chư thiên dung hợp, chính là sự thay đổi ngoại tại do Nguyên Thủy Tổ Địa tự niết bàn tái sinh mang lại mà thôi..."
+chỉ là không rõ vì nguyên nhân gì mà vỡ vụn tách rời. Hiện tại trạng thái này của Đệ Nhất tổ địa giống như đang tự chữa lành, có lẽ chư thiên dung hợp, chính là sự thay đổi ngoại tại do Đệ Nhất tổ địa tự niết bàn tái sinh mang lại mà thôi..."
 
 Hạ Thần lầm bầm lầu bầu, trong lòng đã có sự suy tính.
 
@@ -100,7 +100,7 @@ Sát ý ngưng tụ thành thực chất, hóa thành hung sát kiếp vân trù
 
 Đây chính là Chiến Thiên Quân — một trong mười đại tinh nhuệ quân đoàn của Thiên Thú Đế Triều!
 
-Bọn họ cũng là lực lượng tiên phong của Thiên Thú Đế Triều. Thông qua tin tức thám thính được trong mấy ngày nay, bọn họ biết được trong Nguyên Thủy Tổ Địa chỉ có vương triều, hoàn toàn không có đế triều, điều này khiến cho người của Thiên Thú Đế Triều sôi trào thú huyết, vô cùng tự tin.
+Bọn họ cũng là lực lượng tiên phong của Thiên Thú Đế Triều. Thông qua tin tức thám thính được trong mấy ngày nay, bọn họ biết được trong Đệ Nhất tổ địa chỉ có vương triều, hoàn toàn không có đế triều, điều này khiến cho người của Thiên Thú Đế Triều sôi trào thú huyết, vô cùng tự tin.
 
 Thiên Thú Đế Triều bọn họ thực lực cường thịnh trong tất cả các đế triều, thế nên việc lật đổ một cái vương triều há chẳng phải dễ như trở bàn tay sao.
 
@@ -110,7 +110,7 @@ Trong lối đi có nhân vật cường đại vừa vượt giới vừa lên 
 
 Trong hư không có âm thanh đáp lại.
 
-"Nguyên Thủy Tổ Địa liên quan trọng đại, không được phép có nửa phần sơ suất. Chiến Thiên Quân chúng ta gánh vác trọng trách mở cõi củng cố lãnh thổ, quay về Tổ Địa. Lần này chúng ta không chỉ đơn thuần là đối phó với một vương triều nhỏ bé, nhiệm vụ của chúng ta là chiếm lĩnh toàn bộ Nguyên Thủy Tổ Địa.
+"Đệ Nhất tổ địa liên quan trọng đại, không được phép có nửa phần sơ suất. Chiến Thiên Quân chúng ta gánh vác trọng trách mở cõi củng cố lãnh thổ, quay về Tổ Địa. Lần này chúng ta không chỉ đơn thuần là đối phó với một vương triều nhỏ bé, nhiệm vụ của chúng ta là chiếm lĩnh toàn bộ Đệ Nhất tổ địa.
 
 Trong lối đi, âm thanh bất mãn kia không nói gì nữa.
 

@@ -64,15 +64,15 @@ Nửa tháng trước, hắn được Liên Bang thủ tịch bí mật triệu 
 
 Đêm hôm đó, Liên Bang thủ tịch đã mở ra một thế giới hoàn toàn mới cho hắn. 
 
-Quá khứ thân của Hạ Thần đã tường tận kể cho Đế Lâm Tiêu cùng đám người đỉnh cấp thiên kiêu biết rõ tình hình hiện tại của Nguyên Thủy Tổ Địa. 
+Quá khứ thân của Hạ Thần đã tường tận kể cho Đế Lâm Tiêu cùng đám người đỉnh cấp thiên kiêu biết rõ tình hình hiện tại của Đệ Nhất tổ địa. 
 
 ---
 
 Là một thiên kiêu nòng cốt ban đầu của Thiên Thần thành, Đế Lâm Tiêu tự nhiên biết rõ, sau khi chính phủ Liên Bang thành lập những năm qua, có một nhóm thiên kiêu đã được bồi dưỡng bí mật, sau đó không hề xuất hiện lần nào nữa. 
 
-Đêm đó, Đế Lâm Tiêu mới biết được, hóa ra những thiên kiêu đó đều được đưa đến Nguyên Thủy Tổ Địa. 
+Đêm đó, Đế Lâm Tiêu mới biết được, hóa ra những thiên kiêu đó đều được đưa đến Đệ Nhất tổ địa. 
 
-Khi Đế Lâm Tiêu biết rằng thủ tịch đại nhân lại có biện pháp đưa bọn họ đến Nguyên Thủy Tổ Địa, Đế Lâm Tiêu chỉ suy nghĩ trong chốc lát, liền trực tiếp đồng ý. 
+Khi Đế Lâm Tiêu biết rằng thủ tịch đại nhân lại có biện pháp đưa bọn họ đến Đệ Nhất tổ địa, Đế Lâm Tiêu chỉ suy nghĩ trong chốc lát, liền trực tiếp đồng ý. 
 
 Hắn hiểu rõ, khi thủ tịch đại nhân kể cho hắn nghe những chuyện này, hắn mới chính là thực sự bước vào vòng tròn cốt lõi của Dương Thành. 
 
@@ -84,11 +84,11 @@ Khi bọn họ đồng ý đến Cửu Châu thiên hạ bên này, thủ tịch
 
 Loại Hồng Nguyệt tinh hoa này chính là nguyên dịch Hồng Nguyệt tinh hoa do ba món giới bảo cùng nhau ngưng tụ thành, qua thử nghiệm, nó có trợ giúp rất lớn đối với việc đột phá Cực Cảnh ở cảnh giới thứ sáu. 
 
-Thủ tịch đại nhân đã hứa với bọn họ, chỉ cần bọn họ lập được công huân ở Nguyên Thủy Tổ Địa này, thậm chí sau này còn có thể đổi lấy nguyên dịch Hồng Nguyệt tinh hoa loại này, hoặc những bảo vật trân quý khác. 
+Thủ tịch đại nhân đã hứa với bọn họ, chỉ cần bọn họ lập được công huân ở Đệ Nhất tổ địa này, thậm chí sau này còn có thể đổi lấy nguyên dịch Hồng Nguyệt tinh hoa loại này, hoặc những bảo vật trân quý khác. 
 
 Điều này có ảnh hưởng sâu sắc đến con đường tương lai của bọn họ, chỉ riêng điểm này thôi, chuyến đi này của bọn họ đã kiếm lời to rồi. 
 
-Ban đầu Đế Lâm Tiêu bất quá mới ở trọng thiên thứ ba, nhưng sau khi bước vào Nguyên Thủy Tổ Địa hấp thu xong đạo vận của Nguyên Thủy Tổ Địa, hắn liền tại chỗ đột phá đến trọng thiên thứ tư. 
+Ban đầu Đế Lâm Tiêu bất quá mới ở trọng thiên thứ ba, nhưng sau khi bước vào Đệ Nhất tổ địa hấp thu xong đạo vận của Đệ Nhất tổ địa, hắn liền tại chỗ đột phá đến trọng thiên thứ tư. 
 
 Sau đó, hắn còn được đào tạo đơn giản ở Đại Hạ đế đô, ví dụ như ngôn ngữ của thế giới này, một số văn hóa, cục diện thế lực của thế giới này, cũng như những vấn đề phải đối mặt tiếp theo, v.v. 
 
@@ -102,7 +102,7 @@ Trên chiến trường.
 
 Đế Lâm Tiêu vô cùng có hứng thú với những quân trận này, trong Hồng Nguyệt giới vực không có khí vận vương triều, cho nên tự nhiên không có quân trận, hoặc nói là quân trận của bọn họ không thể ngưng tụ lực lượng của tất cả binh lính để gia trì cho chủ tướng. 
 
-"Không hổ là Nguyên Thủy Tổ Địa, tuy hiện nay sự phục hồi không bằng Hồng Nguyệt giới vực, nhưng phần nền móng này, tuyệt đối mạnh hơn Hồng Nguyệt giới vực, đây mới thực sự là đại thế giới nha!" 
+"Không hổ là Đệ Nhất tổ địa, tuy hiện nay sự phục hồi không bằng Hồng Nguyệt giới vực, nhưng phần nền móng này, tuyệt đối mạnh hơn Hồng Nguyệt giới vực, đây mới thực sự là đại thế giới nha!" 
 
 Đế Lâm Tiêu cảm thán, ở lại trong Hồng Nguyệt giới vực, giống như ngồi trong đáy giếng nhìn trời, mà nơi này mới là sân thử luyện mạnh mẽ nhất, là trung tâm thực sự của chư thiên vạn giới. 
 
@@ -116,9 +116,9 @@ Thiên chiến quân quân chủ Hùng Quân lầm bầm lầu bầu, đôi mắ
 
 "Ta còn tưởng mạnh thế nào, hóa ra bất quá chỉ là kẻ ở cảnh giới thứ sáu trọng thiên thứ năm mà thôi, vậy mà cũng dám cúi nhìn ta như vậy, mau lên, xuống đây chơi đùa với ta xem nào!" 
 
-Giọng nói của Đế Lâm Tiêu hùng hồn, tung hoành ngang dọc, hắn cũng bắt đầu không che giấu khí tức của bản thân nữa, sự hứng thú của hắn đối với Nguyên Thủy Tổ Địa lúc này đang tăng lên điên cuồng. 
+Giọng nói của Đế Lâm Tiêu hùng hồn, tung hoành ngang dọc, hắn cũng bắt đầu không che giấu khí tức của bản thân nữa, sự hứng thú của hắn đối với Đệ Nhất tổ địa lúc này đang tăng lên điên cuồng. 
 
-Hắn bắt đầu hưng phấn rồi, hắn muốn kiểm tra xem những sinh linh dám xâm lược Nguyên Thủy Tổ Địa này rốt cuộc mạnh đến mức nào? 
+Hắn bắt đầu hưng phấn rồi, hắn muốn kiểm tra xem những sinh linh dám xâm lược Đệ Nhất tổ địa này rốt cuộc mạnh đến mức nào? 
 
 Nghĩ đến đây, trong lòng bàn tay Đế Lâm Tiêu, phù văn ngưng tụ, cơ thể hắn tràn ngập ánh sáng mờ ảo, sau đó hắn siết chặt nắm đấm, một cỗ quyền ý cuồng bạo bá đạo tràn ngập toàn bộ chiến trường. 
 

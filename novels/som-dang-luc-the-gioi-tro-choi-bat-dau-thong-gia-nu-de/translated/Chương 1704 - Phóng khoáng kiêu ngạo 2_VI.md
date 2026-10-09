@@ -24,7 +24,7 @@ Thiên địa phương này, binh lính của hai quân, vào khoảnh khắc n�
 
 Trong mắt bọn họ, bất kỳ ai cũng có thể được coi là cường giả tuyệt thế.
 
-Dù sao thì thiên địa thượng hạn của Nguyên Thủy Tổ Địa vừa mới được mở ra, theo lý thuyết, cường giả cấp bậc này tuyệt đối có thể hoành tảo Nguyên Thủy Tổ Địa rồi.
+Dù sao thì thiên địa thượng hạn của Đệ Nhất tổ địa vừa mới được mở ra, theo lý thuyết, cường giả cấp bậc này tuyệt đối có thể hoành tảo Đệ Nhất tổ địa rồi.
 
 Trong đại quân Đại Hạ.
 

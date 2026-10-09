@@ -130,7 +130,7 @@ Nhưng Đế Lâm Tiêu lúc này đã không còn sự thản nhiên như trư�
 
 Nền tảng của thế giới này quả thực hùng hậu hơn Hồng Nguyệt Giới Vực, ở Hồng Nguyệt Giới Vực, chiến lực 9 nghịch có thể nói là đỉnh tiêm nhất rồi.
 
-Kết quả, ở Nguyên Thủy Tổ Địa này, dựa vào quân trận, thế mà có thể sinh sinh nâng một tên thống soái vốn chỉ có chiến lực 5 nghịch lên đến mức 9 nghịch.
+Kết quả, ở Đệ Nhất tổ địa này, dựa vào quân trận, thế mà có thể sinh sinh nâng một tên thống soái vốn chỉ có chiến lực 5 nghịch lên đến mức 9 nghịch.
 
 Thảo nào khi bọn họ mới đến Cửu Châu thiên hạ, lúc tiếp nhận huấn luyện đã từng nhắc đến việc khí vận hoàng triều trấn áp vạn vật, trong cùng một lĩnh vực, tốt nhất không nên một mình tranh chấp với cả một đội quân, quả nhiên là có lý do của nó.
 

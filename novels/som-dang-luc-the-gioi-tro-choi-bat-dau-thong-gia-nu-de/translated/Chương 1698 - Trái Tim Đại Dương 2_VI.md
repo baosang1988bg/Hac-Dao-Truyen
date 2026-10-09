@@ -32,7 +32,7 @@ Mà quá khứ thân của Hạ Thần, lúc này cũng đang nhắm mắt, lặ
 
 Quá khứ thân của Hạ Thần cương liệt chí dương, còn Trái Tim Đại Dương có thể nói là nhu nhược chí nhu, lấy chí nhu để cảm ngộ chí cương, kỳ diệu vô cùng.
 
-Mà lúc này, tại Tiên Đảo Bồng Lai, Đông Hải, Nguyên Thủy Tổ Địa, Thiên Tôn thân cũng đang lặng lẽ cảm ngộ sức mạnh của Trái Tim Đại Dương.
+Mà lúc này, tại Tiên Đảo Bồng Lai, Đông Hải, Đệ Nhất tổ địa, Thiên Tôn thân cũng đang lặng lẽ cảm ngộ sức mạnh của Trái Tim Đại Dương.
 
 Đây chính là điểm đáng sợ thực sự của mấy cỗ thân thể của Hạ Thần.
 

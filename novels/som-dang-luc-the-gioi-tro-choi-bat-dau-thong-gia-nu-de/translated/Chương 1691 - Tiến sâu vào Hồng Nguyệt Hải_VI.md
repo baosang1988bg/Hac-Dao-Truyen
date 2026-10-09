@@ -102,17 +102,17 @@ Mục tiêu rất rõ ràng, đó chính là sào huyệt của Hải Hoàng Đ�
 
 Sâu trong Hồng Nguyệt Hải.
 
-Hải Hoàng Đế, Hải Tinh Linh và đám cường giả biển cả còn đang rút lui.
+Hải Hoàng Đế, Hải Dương Tinh Linh và đám cường giả biển cả còn đang rút lui.
 
-Hải Tinh Linh tay cầm một kiện Không Gian Bí Bảo, bọn họ cũng đang nhanh chóng xuyên qua Hồng Nguyệt Hải.
+Hải Dương Tinh Linh tay cầm một kiện Không Gian Bí Bảo, bọn họ cũng đang nhanh chóng xuyên qua Hồng Nguyệt Hải.
 
-Hải Tinh Linh trên người tỏa ra Đạo Vận nồng đậm, nguồn nước bản nguyên không ngừng chảy vào cơ thể nàng, còn Hải Hoàng Đế bên cạnh cũng nhắm mắt dưỡng thần, hắn cũng đang vận chuyển Hô Hấp Pháp thần bí, trị liệu thương thế.
+Hải Dương Tinh Linh trên người tỏa ra Đạo Vận nồng đậm, nguồn nước bản nguyên không ngừng chảy vào cơ thể nàng, còn Hải Hoàng Đế bên cạnh cũng nhắm mắt dưỡng thần, hắn cũng đang vận chuyển Hô Hấp Pháp thần bí, trị liệu thương thế.
 
-Đột nhiên Hải Tinh Linh mở mắt ra.
+Đột nhiên Hải Dương Tinh Linh mở mắt ra.
 
 "Bọn họ đã phá vỡ đại trận, biến mất rồi."
 
-Hải Tinh Linh lẩm bẩm, kế hoạch dự phòng nàng để lại đã không thể tiêu diệt Hạ Thần và bọn họ ở đó.
+Hải Dương Tinh Linh lẩm bẩm, kế hoạch dự phòng nàng để lại đã không thể tiêu diệt Hạ Thần và bọn họ ở đó.
 
 "Chiếc bảo đỉnh trong tay hắn là một kiện Chuẩn Chí Bảo, bị bọn họ phá vỡ hư không mà chạy trốn cũng không có gì bất ngờ."
 
@@ -124,7 +124,7 @@ Hải Hoàng Đế ngữ khí lạnh lẽo, sau khi nói xong đoạn này, thâ
 
 "Phía trước sắp đến Trung Tâm Hải rồi, chúng ta sắp trở về Hải Thần Điện rồi!"
 
-Hải Tinh Linh lên tiếng, nàng nhìn vùng biển phía trước, thân thể dần thả lỏng.
+Hải Dương Tinh Linh lên tiếng, nàng nhìn vùng biển phía trước, thân thể dần thả lỏng.
 
 Tất cả cường giả đều cho rằng, đám cường giả phe Lục Địa hẳn đã rút lui, bọn họ đã thoát khỏi nguy hiểm.
 

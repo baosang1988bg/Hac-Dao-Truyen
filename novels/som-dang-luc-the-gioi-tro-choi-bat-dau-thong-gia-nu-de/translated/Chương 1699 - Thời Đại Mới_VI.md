@@ -4,7 +4,7 @@ Những tài nguyên này, bao gồm cả dược bảo có thể trực tiếp 
 
 Cùng với đó là một số công pháp mạnh mẽ, trong giới thiên tài có tin đồn, chỉ cần công huân đủ lớn, thậm chí có thể đạt được cả Cực Đạo công pháp.
 
-Hiện tại một số tài nguyên ở Dương Thành, ngoài những tài nguyên hàng đầu của bản thân Hồng Nguyệt Giới, còn có một số tài nguyên đến từ Nguyên Thủy Tổ Địa.
+Hiện tại một số tài nguyên ở Dương Thành, ngoài những tài nguyên hàng đầu của bản thân Hồng Nguyệt Giới, còn có một số tài nguyên đến từ Đệ Nhất tổ địa.
 
 Những tài nguyên này là thứ mà Hồng Nguyệt Giới Vực trước đây chưa từng có, đối với những thiên tài xuất thân từ Hồng Nguyệt Giới Vực có sự trợ giúp to lớn.
 
@@ -26,7 +26,7 @@ Phần lớn trong số những người này đến từ các tập đoàn tài
 
 Ví dụ như Lục gia, Khổng gia, Hứa gia ở Hồng Nguyệt Thành, những người ưu tú nhất trong thế hệ trẻ đều được đưa đến kinh đô Đại Hạ để học tập.
 
-Đây cũng là một cơ duyên tạo hóa đối với họ, dù sao chỉ riêng việc tiến vào Nguyên Thủy Tổ Địa, hấp thụ Đạo Vận Thiên Địa của Nguyên Thủy Tổ Địa cũng đã có ích rất lớn cho con đường tương lai của họ.
+Đây cũng là một cơ duyên tạo hóa đối với họ, dù sao chỉ riêng việc tiến vào Đệ Nhất tổ địa, hấp thụ Đạo Vận Thiên Địa của Đệ Nhất tổ địa cũng đã có ích rất lớn cho con đường tương lai của họ.
 
 Ngoài những thiên tài đến từ các thế gia môn phiệt này, còn có một số thiên tài xuất thân từ tầng lớp trung hạ nhưng có thiên phú xuất chúng, cũng được đưa đến kinh đô Đại Hạ để được bồi dưỡng trọng điểm.
 
@@ -106,7 +106,7 @@ Cửu Châu Thiên Hạ.
 
 Năm nay, Hạ Thần chân thân xuất quan.
 
-Năm nay, Nguyên Thủy Tổ Địa không bình tĩnh.
+Năm nay, Đệ Nhất tổ địa không bình tĩnh.
 
 Lúc này cách Đại Hạ lập quốc đã qua 43 năm. Từ những năm 20 của Đại Hạ Lịch, linh khí phục hồi chưa đến 10 năm, Thiên Địa đã xảy ra biến đổi lớn, xu hướng chư thiên dung hợp đang đến gần.
 
@@ -120,19 +120,19 @@ Gió nổi mây lên, Đạo Vận sôi trào, Thiên Địa biến đổi lớn
 
 Trên bầu trời, toàn bộ bầu trời như bị một đôi bàn tay khổng lồ xé toạc, ở bên kia vết nứt, ngay cả người siêu phàm bình thường cũng có thể mơ hồ nhìn thấy một số bóng dáng.
 
-Mà ở Nguyên Thủy Tổ Địa, sấm chớp vang trời, Thiên Địa như đang sôi trào.
+Mà ở Đệ Nhất tổ địa, sấm chớp vang trời, Thiên Địa như đang sôi trào.
 
 Giới hạn của toàn bộ Thiên Địa lại được mở ra, linh khí lại một lần nữa phục hồi.
 
 Cửu Châu Thiên Hạ, Thần Thoại Thiên Hạ, Trung Nguyên Thiên Hạ, Nam Bắc Thiên Hạ, Nam Man Thiên Hạ và các nơi khác đều xảy ra rung chấn lớn.
 
-Có không gian gấp khúc hiện lên, sắp giáng lâm Nguyên Thủy Tổ Địa, cùng Nguyên Thủy Tổ Địa dung hợp.
+Có không gian gấp khúc hiện lên, sắp giáng lâm Đệ Nhất tổ địa, cùng Đệ Nhất tổ địa dung hợp.
 
 Cửu Châu Thiên Hạ, cách Đại Hạ Bắc Đô vạn dặm.
 
-Lúc này không gian bị xé rách, một con đường như sợi xích đóng đinh, từ không gian chưa biết kéo dài ra, tiến vào Nguyên Thủy Tổ Địa.
+Lúc này không gian bị xé rách, một con đường như sợi xích đóng đinh, từ không gian chưa biết kéo dài ra, tiến vào Đệ Nhất tổ địa.
 
-Mà lúc này Nguyên Thủy Tổ Địa các nơi đều có những con đường tương tự như vậy mở ra.
+Mà lúc này Đệ Nhất tổ địa các nơi đều có những con đường tương tự như vậy mở ra.
 
 Hai đại thế giới bắt đầu dung hợp sơ bộ.
 

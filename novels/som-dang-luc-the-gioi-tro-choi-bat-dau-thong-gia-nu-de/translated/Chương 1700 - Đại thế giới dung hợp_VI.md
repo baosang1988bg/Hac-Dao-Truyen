@@ -62,13 +62,13 @@ Nhưng trên thực tế, lần này lại là hung mãnh nhất, nguy hiểm nh
 
 Mà ở bên ngoài cương vực Đại Hạ, vào lúc này, thiên địa mới chính là đại biến theo đúng nghĩa đen.
 
-Hư không vốn ổn định nay vỡ vụn, có sơn mạch trực tiếp bốc lên từ mặt đất, thần sơn hồi phục, lại có không gian gấp khúc hiện ra, từ địa giới vô danh xuất hiện từ trong không gian gấp khúc, dung hợp làm một thể với Nguyên Thủy Tổ Địa.
+Hư không vốn ổn định nay vỡ vụn, có sơn mạch trực tiếp bốc lên từ mặt đất, thần sơn hồi phục, lại có không gian gấp khúc hiện ra, từ địa giới vô danh xuất hiện từ trong không gian gấp khúc, dung hợp làm một thể với Đệ Nhất tổ địa.
 
 Lại có những sinh linh thần bí cường đại xuất hiện từ không gian gấp khúc, tung hoành ngang dọc.
 
 Đối với một cường giả đơn lẻ mà nói, điều này có lẽ chỉ là đối mặt với nguy hiểm, nhưng đối với một cái khí vận hoàng triều mà nói, sự thay đổi này tuyệt đối mang tính hủy diệt.
 
-Vào giờ phút này, vận nước Đại Đường, Đại Man đều đang chấn động kịch liệt, sự chấn động này không kém chút nào so với lần linh khí phục hồi đầu tiên của Nguyên Thủy Tổ Địa, thậm chí còn áp đảo hơn một bậc.
+Vào giờ phút này, vận nước Đại Đường, Đại Man đều đang chấn động kịch liệt, sự chấn động này không kém chút nào so với lần linh khí phục hồi đầu tiên của Đệ Nhất tổ địa, thậm chí còn áp đảo hơn một bậc.
 
 Toàn bộ sự ổn định cân bằng vốn có đều bị phá vỡ.
 
@@ -116,23 +116,23 @@ Nơi đây giáp ranh với thảo nguyên phương Bắc.
 
 Thế nhưng trong thảo nguyên lại xuất hiện một đạo vết nứt không gian, mà ở đầu bên kia vết nứt không gian lại là một khối lục địa có diện tích vô cùng lớn.
 
-Theo sự khuếch trương liên tục của vết nứt không gian, khối lục địa khổng lồ đối diện nhanh chóng xích lại gần, nếu lúc này có ai từ trên không trung Nguyên Thủy Tổ Địa nhìn xuống toàn bộ thế giới.
+Theo sự khuếch trương liên tục của vết nứt không gian, khối lục địa khổng lồ đối diện nhanh chóng xích lại gần, nếu lúc này có ai từ trên không trung Đệ Nhất tổ địa nhìn xuống toàn bộ thế giới.
 
-Sẽ phát hiện ra, Nguyên Thủy Tổ Địa giống như hóa thành một cỗ thể.
+Sẽ phát hiện ra, Đệ Nhất tổ địa giống như hóa thành một cỗ thể.
 
-Mỗi một đạo vết nứt không gian xuất hiện, trong vết nứt không gian đều có một khối thế giới tản mát, những khối thế giới tản mát này giống như bị hút vào Nguyên Thủy Tổ Địa, muốn dung hợp với Nguyên Thủy Tổ Địa.
+Mỗi một đạo vết nứt không gian xuất hiện, trong vết nứt không gian đều có một khối thế giới tản mát, những khối thế giới tản mát này giống như bị hút vào Đệ Nhất tổ địa, muốn dung hợp với Đệ Nhất tổ địa.
 
 Mà trong những thế giới tản mát này còn có một số sinh linh.
 
 Trong cương vực Đại Hạ, dường như bởi vì Cửu Đỉnh đã trấn định càn khôn sơn hà, cho nên số lượng vết nứt không gian xuất hiện hãy còn ít, nhưng ở các địa giới khác, lại xuất hiện một lượng lớn vết nứt không gian.
 
-Đặc biệt là ở vùng cực Tây, cực Đông, cực Bắc, cực Nam của Nguyên Thủy Tổ Địa, toàn bộ thiên địa từ chỗ vốn không biên giới giống như hóa thành có biên giới vậy, những khối thế giới tản mát khổng lồ đang giáp ranh lại.
+Đặc biệt là ở vùng cực Tây, cực Đông, cực Bắc, cực Nam của Đệ Nhất tổ địa, toàn bộ thiên địa từ chỗ vốn không biên giới giống như hóa thành có biên giới vậy, những khối thế giới tản mát khổng lồ đang giáp ranh lại.
 
 --- CHAPTER 1 ===
 
 # Chương 1701: Chư thiên đại dung hợp!
 
-Toàn bộ Nguyên Thủy Tổ Địa giống như hóa thành một hạt nhân khổng lồ, hạt nhân này đang phóng thích ra một lực hấp dẫn cực lớn, chủ động hấp thu thế giới khác.
+Toàn bộ Đệ Nhất tổ địa giống như hóa thành một hạt nhân khổng lồ, hạt nhân này đang phóng thích ra một lực hấp dẫn cực lớn, chủ động hấp thu thế giới khác.
 
 Đại Hạ đế đô.
 
@@ -142,29 +142,29 @@ Hạ Thần thông qua những cỗ thân thể được trấn thủ ở khắp
 
 Hạ Thần thì thào tự nói, từ trước tới nay bọn họ đều bị vết nứt khổng lồ trên bầu trời thu hút, cứ tưởng rằng thế giới dung hợp chỉ có thế giới rực rỡ ở phía bên kia vết nứt.
 
-Nhưng hiện tại nhìn từ xu hướng dung hợp, lấy Nguyên Thủy Tổ Địa làm trung tâm, Đông Nam Tây Bắc đều giống như đang giáp ranh với các thế giới khác.
+Nhưng hiện tại nhìn từ xu hướng dung hợp, lấy Đệ Nhất tổ địa làm trung tâm, Đông Nam Tây Bắc đều giống như đang giáp ranh với các thế giới khác.
 
-Mà trong Nguyên Thủy Tổ Địa, khắp nơi cũng xuất hiện những vết nứt không gian, những đại thế giới muốn dung nhập vào Nguyên Thủy Tổ Địa đó giống như bị chia cắt thành những mảnh vỡ thế giới, những mảnh vỡ thế giới này tựa như trò chơi ghép hình chắp vá vào trong Nguyên Thủy Tổ Địa.
+Mà trong Đệ Nhất tổ địa, khắp nơi cũng xuất hiện những vết nứt không gian, những đại thế giới muốn dung nhập vào Đệ Nhất tổ địa đó giống như bị chia cắt thành những mảnh vỡ thế giới, những mảnh vỡ thế giới này tựa như trò chơi ghép hình chắp vá vào trong Đệ Nhất tổ địa.
 
-Toàn bộ Nguyên Thủy Tổ Địa đều đang phục hồi, sự dung hợp thế giới hiện nay giống như đang tái hiện lại diện mạo ban đầu của Nguyên Thủy Tổ Địa.
+Toàn bộ Đệ Nhất tổ địa đều đang phục hồi, sự dung hợp thế giới hiện nay giống như đang tái hiện lại diện mạo ban đầu của Đệ Nhất tổ địa.
 
 Mà từ vô số năm trước không biết rõ đã xa xôi nhường nào, giữa các đại thiên hạ dường như vẫn còn những địa giới khác.
 
 Những địa giới đó sau đó hóa thành mảnh vỡ, hình thành thế giới của riêng mình, nhưng hiện tại tất cả đều sắp quy về một mối.
 
-Tất cả đều sắp tái hiện lại địa mạo sơn xuyên của Nguyên Thủy Tổ Địa năm xưa.
+Tất cả đều sắp tái hiện lại địa mạo sơn xuyên của Đệ Nhất tổ địa năm xưa.
 
 Sự thay đổi kịch liệt này kéo dài hơn nửa tháng.
 
-Chỉn chu trong hơn nửa tháng mà thôi, diện mạo của toàn bộ Nguyên Thủy Tổ Địa so với trước kia đã có sự thay đổi kinh thiên động địa.
+Chỉn chu trong hơn nửa tháng mà thôi, diện mạo của toàn bộ Đệ Nhất tổ địa so với trước kia đã có sự thay đổi kinh thiên động địa.
 
-Trải qua vài vòng linh khí phục hồi trước đó, trong hoang dã của Nguyên Thủy Tổ Địa vốn đã có khí tức man hoang.
+Trải qua vài vòng linh khí phục hồi trước đó, trong hoang dã của Đệ Nhất tổ địa vốn đã có khí tức man hoang.
 
-Nhưng hiện tại, toàn bộ Nguyên Thủy Tổ Địa giống như đã hóa thành một thế giới man hoang đích thực.
+Nhưng hiện tại, toàn bộ Đệ Nhất tổ địa giống như đã hóa thành một thế giới man hoang đích thực.
 
 Những cổ mộc cao tới mấy trăm mét giống như cỏ dại bên đường có thể thấy khắp nơi, chỉ có những cái cây cao trên ngàn mét mới có thể được gọi là hùng vĩ.
 
-Nửa tháng nay, toàn bộ Nguyên Thủy Tổ Địa đều đổ mưa giông bão táp.
+Nửa tháng nay, toàn bộ Đệ Nhất tổ địa đều đổ mưa giông bão táp.
 
 Giống như muốn nhấn chìm thế giới này, nhưng trong cơn mưa bão lại chứa đựng linh khí nồng đậm cùng Đạo Vận, trong cơn mưa bão đó, thể tích của các yêu thú trong hoang dã đều lớn hơn một vòng lớn, thậm chí có con còn to lớn gấp mấy lần.
 
@@ -184,13 +184,13 @@ Hơn nữa bởi vì sự tích lũy trước đó quá mức thâm hậu, vừa
 
 Hạ Thần thì thào tự nói, những ngày này, hắn vẫn luôn cảm nhận sự thay đổi của thiên địa.
 
-Nguyên Thủy Tổ Địa không chỉ linh khí nồng đậm hơn, Đạo Vận do thiên địa thai nghén cũng trở nên phong phú và hoàn chỉnh hơn rất nhiều.
+Đệ Nhất tổ địa không chỉ linh khí nồng đậm hơn, Đạo Vận do thiên địa thai nghén cũng trở nên phong phú và hoàn chỉnh hơn rất nhiều.
 
 Rất nhiều Đạo Vận dường như đều đến từ những mảnh vỡ thế giới kia.
 
-"Quả nhiên là vậy, quá trình dung hợp thế giới cũng là quá trình Nguyên Thủy Tổ Địa hoàn thiện chính mình, những mảnh vỡ thế giới này từ rất nhiều năm trước vốn dĩ đã là một phần của Nguyên Thủy Tổ Địa, hơn nữa có một số còn là phần cốt lõi,
+"Quả nhiên là vậy, quá trình dung hợp thế giới cũng là quá trình Đệ Nhất tổ địa hoàn thiện chính mình, những mảnh vỡ thế giới này từ rất nhiều năm trước vốn dĩ đã là một phần của Đệ Nhất tổ địa, hơn nữa có một số còn là phần cốt lõi,
 
-Chỉ là không biết vì nguyên nhân gì mà vỡ vụn chia tách, hiện tại trạng thái này của Nguyên Thủy Tổ Địa giống như đang tự mình trị liệu, có lẽ chư thiên dung hợp, chính là sự thay đổi ngoại tại do Nguyên Thủy Tổ Địa tự mình niết bàn trọng sinh mang lại mà thôi..."
+Chỉ là không biết vì nguyên nhân gì mà vỡ vụn chia tách, hiện tại trạng thái này của Đệ Nhất tổ địa giống như đang tự mình trị liệu, có lẽ chư thiên dung hợp, chính là sự thay đổi ngoại tại do Đệ Nhất tổ địa tự mình niết bàn trọng sinh mang lại mà thôi..."
 
 Hạ Thần thì thào tự nói, trong lòng dâng lên sự suy ngẫm.
 

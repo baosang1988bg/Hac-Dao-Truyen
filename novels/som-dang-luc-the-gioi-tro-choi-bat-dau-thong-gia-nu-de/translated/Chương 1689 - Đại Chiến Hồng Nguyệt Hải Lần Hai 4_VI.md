@@ -14,9 +14,9 @@ Những ngày tháng chúng từng muốn áp bức đã vĩnh viễn không cò
 
 Trong chiến trường.
 
-Ngạc Vương có thể nói là quét ngang toàn trường. Hải Tinh Linh và Hải Hoàng Đế lần lượt bị Viên Vương và Lục Cửu Ly chặn lại. Còn các cường giả khác của phe Hải Dương, căn bản không phải là đối thủ của Ngạc Vương.
+Ngạc Vương có thể nói là quét ngang toàn trường. Hải Dương Tinh Linh và Hải Hoàng Đế lần lượt bị Viên Vương và Lục Cửu Ly chặn lại. Còn các cường giả khác của phe Hải Dương, căn bản không phải là đối thủ của Ngạc Vương.
 
-Hải Hoàng Đế và Hải Tinh Linh liếc nhìn nhau, trong khoảnh khắc, chúng đã đưa ra quyết định.
+Hải Hoàng Đế và Hải Dương Tinh Linh liếc nhìn nhau, trong khoảnh khắc, chúng đã đưa ra quyết định.
 
 “Rút lui!”
 
@@ -26,7 +26,7 @@ Sức mạnh của phe Lục Địa quả thực vượt ngoài dự liệu củ
 
 Bất kể là số lượng cường giả Cửu Nghịch hay cường giả Cực Cảnh, dường như đều vượt qua Hồng Nguyệt Hải.
 
-Hải Hoàng Đế vừa dứt lời, Long Tàm Vương đã hóa thành một đạo tàn ảnh, biến mất.
+Hải Hoàng Đế vừa dứt lời, Long Tằm Vương đã hóa thành một đạo tàn ảnh, biến mất.
 
 Các cường giả phe Lục Địa thấy vậy, tự nhiên thừa thắng truy kích.
 
@@ -106,7 +106,7 @@ Hơn nữa, trận chiến Hồng Nguyệt Hải lần này tuy thất bại, nh
 
 Trận thiên kiếp sâu trong Hồng Nguyệt Hải 10 năm trước, bọn họ vẫn còn nhớ rõ. Loại thiên kiếp đáng sợ đó khiến tất cả cường giả kinh hãi.
 
-Sâu trong Hồng Nguyệt Hải chắc chắn có đại bí mật. Hải Hoàng Đế và Hải Tinh Linh tuyệt đối không đơn giản như vậy, chúng chắc chắn còn những lá bài tẩy khác.
+Sâu trong Hồng Nguyệt Hải chắc chắn có đại bí mật. Hải Hoàng Đế và Hải Dương Tinh Linh tuyệt đối không đơn giản như vậy, chúng chắc chắn còn những lá bài tẩy khác.
 
 Nếu bọn họ tiếp tục truy kích, rất có thể sẽ gặp phải những nguy hiểm khác.
 

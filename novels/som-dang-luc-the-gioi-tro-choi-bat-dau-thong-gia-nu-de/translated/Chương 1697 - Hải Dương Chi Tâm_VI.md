@@ -96,7 +96,7 @@ Chân thân? Hay là phân thân hiện tại của hắn?
 
 Hạ Thần đang suy nghĩ làm sao để tối đa hóa, hoặc nói là thân thể nào phù hợp nhất để gánh vác Hải Dương Chi Tâm?
 
-"Chân thân đã có con đường của riêng mình, hơn nữa chân thân trấn thủ Nguyên Thủy Tổ Địa, không thể giải quyết chuyện của Hồng Nguyệt Hải. Phân thân hiện tại của ta cũng không phù hợp.
+"Chân thân đã có con đường của riêng mình, hơn nữa chân thân trấn thủ Đệ Nhất tổ địa, không thể giải quyết chuyện của Hồng Nguyệt Hải. Phân thân hiện tại của ta cũng không phù hợp.
 
 Hạ Thần cẩn thận suy nghĩ, chân thân và phân thân đều bị hắn loại trừ, vậy chỉ có thể chọn trong bốn thân thể còn lại.
 

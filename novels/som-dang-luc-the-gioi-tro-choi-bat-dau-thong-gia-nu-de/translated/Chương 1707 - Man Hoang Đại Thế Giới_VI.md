@@ -40,9 +40,9 @@ Hạ Minh Thùy mỉm cười đáp lại. Thực ra thiên phú của hắn đ�
 
 Đế Lâm Tiêu nghe vậy, chỉ cảm thấy Đại Hạ này quả thật có nền tảng cực kỳ thâm hậu. Bản thân Hạ Minh Thùy đã có thể xem là thiên tài, nếu lại phối hợp với đại quân, tuyệt đối xứng danh một vị vô song thống lĩnh, thiên kiêu tuyệt thế cùng lĩnh vực e rằng cũng phải tránh lui ba xá.
 
-"Ngươi vừa đến Nguyên Thủy Tổ Địa không lâu, tuy biết rõ nền tảng Nguyên Thủy Tổ Địa thâm hậu, nhưng vì giới hạn của thiên địa này chỉ vừa mới mở ra, với thực lực của ngươi trong thiên địa chúng ta, trong lòng không tránh khỏi sẽ sinh ra tâm lý xem thường.
+"Ngươi vừa đến Đệ Nhất tổ địa không lâu, tuy biết rõ nền tảng Đệ Nhất tổ địa thâm hậu, nhưng vì giới hạn của thiên địa này chỉ vừa mới mở ra, với thực lực của ngươi trong thiên địa chúng ta, trong lòng không tránh khỏi sẽ sinh ra tâm lý xem thường.
 
-Thế nhưng, Nguyên Thủy Tổ Địa chung quy vẫn khác biệt với Hồng Nguyệt Giới Vực. Ở Hồng Nguyệt Giới Vực, mặc dù cảnh giới cao hơn, nhưng thủ đoạn đối phó địch thủ ở đó tương đối đơn giản.
+Thế nhưng, Đệ Nhất tổ địa chung quy vẫn khác biệt với Hồng Nguyệt Giới Vực. Ở Hồng Nguyệt Giới Vực, mặc dù cảnh giới cao hơn, nhưng thủ đoạn đối phó địch thủ ở đó tương đối đơn giản.
 
 Hơn nữa các thế lực ở đó cũng tương đối đơn giản thuần túy.
 
@@ -96,7 +96,7 @@ Mà ngay lúc đại quân Đại Hạ đang dọn dẹp chiến trường, ở 
 
 Thế giới nơi Thiên Thú Đế Triều tọa lạc có tên là Man Hoang Đại Thế Giới.
 
-Diện tích của thế giới này rộng lớn vô biên, lớn hơn toàn bộ Nguyên Thủy Tổ Địa hiện tại gấp bốn, năm lần.
+Diện tích của thế giới này rộng lớn vô biên, lớn hơn toàn bộ Đệ Nhất tổ địa hiện tại gấp bốn, năm lần.
 
 Trong thế giới khổng lồ này, có hai đại đế triều, bảy đại hoàng triều, cùng mấy chục khí vận vương triều đang sừng sững đứng vững.
 
@@ -116,9 +116,9 @@ Rồi từ hơn mười năm trước, bọn họ càng thêm chắc chắn rằ
 
 Cho nên toàn bộ Man Hoang Đại Thế Giới từ hơn mười năm trước đã bắt đầu chuẩn bị cho việc chinh chiến Tổ Địa.
 
-Mà lần này, trong cương vực của Thiên Thú Đế Triều lại xuất hiện một con đường thông thẳng đến Nguyên Thủy Tổ Địa, thế nên bọn họ mới không kìm được mà nóng lòng xuất kích.
+Mà lần này, trong cương vực của Thiên Thú Đế Triều lại xuất hiện một con đường thông thẳng đến Đệ Nhất tổ địa, thế nên bọn họ mới không kìm được mà nóng lòng xuất kích.
 
-Hắn muốn nhân cơ hội chiếm lấy Nguyên Thủy Tổ Địa trước tiên, kết quả lại chẳng thể ngờ rằng lần này bọn họ lại phải trả một cái giá bằng máu.
+Hắn muốn nhân cơ hội chiếm lấy Đệ Nhất tổ địa trước tiên, kết quả lại chẳng thể ngờ rằng lần này bọn họ lại phải trả một cái giá bằng máu.
 
 ---
 

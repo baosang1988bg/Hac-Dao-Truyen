@@ -22,15 +22,15 @@ Mà trên những con đường rộng lớn của đế đô, có thể nhìn t
 
 Vốn dĩ thành đế đô này cực kỳ phồn hoa, chính là một trong những trung tâm của toàn bộ đại thế giới.
 
-Nhưng giờ phút này, Man Hoang Đại Thế Giới cũng không hề bình yên, thiên địa cự biến không chỉ xảy ra trong Nguyên Thủy Tổ Địa, mà còn xảy ra ngay trong Man Hoang Đại Thế Giới.
+Nhưng giờ phút này, Man Hoang Đại Thế Giới cũng không hề bình yên, thiên địa cự biến không chỉ xảy ra trong Đệ Nhất tổ địa, mà còn xảy ra ngay trong Man Hoang Đại Thế Giới.
 
-Thậm chí, xét về mức độ kịch liệt, Man Hoang Đại Thế Giới còn kịch liệt hơn cả Nguyên Thủy Tổ Địa.
+Thậm chí, xét về mức độ kịch liệt, Man Hoang Đại Thế Giới còn kịch liệt hơn cả Đệ Nhất tổ địa.
 
-Nếu nói thể tích của Nguyên Thủy Tổ Địa ban đầu đang nhanh chóng lớn lên, thì Man Hoang Đại Thế Giới lại hoàn toàn ngược lại.
+Nếu nói thể tích của Đệ Nhất tổ địa ban đầu đang nhanh chóng lớn lên, thì Man Hoang Đại Thế Giới lại hoàn toàn ngược lại.
 
 Thể tích của chúng đang nhanh chóng thu nhỏ lại, giống như bị nén ép lại vậy, hơn nữa một số không gian địa giới bị xé rách, đại thế giới vốn dĩ hoàn chỉnh hóa thành một mảnh vỡ thế giới.
 
-Sau đó dưới hình thức mảnh vỡ thế giới để bồi đắp vào Nguyên Thủy Tổ Địa.
+Sau đó dưới hình thức mảnh vỡ thế giới để bồi đắp vào Đệ Nhất tổ địa.
 
 Hiện tại, toàn bộ Man Hoang Đại Thế Giới sấm chớp giật liên hồi, toàn bộ thế giới đều đang bị nén ép.
 
@@ -40,7 +40,7 @@ Dẫn đến trực tiếp các đại khí vận vương triều khí vận b�
 
 Sự biến hóa kịch liệt này, đối với cá nhân có lẽ là một cơ duyên lớn, nhưng đối với bất kỳ thế lực bàng đại nào mà nói, đều là một tai họa tày đình.
 
-Lúc này, tầng lớp cao cấp của Thiên Thú Đế Triều lúc này đều đặt hết hy vọng vào Chiến Thiên Quân, hy vọng Chiến Thiên Quân có thể đánh vào Nguyên Thủy Tổ Địa, chiếm trước tiên cơ để chuẩn bị cho việc dung hợp thế giới sắp tới.
+Lúc này, tầng lớp cao cấp của Thiên Thú Đế Triều lúc này đều đặt hết hy vọng vào Chiến Thiên Quân, hy vọng Chiến Thiên Quân có thể đánh vào Đệ Nhất tổ địa, chiếm trước tiên cơ để chuẩn bị cho việc dung hợp thế giới sắp tới.
 
 Nhưng đột nhiên, trong toàn bộ thành đế đô vang lên tiếng chuông vang dội, tiếng chuông vang lên liên tiếp 12 hồi.
 
@@ -114,7 +114,7 @@ Hiện nay, trong cương vực Đại Hạ, đã phát hiện ba nơi giao di�
 
 Ba giao diện dung hợp này lần lượt nằm ở Bắc Cương, Nam Cương, cùng với Đông Hoang, tương ứng với ba đại thế giới khác nhau.
 
-Nếu trong tương lai, ba đại thế giới này khảm vào Nguyên Thủy Tổ Địa, thì sẽ chia cắt Trung Nguyên thiên hạ và Cửu Châu thiên hạ ra, khiến cho cương vực Đại Hạ không thể kết nối trực tiếp.
+Nếu trong tương lai, ba đại thế giới này khảm vào Đệ Nhất tổ địa, thì sẽ chia cắt Trung Nguyên thiên hạ và Cửu Châu thiên hạ ra, khiến cho cương vực Đại Hạ không thể kết nối trực tiếp.
 
 Hơn nữa thế lực trong ba đại thế giới này đều có dã tâm bừng bừng, chắc chắn không thể chung sống hòa bình với bọn họ, làm một người hàng xóm thân thiện được.
 
@@ -140,13 +140,13 @@ Hiện nay ba con đường xuyên giới đã bị chặn đứng hoàn toàn, 
 
 Hơn nữa khảo nghiệm thực sự vẫn chưa tới, hiện nay chỉ bất quá là con đường dung hợp đang hình thành mà thôi.
 
-Những đại thế giới kia chỉ bất quá đang kết nối sơ bộ với Nguyên Thủy Tổ Địa.
+Những đại thế giới kia chỉ bất quá đang kết nối sơ bộ với Đệ Nhất tổ địa.
 
 Hơn nữa Hạ Thần ngẩng đầu lên, vết nứt trên bầu trời kia đã ngày càng lớn hơn, ở phía bên kia vết nứt, đại thế giới kia đã có thể nhìn thấy rõ mồn một, vết nứt này cũng như giao diện dung hợp đã hình thành vượt xa các giao diện dung hợp khác.
 
 Đại thế giới này mới là khảo nghiệm thực sự, những đại thế giới khác kia có lẽ chỉ là món khai vị, nhưng nếu ngay cả món khai vị cũng không thể chặn lại được, thì chú định sẽ phải bị tiêu diệt.
 
-Ngay khi Hạ Thần và những người khác vừa họp xong, vết nứt khổng lồ trên bầu trời kia giống như bị người ta một lần nữa xé rách thêm một góc, ngay sau đó có mấy đạo thân ảnh từ phía bên kia vết nứt đang đến gần Nguyên Thủy Tổ Địa.
+Ngay khi Hạ Thần và những người khác vừa họp xong, vết nứt khổng lồ trên bầu trời kia giống như bị người ta một lần nữa xé rách thêm một góc, ngay sau đó có mấy đạo thân ảnh từ phía bên kia vết nứt đang đến gần Đệ Nhất tổ địa.
 
 Cường giả của đại thế giới kia sắp chính thức giáng lâm rồi.
 

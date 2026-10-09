@@ -112,11 +112,11 @@ Hạ Minh Thùy mỉm cười đáp lại. Kỳ thực thiên phú của hắn �
 
 Đế Lâm Tiêu nghe vậy liền cảm thấy Đại Hạ quả thực có nền tảng thâm hậu. Bản thân Hạ Minh Thùy đã có thể được gọi là thiên tài, nếu lại kết hợp với đại quân, hắn hoàn toàn có thể được xưng tụng là một vị thống soái vô song, những tuyệt thế thiên kiêu trong cùng lĩnh vực e rằng cũng phải thoái lui.
 
-"Cậu mới đến Nguyên Thủy Tổ Địa không lâu, tuy biết nền tảng của Nguyên Thủy Tổ Địa rất thâm hậu, nhưng vì giới hạn của thế giới này chỉ vừa mới mở ra, với thực lực của cậu ở thiên địa chúng ta, trong lòng cậu không tránh khỏi việc sinh lòng khinh miệt.
+"Cậu mới đến Đệ Nhất tổ địa không lâu, tuy biết nền tảng của Đệ Nhất tổ địa rất thâm hậu, nhưng vì giới hạn của thế giới này chỉ vừa mới mở ra, với thực lực của cậu ở thiên địa chúng ta, trong lòng cậu không tránh khỏi việc sinh lòng khinh miệt.
 
-Thế nhưng, Nguyên Thủy Tổ Địa rốt cuộc vẫn khác biệt với Hồng Nguyệt Giới Vực. Trong Hồng Nguyệt Giới Vực, tuy cảnh giới cao hơn nhưng phương thức đối địch ở nơi đó lại tương đối đơn giản,
+Thế nhưng, Đệ Nhất tổ địa rốt cuộc vẫn khác biệt với Hồng Nguyệt Giới Vực. Trong Hồng Nguyệt Giới Vực, tuy cảnh giới cao hơn nhưng phương thức đối địch ở nơi đó lại tương đối đơn giản,
 
-Hơn nữa các thế lực ở đó cũng tương đối đơn giản thuần túy. Thế nhưng Nguyên Thủy Tổ Địa hiện nay lại là trung tâm của toàn bộ chư thiên vạn giới, các thế lực ở đây tụ hội, cạnh tranh lẫn nhau, cục diện phức tạp gấp trăm lần Hồng Nguyệt Giới Vực, thủ đoạn cũng càng thêm tầng tầng lớp lớp.
+Hơn nữa các thế lực ở đó cũng tương đối đơn giản thuần túy. Thế nhưng Đệ Nhất tổ địa hiện nay lại là trung tâm của toàn bộ chư thiên vạn giới, các thế lực ở đây tụ hội, cạnh tranh lẫn nhau, cục diện phức tạp gấp trăm lần Hồng Nguyệt Giới Vực, thủ đoạn cũng càng thêm tầng tầng lớp lớp.
 
 Nhóm người các cậu quả thực là những thiên tài đỉnh cấp nhất của Hồng Nguyệt Giới Vực, nhưng khi đến đây cũng phải cẩn thận. Những kẻ bất bại chủ, những cổ đại quái thai, không một ai là kẻ có thể xem thường.
 
@@ -166,7 +166,7 @@ Và ngay khi quân đoàn Đại Hạ đang dọn dẹp chiến trường, ở p
 
 Thế giới mà Thiên Thú Đế Triều tọa lạc có tên là Man Hoang Đại Thế Giới.
 
-Diện tích của thế giới này rộng lớn vô biên, lớn hơn gấp bốn, năm lần toàn bộ Nguyên Thủy Tổ Địa hiện tại.
+Diện tích của thế giới này rộng lớn vô biên, lớn hơn gấp bốn, năm lần toàn bộ Đệ Nhất tổ địa hiện tại.
 
 Trong thế giới rộng lớn này có hai đại đế triều, bảy đại hoàng triều, hàng chục tòa khí vận vương triều đang đứng sừng sững.
 
@@ -182,12 +182,12 @@ Cuối cùng, sau khi điều tra, bọn họ kinh hãi phát hiện ra toàn b�
 
 Sau đó, bọn họ tra cứu một lượng lớn cổ tịch và tìm ra một số manh mối.
 
-Tiếp đó, vào hơn 10 năm trước, bọn họ càng thêm chắc chắn rằng thế giới của bọn họ đang tiến lại gần Nguyên Thủy Tổ Địa.
+Tiếp đó, vào hơn 10 năm trước, bọn họ càng thêm chắc chắn rằng thế giới của bọn họ đang tiến lại gần Đệ Nhất tổ địa.
 
 Thế nên toàn bộ Man Hoang Đại Thế Giới từ hơn 10 năm trước đã bắt đầu chuẩn bị cho việc chinh chiến Tổ Địa.
 
-Mà lần này, trong lãnh thổ của Thiên Thú Đế Triều lại xuất hiện một con đường hầm thông thẳng đến Nguyên Thủy Tổ Địa, thế nên bọn họ mới nóng lòng không đợi được mà xuất kích.
+Mà lần này, trong lãnh thổ của Thiên Thú Đế Triều lại xuất hiện một con đường hầm thông thẳng đến Đệ Nhất tổ địa, thế nên bọn họ mới nóng lòng không đợi được mà xuất kích.
 
-Muốn chiếm lấy Nguyên Thủy Tổ Địa trước tiên, kết quả lại không ngờ rằng lần này bọn họ lại phải trả một cái giá bằng máu.
+Muốn chiếm lấy Đệ Nhất tổ địa trước tiên, kết quả lại không ngờ rằng lần này bọn họ lại phải trả một cái giá bằng máu.
 
 *(Bản dịch được thực hiện bởi model: gemini-flash-lite-latest)*

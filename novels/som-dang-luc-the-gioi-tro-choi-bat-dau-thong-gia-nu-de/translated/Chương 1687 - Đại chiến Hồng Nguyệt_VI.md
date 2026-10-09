@@ -18,7 +18,7 @@ Còn ở trong biển, một đám Vương giả đỉnh cấp cũng đều lộ
 
 Nhưng bây giờ, Ngạc Vương lại đi trước nó một bước, đột phá lên Cực Cảnh rồi.
 
-Long Tàm Vương và Thiên Bạng Vương lúc này trong mắt cũng mang theo vẻ ngưng trọng.
+Long Tằm Vương và Thiên Bạng Vương lúc này trong mắt cũng mang theo vẻ ngưng trọng.
 
 Một cường giả Cực Cảnh, tuyệt đối là cường giả đứng đầu của Hồng Nguyệt Giới vực không thể tranh cãi.
 
@@ -42,19 +42,19 @@ Thân ảnh Hồng Nguyệt Tinh Linh vẫn mơ hồ không rõ, trên cơ thể
 
 "10 năm trước, chuyện Hải Thần Điện, là ngươi làm?"
 
-Giọng nói của Hải Tinh Linh truyền ra, lúc này giọng nàng càng thêm chân thực, như thể từ một chiều không gian khác trở về thế giới thực, ẩn ẩn có thể nghe ra đây là giọng nữ.
+Giọng nói của Hải Dương Tinh Linh truyền ra, lúc này giọng nàng càng thêm chân thực, như thể từ một chiều không gian khác trở về thế giới thực, ẩn ẩn có thể nghe ra đây là giọng nữ.
 
 Lời nàng vừa dứt, ánh mắt mọi người lại bị thu hút.
 
 Một đám cường giả đều thầm động dung, họ đương nhiên đều biết 10 năm trước vào thời khắc quan trọng của đại chiến, phía sau Hồng Nguyệt Hải dường như đã xảy ra chuyện lớn.
 
-Lúc đó Hải Tinh Linh đã trực tiếp không màng chiến trường tiền tuyến, quay về hậu phương, sau đó mọi người không biết chuyện gì xảy ra, nhưng họ đều cảm nhận được một luồng Thiên Kiếp cực mạnh giáng xuống.
+Lúc đó Hải Dương Tinh Linh đã trực tiếp không màng chiến trường tiền tuyến, quay về hậu phương, sau đó mọi người không biết chuyện gì xảy ra, nhưng họ đều cảm nhận được một luồng Thiên Kiếp cực mạnh giáng xuống.
 
 Luồng Thiên Kiếp đó hủy thiên diệt địa, ngay cả các cường giả cũng cảm thấy bản thân nhỏ bé.
 
 Cũng vì sự kiện đó trực tiếp dẫn đến kết thúc đại chiến, bất kể là Hồng Nguyệt Tinh Linh hay Hải Hoàng Đế, đều đã không còn tâm trí để tiếp tục chiến đấu nữa.
 
-Giờ Hải Tinh Linh lại hỏi Thành chủ Dương Thành như vậy, lẽ nào chuyện năm đó thực sự là do Thành chủ Dương Thành làm?
+Giờ Hải Dương Tinh Linh lại hỏi Thành chủ Dương Thành như vậy, lẽ nào chuyện năm đó thực sự là do Thành chủ Dương Thành làm?
 
 Mọi người thầm suy nghĩ, mọi chuyện dường như có khả năng thật.
 
@@ -68,7 +68,7 @@ Xét từ động cơ, thời gian, không gian và năng lực, vị Thành ch�
 
 Hạ Thần đương nhiên không thể trực tiếp thừa nhận, Hải Thần Điện liên quan đến nhân quả lớn, Hạ Thần hiện tại cũng không hoàn toàn nắm chắc giải quyết sự việc này, nên lúc cần ẩn nhẫn thì phải ẩn nhẫn.
 
-Hải Tinh Linh nhìn Hạ Thần thật sâu, không tiếp tục hỏi nữa. Nàng tự nhiên không tin, những năm nay nàng và Hải Hoàng Đế vẫn đang điều tra sâu vụ việc này.
+Hải Dương Tinh Linh nhìn Hạ Thần thật sâu, không tiếp tục hỏi nữa. Nàng tự nhiên không tin, những năm nay nàng và Hải Hoàng Đế vẫn đang điều tra sâu vụ việc này.
 
 ---
 
@@ -92,7 +92,7 @@ Còn ở trong biển, một đám Vương giả đỉnh cấp cũng đều lộ
 
 Nhưng bây giờ, Ngạc Vương lại đi trước nó một bước, đột phá lên Cực Cảnh rồi.
 
-Long Tàm Vương và Thiên Bạng Vương lúc này trong mắt cũng mang theo vẻ ngưng trọng.
+Long Tằm Vương và Thiên Bạng Vương lúc này trong mắt cũng mang theo vẻ ngưng trọng.
 
 Một cường giả Cực Cảnh, tuyệt đối là cường giả đứng đầu của Hồng Nguyệt Giới vực không thể tranh cãi.
 
@@ -116,19 +116,19 @@ Thân ảnh Hồng Nguyệt Tinh Linh vẫn mơ hồ không rõ, trên cơ thể
 
 "10 năm trước, chuyện Hải Thần Điện, là ngươi làm?"
 
-Giọng nói của Hải Tinh Linh truyền ra, lúc này giọng nàng càng thêm chân thực, như thể từ một chiều không gian khác trở về thế giới thực, ẩn ẩn có thể nghe ra đây là giọng nữ.
+Giọng nói của Hải Dương Tinh Linh truyền ra, lúc này giọng nàng càng thêm chân thực, như thể từ một chiều không gian khác trở về thế giới thực, ẩn ẩn có thể nghe ra đây là giọng nữ.
 
 Lời nàng vừa dứt, ánh mắt mọi người lại bị thu hút.
 
 Một đám cường giả đều thầm động dung, họ đương nhiên đều biết 10 năm trước vào thời khắc quan trọng của đại chiến, phía sau Hồng Nguyệt Hải dường như đã xảy ra chuyện lớn.
 
-Lúc đó Hải Tinh Linh đã trực tiếp không màng chiến trường tiền tuyến, quay về hậu phương, sau đó mọi người không biết chuyện gì xảy ra, nhưng họ đều cảm nhận được một luồng Thiên Kiếp cực mạnh giáng xuống.
+Lúc đó Hải Dương Tinh Linh đã trực tiếp không màng chiến trường tiền tuyến, quay về hậu phương, sau đó mọi người không biết chuyện gì xảy ra, nhưng họ đều cảm nhận được một luồng Thiên Kiếp cực mạnh giáng xuống.
 
 Luồng Thiên Kiếp đó hủy thiên diệt địa, ngay cả các cường giả cũng cảm thấy bản thân nhỏ bé.
 
 Cũng vì sự kiện đó trực tiếp dẫn đến kết thúc đại chiến, bất kể là Hồng Nguyệt Tinh Linh hay Hải Hoàng Đế, đều đã không còn tâm trí để tiếp tục chiến đấu nữa.
 
-Giờ Hải Tinh Linh lại hỏi Thành chủ Dương Thành như vậy, lẽ nào chuyện năm đó thực sự là do Thành chủ Dương Thành làm?
+Giờ Hải Dương Tinh Linh lại hỏi Thành chủ Dương Thành như vậy, lẽ nào chuyện năm đó thực sự là do Thành chủ Dương Thành làm?
 
 Mọi người thầm suy nghĩ, mọi chuyện dường như có khả năng thật.
 
@@ -142,7 +142,7 @@ Xét từ động cơ, thời gian, không gian và năng lực, vị Thành ch�
 
 Hạ Thần đương nhiên không thể trực tiếp thừa nhận, Hải Thần Điện liên quan đến nhân quả lớn, Hạ Thần hiện tại cũng không hoàn toàn nắm chắc giải quyết sự việc này, nên lúc cần ẩn nhẫn thì phải ẩn nhẫn.
 
-Hải Tinh Linh nhìn Hạ Thần thật sâu, không tiếp tục hỏi nữa. Nàng tự nhiên không tin, những năm nay nàng và Hải Hoàng Đế vẫn đang điều tra sâu vụ việc này.
+Hải Dương Tinh Linh nhìn Hạ Thần thật sâu, không tiếp tục hỏi nữa. Nàng tự nhiên không tin, những năm nay nàng và Hải Hoàng Đế vẫn đang điều tra sâu vụ việc này.
 
 Ban đầu họ đều cho rằng là cường giả trong khu cấm Hồng Nguyệt Hải nhân lúc họ vắng mặt ở đại bản doanh đã lẻn vào đánh lén Hải Thần Điện, nhưng sau đó phát hiện sự việc không hề đơn giản.
 
@@ -152,13 +152,13 @@ Hơn nữa, theo Hải Thần nói, kẻ trộm đã nắm giữ Hư Không Đ�
 
 Trùng hợp là, lúc trước Hải Hoàng Đế cũng bị một chiếc Đỉnh lớn đập trúng, trọng thương.
 
-Đôi mắt đẹp của Hải Tinh Linh lướt qua Hạ Thần và Hư Không Điểu, giây tiếp theo, nàng chủ động ra tay.
+Đôi mắt đẹp của Hải Dương Tinh Linh lướt qua Hạ Thần và Hư Không Điểu, giây tiếp theo, nàng chủ động ra tay.
 
 Rốt cuộc sự thật là như thế nào? Chỉ cần bắt được Hư Không Điểu hoặc con người này, mọi chuyện sẽ rõ ràng, hơn nữa con người này còn giữ Hồng Nguyệt Giới Bảo mà nàng cần.
 
 Bất kể là lý do gì, nàng đều có lý do để ra tay.
 
-Thế nhưng, công kích của Hải Tinh Linh bị Viên Vương ngăn cản. Viên Vương vung một cây gậy sắt đen xuống, cách ly tất cả.
+Thế nhưng, công kích của Hải Dương Tinh Linh bị Viên Vương ngăn cản. Viên Vương vung một cây gậy sắt đen xuống, cách ly tất cả.
 
 Sức mạnh của nó quả thực là trời phú, đặc biệt là khí huyết màu vàng càng thêm dồi dào, như biển cả.
 
@@ -174,7 +174,7 @@ Vị Viên Vương này những năm gần đây danh tiếng thực sự rất 
 
 Những năm nay nó ở trong Thần Sơn Côn Lôn, không giống như những Vương thú hung hãn, mà giống như một vị đạo nhân.
 
-Hạ Thần đứng trên lưng Hư Không Điểu, nhìn xuống tất cả. Đại chiến đã toàn diện mở ra, Hải Hoàng Đế và Hải Tinh Linh ra tay đã mở ra một loại tín hiệu, Long Hổ Vương và Ngũ Sắc Khổng Tước Vương cũng lần lượt tìm đối thủ của mình.
+Hạ Thần đứng trên lưng Hư Không Điểu, nhìn xuống tất cả. Đại chiến đã toàn diện mở ra, Hải Hoàng Đế và Hải Dương Tinh Linh ra tay đã mở ra một loại tín hiệu, Long Hổ Vương và Ngũ Sắc Khổng Tước Vương cũng lần lượt tìm đối thủ của mình.
 
 "Ngươi đi giúp đi!"
 

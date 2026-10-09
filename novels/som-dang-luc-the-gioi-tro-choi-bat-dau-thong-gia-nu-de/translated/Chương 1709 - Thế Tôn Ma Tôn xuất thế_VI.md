@@ -10,15 +10,15 @@ Thế nhưng mỗi một đạo thân ảnh, đều khủng bố như uyên th�
 
 Theo lý mà nói, hiện nay các con đường không gian đều đã hình thành, thế nhưng bọn họ vượt giới lại có vẻ vô cùng gian nan.
 
-"Thực lực của bọn họ hiện nay mơ hồ đã vượt qua giới hạn dung nạp của phương thiên địa này, cho nên trong thời gian ngắn không thể vượt giới, phải chờ đợi Nguyên Thủy Tổ Địa phục hồi sâu hơn nữa."
+"Thực lực của bọn họ hiện nay mơ hồ đã vượt qua giới hạn dung nạp của phương thiên địa này, cho nên trong thời gian ngắn không thể vượt giới, phải chờ đợi Đệ Nhất tổ địa phục hồi sâu hơn nữa."
 
 Trong Đại Hạ đế đô, sau khi Hạ Thần quan sát tỉ mỉ liền mở miệng nói.
 
-Dựa theo sự cảm nhận và thí nghiệm của hắn, giới hạn thiên địa hiện nay của Nguyên Thủy Tổ Địa đại khái ở vào khoảng Cực Cảnh tầng thứ năm của cảnh giới thứ sáu.
+Dựa theo sự cảm nhận và thí nghiệm của hắn, giới hạn thiên địa hiện nay của Đệ Nhất tổ địa đại khái ở vào khoảng Cực Cảnh tầng thứ năm của cảnh giới thứ sáu.
 
 Vượt qua giới hạn này, việc vượt giới sẽ rất gian nan, hơn nữa sẽ chịu sự bài xích của thiên địa này.
 
-Thế nhưng hiện nay sự phục hồi của Nguyên Thủy Tổ Địa vô cùng kịch liệt.
+Thế nhưng hiện nay sự phục hồi của Đệ Nhất tổ địa vô cùng kịch liệt.
 
 Nghĩ đến sẽ chẳng mất bao lâu nữa, giới hạn thiên địa sẽ lại được nâng cao hơn nữa.
 
@@ -28,7 +28,7 @@ Mà cường giả đối diện với vết nứt trên bầu trời rõ ràng 
 
 Tất cả mọi người đều biết rằng, mặc dù lần này những cường giả kia vượt giới thất bại, nhưng bức màn trời đó sẽ không cản trở bọn họ được bao lâu, sự phục hồi của thiên địa quá kịch liệt.
 
-Và toàn bộ Nguyên Thủy Tổ Địa, cũng vì sự dung hợp thế giới mà rơi vào trong hỗn loạn.
+Và toàn bộ Đệ Nhất tổ địa, cũng vì sự dung hợp thế giới mà rơi vào trong hỗn loạn.
 
 Bên trong Đại Hạ thì vẫn ổn, tất cả các con đường đều đã bị các quân đoàn Đại Hạ chặn đứng, chỉ có một phần rất nhỏ quân đội lưu tẩu ra bên ngoài, thế nhưng, cũng chẳng thành khí hậu gì.
 
@@ -56,7 +56,7 @@ Khi đại chiến kết thúc, những cao thủ đến từ các đế triều
 
 Tự nguyện đi theo sau lưng Thế Tôn, tu hành chân kinh cùng Thế Tôn.
 
-Tin tức này vừa truyền ra, Nguyên Thủy Tổ Địa sôi trào.
+Tin tức này vừa truyền ra, Đệ Nhất tổ địa sôi trào.
 
 Tất cả mọi người đều không ngờ tới, Thế Tôn im lìm từ lâu vừa xuất thế lại có chiến tích lớn như vậy.
 
@@ -74,15 +74,15 @@ Sau đó, những người như Huyền Tiêu, Khê Phong, Bạch Hổ, Nhiếp 
 
 Đến sau này mọi người thậm chí ở tầng diện chiến lực đỉnh cao còn có chút phớt lờ vị Thế Tôn này.
 
-Hoàn toàn quên mất rằng, vị Thế Tôn này lúc trước từng được xưng tụng là một trong ba vị cường giả đỉnh cấp của Nguyên Thủy Tổ Địa, ngang hàng với Thiên Tôn và Hạ Thần.
+Hoàn toàn quên mất rằng, vị Thế Tôn này lúc trước từng được xưng tụng là một trong ba vị cường giả đỉnh cấp của Đệ Nhất tổ địa, ngang hàng với Thiên Tôn và Hạ Thần.
 
-Trong buổi hội diện giữa bản thổ và vực ngoại lần thứ nhất, chính là Thế Tôn, Thiên Tôn và Hạ Thần đã gánh vác thể diện của bản thổ Nguyên Thủy Tổ Địa, tranh thủ mang lại lợi ích to lớn cho thổ dân Nguyên Thủy Tổ Địa.
+Trong buổi hội diện giữa bản thổ và vực ngoại lần thứ nhất, chính là Thế Tôn, Thiên Tôn và Hạ Thần đã gánh vác thể diện của bản thổ Đệ Nhất tổ địa, tranh thủ mang lại lợi ích to lớn cho thổ dân Đệ Nhất tổ địa.
 
 Vốn dĩ mọi người còn tưởng rằng Thế Tôn trong nhóm nhân sự đợt đầu đã dần nghiêng về phía tốp cuối, kết quả trận chiến này lại một lần nữa làm mới nhận thức của mọi người.
 
 "Thế Tôn quá đáng sợ rồi, chiến lực của ngài ấy tuyệt đối là đỉnh cao nhất, cho dù thiên địa lại một lần nữa phục hồi, giới hạn thiên địa được mở ra, ngài ấy vẫn không hề rớt lại phía sau, vẫn là cường giả đỉnh cấp trong hàng ngũ nhân sự đợt đầu."
 
-"Thế Tôn thật lợi hại, đúng là đánh ra uy phong của Nguyên Thủy Tổ Địa chúng ta, một cái khí vận đế triều nho nhỏ, thế mà cũng dám đến Nguyên Thủy Tổ Địa của chúng ta làm càn..."
+"Thế Tôn thật lợi hại, đúng là đánh ra uy phong của Đệ Nhất tổ địa chúng ta, một cái khí vận đế triều nho nhỏ, thế mà cũng dám đến Đệ Nhất tổ địa của chúng ta làm càn..."
 
 ...
 
@@ -132,7 +132,7 @@ Việc này có chút nghịch thiên rồi.
 
 Có người chơi cảm thán, tin tức truyền đến các đại thế lực vực ngoại, cũng gây ra những cuộc thảo luận không nhỏ.
 
-Thế Tôn Ma Tôn hiện nay đại diện cho lợi ích bản thổ của Nguyên Thủy Tổ Địa.
+Thế Tôn Ma Tôn hiện nay đại diện cho lợi ích bản thổ của Đệ Nhất tổ địa.
 
 Hai vị thiên kiêu này, sau đó đều bị đẩy lùi ra ngoài top mười Thiên Bảng.
 

@@ -68,7 +68,7 @@ Hiện tại dường như cũng không còn xa Cực Cảnh.
 
 Ngoài Thương Long Vương, Minh Man Vương cũng tái xuất hiện.
 
-Ngoài hai vị vương giả này, còn có Thiên Bạng Vương và Long Tàm Vương.
+Ngoài hai vị vương giả này, còn có Thiên Bạng Vương và Long Tằm Vương.
 
 Hơi thở của hai vị vương giả này cũng cực kỳ khủng bố.
 
@@ -142,7 +142,7 @@ Hiện tại dường như cũng không còn xa Cực Cảnh.
 
 Ngoài Thương Long Vương, Minh Man Vương cũng tái xuất hiện.
 
-Ngoài hai vị vương giả này, còn có Thiên Bạng Vương và Long Tàm Vương.
+Ngoài hai vị vương giả này, còn có Thiên Bạng Vương và Long Tằm Vương.
 
 Hơi thở của hai vị vương giả này cũng cực kỳ khủng bố.
 
@@ -152,11 +152,11 @@ Ngay lúc này, trong đại dương xuất hiện một bóng dáng nhân hình
 
 Nhưng, trong tay nàng lại nắm giữ một viên bảo châu, viên bảo châu này tỏa ra từng luồng sức mạnh Hồng Nguyệt.
 
-Chính là Hải Tinh Linh kia.
+Chính là Hải Dương Tinh Linh kia.
 
 "Chỉ cần các ngươi giao hai kiện Giới Bảo đó cho chúng ta, chúng ta có thể lui binh!"
 
-Giọng nói của Hải Tinh Linh truyền ra, giọng nói nhẹ nhàng, như một người phụ nữ.
+Giọng nói của Hải Dương Tinh Linh truyền ra, giọng nói nhẹ nhàng, như một người phụ nữ.
 
 Hồng Nguyệt Hải quả nhiên là vì Hồng Nguyệt Giới Bảo mà đến, và mục đích này, một đám sinh linh có mặt đều biết rõ.
 
@@ -168,15 +168,15 @@ Hắn tỏa ra ánh sáng thái dương rực rỡ, trên người quấn một 
 
 Lúc này, Hạ Thần như một vị thần mặt trời, còn Hư Không Điểu chỉ là tọa kỵ của hắn.
 
-Hải Tinh Linh nhìn Hạ Thần, Hồng Nguyệt Bảo Châu trong tay nàng lúc này lóe sáng, như cảm nhận được điều gì đó?
+Hải Dương Tinh Linh nhìn Hạ Thần, Hồng Nguyệt Bảo Châu trong tay nàng lúc này lóe sáng, như cảm nhận được điều gì đó?
 
 Hai kiện Hồng Nguyệt Giới Bảo kia đang ở trên người hắn.
 
-Hải Tinh Linh trong nháy mắt thông qua Hồng Nguyệt Bảo Châu đã biết được.
+Hải Dương Tinh Linh trong nháy mắt thông qua Hồng Nguyệt Bảo Châu đã biết được.
 
 "Là ngươi!"
 
-Nhưng còn chưa kịp để Hải Tinh Linh mở miệng, Hải Hoàng Đế đã phát ra một tiếng gầm.
+Nhưng còn chưa kịp để Hải Dương Tinh Linh mở miệng, Hải Hoàng Đế đã phát ra một tiếng gầm.
 
 Hải Hoàng Đế rất ít khi nổi giận, lúc xuất hiện trước đó luôn cao cao tại thượng, như nắm giữ mọi thứ.
 

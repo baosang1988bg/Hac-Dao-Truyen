@@ -90,7 +90,7 @@ Năm mới.
 
 Những đại chính sách đó được Võ Đức Điện định ra, giao cho chín bộ và các bộ khác thực hiện.
 
-Mà Hạ Thần cũng bắt đầu dành thời gian, bắt đầu cảm hóa Hải Hoàng Đế, Hải Tinh Linh, v.v.
+Mà Hạ Thần cũng bắt đầu dành thời gian, bắt đầu cảm hóa Hải Hoàng Đế, Hải Dương Tinh Linh, v.v.
 
 Ban đầu đương nhiên không thuận lợi, nhưng tất cả đều nằm trong dự liệu của Hạ Thần.
 
@@ -112,17 +112,17 @@ Thiên Bạng Vương là người đầu tiên được cảm hóa, và trong n
 
 Hạ Thần ghi nhớ tin tức này, chuẩn bị sau này khi bản thân mạnh hơn, sẽ tự mình tiến vào Cực Quang Dương để khám phá và đoạt lấy Hắc Đế Cực Đạo truyền thừa.
 
-Sau Thiên Bạng Vương, Long Tàm Vương cũng nhận thức rõ thực tế, bởi vì nó phát hiện mình dù thế nào cũng không thể trốn thoát ra ngoài.
+Sau Thiên Bạng Vương, Long Tằm Vương cũng nhận thức rõ thực tế, bởi vì nó phát hiện mình dù thế nào cũng không thể trốn thoát ra ngoài.
 
 Nó cũng hiểu vì sao Hạ Thần có thể sai khiến Ngạc Vương, Ngũ Sắc Khổng Tước Vương và các vương giả yêu thú khác.
 
-Long Tàm Vương bị cảm hóa nửa năm sau, Ngạo mạn Thương Long Vương cũng bị thực tế làm mài đi góc cạnh, lựa chọn quy thuận.
+Long Tằm Vương bị cảm hóa nửa năm sau, Ngạo mạn Thương Long Vương cũng bị thực tế làm mài đi góc cạnh, lựa chọn quy thuận.
 
 Xuân đi thu đến, đã hai năm rưỡi trôi qua kể từ chiến thắng đại chiến Hồng Nguyệt Hải.
 
 Đại Hạ lịch năm 42, tháng 8.
 
-Hải Tinh Linh và Hải Hoàng Đế dần nhận thức rõ thực tế. Điều khiến chúng hoàn toàn mở rộng trái tim là, chúng xác định hai quả thần trứng bị trộm trong Hải Thần Điện đang nằm trong tay Hạ Thần.
+Hải Dương Tinh Linh và Hải Hoàng Đế dần nhận thức rõ thực tế. Điều khiến chúng hoàn toàn mở rộng trái tim là, chúng xác định hai quả thần trứng bị trộm trong Hải Thần Điện đang nằm trong tay Hạ Thần.
 
 Và vào khoảnh khắc chúng quy phục, trong đầu Hạ Thần vang lên giọng nói hệ thống.
 
