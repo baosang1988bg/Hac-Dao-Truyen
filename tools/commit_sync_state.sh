@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Commit checkpoint nếu có thay đổi; không che lỗi add/commit/push.
 set -euo pipefail
+# Danh tính bot cho MỌI lệnh git tạo commit (commit lẫn pull --rebase khi push
+# bị từ chối). Thiếu ở bước rebase → "Committer identity unknown" và mất commit
+# ngân sách (run 38111379376).
+export GIT_AUTHOR_NAME='HacDao Sync Bot' GIT_AUTHOR_EMAIL='bot@hacdaotruyen.local'
+export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME" GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
 message=$1
 shift
 for path in "$@"; do
@@ -14,7 +19,7 @@ if git diff --cached --quiet; then
   echo 'Không có thay đổi để commit.'
   exit 0
 fi
-git -c user.name='HacDao Sync Bot' -c user.email='bot@hacdaotruyen.local' commit -m "$message"
+git commit -m "$message"
 # Nhánh có thể vừa nhận commit khác trong lúc job chạy (run 37905565041 bị
 # "rejected (fetch first)" → mất commit bản dịch) → rebase rồi push lại.
 branch=${GITHUB_REF_NAME:-main}
