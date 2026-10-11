@@ -103,7 +103,7 @@ def show_cloudflare():
         d = json.loads(info.stdout[info.stdout.index("{"):])
         _line("D1 dòng ghi 24h", int(d.get("rows_written_24h", 0)), FREE["d1_rows_written_day"])
         _line("D1 dòng đọc 24h", int(d.get("rows_read_24h", 0)), FREE["d1_rows_read_day"])
-        print(f"  {'D1 dung lượng':<28} {int(d.get("database_size", 0)) / 1e6:>10.1f} MB / 5,000 MB")
+        print(f"  {'D1 dung lượng':<28} {int(d.get('database_size', 0)) / 1e6:>10.1f} MB / 5,000 MB")
     except Exception:
         print("  D1: không đọc được (`npx wrangler login` rồi chạy lại)")
 
