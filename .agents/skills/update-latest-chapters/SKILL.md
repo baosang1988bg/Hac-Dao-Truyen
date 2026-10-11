@@ -28,6 +28,12 @@ Hệ thống theo dõi các truyện có cấu hình `auto_check.enabled: true` 
 
 Khi người dùng yêu cầu **"update latest chapter"**, **"update lasted chapter"**, **"cập nhật chương mới"**, hoặc **"có chương mới không?"**:
 
+> [!IMPORTANT]
+> **Mặc định chạy qua GitHub Actions** để không tranh việc với agent khác/cron:
+> `gh workflow run auto_translate_novels.yml` rồi `gh run watch`. Chỉ chạy local khi
+> người dùng yêu cầu rõ; khi đó `git pull --rebase` trước, `git add -f novels/<slug>/translated`
+> + commit + pull + push ngay sau, và ghi `.agents/WORKLOG.md`. Xem `.agents/AGENTS.md` → "Phối hợp nhiều agent".
+
 ### A. Cập nhật tất cả truyện trong danh sách:
 Chạy lệnh tự động (quét và dịch tất cả truyện có `auto_check.enabled: true`):
 ```bash
@@ -48,13 +54,13 @@ python -u tools/auto_check_novel.py --slug <slug>
 2. **Kiểm tra chương mới:** Đọc mục lục nguồn qua Jina Reader (`https://r.jina.ai/<source_index_url>`).
 3. **Cập nhật catalog:** Tự động append các chương mới vào `novels/<slug>/catalog.json` và cập nhật `total_chapters` trong `novel.json`.
 4. **Dịch tự động:** Chạy `main.py translate --novel <slug> --chapters <N>` với cơ chế xoay vòng key Gemini API.
-5. **Đồng bộ Cloudflare:** Tự động đồng bộ lên Cloudflare D1 + R2 qua Worker API hoặc `migrate_to_cloudflare.py`.
-6. **Deploy Cloudflare Workers:** Tự động thực thi lệnh deploy (`npx wrangler deploy`).
-7. **Tạo thông báo & Ghi nhận thời gian:** Cập nhật `last_updated_at` trong `novel.json`, thông báo trong `announcements.json`, và in báo cáo chi tiết thời gian (dịch, sync, deploy, tổng thời lượng).
+5. **Đồng bộ Cloudflare:** Tự động đồng bộ lên Cloudflare D1 + R2 qua Worker API hoặc `migrate_to_cloudflare.py` (catalog nguồn KHÔNG được đẩy lên R2).
+6. **Không deploy:** Chương mới là dữ liệu D1/R2 nên bỏ qua deploy. Chỉ deploy khi đổi code, từ `main` sạch (`npm run deploy`); script chỉ tự deploy khi `HACDAO_AUTO_DEPLOY=1` và code trùng `origin/main`.
+7. **Tạo thông báo & Ghi nhận thời gian:** Cập nhật `last_updated_at` trong `novel.json`, thông báo trong `announcements.json`, và in báo cáo chi tiết thời gian (dịch, sync, tổng thời lượng).
 
 > [!IMPORTANT]
 > 1. **Luôn giữ tên truyện là Tiếng Việt**: Thuộc tính `"title"` trong `novel.json` và mọi nơi hiển thị luôn luôn phải là tiếng Việt (tên gốc Trung chỉ nằm trong `"original_title"`).
-> 2. **Chạy trọn gói**: Thực hiện toàn bộ quy trình trong một lần, không dừng lại giữa chừng để hỏi người dùng. Báo cáo rõ ràng thời điểm hoàn thành và tiến trình deploy.
+> 2. **Chạy trọn gói**: Thực hiện toàn bộ quy trình trong một lần, không dừng lại giữa chừng để hỏi người dùng. Báo cáo rõ ràng thời điểm hoàn thành; ghi 1 dòng vào `.agents/WORKLOG.md`.
 
 ---
 

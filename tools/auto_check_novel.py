@@ -305,15 +305,45 @@ def _append_announcement(slug: str, title: str, last_chapter: int):
         json.dump(ann_data[:5], f, ensure_ascii=False, indent=2)
 
 
+# Phần code mà deploy đưa lên production. Thay đổi chưa commit ở đây nghĩa là
+# đang sửa dở → không được deploy.
+DEPLOY_CODE_PATHS = ["src", "frontend", "wrangler.jsonc", "package.json"]
+
+
+def _deploy_blocker() -> str | None:
+    """Lý do KHÔNG được deploy (None = an toàn). Cập nhật chương chỉ là dữ liệu
+    D1/R2 nên không cần deploy; nhiều agent/máy (Claude Code, Antigravity) có
+    working tree khác nhau, deploy từ bản sửa dở hoặc lệch main sẽ đè
+    production của nhau."""
+    if os.getenv("HACDAO_AUTO_DEPLOY", "").strip() != "1":
+        return "chương mới là dữ liệu D1/R2, không cần deploy (bật HACDAO_AUTO_DEPLOY=1 nếu thật sự cần)"
+    status = subprocess.run(["git", "status", "--porcelain", "--", *DEPLOY_CODE_PATHS],
+                            cwd=BASE_DIR, capture_output=True, text=True)
+    if status.stdout.strip():
+        return "code có thay đổi chưa commit:\n" + status.stdout.rstrip()
+    subprocess.run(["git", "fetch", "-q", "origin", "main"], cwd=BASE_DIR, capture_output=True, text=True)
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=BASE_DIR, capture_output=True, text=True).stdout.strip()
+    origin = subprocess.run(["git", "rev-parse", "origin/main"], cwd=BASE_DIR, capture_output=True, text=True).stdout.strip()
+    if not head or head != origin:
+        return f"HEAD ({head[:7]}) khác origin/main ({origin[:7]}) — pull/push trước khi deploy"
+    return None
+
+
 def deploy_to_cloudflare() -> bool:
-    """Deploy frontend và worker lên Cloudflare Pages / Workers."""
+    """Deploy frontend và worker lên Cloudflare — CHỈ khi _deploy_blocker() cho phép."""
+    blocker = _deploy_blocker()
+    if blocker:
+        print(f"\n⏭️  Bỏ qua deploy Cloudflare: {blocker}")
+        return False
     deploy_start = datetime.now()
     print(f"\n📦 [{deploy_start:%Y-%m-%d %H:%M:%S}] Bắt đầu tiến trình deploy Cloudflare Workers...")
     try:
+        # npm run deploy = build frontend rồi wrangler deploy (thiếu build sẽ
+        # đẩy frontend/dist cũ hoặc thiếu hẳn assets).
         if sys.platform == "win32":
-            cmd = ["cmd.exe", "/c", "npx.cmd wrangler deploy"]
+            cmd = ["cmd.exe", "/c", "npm.cmd run deploy"]
         else:
-            cmd = ["npx", "wrangler", "deploy"]
+            cmd = ["npm", "run", "deploy"]
         subprocess.run(cmd, cwd=BASE_DIR, check=True)
         elapsed = (datetime.now() - deploy_start).total_seconds()
         print(f"✅ [{datetime.now():%Y-%m-%d %H:%M:%S}] Deploy Cloudflare hoàn tất thành công! (Thời gian deploy: {elapsed:.1f}s)")

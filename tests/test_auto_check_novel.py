@@ -236,3 +236,57 @@ def test_publish_republish_queue_keeps_queue_on_failure(tmp_path, monkeypatch):
 
     assert auto_check_novel.publish_republish_queue("truyen-loi", {"title": "T"}) is False
     assert (novel_dir / "republish_pending.json").exists()
+
+
+class _Proc:
+    def __init__(self, stdout=""):
+        self.stdout = stdout
+        self.returncode = 0
+
+
+def _fake_git(monkeypatch, *, dirty="", head="abc", origin="abc"):
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        if cmd[:2] == ["git", "status"]:
+            return _Proc(dirty)
+        if cmd[:2] == ["git", "rev-parse"]:
+            return _Proc((origin if "origin/main" in cmd else head) + "\n")
+        return _Proc()
+    monkeypatch.setattr(auto_check_novel.subprocess, "run", fake_run)
+    return calls
+
+
+def _deployed(calls):
+    return any("deploy" in " ".join(c) and c[0] != "git" for c in calls)
+
+
+def test_deploy_skipped_by_default(monkeypatch):
+    # Cập nhật chương là dữ liệu D1/R2 → mặc định KHÔNG deploy.
+    monkeypatch.delenv("HACDAO_AUTO_DEPLOY", raising=False)
+    calls = _fake_git(monkeypatch)
+    assert auto_check_novel.deploy_to_cloudflare() is False
+    assert not _deployed(calls)
+
+
+def test_deploy_refused_when_code_dirty(monkeypatch):
+    # Hai agent/máy khác working tree → deploy bản đang sửa dở sẽ đè production của nhau.
+    monkeypatch.setenv("HACDAO_AUTO_DEPLOY", "1")
+    calls = _fake_git(monkeypatch, dirty=" M src/index.js\n")
+    assert auto_check_novel.deploy_to_cloudflare() is False
+    assert not _deployed(calls)
+
+
+def test_deploy_refused_when_not_on_origin_main(monkeypatch):
+    monkeypatch.setenv("HACDAO_AUTO_DEPLOY", "1")
+    calls = _fake_git(monkeypatch, head="abc", origin="def")
+    assert auto_check_novel.deploy_to_cloudflare() is False
+    assert not _deployed(calls)
+
+
+def test_deploy_runs_when_enabled_clean_and_synced(monkeypatch):
+    monkeypatch.setenv("HACDAO_AUTO_DEPLOY", "1")
+    calls = _fake_git(monkeypatch)
+    assert auto_check_novel.deploy_to_cloudflare() is True
+    assert _deployed(calls)

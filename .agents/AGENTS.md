@@ -1,5 +1,42 @@
 # Rules for Novel Scraping & Translation (Workspace: HacDaoTruyen)
 
+## ⚠️ Phối hợp nhiều agent (Claude Code ↔ Antigravity) — ĐỌC TRƯỚC TIÊN
+
+Repo này được sửa song song bởi nhiều agent trên nhiều máy (Claude Code trên
+macOS, Antigravity trên Windows) và GitHub Actions. Mỗi bên có working tree
+riêng; production (Worker, D1, R2) thì chỉ có MỘT. Quy tắc bắt buộc:
+
+1. **Đầu phiên**: `git pull --rebase` rồi đọc 20 dòng cuối `.agents/WORKLOG.md`
+   để biết bên kia vừa làm gì, việc gì đang dở.
+2. **Trước khi push**: `git pull --rebase` lại; commit nhỏ theo từng việc,
+   không `git push --force`, không commit hộ thay đổi dở của người dùng nếu
+   chưa được yêu cầu.
+3. **Ghi production chỉ qua GitHub Actions** (đã có concurrency group
+   `cloud-sync` nên các lượt không đè nhau):
+   - Chương mới cho truyện bật auto_check: `gh workflow run auto_translate_novels.yml`
+     (cron cũng tự chạy ~00:07 và ~11:53 giờ VN).
+   - Dịch 1 khoảng từ URL bất kỳ: `gh workflow run translate_range.yml -f slug=… -f url=… -f chapters=N`.
+   - Công bố chương đã có bản dịch / đẩy lại chương đã sửa:
+     `gh workflow run publish_range.yml -f slug=… -f from=… -f to=…`.
+   - Chỉ chạy MỘT workflow nhóm `cloud-sync` mỗi lần, chờ xong mới chạy tiếp
+     (GitHub chỉ giữ 1 run chờ/nhóm — run chờ cũ bị huỷ).
+   Chạy dịch/sync **local** chỉ khi người dùng yêu cầu rõ, và phải pull trước,
+   push ngay sau (kể cả `novels/<slug>/translated/` bằng `git add -f`).
+4. **Không deploy từ working tree dở dang.** Cập nhật chương là dữ liệu D1/R2,
+   KHÔNG cần deploy. Chỉ deploy khi đổi code `src/`/`frontend/`/`wrangler.jsonc`,
+   từ bản `main` đã push và sạch: `npm run deploy` (build frontend + wrangler).
+   `tools/auto_check_novel.py` mặc định bỏ qua deploy; chỉ deploy khi
+   `HACDAO_AUTO_DEPLOY=1` và code sạch, trùng `origin/main`.
+5. **Không đẩy catalog nguồn lên R2.** `novels/<slug>/catalog.json` (có `url`)
+   là danh sách để crawl, không phải chỉ mục hiển thị; `migrate_to_cloudflare.py`
+   đã tự bỏ qua. Không tự `wrangler r2 object put …/catalog.json`.
+6. **Sau mọi việc chạm production** (sync, deploy, migration D1, đổi biến
+   ngân sách `HACDAO_*`, sửa R2) → thêm 1 dòng vào `.agents/WORKLOG.md`.
+7. **Glossary là chuẩn chung**: `novels/<slug>/novel.json` → `glossary`. Không
+   đổi mục đã có nếu không có căn cứ (vd đối chiếu bản MTC); sửa thì ghi WORKLOG.
+
+---
+
 ## Handling Paginated Chapters on novel543.com
 When scraping chapters from `novel543.com`, keep the following constraints and behaviors in mind:
 1. **Cloudflare Blocking & Jina Reader Fallback**: 
@@ -29,9 +66,12 @@ Khi người dùng hỏi "có chương mới không?" hoặc tương tự cho b�
       ```
       Thiếu field `"number"` sẽ gây lỗi `KeyError: 'number'` khi dịch.
    b. Cập nhật `total_chapters` trong `novel.json` (không thay đổi `last_chapter_number` - pipeline tự cập nhật sau khi dịch).
-   c. Chạy: `python -u main.py translate --novel <slug> --chapters <N>` (N = số chương mới).
-   d. Sau khi dịch xong, chạy sync: `python -u migrate_to_cloudflare.py --slug <slug> --from-chapter <first_new_chapter>`.
-   e. Deploy: `cmd.exe /c "npx.cmd wrangler deploy"`.
+   c. Ưu tiên: `gh workflow run auto_translate_novels.yml` (truyện có auto_check) hoặc
+      `translate_range.yml` rồi chờ xong — CI tự dịch, sync, commit (xem mục Phối hợp).
+   d. Chỉ khi người dùng yêu cầu chạy local: `git pull --rebase` →
+      `python -u tools/auto_check_novel.py --slug <slug>` → `git add -f novels/<slug>/translated`
+      → commit → `git pull --rebase` → push. KHÔNG chạy `wrangler deploy` (chương mới không cần deploy).
+   e. Ghi 1 dòng vào `.agents/WORKLOG.md`.
 
 **Lưu ý**: Không dừng lại giữa chừng để hỏi "có muốn dịch không?". Nếu có chương mới thì dịch luôn.
 
@@ -108,7 +148,8 @@ Khi người dùng gõ `/update-help` hoặc hỏi về cách quản lý danh s�
 1. **Luôn giữ tên truyện là Tiếng Việt**:
    - Trường `"title"` trong `novel.json`, thông báo `announcements.json`, và cơ sở dữ liệu D1 **bắt buộc luôn luôn là Tiếng Việt**.
    - Tên gốc tiếng Trung chỉ được lưu tại trường `"original_title"`. Tuyệt đối không ghi đè `"title"` thành tiếng Trung trong bất kỳ công cụ hay tác vụ crawl nào.
-2. **Minh bạch Thời gian & Tiến trình Deploy**:
+2. **Minh bạch Thời gian & Tiến trình**:
    - Khi có chương mới, pipeline phải tự động cập nhật trường `"last_updated_at"` (`YYYY-MM-DD HH:MM:SS`) vào `novel.json`.
-   - Luôn tự động thực hiện deploy Cloudflare Workers và in báo cáo chi tiết các mốc thời gian (thời điểm check, thời gian dịch, thời gian sync D1/R2, thời gian deploy Cloudflare, tổng thời lượng).
+   - In báo cáo các mốc thời gian (check, dịch, sync D1/R2, tổng thời lượng). Deploy Cloudflare
+     KHÔNG chạy kèm cập nhật chương (xem mục Phối hợp, quy tắc 4) — báo cáo ghi "bỏ qua deploy".
 

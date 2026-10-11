@@ -555,6 +555,16 @@ def filename_to_bundle_key(filename: str) -> str:
 def q(s) -> str:
     return "'" + str(s).replace("'", "''") + "'"
 
+def is_source_catalog(path: Path) -> bool:
+    """True nếu catalog.json là catalog NGUỒN (mục có url trang gốc) hoặc đọc
+    không được — loại này không bao giờ được đẩy lên R2 làm chỉ mục."""
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception:
+        return True
+    return not isinstance(data, list) or any(isinstance(c, dict) and c.get("url") for c in data)
+
+
 def get_title(fp: Path) -> str:
     try:
         with open(fp, encoding='utf-8') as f:
@@ -780,10 +790,17 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
         migrate_synopsis(slug, dry_run=dry_run, skip_r2=skip_r2, skip_d1=skip_d1)
 
     # ── 2d. catalog.json → R2 ──────────────────────────────────────────
+    # Chỉ đẩy catalog dạng CHỈ MỤC (filename/title/chapter_number). Catalog
+    # NGUỒN (có url trang gốc) là danh sách để crawl, filename của nó không
+    # tồn tại → đẩy lên sẽ đè chỉ mục thật trên R2 (mục lục hiện "Chương N"
+    # trống tên + chương ảo 404). Chương đã dịch nằm ở D1, không cần file này.
     catalog_path = novel_dir / "catalog.json"
     if catalog_path.exists() and not skip_r2:
-        ok_c = r2_put(catalog_path, f"{slug}/catalog.json", dry_run)
-        print(f"  {'✅' if ok_c else '❌'} Catalog → R2")
+        if is_source_catalog(catalog_path):
+            print("  ⏭️  Catalog nguồn (có url) — KHÔNG đẩy lên R2 để tránh đè chỉ mục")
+        else:
+            ok_c = r2_put(catalog_path, f"{slug}/catalog.json", dry_run)
+            print(f"  {'✅' if ok_c else '❌'} Catalog → R2")
 
     # ── 3. Chapters ──────────────────────────────────────────────────────
     if not trans_dir.exists():
