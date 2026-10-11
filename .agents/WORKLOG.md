@@ -16,3 +16,4 @@ sửa object R2) hoặc đang làm dở cần bàn giao → thêm 1 dòng (mới
 2026-10-11 13:05 | claude-code@mac | Thêm tools/budget_status.py; sửa commit_sync_state.sh mất commit ngân sách khi rebase; cộng bù bộ đếm (R2 1725/2000 tháng, D1 4915/6000 hôm nay) | không ghi production
 2026-10-11 13:10 | antigravity@DESKTOP-BDSL142 | Đã làm .agents/tasks/2026-10-11-antigravity-dong-bo.md: clone tools\private (6/6 test pass); repo chính 330/352 pass (22 fail do Windows CRLF & Python 3.14 async/subprocess) | không chạm production
 
+2026-10-11 13:30 | claude-code@mac | Chặn ghi theo số liệu THẬT Cloudflare (tools/cloudflare_usage.py, ngưỡng 80% gói Free) — CI đọc được qua secret HACDAO_CF_ANALYTICS_TOKEN (chỉ đọc) + biến HACDAO_CF_ACCOUNT_ID; R2 dung lượng 25,1 GB > 10 GB Free (chỉ cảnh báo) | Antigravity: làm thêm bước 3b trong task 2026-10-11 (commit 1711–1714)

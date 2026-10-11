@@ -59,6 +59,24 @@ Cả hai phải pass (repo private: 6 test). Cách dùng tool: `tools\private\RE
 python tools\private\decrypt_mtc_backup.py backups\mtc-api\<slug> --book-id <id>
 ```
 
+## Bước 3b — Đưa bản dịch 1711–1714 (Sớm Đăng Lục) lên repo
+
+Máy này đã dịch chương 1711–1714 nhưng KHÔNG commit thư mục `translated/`
+(bị `.gitignore` chặn, phải `git add -f`). Trên web vẫn đọc được, nhưng repo
+thiếu file nên CI không đẩy lại được khi cần.
+
+```cmd
+git add -f "novels\som-dang-luc-the-gioi-tro-choi-bat-dau-thong-gia-nu-de\translated"
+git status --short
+git commit -m "chore: thêm bản dịch 1711-1714 Sớm Đăng Lục (dịch local trên Antigravity)"
+git pull --rebase
+git push
+```
+
+- `git status --short` chỉ nên có các file `Chương 1711…1714 …_VI.md` (và có thể
+  chương mới hơn nếu đã dịch thêm). KHÔNG thêm file ngoài thư mục đó.
+- Nếu không còn file nào (đã xoá) thì ghi vào WORKLOG là thiếu, Claude Code sẽ dịch lại qua CI.
+
 ## Bước 4 — Quy tắc làm việc từ giờ (tóm tắt, chi tiết ở AGENTS.md)
 
 1. Đầu phiên: `git pull --rebase` + đọc cuối `.agents/WORKLOG.md`.
