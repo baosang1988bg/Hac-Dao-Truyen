@@ -7,7 +7,8 @@ macOS, Antigravity trên Windows) và GitHub Actions. Mỗi bên có working tre
 riêng; production (Worker, D1, R2) thì chỉ có MỘT. Quy tắc bắt buộc:
 
 1. **Đầu phiên**: `git pull --rebase` rồi đọc 20 dòng cuối `.agents/WORKLOG.md`
-   để biết bên kia vừa làm gì, việc gì đang dở.
+   để biết bên kia vừa làm gì, việc gì đang dở. Xem `.agents/tasks/` — file task
+   ghi tên mình (vd "Việc cho Antigravity") mà WORKLOG chưa báo xong thì làm theo.
 2. **Trước khi push**: `git pull --rebase` lại; commit nhỏ theo từng việc,
    không `git push --force`, không commit hộ thay đổi dở của người dùng nếu
    chưa được yêu cầu.
