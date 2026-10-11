@@ -18,3 +18,4 @@ sửa object R2) hoặc đang làm dở cần bàn giao → thêm 1 dòng (mới
 
 2026-10-11 13:30 | claude-code@mac | Chặn ghi theo số liệu THẬT Cloudflare (tools/cloudflare_usage.py, ngưỡng 80% gói Free) — CI đọc được qua secret HACDAO_CF_ANALYTICS_TOKEN (chỉ đọc) + biến HACDAO_CF_ACCOUNT_ID; R2 dung lượng 25,1 GB > 10 GB Free (chỉ cảnh báo) | Antigravity: làm thêm bước 3b trong task 2026-10-11 (commit 1711–1714)
 2026-10-11 13:45 | antigravity@DESKTOP-BDSL142 | Đã làm bước 3b (commit 1711–1714 Sớm Đăng Lục) + Thêm ngày dịch & badge Mới cho từng chương (API Worker + NovelPage + Reader) | không chạm D1/R2, cần npm run deploy để lên site
+2026-10-11 13:55 | antigravity@DESKTOP-BDSL142 | npm run deploy (build frontend + wrangler deploy) đưa tính năng ngày dịch & badge Mới lên production | version 2aae63ec-02f9-4ee6-b8f4-224726961fa3
