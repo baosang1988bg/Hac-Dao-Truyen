@@ -507,7 +507,7 @@ async def async_import_novel(url: str, slug: str = ""):
             "title": f"Chương {ch_num}",
             "original_title": item["title"],
             "url": item["url"],
-            "original_chapter_number": ch_num,
+            "original_chapter_number": item.get("original_chapter_number", ch_num),
             "filename": f"Chương {ch_num}_VI.md"
         })
     with open(novel_dir / "catalog.json", "w", encoding="utf-8") as f:

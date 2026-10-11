@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
 from fastapi import HTTPException
+from chapter_utils import extract_chapter_number_from_text
 from config import USER_AGENT, HEADLESS, SITE_SELECTORS
 from security_utils import validate_source_url
 
@@ -467,6 +468,15 @@ class NovelScraper:
                             if line.startswith("Title:"):
                                 title_val = _clean_jina_title(line.replace("Title:", "").strip())
                                 break
+                        author_val = ""
+                        for line in lines:
+                            author_match = re.match(
+                                r"^#{1,6}\s*作者\s*[/／:]\s*(.+?)\s*$",
+                                line.strip(),
+                            )
+                            if author_match:
+                                author_val = author_match.group(1).strip()
+                                break
                         content_body = jina_md
                         # Jina trả về markdown thô, không có thẻ <a> — nếu trang là
                         # mục lục chương, link dạng "[Chương 1](url)" vẫn tồn tại
@@ -480,6 +490,7 @@ class NovelScraper:
                         )
                         mock_html = (
                             f"<html><body><h1>{title_val}</h1>"
+                            f"<div class='author'>{author_val}</div>"
                             f"<div id='content'>{content_body}</div>"
                             f"<div id='jina-links'>{chapter_links_html}</div>"
                             f"</body></html>"
@@ -761,27 +772,66 @@ class NovelScraper:
         chapters = []
         seen_urls = set()
         ch_idx = 1
+        source_parsed = urlparse(url)
+        source_host = source_parsed.netloc.lower()
+        novel543_book_match = re.match(r"^/(\d+)/", source_parsed.path)
+        novel543_book_id = (
+            novel543_book_match.group(1)
+            if "novel543.com" in source_host and novel543_book_match
+            else None
+        )
 
         for a in chap_links:
             href = self._resolve_url(a.get("href"), url)
             text = a.get_text(strip=True)
             if not href or href in seen_urls or not text:
                 continue
+            novel543_sequence = None
+
+            # Jina Reader dựng lại mọi markdown link thành <a>, bao gồm cả
+            # đăng nhập, xếp hạng và chính sách. Với Novel543 chỉ chấp nhận
+            # URL chương nằm trong đúng book hiện tại, dạng
+            # /<book_id>/<prefix>_<sequence>.html.
+            if novel543_book_id:
+                href_parsed = urlparse(href)
+                chapter_path = re.fullmatch(
+                    rf"/{re.escape(novel543_book_id)}/[^/]+_(\d+)\.html",
+                    href_parsed.path,
+                )
+                if "novel543.com" not in href_parsed.netloc.lower() or not chapter_path:
+                    continue
+                novel543_sequence = int(chapter_path.group(1))
 
             # Match chapter title pattern (第N章 or Chapter N or Chương N)
             m = re.search(r'第(\d+)章|Chapter\s*(\d+)|Chương\s*(\d+)', text)
             if m:
-                ch_num = int(m.group(1) or m.group(2) or m.group(3))
+                displayed_ch_num = int(m.group(1) or m.group(2) or m.group(3))
             else:
-                ch_num = ch_idx
+                parsed_num = extract_chapter_number_from_text(text)
+                displayed_ch_num = parsed_num if parsed_num != 999999 else ch_idx
+
+            # Novel543 đôi khi ghi sai/nhảy số ngay trong tiêu đề nguồn
+            # (ví dụ URL tuần tự _1370 nhưng title lại là 第1734章). Dùng suffix
+            # URL làm số thứ tự ổn định để không trùng filename; vẫn giữ số
+            # hiển thị nguyên gốc cho việc đối chiếu nguồn.
+            ch_num = novel543_sequence or displayed_ch_num
 
             seen_urls.add(href)
-            chapters.append({
+            chapter = {
                 "number": ch_num,
                 "title": text,
                 "url": href
-            })
+            }
+            if novel543_sequence is not None:
+                chapter["original_chapter_number"] = displayed_ch_num
+            chapters.append(chapter)
             ch_idx += 1
+
+        # Trang Novel543 lặp một nhóm "chương mới nhất" theo thứ tự ngược
+        # trước danh sách đầy đủ. Sau khi dedupe URL, sắp theo sequence lấy từ
+        # URL để catalog luôn bắt đầu từ mục 1 và resume đúng vị trí.
+        if novel543_book_id:
+            chapters.sort(key=lambda chapter: (chapter["number"], chapter["url"]))
 
         meta["chapters"] = chapters
         meta["scraped_chapter_count"] = len(chapters)

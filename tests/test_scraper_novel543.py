@@ -159,6 +159,50 @@ def test_fetch_novel_metadata_jina_markdown_links_still_parsed():
     assert len(meta["chapters"]) == 2
 
 
+def test_fetch_novel_metadata_filters_jina_navigation_and_sorts_chapters():
+    """Fallback Jina có cả link điều hướng và block chương mới nhất đảo thứ
+    tự; importer chỉ được giữ URL chương thuộc đúng book và sắp tăng dần."""
+    scraper = NovelScraper()
+    jina_style_mock_html = (
+        "<html><body><h1>測試小說</h1>"
+        "<div class='author'>測試作者</div>"
+        "<div id='jina-links'>"
+        "<a href='https://www.novel543.com/ranking.html'>排行榜</a>"
+        "<a href='https://www.novel543.com/0001/read_3.html'>第三章 結束</a>"
+        "<a href='https://www.novel543.com/0001/read_1.html'>第一章 開始</a>"
+        "<a href='https://www.novel543.com/9999/read_2.html'>第二章 別本書</a>"
+        "<a href='https://www.novel543.com/site/privacy.html'>隱私條款</a>"
+        "<a href='https://www.novel543.com/0001/read_2.html'>第二章 相遇</a>"
+        "</div></body></html>"
+    )
+    scraper.fetch_html = AsyncMock(return_value=jina_style_mock_html)
+
+    meta = _run(scraper.fetch_novel_metadata(NOVEL543_CATALOG_URL))
+
+    assert meta is not None
+    assert meta["author"] == "測試作者"
+    assert [chapter["number"] for chapter in meta["chapters"]] == [1, 2, 3]
+    assert all("/0001/" in chapter["url"] for chapter in meta["chapters"])
+
+
+def test_fetch_novel_metadata_uses_novel543_url_sequence_for_bad_source_number():
+    """Số hiển thị sai không được tạo filename trùng hoặc đảo catalog; vẫn
+    lưu lại ở original_chapter_number để đối chiếu nguồn."""
+    scraper = NovelScraper()
+    jina_style_mock_html = (
+        "<html><body><h1>測試小說</h1><div id='jina-links'>"
+        "<a href='https://www.novel543.com/0001/read_1371.html'>第1375章 後續</a>"
+        "<a href='https://www.novel543.com/0001/read_1370.html'>第1734章 錯號</a>"
+        "</div></body></html>"
+    )
+    scraper.fetch_html = AsyncMock(return_value=jina_style_mock_html)
+
+    meta = _run(scraper.fetch_novel_metadata(NOVEL543_CATALOG_URL))
+
+    assert [chapter["number"] for chapter in meta["chapters"]] == [1370, 1371]
+    assert [chapter["original_chapter_number"] for chapter in meta["chapters"]] == [1734, 1375]
+
+
 def test_fetch_novel_metadata_reports_total_separately_from_scraped_links():
     scraper = NovelScraper()
     html = """
