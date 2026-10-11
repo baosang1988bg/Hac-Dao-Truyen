@@ -401,9 +401,11 @@ def check_and_translate_novel(slug: str) -> bool:
     batch_has_failed = bool(set(find_failed_chapters(novel_dir / "translated")) & {c["number"] for c in pending})
     if cf_token and not batch_has_failed:
         try:
+            sub_env = os.environ.copy()
+            sub_env.setdefault("HACDAO_ALLOW_CLOUD_WRITES", "true")
             subprocess.run(
                 [sys.executable, "-u", "migrate_to_cloudflare.py", "--slug", slug, "--from-chapter", str(first_new)],
-                cwd=BASE_DIR, check=True,
+                cwd=BASE_DIR, check=True, env=sub_env,
             )
             print(f"✅ [{slug}] Đã đồng bộ thành công qua wrangler CLI.")
             synced = True
