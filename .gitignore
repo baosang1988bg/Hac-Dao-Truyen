@@ -176,3 +176,5 @@ backups/
 # Claude Code skill packages (công cụ local, không phải code dự án)
 /skills/
 !.agents/skills/
+# Công cụ nội bộ — repo PRIVATE baosang1988bg/hacdao-private-tools clone vào đây (xem .agents/AGENTS.md)
+tools/private/

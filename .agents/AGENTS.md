@@ -35,6 +35,18 @@ riêng; production (Worker, D1, R2) thì chỉ có MỘT. Quy tắc bắt buộc
 7. **Glossary là chuẩn chung**: `novels/<slug>/novel.json` → `glossary`. Không
    đổi mục đã có nếu không có căn cứ (vd đối chiếu bản MTC); sửa thì ghi WORKLOG.
 
+8. **Công cụ nội bộ (private) nằm ở `tools/private/`** — clone từ repo PRIVATE
+   `baosang1988bg/hacdao-private-tools` (repo chính ignore thư mục này, KHÔNG
+   copy các tool đó vào repo chính vì repo chính đang public):
+   - Lần đầu (tại thư mục gốc HacDaoTruyen):
+     macOS `gh repo clone baosang1988bg/hacdao-private-tools tools/private`;
+     Windows `gh repo clone baosang1988bg/hacdao-private-tools tools\private`;
+     rồi `pip install -r tools/private/requirements.txt`.
+   - Đầu phiên: `git -C tools/private pull --rebase`. Sửa tool → commit/push
+     trong `tools/private` (repo riêng).
+   - Gồm `backup_mtc_api.py` (sao lưu MTC) và `decrypt_mtc_backup.py` (giải mã ra
+     `plaintext/`); cách dùng xem `tools/private/README.md`. Dữ liệu ra `backups/` (đã ignore).
+
 ---
 
 ## Handling Paginated Chapters on novel543.com
