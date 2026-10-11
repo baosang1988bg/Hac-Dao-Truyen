@@ -30,6 +30,7 @@ test('D1 bootstrap supports public list and EPUB, sync is concurrent and repeata
   await bucket.put('demo/catalog.json',JSON.stringify([chapter(3)].map(c=>({...c,chapter_number:c.number}))));
   const catalog = await (await call('novels/demo/chapters')).json();
   assert.deepEqual(catalog.map(c=>c.chapter_number),[1,2,3]);
+  assert.ok(catalog[0].created_at);
   const list = await call('novels');
   assert.equal(list.status,200,await list.clone().text());
   const listNovel = (await list.json()).novels[0];

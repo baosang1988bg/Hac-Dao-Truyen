@@ -1054,7 +1054,7 @@ async function getChapters(env, slug, ctx) {
     catch { /* A corrupt cache must not hide the authoritative index. */ }
   }
   if (!Array.isArray(legacy)) legacy = [];
-  const {results} = await env.DB.prepare(`SELECT filename,title,chapter_number FROM chapters
+  const {results} = await env.DB.prepare(`SELECT filename,title,chapter_number,created_at FROM chapters
     WHERE novel_slug = ? ORDER BY chapter_number ASC`).bind(slug).all();
   const merged = new Map(legacy.map(c => [c.filename,c]));
   for (const row of results || []) merged.set(row.filename,row);

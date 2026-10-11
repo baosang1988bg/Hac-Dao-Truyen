@@ -4,15 +4,14 @@
  * "vừa xong" / "X phút trước" / "X giờ trước" / "X ngày trước".
  * Chấp nhận epoch giây, epoch mili-giây hoặc chuỗi ngày SQL/ISO từ API.
  */
-export function fmtTimeAgo(value, nowMs = Date.now()) {
-  if (value === null || value === undefined || value === '') return ''
-
+function parseTimestamp(value) {
+  if (value === null || value === undefined || value === '') return null
   let timestampMs
   if (typeof value === 'number') {
     timestampMs = Math.abs(value) < 1e12 ? value * 1000 : value
   } else if (typeof value === 'string') {
     const input = value.trim()
-    if (!input) return ''
+    if (!input) return null
     if (/^-?\d+(?:\.\d+)?$/.test(input)) {
       const numeric = Number(input)
       timestampMs = Math.abs(numeric) < 1e12 ? numeric * 1000 : numeric
@@ -26,13 +25,48 @@ export function fmtTimeAgo(value, nowMs = Date.now()) {
   } else if (value instanceof Date) {
     timestampMs = value.getTime()
   }
+  return Number.isFinite(timestampMs) ? timestampMs : null
+}
 
-  if (!Number.isFinite(timestampMs) || !Number.isFinite(nowMs)) return ''
+/**
+ * "vừa xong" / "X phút trước" / "X giờ trước" / "X ngày trước".
+ * Chấp nhận epoch giây, epoch mili-giây hoặc chuỗi ngày SQL/ISO từ API.
+ */
+export function fmtTimeAgo(value, nowMs = Date.now()) {
+  const timestampMs = parseTimestamp(value)
+  if (timestampMs === null || !Number.isFinite(nowMs)) return ''
   const diff = Math.max(0, Math.floor((nowMs - timestampMs) / 1000))
   if (diff < 60) return 'vừa xong'
   if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`
   if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`
   return `${Math.floor(diff / 86400)} ngày trước`
+}
+
+/**
+ * Định dạng ngày dịch của chương:
+ * - Dưới 7 ngày: hiển thị dạng tương đối (vd "vừa xong", "2 giờ trước", "3 ngày trước")
+ * - Từ 7 ngày trở lên: hiển thị ngày chuẩn "DD/MM/YYYY" (hoặc UTC tương đương)
+ */
+export function fmtChapterDate(value, nowMs = Date.now()) {
+  const timestampMs = parseTimestamp(value)
+  if (timestampMs === null || !Number.isFinite(nowMs)) return ''
+  const diffSec = Math.max(0, Math.floor((nowMs - timestampMs) / 1000))
+  if (diffSec < 7 * 86400) {
+    return fmtTimeAgo(timestampMs, nowMs)
+  }
+  const d = new Date(timestampMs)
+  const pad = n => String(n).padStart(2, '0')
+  return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`
+}
+
+/**
+ * Kiểm tra chương có phải mới ra gần đây hay không (mặc định trong vòng 72 giờ).
+ */
+export function isRecentChapter(value, maxHours = 72, nowMs = Date.now()) {
+  const timestampMs = parseTimestamp(value)
+  if (timestampMs === null || !Number.isFinite(nowMs)) return false
+  const diffHours = (nowMs - timestampMs) / (1000 * 3600)
+  return diffHours >= 0 && diffHours <= maxHours
 }
 
 /** Số có dấu phân cách nghìn (kiểu Việt Nam). */

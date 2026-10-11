@@ -10,7 +10,7 @@ import api from '../api'
 import userApi, { isLoggedIn } from '../userApi'
 import NovelCover from '../components/NovelCover'
 import { getLastReadForSlug, fmtChapterLabel, getReadChapters } from '../utils/readingHistory'
-import { fmtTimeAgo, fmtNumber } from '../utils/format'
+import { fmtTimeAgo, fmtNumber, fmtChapterDate, isRecentChapter } from '../utils/format'
 import SynopsisPanel from '../components/SynopsisPanel'
 import { normalizeChapterCatalog } from '../utils/chapters'
 
@@ -341,6 +341,8 @@ function ChapterList({ slug, chapters }) {
               .filter(value => value !== null && value !== undefined)
               .map(String)
             const isCurrent = currentChapter != null && currentCandidates.includes(String(currentChapter))
+            const isNew = isRecentChapter(chap.created_at)
+            const dateLabel = fmtChapterDate(chap.created_at)
             return (
               <Link
                 key={chap.filename}
@@ -363,6 +365,12 @@ function ChapterList({ slug, chapters }) {
                 }}>
                   {cleanTitle(chap.title)}
                 </span>
+                {isNew && (
+                  <span className="chapter-list-row__badge-new">Mới</span>
+                )}
+                {dateLabel && (
+                  <span className="chapter-list-row__date">{dateLabel}</span>
+                )}
                 {(isRead || isCurrent) && (
                   <span className="chapter-list-row__state">
                     {isCurrent ? 'Đang đọc' : '✓'}

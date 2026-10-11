@@ -24,4 +24,5 @@ export const chapterType = PropTypes.shape({
   title: PropTypes.string,
   number: PropTypes.number,
   chapter_number: PropTypes.number,
+  created_at: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 })

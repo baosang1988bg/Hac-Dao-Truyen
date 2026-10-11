@@ -12,6 +12,7 @@ import useReaderSettings, { THEMES } from '../hooks/useReaderSettings'
 import useTextToSpeech from '../hooks/useTextToSpeech'
 import { markChapterRead } from '../utils/readingHistory'
 import { normalizeChapterCatalog } from '../utils/chapters'
+import { fmtChapterDate } from '../utils/format'
 
 const OFFLINE_BATCH_SIZE = 10
 
@@ -316,6 +317,9 @@ export default function Reader() {
     (isNumberParam && (c.chapter_number === targetNum || c.number === targetNum || getChapNum(c.title) === String(targetNum)))
   )
 
+  const currentChapterObj = currentChapterIndex >= 0 ? chapters[currentChapterIndex] : null
+  const currentChapterDate = currentChapterObj?.created_at ? fmtChapterDate(currentChapterObj.created_at) : ''
+
   const isAuthorNote = !isNumberParam && chapters.some(c => c.filename === chapter && !getChapNum(c.title))
   const prevChapter = currentChapterIndex > 0 ? chapters[currentChapterIndex - 1] : null
   const nextChapter = currentChapterIndex !== -1 && currentChapterIndex < chapters.length - 1 ? chapters[currentChapterIndex + 1] : null
@@ -594,12 +598,24 @@ export default function Reader() {
             <ReactMarkdown
               components={{
                 h1: ({ node: _node, ...props }) => (
-                  <h1 style={{
-                    fontSize: '1.6em', fontWeight: 800,
-                    marginBottom: '2.5rem', color: 'inherit',
-                    borderBottom: `3px solid ${currentTheme.border}`,
-                    paddingBottom: '1.25rem', lineHeight: 1.3,
-                  }} {...props} />
+                  <div>
+                    <h1 style={{
+                      fontSize: '1.6em', fontWeight: 800,
+                      marginBottom: currentChapterDate ? '0.5rem' : '2.5rem', color: 'inherit',
+                      borderBottom: currentChapterDate ? 'none' : `3px solid ${currentTheme.border}`,
+                      paddingBottom: currentChapterDate ? '0' : '1.25rem', lineHeight: 1.3,
+                    }} {...props} />
+                    {currentChapterDate && (
+                      <div style={{
+                        fontSize: '0.8rem', color: 'var(--text-muted)',
+                        borderBottom: `3px solid ${currentTheme.border}`,
+                        paddingBottom: '1rem', marginBottom: '2.5rem',
+                        opacity: 0.8,
+                      }}>
+                        Đăng lúc: {currentChapterDate}
+                      </div>
+                    )}
+                  </div>
                 ),
                 p: ({ node: _node, ...props }) => (
                   <p className="reader-p" style={{

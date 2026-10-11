@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { fmtTimeAgo } from '../src/utils/format.js'
+import { fmtTimeAgo, fmtChapterDate, isRecentChapter } from '../src/utils/format.js'
 import { isNovelCompleted } from '../src/utils/novelStatus.js'
 import { getCatalogChapterNumber, normalizeChapterCatalog } from '../src/utils/chapters.js'
 
@@ -12,6 +12,21 @@ test('fmtTimeAgo accepts seconds, milliseconds and SQL/ISO dates', () => {
   assert.equal(fmtTimeAgo('2026-09-16 22:00:00', NOW), '2 giờ trước')
   assert.equal(fmtTimeAgo('2026-09-15T00:00:00Z', NOW), '2 ngày trước')
   assert.equal(fmtTimeAgo('not-a-date', NOW), '')
+})
+
+test('fmtChapterDate formats recent chapters as relative and older chapters as DD/MM/YYYY', () => {
+  assert.equal(fmtChapterDate(NOW - 3600 * 1000, NOW), '1 giờ trước')
+  assert.equal(fmtChapterDate(NOW - 3 * 86400 * 1000, NOW), '3 ngày trước')
+  // 10 ngày trước: 2026-09-07
+  assert.equal(fmtChapterDate(NOW - 10 * 86400 * 1000, NOW), '07/09/2026')
+  assert.equal(fmtChapterDate(null, NOW), '')
+})
+
+test('isRecentChapter detects chapters within threshold', () => {
+  assert.equal(isRecentChapter(NOW - 2 * 3600 * 1000, 72, NOW), true)
+  assert.equal(isRecentChapter(NOW - 71 * 3600 * 1000, 72, NOW), true)
+  assert.equal(isRecentChapter(NOW - 73 * 3600 * 1000, 72, NOW), false)
+  assert.equal(isRecentChapter(null, 72, NOW), false)
 })
 
 test('explicit novel status wins over inconsistent chapter counts', () => {
