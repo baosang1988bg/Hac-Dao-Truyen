@@ -51,13 +51,24 @@ def _npx():
     return shutil.which("npx.cmd" if sys.platform == "win32" else "npx") or "npx"
 
 
+def _wrangler(*args):
+    """Chạy wrangler với Node ưu tiên IPv4 + giới hạn thời gian: trên mạng IPv6
+    hỏng, Node thử IPv6 trước và treo → token OAuth không được làm mới."""
+    env = dict(os.environ, NODE_OPTIONS=(os.getenv("NODE_OPTIONS", "") + " --dns-result-order=ipv4first").strip())
+    try:
+        return subprocess.run([_npx(), "wrangler", *args], cwd=BASE_DIR, capture_output=True, text=True,
+                              encoding="utf-8", errors="replace", env=env, timeout=120).stdout
+    except subprocess.TimeoutExpired:
+        return ""
+
+
 def wrangler_token(refresh: bool = True):
     """CLOUDFLARE_API_TOKEN, hoặc token OAuth của wrangler (làm mới bằng `wrangler whoami`)."""
     for name in ("HACDAO_CF_ANALYTICS_TOKEN", "CLOUDFLARE_API_TOKEN"):
         if os.getenv(name, "").strip():
             return os.environ[name].strip()
     if refresh:
-        subprocess.run([_npx(), "wrangler", "whoami"], cwd=BASE_DIR, capture_output=True, text=True)
+        _wrangler("whoami")
     home = Path.home()
     for p in [home / "Library/Preferences/.wrangler/config/default.toml",   # macOS
               home / ".config/.wrangler/config/default.toml",               # Linux
@@ -74,8 +85,7 @@ def account_id():
     for name in ("HACDAO_CF_ACCOUNT_ID", "CLOUDFLARE_ACCOUNT_ID"):
         if os.getenv(name, "").strip():
             return os.environ[name].strip()
-    out = subprocess.run([_npx(), "wrangler", "whoami"], cwd=BASE_DIR, capture_output=True,
-                         text=True, encoding="utf-8", errors="replace").stdout
+    out = _wrangler("whoami")
     ids = re.findall(r"\b[0-9a-f]{32}\b", out)
     return ids[0] if ids else None
 
