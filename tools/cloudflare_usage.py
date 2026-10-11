@@ -4,9 +4,11 @@ Dùng chung cho tools/budget_status.py (xem) và tools/sync_budget.py (chặn gh
 khi sắp chạm hạn mức gói Free). Hạn mức Free tính cho CẢ tài khoản, nên truy
 vấn không lọc theo database/bucket.
 
-Token: CLOUDFLARE_API_TOKEN (CI) hoặc token OAuth của `wrangler login` (máy
-local — sống ~1 giờ, được làm mới khi chạy 1 lệnh wrangler). Cần quyền đọc
-Account Analytics.
+Token: HACDAO_CF_ANALYTICS_TOKEN (CI — token CHỈ ĐỌC "Account Analytics: Read";
+cố ý không dùng tên CLOUDFLARE_API_TOKEN vì biến đó làm auto_check chuyển sang
+đường ghi bằng wrangler), rồi CLOUDFLARE_API_TOKEN, rồi token OAuth của
+`wrangler login` (máy local — sống ~1 giờ, làm mới khi chạy 1 lệnh wrangler).
+Account: HACDAO_CF_ACCOUNT_ID / CLOUDFLARE_ACCOUNT_ID / `wrangler whoami`.
 """
 
 import json
@@ -51,8 +53,9 @@ def _npx():
 
 def wrangler_token(refresh: bool = True):
     """CLOUDFLARE_API_TOKEN, hoặc token OAuth của wrangler (làm mới bằng `wrangler whoami`)."""
-    if os.getenv("CLOUDFLARE_API_TOKEN"):
-        return os.environ["CLOUDFLARE_API_TOKEN"]
+    for name in ("HACDAO_CF_ANALYTICS_TOKEN", "CLOUDFLARE_API_TOKEN"):
+        if os.getenv(name, "").strip():
+            return os.environ[name].strip()
     if refresh:
         subprocess.run([_npx(), "wrangler", "whoami"], cwd=BASE_DIR, capture_output=True, text=True)
     home = Path.home()
@@ -68,8 +71,9 @@ def wrangler_token(refresh: bool = True):
 
 
 def account_id():
-    if os.getenv("CLOUDFLARE_ACCOUNT_ID"):
-        return os.environ["CLOUDFLARE_ACCOUNT_ID"]
+    for name in ("HACDAO_CF_ACCOUNT_ID", "CLOUDFLARE_ACCOUNT_ID"):
+        if os.getenv(name, "").strip():
+            return os.environ[name].strip()
     out = subprocess.run([_npx(), "wrangler", "whoami"], cwd=BASE_DIR, capture_output=True,
                          text=True, encoding="utf-8", errors="replace").stdout
     ids = re.findall(r"\b[0-9a-f]{32}\b", out)
@@ -117,7 +121,7 @@ def current_usage():
     """(usage, lỗi) — tự lấy token/account; usage=None nếu không lấy được."""
     token, acc = wrangler_token(), account_id()
     if not token or not acc:
-        return None, "thiếu token/account (CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID, hoặc `npx wrangler login`)"
+        return None, "thiếu token/account (secret HACDAO_CF_ANALYTICS_TOKEN + biến HACDAO_CF_ACCOUNT_ID, hoặc `npx wrangler login`)"
     try:
         return fetch_usage(token, acc), None
     except Exception as e:  # noqa: BLE001

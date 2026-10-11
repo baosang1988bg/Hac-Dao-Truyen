@@ -52,6 +52,9 @@ jobs:
           HACDAO_MAX_OPS_PER_RUN: ${{ vars.HACDAO_MAX_OPS_PER_RUN || '0' }}
           HACDAO_BUDGET_FILE: tools/.cloud_sync_budget.json
           HACDAO_SYNC_KEY: ${{ secrets.HACDAO_SYNC_KEY }}
+          # Token CHỈ ĐỌC Analytics để chặn ghi theo số liệu thật Cloudflare (tools/cloudflare_usage.py)
+          HACDAO_CF_ANALYTICS_TOKEN: ${{ secrets.HACDAO_CF_ANALYTICS_TOKEN }}
+          HACDAO_CF_ACCOUNT_ID: ${{ vars.HACDAO_CF_ACCOUNT_ID }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY || secrets.GEMINI_API_KEY }}
           GOOGLE_API_KEYS: ${{ secrets.GOOGLE_API_KEYS || secrets.GEMINI_API_KEYS }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || secrets.GOOGLE_API_KEY }}
