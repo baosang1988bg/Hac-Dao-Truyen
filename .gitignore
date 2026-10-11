@@ -174,4 +174,5 @@ frontend/verify_render.mjs
 backups/
 
 # Claude Code skill packages (công cụ local, không phải code dự án)
-skills/
+/skills/
+!.agents/skills/
