@@ -31,12 +31,15 @@ riêng; production (Worker, D1, R2) thì chỉ có MỘT. Quy tắc bắt buộc
 5. **Không đẩy catalog nguồn lên R2.** `novels/<slug>/catalog.json` (có `url`)
    là danh sách để crawl, không phải chỉ mục hiển thị; `migrate_to_cloudflare.py`
    đã tự bỏ qua. Không tự `wrangler r2 object put …/catalog.json`.
-6. **Sau mọi việc chạm production** (sync, deploy, migration D1, đổi biến
+6. **Xem ngân sách trước đợt ghi lớn**: `python tools/budget_status.py` (cầu chì
+   HACDAO_* + mức dùng thật D1/R2 so với gói Free). Thiếu thì hỏi người dùng
+   trước khi `gh variable set`.
+7. **Sau mọi việc chạm production** (sync, deploy, migration D1, đổi biến
    ngân sách `HACDAO_*`, sửa R2) → thêm 1 dòng vào `.agents/WORKLOG.md`.
-7. **Glossary là chuẩn chung**: `novels/<slug>/novel.json` → `glossary`. Không
+8. **Glossary là chuẩn chung**: `novels/<slug>/novel.json` → `glossary`. Không
    đổi mục đã có nếu không có căn cứ (vd đối chiếu bản MTC); sửa thì ghi WORKLOG.
 
-8. **Công cụ nội bộ (private) nằm ở `tools/private/`** — clone từ repo PRIVATE
+9. **Công cụ nội bộ (private) nằm ở `tools/private/`** — clone từ repo PRIVATE
    `baosang1988bg/hacdao-private-tools` (repo chính ignore thư mục này, KHÔNG
    copy các tool đó vào repo chính vì repo chính đang public):
    - Lần đầu (tại thư mục gốc HacDaoTruyen):
