@@ -14,24 +14,16 @@ Usage (macOS/Windows, tại thư mục gốc repo):
 
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
-import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(BASE_DIR))
 BUDGET_FILE = "tools/.cloud_sync_budget.json"
 D1_DB = "hacdao-db"
-FREE = {"d1_rows_written_day": 100_000, "d1_rows_read_day": 5_000_000,
-        "r2_class_a_month": 1_000_000, "r2_class_b_month": 10_000_000}
-# Thao tác R2 tính phí Class A (ghi/list); còn lại (GetObject, HeadObject…) là Class B.
-R2_CLASS_A = {"PutObject", "CopyObject", "CompleteMultipartUpload", "CreateMultipartUpload",
-              "UploadPart", "UploadPartCopy", "ListObjects", "ListMultipartUploads", "ListParts",
-              "PutBucket", "DeleteBucket", "PutBucketCors", "PutBucketLifecycleConfiguration"}
-
 if sys.stdout.encoding != "utf-8":
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -50,12 +42,6 @@ def fuse_usage(state: dict, now: datetime) -> dict:
     r2 = state.get("r2_ops", 0) if state.get("r2_month") == now.strftime("%Y-%m") else 0
     d1 = state.get("d1_ops", 0) if state.get("d1_day") == now.strftime("%Y-%m-%d") else 0
     return {"r2_month": r2, "d1_day": d1}
-
-
-def split_r2_classes(rows: list) -> tuple:
-    a = sum(r["sum"]["requests"] for r in rows if r["dimensions"]["actionType"] in R2_CLASS_A)
-    b = sum(r["sum"]["requests"] for r in rows if r["dimensions"]["actionType"] not in R2_CLASS_A)
-    return a, b
 
 
 def _line(label, used, limit, unit=""):
@@ -80,54 +66,23 @@ def show_fuse():
     print(f"  {'Tối đa mỗi lần chạy':<28} {limits.get('HACDAO_MAX_OPS_PER_RUN', 0):>10,}  (R2 + D1 gộp, tính riêng từng run)")
 
 
-def _wrangler_token():
-    if os.getenv("CLOUDFLARE_API_TOKEN"):
-        return os.environ["CLOUDFLARE_API_TOKEN"]
-    home = Path.home()
-    for p in [home / "Library/Preferences/.wrangler/config/default.toml",       # macOS
-              home / ".config/.wrangler/config/default.toml",                   # Linux
-              home / ".wrangler/config/default.toml",
-              Path(os.getenv("APPDATA", home)) / "xdg.config/.wrangler/config/default.toml"]:  # Windows
-        if p.exists():
-            m = re.search(r'^oauth_token\s*=\s*"([^"]+)"', p.read_text(encoding="utf-8"), re.M)
-            if m:
-                return m.group(1)
-    return None
-
-
 def show_cloudflare():
-    print("\n② Mức dùng thật trên Cloudflare (so với gói Free):")
-    npx = "npx.cmd" if sys.platform == "win32" else "npx"
-    info = _run([npx, "wrangler", "d1", "info", D1_DB, "--json"])
-    try:
-        d = json.loads(info.stdout[info.stdout.index("{"):])
-        _line("D1 dòng ghi 24h", int(d.get("rows_written_24h", 0)), FREE["d1_rows_written_day"])
-        _line("D1 dòng đọc 24h", int(d.get("rows_read_24h", 0)), FREE["d1_rows_read_day"])
-        print(f"  {'D1 dung lượng':<28} {int(d.get('database_size', 0)) / 1e6:>10.1f} MB / 5,000 MB")
-    except Exception:
-        print("  D1: không đọc được (`npx wrangler login` rồi chạy lại)")
-
-    token = _wrangler_token()
-    who = _run([npx, "wrangler", "whoami"]).stdout
-    acc = os.getenv("CLOUDFLARE_ACCOUNT_ID") or (re.findall(r"\b[0-9a-f]{32}\b", who) or [None])[0]
-    if not token or not acc:
-        print("  R2: thiếu token/account (`npx wrangler login` hoặc đặt CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID)")
+    from tools.cloudflare_usage import FREE_LIMITS, current_usage
+    ratio = float(os.getenv("HACDAO_REAL_USAGE_RATIO", "0.8"))
+    print(f"\n② Mức dùng thật trên Cloudflare (so với gói Free; script sync tự dừng ở {ratio:.0%} các mục có ⛔):")
+    usage, err = current_usage()
+    if usage is None:
+        print(f"  Không lấy được: {err}")
         return
-    now = datetime.now(timezone.utc)
-    q = {"query": "query($a:String!,$s:Date!,$e:Date!){viewer{accounts(filter:{accountTag:$a}){"
-                  "r2OperationsAdaptiveGroups(limit:1000,filter:{date_geq:$s,date_leq:$e})"
-                  "{sum{requests}dimensions{actionType}}}}}",
-         "variables": {"a": acc, "s": now.strftime("%Y-%m-01"), "e": now.strftime("%Y-%m-%d")}}
-    req = urllib.request.Request("https://api.cloudflare.com/client/v4/graphql", data=json.dumps(q).encode(),
-                                 headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
-    try:
-        data = json.load(urllib.request.urlopen(req, timeout=30))
-        rows = data["data"]["viewer"]["accounts"][0]["r2OperationsAdaptiveGroups"]
-        a, b = split_r2_classes(rows)
-        _line("R2 Class A (ghi) tháng này", a, FREE["r2_class_a_month"])
-        _line("R2 Class B (đọc) tháng này", b, FREE["r2_class_b_month"])
-    except Exception as e:
-        print(f"  R2: không truy vấn được Analytics ({e})")
+    rows = [("d1_rows_written_day", "D1 dòng ghi hôm nay", "⛔"), ("d1_rows_read_day", "D1 dòng đọc hôm nay", ""),
+            ("r2_class_a_month", "R2 Class A (ghi) tháng", "⛔"), ("r2_class_b_month", "R2 Class B (đọc) tháng", ""),
+            ("workers_requests_day", "Workers request hôm nay", "")]
+    for key, label, guard in rows:
+        _line(f"{label} {guard}".strip(), usage[key], FREE_LIMITS[key])
+    gb, free_gb = usage["r2_storage_bytes"] / 1e9, FREE_LIMITS["r2_storage_bytes"] / 1e9
+    over = max(0.0, gb - free_gb)
+    note = f"VƯỢT {over:.1f} GB ≈ {over * 0.015:.2f} USD/tháng nếu ở gói Free" if over else "trong hạn mức"
+    print(f"  {'R2 dung lượng':<28} {gb:>10.1f} GB / {free_gb:>7.0f} GB  ({note})")
 
 
 def main():

@@ -7,6 +7,8 @@ import pytest
 
 _test_data = tempfile.TemporaryDirectory(prefix="hacdao-tests-")
 os.environ["HACDAO_DATA_DIR"] = str(Path(_test_data.name) / "users")
+# Test không bao giờ gọi GraphQL Cloudflare thật (tools/sync_budget.budget_from_env).
+os.environ["HACDAO_REAL_USAGE_GUARD"] = "0"
 
 
 @pytest.fixture(autouse=True)
