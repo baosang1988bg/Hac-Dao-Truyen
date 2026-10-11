@@ -53,9 +53,11 @@ export default function AdminNovels() {
     api.get('/novels', { params: { q, sort, order: 'desc', status, page, limit: PAGE_SIZE } })
       .then(({ data }) => {
         if (!alive) return
-        setNovels(data.novels || [])
-        setTotal(data.total || 0)
-        setPages(data.pages || 0)
+        // Backend cũ trả mảng trần, backend mới trả {novels,total,pages} — nhận cả hai.
+        const list = Array.isArray(data) ? data : (data.novels || [])
+        setNovels(list)
+        setTotal(Array.isArray(data) ? list.length : (data.total ?? list.length))
+        setPages(Array.isArray(data) ? 1 : (data.pages || 1))
         setError(null)
       })
       .catch(() => { if (alive) { setNovels([]); setError('Không tải được danh sách truyện.') } })

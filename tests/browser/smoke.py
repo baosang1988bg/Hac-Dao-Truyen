@@ -62,7 +62,7 @@ def main():
                             data={}
                             if endpoint=='/api/novels':
                                 query=parse_qs(url.query)
-                                admin=query.get('limit')==['200']
+                                admin=query.get('limit') in (['200'],['30'])  # trang admin phân trang server (PAGE_SIZE 30)
                                 pg=int(query.get('page',['1'])[0])
                                 item=novel if pg==1 else {**novel,'slug':'demo2','title':'Truyện trang hai'}
                                 data=[novel] if shape=='local' else {'novels':[item],'total':2 if admin else 1,'page':pg,'pages':2 if admin else 1,'limit':200 if admin else 48}
@@ -88,7 +88,9 @@ def main():
                         expect(page.get_by_text('Không có phiên dịch nào đang chạy.',exact=True)).to_be_visible()
                         page.goto(origin+'/admin/novels')
                         expect(page.get_by_text('Quản lý 1 truyện trong hệ thống.' if shape=='local' else 'Quản lý 2 truyện trong hệ thống.',exact=True)).to_be_visible()
-                        if shape=='cloud':expect(page.locator('a[href="/admin/novels/demo2"]')).to_be_visible()
+                        if shape=='cloud':
+                            page.get_by_role('button',name='Sau').click()
+                            expect(page.locator('a[href="/admin/novels/demo2"]')).to_be_visible()
                         page.goto(origin+'/admin/novels/demo');expect(page.get_by_text('Truyện kiểm thử',exact=True).first).to_be_visible()
                         page.goto(origin+'/novel/demo/epub-reader')
                         expect(page.locator('iframe').first).to_be_visible(timeout=15000)
