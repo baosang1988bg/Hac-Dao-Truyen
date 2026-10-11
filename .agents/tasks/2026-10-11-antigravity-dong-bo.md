@@ -11,7 +11,7 @@
   `wrangler deploy` từ máy local đã **đè mục lục truyện Sớm Đăng Lục trên R2**
   (mất tên chương, chương ảo 404). Đã sửa và thêm quy tắc phối hợp.
 - Quy tắc chung ở `.agents/AGENTS.md`, mục **"Phối hợp nhiều agent"** (đọc kỹ
-  quy tắc 1–8). Nhật ký chung: `.agents/WORKLOG.md`.
+  quy tắc 1–9). Nhật ký chung: `.agents/WORKLOG.md`.
 
 ## Bước 1 — Đồng bộ repo và đọc quy tắc
 
