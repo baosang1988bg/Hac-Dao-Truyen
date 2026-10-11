@@ -49,10 +49,12 @@ python -u tools/auto_check_novel.py --slug <slug>
 3. **Cập nhật catalog:** Tự động append các chương mới vào `novels/<slug>/catalog.json` và cập nhật `total_chapters` trong `novel.json`.
 4. **Dịch tự động:** Chạy `main.py translate --novel <slug> --chapters <N>` với cơ chế xoay vòng key Gemini API.
 5. **Đồng bộ Cloudflare:** Tự động đồng bộ lên Cloudflare D1 + R2 qua Worker API hoặc `migrate_to_cloudflare.py`.
-6. **Tạo thông báo:** Tự động ghi nhận thông báo cập nhật vào `frontend/src/content/announcements.json`.
+6. **Deploy Cloudflare Workers:** Tự động thực thi lệnh deploy (`npx wrangler deploy`).
+7. **Tạo thông báo & Ghi nhận thời gian:** Cập nhật `last_updated_at` trong `novel.json`, thông báo trong `announcements.json`, và in báo cáo chi tiết thời gian (dịch, sync, deploy, tổng thời lượng).
 
 > [!IMPORTANT]
-> Thực hiện toàn bộ quy trình trong một lần, không dừng lại giữa chừng để hỏi người dùng "có muốn dịch không".
+> 1. **Luôn giữ tên truyện là Tiếng Việt**: Thuộc tính `"title"` trong `novel.json` và mọi nơi hiển thị luôn luôn phải là tiếng Việt (tên gốc Trung chỉ nằm trong `"original_title"`).
+> 2. **Chạy trọn gói**: Thực hiện toàn bộ quy trình trong một lần, không dừng lại giữa chừng để hỏi người dùng. Báo cáo rõ ràng thời điểm hoàn thành và tiến trình deploy.
 
 ---
 

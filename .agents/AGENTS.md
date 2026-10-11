@@ -102,3 +102,13 @@ Khi người dùng gõ `/update-help` hoặc hỏi về cách quản lý danh s�
    python -u tools/manage_auto_check.py remove <slug>
    ```
 
+---
+
+## Quy tắc Tiêu đề Truyện & Báo Cáo Tiến Trình Deploy
+1. **Luôn giữ tên truyện là Tiếng Việt**:
+   - Trường `"title"` trong `novel.json`, thông báo `announcements.json`, và cơ sở dữ liệu D1 **bắt buộc luôn luôn là Tiếng Việt**.
+   - Tên gốc tiếng Trung chỉ được lưu tại trường `"original_title"`. Tuyệt đối không ghi đè `"title"` thành tiếng Trung trong bất kỳ công cụ hay tác vụ crawl nào.
+2. **Minh bạch Thời gian & Tiến trình Deploy**:
+   - Khi có chương mới, pipeline phải tự động cập nhật trường `"last_updated_at"` (`YYYY-MM-DD HH:MM:SS`) vào `novel.json`.
+   - Luôn tự động thực hiện deploy Cloudflare Workers và in báo cáo chi tiết các mốc thời gian (thời điểm check, thời gian dịch, thời gian sync D1/R2, thời gian deploy Cloudflare, tổng thời lượng).
+

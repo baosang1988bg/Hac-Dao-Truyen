@@ -49,7 +49,8 @@ def list_tracked():
 
         title = data.get("title", slug)
         last_ch = data.get("last_chapter_number", 0)
-        auto_cfg = data.get("auto_check") or {}
+        last_updated = data.get("last_updated_at", "Chưa ghi nhận")
+        auto_cfg = data.get("auto_cfg") or data.get("auto_check") or {}
         is_enabled = bool(auto_cfg.get("enabled"))
         source_index = auto_cfg.get("source_index_url", "")
 
@@ -57,6 +58,7 @@ def list_tracked():
             "slug": slug,
             "title": title,
             "last_ch": last_ch,
+            "last_updated": last_updated,
             "enabled": is_enabled,
             "source_index": source_index,
         }
@@ -70,8 +72,9 @@ def list_tracked():
         print("\n[Đang theo dõi tự động]:")
         for idx, item in enumerate(tracked, 1):
             print(f" {idx}. {item['title']} ({item['slug']})")
-            print(f"    - Chương hiện tại : {item['last_ch']}")
-            print(f"    - Nguồn index     : {item['source_index']}")
+            print(f"    - Chương hiện tại   : {item['last_ch']}")
+            print(f"    - Cập nhật lần cuối : {item['last_updated']}")
+            print(f"    - Nguồn index       : {item['source_index']}")
     else:
         print("\n[!] Chưa có truyện nào được kích hoạt theo dõi tự động.")
 

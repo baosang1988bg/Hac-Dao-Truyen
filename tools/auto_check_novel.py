@@ -291,7 +291,7 @@ def sync_via_worker_api(slug: str, novel_meta: dict, pending: list, base_dir: Pa
 
 
 def _append_announcement(slug: str, title: str, last_chapter: int):
-    today_str = datetime.now().strftime('%Y-%m-%d')
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     ann_text = f"🔥 Vừa dịch & cập nhật thành công Chương {last_chapter} cho truyện '{title}'!"
     ann_data = []
     if ANNOUNCEMENTS_JSON.exists():
@@ -300,15 +300,35 @@ def _append_announcement(slug: str, title: str, last_chapter: int):
                 ann_data = json.load(f)
         except Exception:
             pass
-    ann_data.insert(0, {"date": today_str, "text": ann_text, "novel_slug": slug, "chapter": last_chapter})
+    ann_data.insert(0, {"date": now_str, "text": ann_text, "novel_slug": slug, "chapter": last_chapter})
     with open(ANNOUNCEMENTS_JSON, 'w', encoding='utf-8') as f:
         json.dump(ann_data[:5], f, ensure_ascii=False, indent=2)
+
+
+def deploy_to_cloudflare() -> bool:
+    """Deploy frontend và worker lên Cloudflare Pages / Workers."""
+    deploy_start = datetime.now()
+    print(f"\n📦 [{deploy_start:%Y-%m-%d %H:%M:%S}] Bắt đầu tiến trình deploy Cloudflare Workers...")
+    try:
+        if sys.platform == "win32":
+            cmd = ["cmd.exe", "/c", "npx.cmd wrangler deploy"]
+        else:
+            cmd = ["npx", "wrangler", "deploy"]
+        subprocess.run(cmd, cwd=BASE_DIR, check=True)
+        elapsed = (datetime.now() - deploy_start).total_seconds()
+        print(f"✅ [{datetime.now():%Y-%m-%d %H:%M:%S}] Deploy Cloudflare hoàn tất thành công! (Thời gian deploy: {elapsed:.1f}s)")
+        return True
+    except Exception as e:
+        elapsed = (datetime.now() - deploy_start).total_seconds()
+        print(f"⚠️ [{datetime.now():%Y-%m-%d %H:%M:%S}] Lỗi khi deploy Cloudflare ({elapsed:.1f}s): {e}")
+        return False
 
 
 def check_and_translate_novel(slug: str) -> bool:
     """Kiểm tra + dịch + đồng bộ chương mới cho 1 truyện.
     Trả True nếu chạy xong không lỗi (kể cả khi không có gì mới hoặc chưa đủ
     chương để công bố), False nếu có lỗi thật sự (nguồn lỗi, dịch lỗi, sync lỗi)."""
+    t_start = datetime.now()
     novel_dir = NOVELS_DIR / slug
     novel_json_path = novel_dir / "novel.json"
     catalog_json_path = novel_dir / "catalog.json"
@@ -347,7 +367,8 @@ def check_and_translate_novel(slug: str) -> bool:
             catalog = json.load(f)
 
     last_num = novel_meta.get("last_chapter_number", 0)
-    print(f"⏰ [{datetime.now():%Y-%m-%d %H:%M:%S}] [{slug}] Chương hiện tại trong hệ thống: {last_num}")
+    novel_display_title = novel_meta.get("title", slug)
+    print(f"⏰ [{t_start:%Y-%m-%d %H:%M:%S}] [{novel_display_title}] Chương hiện tại: {last_num}")
 
     try:
         remote_chapters = fetch_latest_chapters(f"https://r.jina.ai/{source_index_url}")
@@ -357,10 +378,10 @@ def check_and_translate_novel(slug: str) -> bool:
 
     pending = sorted((c for c in remote_chapters if c["number"] > last_num), key=lambda x: x["number"])
     if not pending:
-        print(f"✅ [{slug}] Chưa có chương mới nào trên nguồn (vẫn ở chương {last_num}).")
+        print(f"✅ [{novel_display_title}] Chưa có chương mới nào trên nguồn (vẫn ở chương {last_num}).")
         return retry_ok
 
-    print(f"🔥 [{slug}] Phát hiện {len(pending)} chương mới: {[c['number'] for c in pending]}")
+    print(f"🔥 [{novel_display_title}] Phát hiện {len(pending)} chương mới: {[c['number'] for c in pending]}")
     first_new = pending[0]["number"]
 
     for c in pending:
@@ -380,11 +401,13 @@ def check_and_translate_novel(slug: str) -> bool:
     with open(novel_json_path, 'w', encoding='utf-8') as f:
         json.dump(novel_meta, f, ensure_ascii=False, indent=2)
 
-    print(f"🚀 [{slug}] Đang chạy dịch {len(pending)} chương mới...")
+    t_trans_start = datetime.now()
+    print(f"🚀 [{t_trans_start:%Y-%m-%d %H:%M:%S}] [{novel_display_title}] Bắt đầu dịch {len(pending)} chương mới...")
     subprocess.run(
         [sys.executable, "-u", "main.py", "translate", "--novel", slug, "--chapters", str(len(pending))],
         cwd=BASE_DIR, check=True,
     )
+    t_trans_done = datetime.now()
 
     if novel_json_path.exists():
         try:
@@ -393,7 +416,8 @@ def check_and_translate_novel(slug: str) -> bool:
         except Exception:
             pass
 
-    print(f"☁️ [{slug}] Đang đồng bộ lên Cloudflare R2/D1...")
+    t_sync_start = datetime.now()
+    print(f"☁️ [{t_sync_start:%Y-%m-%d %H:%M:%S}] [{novel_display_title}] Đang đồng bộ lên Cloudflare R2/D1...")
     cf_token = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()
     synced = False
     # wrangler đẩy MỌI file từ first_new trở đi, kể cả bản lỗi → khi batch có
@@ -407,22 +431,44 @@ def check_and_translate_novel(slug: str) -> bool:
                 [sys.executable, "-u", "migrate_to_cloudflare.py", "--slug", slug, "--from-chapter", str(first_new)],
                 cwd=BASE_DIR, check=True, env=sub_env,
             )
-            print(f"✅ [{slug}] Đã đồng bộ thành công qua wrangler CLI.")
+            print(f"✅ [{novel_display_title}] Đã đồng bộ thành công qua wrangler CLI.")
             synced = True
         except Exception as e:
-            print(f"⚠️ [{slug}] Lỗi khi đồng bộ qua wrangler CLI: {e}")
+            print(f"⚠️ [{novel_display_title}] Lỗi khi đồng bộ qua wrangler CLI: {e}")
 
     if not synced:
         synced = sync_via_worker_api(slug, novel_meta, pending, BASE_DIR)
+    t_sync_done = datetime.now()
+
     if synced is None:
-        print(f"ℹ️ [{slug}] Đã lưu tiến độ dịch; chưa đủ chương để công bố công khai.")
+        print(f"ℹ️ [{novel_display_title}] Đã lưu tiến độ dịch; chưa đủ chương để công bố công khai.")
         return retry_ok
     if not synced:
-        print(f"❌ [{slug}] Đồng bộ thất bại; không công bố thông báo thành công")
+        print(f"❌ [{novel_display_title}] Đồng bộ thất bại; không công bố thông báo thành công")
         return False
 
+    # Deploy Cloudflare
+    t_deploy_start = datetime.now()
+    deploy_to_cloudflare()
+    t_deploy_done = datetime.now()
+
+    t_end = datetime.now()
+    novel_meta["last_updated_at"] = t_end.strftime('%Y-%m-%d %H:%M:%S')
+    with open(novel_json_path, 'w', encoding='utf-8') as f:
+        json.dump(novel_meta, f, ensure_ascii=False, indent=2)
+
     _append_announcement(slug, novel_meta.get("title", slug), pending[-1]["number"])
-    print(f"🎉 [{slug}] Tự động dịch và đồng bộ chương mới thành công!")
+
+    print(f"\n{'='*75}")
+    print(f"📊 BÁO CÁO TIẾN TRÌNH CẬP NHẬT & DEPLOY — {novel_meta.get('title', slug)}")
+    print(f"{'='*75}")
+    print(f"  • Thời điểm bắt đầu   : {t_start:%Y-%m-%d %H:%M:%S}")
+    print(f"  • Thời gian dịch       : {t_trans_start:%H:%M:%S} -> {t_trans_done:%H:%M:%S} ({(t_trans_done - t_trans_start).total_seconds():.1f}s)")
+    print(f"  • Thời gian sync D1/R2 : {t_sync_start:%H:%M:%S} -> {t_sync_done:%H:%M:%S} ({(t_sync_done - t_sync_start).total_seconds():.1f}s)")
+    print(f"  • Thời gian deploy     : {t_deploy_start:%H:%M:%S} -> {t_deploy_done:%H:%M:%S} ({(t_deploy_done - t_deploy_start).total_seconds():.1f}s)")
+    print(f"  • Thời điểm hoàn tất   : {t_end:%Y-%m-%d %H:%M:%S}")
+    print(f"  • Tổng thời gian chạy  : {(t_end - t_start).total_seconds():.1f}s")
+    print(f"{'='*75}\n")
     return retry_ok
 
 
