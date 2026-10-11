@@ -6,6 +6,7 @@ import userApi, {
   saveUserSession, clearUserSession, getUserInfo, isLoggedIn,
 } from '../userApi'
 import { fetchNovelsBySlugs } from '../utils/novelsApi'
+import GoogleLoginButton from '../components/GoogleLoginButton'
 
 /**
  * Trang tài khoản NGƯỜI DÙNG (guest đã đăng ký — không liên quan admin /login).
@@ -126,6 +127,11 @@ function AuthForm({ onSuccess }) {
             ? <>Chưa có tài khoản? <button type="button" className="link-btn" onClick={() => switchMode('register')}>Đăng ký miễn phí</button></>
             : <>Đã có tài khoản? <button type="button" className="link-btn" onClick={() => switchMode('login')}>Đăng nhập</button></>}
         </p>
+
+        <GoogleLoginButton
+          onSuccess={onSuccess}
+          onError={() => setError('Đăng nhập Google thất bại. Vui lòng thử lại.')}
+        />
       </div>
     </div>
   )

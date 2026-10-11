@@ -6,6 +6,7 @@ Kèm các helper nhận diện file split đã merge (_find_merged_vi...).
 """
 
 import hashlib
+import math
 import os
 import re
 
@@ -27,17 +28,26 @@ def _content_version(text: str) -> str:
 
 
 @router.get("/api/novels/{slug}/chapters")
-def list_chapters(slug: str):
+def list_chapters(slug: str, page: int = 0, limit: int = 0):
     """Lấy danh sách các chương đã dịch.
 
     Lọc bỏ các file phần split (xxx-N_VI.md) nếu file gốc đã được merge
     (xxx_VI.md tồn tại) — tránh hiển thị trùng lặp trên UI.
+
+    Mặc định (không truyền page/limit) giữ nguyên hành vi cũ: trả về mảng
+    đầy đủ — không phá contract của Reader/NovelPage/AdminNovelDetail đang
+    gọi endpoint này mà không truyền tham số.
+
+    Khi truyền `limit>0`: trả envelope {chapters,total,page,limit,pages} và
+    CHỈ mở file để lấy title cho các chương nằm trong trang được yêu cầu —
+    với truyện có hàng nghìn chương, đây là phần I/O đắt nhất nên phân trang
+    thực sự giảm tải, không chỉ giảm kích thước payload.
     """
     if not is_published(slug):
         raise HTTPException(status_code=404, detail="Novel not found")
     translated_dir = safe_novel_dir(slug, "translated")
     if not os.path.exists(translated_dir):
-        return []
+        return {"chapters": [], "total": 0, "page": max(1, page), "limit": limit, "pages": 0} if limit > 0 else []
 
     all_files = set(f for f in os.listdir(translated_dir) if f.endswith(".md"))
 
@@ -74,8 +84,15 @@ def list_chapters(slug: str):
             first_file_by_num[n] = f
 
     sorted_files = sorted(first_file_by_num.values(), key=get_chapter_num)
+
+    total = len(sorted_files)
+    paginated = limit > 0
+    pages = math.ceil(total / limit) if paginated and total else 0
+    page = max(1, page) if paginated else 1
+    page_files = sorted_files[(page - 1) * limit: (page - 1) * limit + limit] if paginated else sorted_files
+
     result = []
-    for f in sorted_files:
+    for f in page_files:
         filepath = os.path.join(translated_dir, f)
         title = f.replace('_VI.md', '').replace('.txt', '')
         try:
@@ -105,6 +122,9 @@ def list_chapters(slug: str):
         n = get_chapter_num(f)
         canonical_number = None if n == 999999 else n
         result.append({"filename": f, "title": title, "chapter_number": canonical_number})
+
+    if paginated:
+        return {"chapters": result, "total": total, "page": page, "limit": limit, "pages": pages}
     return result
 
 

@@ -7,6 +7,7 @@ import NovelCover from './NovelCover'
 import Badge from './ui/Badge'
 import { fmtNumber, fmtNovelTitle } from '../utils/format'
 import { isEpubDownloaded, downloadEpubOffline } from '../utils/epubOffline'
+import { isNovelCompleted } from '../utils/novelStatus'
 
 /**
  * EpubCard — thẻ hiển thị 1 truyện trong lưới (dùng ở EpubCatalogPage và
@@ -54,14 +55,14 @@ export function EpubCard({ novel }) {
         ) : novel.has_epub ? (
           <span className="badge-overlay badge-overlay--left"><Badge variant="epub">EPUB</Badge></span>
         ) : null}
-        {novel.total_chapters > 0 && novel.chapter_count >= novel.total_chapters && (
+        {isNovelCompleted(novel) && (
           <span className="badge-overlay badge-overlay--right"><Badge variant="full">FULL</Badge></span>
         )}
       </Link>
 
       {/* Info */}
       <div style={{ padding: 'var(--space-3, 12px)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2, 8px)', flex: 1, minWidth: 0 }}>
-        <Link to={`/novel/${novel.slug}`} style={{ display: 'flex', minHeight: '24px', color: 'var(--text-main)', textDecoration: 'none' }}>
+        <Link to={`/novel/${novel.slug}`} style={{ display: 'flex', alignItems: 'center', minHeight: 'var(--tap-target-min, 44px)', color: 'var(--text-main)', textDecoration: 'none' }}>
           <div style={{ fontWeight: 600, fontSize: '0.82rem', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {fmtNovelTitle(novel.title, novel.slug)}
           </div>

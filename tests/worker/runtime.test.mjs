@@ -44,6 +44,35 @@ test('D1 bootstrap supports public list and EPUB, sync is concurrent and repeata
   assert.equal((await (await call('novels/demo/chapters/1')).json()).content,chapter(1).content);
 });
 
+test('public catalog ignores polluted duplicate chapter numbers and stats uses novel metadata', async t => {
+  const {db,bucket,call,sync} = await setup(t);
+  assert.equal((await sync([chapter(1),chapter(2)])).status,200);
+
+  const polluted = [
+    ['foreign-zero.md','Gián điệp thê thảm',0,'demo/foreign-zero.md'],
+    ['foreign-1.md','Tình báo bịa đặt -1',1,'demo/foreign-1.md'],
+    ['foreign-2.md','Tình báo bịa đặt -2',2,'demo/foreign-2.md'],
+  ];
+  await db.batch(polluted.map(row => db.prepare(`
+    INSERT INTO chapters (novel_slug,filename,title,chapter_number,r2_key)
+    VALUES ('demo',?,?,?,?)
+  `).bind(...row)));
+  for (const [filename,,,key] of polluted) await bucket.put(key,`# ${filename}\n\nWrong novel`);
+
+  const catalog = await (await call('novels/demo/chapters')).json();
+  assert.deepEqual(catalog.map(c=>c.filename),['Chương 1.md','Chương 2.md','foreign-zero.md']);
+  assert.deepEqual(catalog.map(c=>c.chapter_number),[1,2,0]);
+
+  const listNovel = (await (await call('novels')).json()).novels[0];
+  assert.equal(listNovel.chapter_count,2);
+  assert.equal(listNovel.latest_chapter_title,'Chương 2');
+  const detailNovel = await (await call('novels/demo')).json();
+  assert.equal(detailNovel.chapter_count,2);
+  assert.equal(detailNovel.latest_chapter_title,'Chương 2');
+  assert.equal((await (await call('stats')).json()).total_chapters,10);
+  assert.equal((await (await call('novels/demo/chapters/2')).json()).content,chapter(2).content);
+});
+
 test('conflicting writes never overwrite the winner without its current key', async t => {
   const {db,call,sync} = await setup(t);
   const replies = await Promise.all([sync([chapter(1)]),sync([{...chapter(1),content:'changed'}])]);

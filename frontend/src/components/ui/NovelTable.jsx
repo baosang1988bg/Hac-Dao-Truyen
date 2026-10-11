@@ -3,6 +3,7 @@ import { novelType } from '../../utils/propTypes'
 
 import { Link } from 'react-router-dom'
 import { fmtNumber, fmtNovelTitle } from '../../utils/format'
+import { isNovelCompleted } from '../../utils/novelStatus'
 
 /**
  * NovelTable – Dạng bảng cho danh sách truyện dài, chỉ hiện trên desktop
@@ -33,7 +34,7 @@ export default function NovelTable({ novels, limit, colWidths, ongoingLabel = '�
         </thead>
         <tbody>
           {rows.map(n => {
-            const isCompleted = n.total_chapters > 0 && (n.chapter_count || 0) >= n.total_chapters
+            const isCompleted = isNovelCompleted(n)
             const title = fmtNovelTitle(n.title, n.slug)
             return (
               <tr key={n.slug}>

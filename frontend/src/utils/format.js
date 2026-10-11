@@ -1,9 +1,34 @@
 // ── Định dạng chung (thời gian, số) ──────────────────────────────────────────
 
-/** "vừa xong" / "X phút trước" / "X giờ trước" / "X ngày trước" từ epoch giây. */
-export function fmtTimeAgo(epoch) {
-  if (!epoch) return ''
-  const diff = Math.floor(Date.now() / 1000) - epoch
+/**
+ * "vừa xong" / "X phút trước" / "X giờ trước" / "X ngày trước".
+ * Chấp nhận epoch giây, epoch mili-giây hoặc chuỗi ngày SQL/ISO từ API.
+ */
+export function fmtTimeAgo(value, nowMs = Date.now()) {
+  if (value === null || value === undefined || value === '') return ''
+
+  let timestampMs
+  if (typeof value === 'number') {
+    timestampMs = Math.abs(value) < 1e12 ? value * 1000 : value
+  } else if (typeof value === 'string') {
+    const input = value.trim()
+    if (!input) return ''
+    if (/^-?\d+(?:\.\d+)?$/.test(input)) {
+      const numeric = Number(input)
+      timestampMs = Math.abs(numeric) < 1e12 ? numeric * 1000 : numeric
+    } else {
+      let normalized = input.includes('T') ? input : input.replace(' ', 'T')
+      if (/^\d{4}-\d{2}-\d{2}T/.test(normalized) && !/(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalized)) {
+        normalized += 'Z'
+      }
+      timestampMs = Date.parse(normalized)
+    }
+  } else if (value instanceof Date) {
+    timestampMs = value.getTime()
+  }
+
+  if (!Number.isFinite(timestampMs) || !Number.isFinite(nowMs)) return ''
+  const diff = Math.max(0, Math.floor((nowMs - timestampMs) / 1000))
   if (diff < 60) return 'vừa xong'
   if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`
   if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`
@@ -58,4 +83,3 @@ export function fmtNovelTitle(title, slug) {
 function str(val) {
   return val == null ? '' : String(val)
 }
-

@@ -123,6 +123,41 @@ def seed_valid_fixture(conn):
     conn.execute("INSERT INTO novel_requests(user_id, url, status) VALUES (2, 'http://x', 'pending')")
 
 
+# ── Bug production 2026-09-17: index trùng tên sống sót qua rebuild ────────
+# ALTER TABLE x RENAME TO x__pre_migration mang theo index của x THEO TÊN
+# (tên index là duy nhất toàn database trong SQLite, không theo từng bảng) —
+# nếu bảng cần rebuild (thêm NOT NULL/FK/CHECK) mà tình cờ đã có sẵn 1 index
+# trùng tên với index "chuẩn" mong muốn, CREATE INDEX cho bảng mới sẽ đụng
+# "index already exists" vì tên đó vẫn đang gắn với bản backup. Tái hiện
+# đúng bug đã gặp thật trên D1 production khi rebuild comments/user_sessions/
+# novel_requests (tất cả đã có sẵn index cùng tên trước khi rebuild).
+
+def test_rebuild_survives_preexisting_index_with_same_name_as_desired():
+    conn = db()
+    seed_valid_fixture(conn)
+    # OLD_SCHEMA (mô phỏng production trước khi vá) không tự khai báo các
+    # index này — thêm thủ công y hệt trạng thái D1 thật đã phát hiện.
+    conn.executescript("""
+        CREATE INDEX idx_comments_slug_chapter ON comments(slug, chapter);
+        CREATE INDEX idx_sessions_expires ON user_sessions(expires_at);
+        CREATE INDEX idx_novel_requests_user_status ON novel_requests(user_id, status);
+        CREATE INDEX idx_novel_requests_status ON novel_requests(status);
+    """)
+
+    apply(conn)  # KHÔNG được raise "index ... already exists"
+
+    # Index cuối cùng tồn tại đúng 1 lần, gắn với bảng SỐNG (không phải bảng backup).
+    rows = conn.execute(
+        "SELECT name, tbl_name FROM sqlite_master WHERE type='index' AND name='idx_comments_slug_chapter'"
+    ).fetchall()
+    assert len(rows) == 1
+    assert rows[0]['tbl_name'] == 'comments'
+
+    # Dữ liệu cũ vẫn nguyên sau rebuild.
+    assert conn.execute("SELECT content FROM comments WHERE slug='demo-truyen'").fetchone()[0] == 'hay lắm'
+    conn.close()
+
+
 # ── E07: audit trước khi ép ràng buộc mới ──────────────────────────────────
 
 def test_audit_passes_and_migration_preserves_valid_data():

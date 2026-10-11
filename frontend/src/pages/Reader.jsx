@@ -11,6 +11,7 @@ import ReaderSettingsPanel from '../components/ReaderSettingsPanel'
 import useReaderSettings, { THEMES } from '../hooks/useReaderSettings'
 import useTextToSpeech from '../hooks/useTextToSpeech'
 import { markChapterRead } from '../utils/readingHistory'
+import { normalizeChapterCatalog } from '../utils/chapters'
 
 const OFFLINE_BATCH_SIZE = 10
 
@@ -243,22 +244,7 @@ export default function Reader() {
   useEffect(() => {
     setChaptersLoadError(false)
     api.get(`/novels/${slug}/chapters`).then(res => {
-      const list = res.data || []
-      const seen = new Set()
-      const unique = []
-      for (const c of list) {
-        if (c && c.filename && !seen.has(c.filename)) {
-          seen.add(c.filename)
-          unique.push(c)
-        }
-      }
-      unique.sort((a, b) => {
-        const numA = a.chapter_number != null ? a.chapter_number : (a.number != null ? a.number : 0)
-        const numB = b.chapter_number != null ? b.chapter_number : (b.number != null ? b.number : 0)
-        if (numA !== numB) return numA - numB
-        return (a.filename || '').localeCompare(b.filename || '', undefined, { numeric: true })
-      })
-      setChapters(unique)
+      setChapters(normalizeChapterCatalog(res.data))
     }).catch(() => { setChaptersLoadError(true) })
   }, [slug])
 

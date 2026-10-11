@@ -7,6 +7,7 @@ import SectionHeader from '../../components/ui/SectionHeader'
 import NovelGrid from '../../components/ui/NovelGrid'
 import NovelTable from '../../components/ui/NovelTable'
 import NovelList from '../../components/ui/NovelList'
+import { isNovelCompleted } from '../../utils/novelStatus'
 
 const TABS = [
   { key: 'all',       label: 'Tất cả' },
@@ -150,7 +151,7 @@ export default function AllNovelsSection({ activeGenre = '' }) {
               cols={{ mobile: 3, tablet: 4, desktop: 5 }}
               getBadge={(n) => {
                 if (n.has_epub === 1 || n.has_epub === true) return { variant: 'epub', label: 'EPUB' }
-                if (n.total_chapters > 0 && n.chapter_count >= n.total_chapters) return { variant: 'full', label: 'FULL' }
+                if (isNovelCompleted(n)) return { variant: 'full', label: 'FULL' }
                 return null
               }}
             />

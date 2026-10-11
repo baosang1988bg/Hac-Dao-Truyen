@@ -1,9 +1,10 @@
-import { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Suspense, lazy, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import GuestLayout from './layouts/GuestLayout'
 import AdminLayout from './layouts/AdminLayout'
 import RequireAdmin from './components/admin/RequireAdmin'
 import { SpinnerIcon } from './components/shared/ui'
+import { initAnalytics, trackPageView } from './utils/analytics'
 // Trang lõi (luôn cần hiển thị ngay, không lazy để tránh nháy loading với đa số người dùng)
 import HomePage from './pages/HomePage'
 import LibraryPage from './pages/LibraryPage'
@@ -54,9 +55,21 @@ function PageLoading() {
  *     /novel/:slug             → NovelPage
  *     /novel/:slug/read/:chapter → Reader
  */
+/** Bắn page_view GA4 mỗi khi route SPA đổi (gtag mặc định chỉ bắn 1 lần lúc tải script). */
+function AnalyticsTracker() {
+  const location = useLocation()
+  useEffect(() => {
+    trackPageView(location.pathname + location.search)
+  }, [location.pathname, location.search])
+  return null
+}
+
 function App() {
+  useEffect(() => { initAnalytics() }, [])
+
   return (
     <Suspense fallback={<PageLoading />}>
+    <AnalyticsTracker />
     <Routes>
       <Route path="/login" element={<LoginPage />} />
 

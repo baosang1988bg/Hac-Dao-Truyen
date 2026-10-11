@@ -1,28 +1,66 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom'
-import { Layers, Book, AlertCircle } from 'lucide-react'
-import api, { fetchAdminNovels } from '../../api'
+import { Layers, Book, AlertCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import api from '../../api'
 import NovelCover from '../../components/NovelCover'
 import { fmtTimeAgo } from '../../utils/format'
 
+const SORT_OPTIONS = [
+  { value: 'updated_at',    label: 'Cập nhật mới nhất' },
+  { value: 'chapter_count', label: 'Nhiều chương nhất' },
+  { value: 'title',         label: 'Tên A-Z' },
+]
+const STATUS_OPTIONS = [
+  { value: '',          label: 'Tất cả' },
+  { value: 'ongoing',   label: 'Đang ra' },
+  { value: 'completed', label: 'Hoàn thành' },
+]
+const PAGE_SIZE = 30
+
 /**
  * Danh sách truyện trong khu quản trị.
- * - GET /api/novels một lần.
+ * - Tìm/lọc/sắp xếp/phân trang bằng chính query params server-side đã có sẵn
+ *   ở GET /api/novels (q/sort/order/status/page/limit) — trước đây trang này
+ *   gọi fetchAdminNovels() tải HẾT mọi trang về rồi hiển thị phẳng, không có
+ *   cách nào tìm truyện khi danh sách lớn lên.
  * - Poll GET /api/translate/active mỗi 5s → badge "Đang dịch x/y".
  * - Bấm hàng → /admin/novels/:slug
  */
 export default function AdminNovels() {
   const [novels, setNovels] = useState(null)
+  const [total, setTotal] = useState(0)
+  const [pages, setPages] = useState(0)
   const [active, setActive] = useState({})
   const [error, setError] = useState(null)
 
+  const [qInput, setQInput] = useState('')
+  const [q, setQ] = useState('')
+  const [sort, setSort] = useState('updated_at')
+  const [status, setStatus] = useState('')
+  const [page, setPage] = useState(1)
+
+  // Debounce ô tìm kiếm 350ms trước khi gọi API, tránh spam request theo từng phím gõ
+  useEffect(() => {
+    const t = setTimeout(() => { setQ(qInput.trim()); setPage(1) }, 350)
+    return () => clearTimeout(t)
+  }, [qInput])
+
+  useEffect(() => { setPage(1) }, [sort, status])
+
   useEffect(() => {
     let alive = true
-    fetchAdminNovels()
-      .then(data => { if (alive) setNovels(data) })
+    setNovels(prev => prev === null ? null : prev) // giữ danh sách cũ trong lúc tải trang mới
+    api.get('/novels', { params: { q, sort, order: 'desc', status, page, limit: PAGE_SIZE } })
+      .then(({ data }) => {
+        if (!alive) return
+        setNovels(data.novels || [])
+        setTotal(data.total || 0)
+        setPages(data.pages || 0)
+        setError(null)
+      })
       .catch(() => { if (alive) { setNovels([]); setError('Không tải được danh sách truyện.') } })
     return () => { alive = false }
-  }, [])
+  }, [q, sort, status, page])
 
   // Poll phiên dịch đang chạy
   useEffect(() => {
@@ -45,7 +83,38 @@ export default function AdminNovels() {
     <div className="animate-fade-in">
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 className="page-title" style={{ fontSize: '1.7rem' }}>Truyện</h1>
-        <p className="page-subtitle" style={{ fontSize: '0.95rem' }}>Quản lý {novels.length} truyện trong hệ thống.</p>
+        <p className="page-subtitle" style={{ fontSize: '0.95rem' }}>Quản lý {total} truyện trong hệ thống.</p>
+      </div>
+
+      {/* ── Toolbar: tìm kiếm + lọc + sắp xếp ── */}
+      <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+        <div style={{ position: 'relative', flex: '1 1 220px', minWidth: 0 }}>
+          <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+          <input
+            type="text"
+            className="input-field"
+            placeholder="Tìm theo tên, tác giả, slug..."
+            value={qInput}
+            onChange={e => setQInput(e.target.value)}
+            style={{ paddingLeft: '32px', height: '38px', fontSize: '0.875rem', width: '100%' }}
+          />
+        </div>
+        <select
+          value={status}
+          onChange={e => setStatus(e.target.value)}
+          className="input-field"
+          style={{ height: '38px', fontSize: '0.85rem', flex: '0 0 auto' }}
+        >
+          {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <select
+          value={sort}
+          onChange={e => setSort(e.target.value)}
+          className="input-field"
+          style={{ height: '38px', fontSize: '0.85rem', flex: '0 0 auto' }}
+        >
+          {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
       </div>
 
       {error && (
@@ -107,7 +176,31 @@ export default function AdminNovels() {
 
       {novels.length === 0 && !error && (
         <div className="glass-panel p-6 text-center text-muted">
-          Chưa có truyện nào. Tạo truyện mới bằng lệnh <code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px' }}>python main.py new</code>.
+          {q || status
+            ? 'Không tìm thấy truyện phù hợp với bộ lọc hiện tại.'
+            : <>Chưa có truyện nào. Tạo truyện mới bằng lệnh <code style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px' }}>python main.py new</code>.</>}
+        </div>
+      )}
+
+      {pages > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginTop: '1.25rem' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '0.4rem 0.8rem' }}
+          >
+            <ChevronLeft size={14} /> Trước
+          </button>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Trang {page} / {pages}</span>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setPage(p => Math.min(pages, p + 1))}
+            disabled={page >= pages}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '0.4rem 0.8rem' }}
+          >
+            Sau <ChevronRight size={14} />
+          </button>
         </div>
       )}
 

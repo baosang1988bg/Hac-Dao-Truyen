@@ -25,10 +25,10 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 import sqlite3
 import subprocess
-import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -265,7 +265,19 @@ def plan(query, schema=None):
             "SELECT name, tbl_name, sql FROM sqlite_master WHERE type='index' AND sql IS NOT NULL")}
         for row in desired_indexes:
             idx_name, tbl_name, idx_sql = row['name'], row['tbl_name'], row['sql']
-            if tbl_name in rebuilt_tables or idx_name not in actual_indexes:
+            if tbl_name in rebuilt_tables:
+                if idx_name in actual_indexes:
+                    # `ALTER TABLE x RENAME TO x__pre_migration` carries x's
+                    # indexes along BY NAME (SQLite index names are unique
+                    # DB-wide, not per-table) — idx_name still exists, now
+                    # attached to the renamed-aside backup table. Drop it
+                    # there first, or CREATE INDEX for the fresh table below
+                    # fails with "index already exists". The backup table is
+                    # only a manual-rollback artifact; it doesn't need this
+                    # index to remain queryable.
+                    statements.append(f'DROP INDEX {quote(idx_name)};')
+                statements.append(idx_sql + ';')
+            elif idx_name not in actual_indexes:
                 statements.append(idx_sql + ';')
             elif normalize_sql(actual_indexes[idx_name]['sql']) != normalize_sql(idx_sql):
                 raise ValueError(
@@ -280,21 +292,39 @@ def plan(query, schema=None):
         desired.close()
 
 
+def real_drift_statements(statements):
+    """Loại 2 dòng bookkeeping `schema_migrations` (CREATE/INSERT) luôn được
+    plan() thêm vào cuối bất kể có lệch thật hay không — CHỈ hiện diện của
+    chúng không có nghĩa là schema production đã lệch khỏi schema.sql. Dùng
+    cho `--check-drift`: statements còn lại rỗng ⇔ production khớp schema.sql."""
+    trimmed = list(statements)
+    if trimmed and trimmed[-1].startswith("INSERT OR IGNORE INTO schema_migrations(version) VALUES ("):
+        trimmed.pop()
+    if trimmed and trimmed[-1].startswith("CREATE TABLE IF NOT EXISTS schema_migrations "):
+        trimmed.pop()
+    return trimmed
+
+
 def wrangler(database, remote, sql, config):
-    with tempfile.NamedTemporaryFile('w', suffix='.sql', encoding='utf-8', delete=False) as f:
-        f.write(sql)
-        path = Path(f.name)
-    try:
-        command = [str(ROOT / 'node_modules' / '.bin' / ('wrangler.cmd' if __import__('os').name == 'nt' else 'wrangler')),
-                   'd1', 'execute', database, '--remote' if remote else '--local',
-                   '--config', str(config), '--file', str(path), '--json']
-        result = subprocess.run(command, check=True, capture_output=True, text=True)
-        blocks = json.loads(result.stdout)
-        if any(b.get('success') is False for b in blocks):
-            raise RuntimeError('D1 execution failed')
-        return [row for block in blocks for row in block.get('results', [])]
-    finally:
-        path.unlink()
+    # Wrangler >=4.x xử lý `--file` như import hàng loạt: stdout in log tiến
+    # trình upload rồi trả về 1 object TỔNG KẾT (rows read/written...) thay vì
+    # kết quả truy vấn thật — PRAGMA table_info(...) qua --file trả sai dữ
+    # liệu (không phải lỗi, chỉ là bug cũ dùng nhầm chế độ). `--command` mới
+    # là chế độ trả kết quả truy vấn thật, và theo `wrangler d1 execute --help`
+    # nó chấp nhận nhiều câu lệnh cách nhau bởi ';' — dùng thẳng cho cả plan
+    # (nhiều PRAGMA/SELECT) lẫn apply (nhiều ALTER/CREATE nối tiếp).
+    command = [str(ROOT / 'node_modules' / '.bin' / ('wrangler.cmd' if __import__('os').name == 'nt' else 'wrangler')),
+               'd1', 'execute', database, '--remote' if remote else '--local',
+               '--config', str(config), '--command', sql, '--json']
+    result = subprocess.run(command, check=True, capture_output=True, text=True)
+    # Vẫn có thể có vài dòng log trước khối JSON — cắt từ ký tự '[' đầu tiên.
+    json_start = result.stdout.find('[')
+    if json_start < 0:
+        raise RuntimeError(f'wrangler d1 execute không trả JSON hợp lệ:\n{result.stdout}')
+    blocks = json.loads(result.stdout[json_start:])
+    if any(b.get('success') is False for b in blocks):
+        raise RuntimeError('D1 execution failed')
+    return [row for block in blocks for row in block.get('results', [])]
 
 
 def main():
@@ -305,7 +335,11 @@ def main():
     parser.add_argument('--remote', action='store_true')
     parser.add_argument('--config', type=Path, default=ROOT / 'wrangler.jsonc')
     parser.add_argument('--apply', action='store_true', help='Apply the printed plan; default is read-only')
+    parser.add_argument('--check-drift', action='store_true',
+                         help='CI use: exit 1 if production schema differs from schema.sql (never applies anything, ignores --apply)')
     args = parser.parse_args()
+    if args.check_drift:
+        args.apply = False
     if args.sqlite:
         if args.remote:
             parser.error('--remote requires --database')
@@ -320,12 +354,29 @@ def main():
         conn = None
         query = lambda sql: wrangler(args.database, args.remote, sql, args.config)
     try:
+        if args.check_drift:
+            # plan() raise ValueError khi gặp lệch mà nó không tự sinh ALTER
+            # được (vd đổi kiểu cột) — với drift-check, đó CŨNG là lệch cần
+            # báo đỏ, không phải lỗi chương trình nên không được để traceback
+            # làm job crash mù mờ.
+            try:
+                statements = plan(query)
+            except ValueError as e:
+                print(f'⚠️  Production lệch khỏi schema.sql (không tự sinh ALTER được): {e}', file=sys.stderr)
+                sys.exit(1)
+            drift = real_drift_statements(statements)
+            if drift:
+                print('\n'.join(statements))
+                print(f'\n⚠️  Production lệch khỏi schema.sql: {len(drift)} câu lệnh cần áp dụng (xem plan ở trên).', file=sys.stderr)
+                sys.exit(1)
+            print('✅ Production khớp schema.sql, không có lệch.', file=sys.stderr)
+            return
+
         statements = plan(query)
         sql = '\n'.join(statements)
         print(sql)
         if args.apply:
             if args.remote:
-                import sys
                 sys.path.insert(0,str(ROOT))
                 from tools.sync_budget import require_cloud_writes
                 require_cloud_writes()

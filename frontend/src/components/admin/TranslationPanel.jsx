@@ -2,7 +2,7 @@ import PropTypes from 'prop-types'
 import { useEffect, useState, useRef } from 'react';
 import {
   Play, Square, Zap, Clock, TrendingUp, Sparkles,
-  CheckCircle, AlertTriangle, RefreshCw,
+  CheckCircle, AlertTriangle, RefreshCw, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { StatusBadge, SpinnerIcon } from '../shared/ui'
 
@@ -15,6 +15,9 @@ export default function TranslationPanel({ isRunning, translating, translateCoun
   const logRef = useRef(null)
   const [logsExpanded, setLogsExpanded] = useState(false)
   const [userDismissedSummary, setUserDismissedSummary] = useState(false)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [forceRetranslate, setForceRetranslate] = useState(false)
+  const [startUrl, setStartUrl] = useState('')
 
   const isCancelling = taskStatus?.status === 'cancelling'
   const isDone       = taskStatus?.status === 'finished'
@@ -189,10 +192,55 @@ export default function TranslationPanel({ isRunning, translating, translateCoun
           </label>
         </div>
 
+        {/* Tùy chọn nâng cao: force retranslate + chương/URL bắt đầu cụ thể */}
+        <div style={{ borderRadius: '12px', border: '1px solid var(--border-panel)', overflow: 'hidden' }}>
+          <button
+            onClick={() => setAdvancedOpen(v => !v)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '0.65rem 0.85rem', background: 'rgba(255,255,255,0.03)', border: 'none', cursor: 'pointer',
+              color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600,
+            }}
+          >
+            <span>Tùy chọn nâng cao</span>
+            {advancedOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+          {advancedOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.85rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={forceRetranslate}
+                  onChange={e => setForceRetranslate(e.target.checked)}
+                  disabled={translating}
+                  style={{ width: '16px', height: '16px', borderRadius: '4px', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-main)' }}>
+                  Dịch lại chương đã có (ghi đè bản dịch cũ)
+                </span>
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  Bắt đầu từ URL chương gốc (tùy chọn)
+                </label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={startUrl}
+                  onChange={e => setStartUrl(e.target.value)}
+                  disabled={translating}
+                  placeholder="Để trống = tiếp tục từ chương cuối cùng"
+                  style={{ height: '38px', fontSize: '0.82rem' }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Start Button */}
         <button
           className="btn btn-primary"
-          onClick={onStart}
+          onClick={() => onStart(forceRetranslate, startUrl.trim() || undefined)}
           disabled={translating || (!isAllChapters && (!translateCount || translateCount < 1))}
           style={{
             width: '100%',

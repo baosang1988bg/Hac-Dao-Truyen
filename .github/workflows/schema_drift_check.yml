@@ -1,0 +1,32 @@
+name: Schema Drift Check (D1 production)
+
+# Phát hiện tự động khi schema D1 production lệch khỏi schema.sql — đúng thứ
+# lẽ ra đã bắt được vụ novel_requests/novel_ratings/reading_progress thiếu
+# cột thật trên production (2026-09-17), thay vì tình cờ phát hiện. CHỈ đọc
+# (migrate_schema.py --check-drift không bao giờ --apply) — phát hiện lệch
+# thì báo đỏ để người xem xét & tự quyết định fix, không tự động sửa production.
+on:
+  schedule:
+    - cron: '17 3 * * 1'  # ~10:17 sáng thứ Hai giờ Việt Nam — lệch khỏi đầu giờ tròn để giảm trễ scheduler
+  workflow_dispatch:
+
+jobs:
+  check_drift:
+    if: vars.ALLOW_CLOUD_WRITES == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: So khớp schema production với schema.sql (chỉ đọc)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python3 tools/migrate_schema.py --database hacdao-db --remote --check-drift

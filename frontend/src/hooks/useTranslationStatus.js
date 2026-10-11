@@ -4,7 +4,7 @@ import api from '../api'
 /**
  * Hook quản lý phiên dịch của một truyện (tách từ NovelDetail.jsx cũ):
  * - Poll /translate/status mỗi 2s khi đang chạy.
- * - start(count, url?) / stop().
+ * - start(count, url?, force?) / stop().
  * - Đếm thời gian elapsed (giây).
  * - Dọn interval khi unmount, bỏ qua setState sau unmount (StrictMode-safe).
  *
@@ -68,13 +68,14 @@ export default function useTranslationStatus(slug, { onFinished } = {}) {
     }
   }, [taskStatus?.status, fetchStatus])
 
-  /** Bắt đầu dịch: count = số chương (0 = toàn bộ), url = dịch từ chương cụ thể. */
-  const start = useCallback(async (count, url) => {
+  /** Bắt đầu dịch: count = số chương (0 = toàn bộ), url = dịch từ chương cụ thể,
+   * force = true → dịch lại cả chương đã có bản dịch (ghi đè). */
+  const start = useCallback(async (count, url, force = false) => {
     setTranslating(true)
     setElapsedSec(0)
     startTimeRef.current = Date.now()
     try {
-      const body = { chapters: parseInt(count), force: false }
+      const body = { chapters: parseInt(count), force: !!force }
       if (url) body.url = url
       await api.post(`/novels/${slug}/translate`, body)
       fetchStatus()

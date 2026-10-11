@@ -17,6 +17,24 @@ test('rate limit returns retry timing, expires and cannot be bypassed with a fak
   assert.equal(syncCalls,1);
 });
 
+test('auth binding that always says success is still capped by the local counter (defense-in-depth)',async t=>{
+  // Cloudflare Rate Limiting binding tự nhận là "permissive, eventually
+  // consistent" — xác nhận bằng test thật trên production (2026-09-17): 47
+  // request sai mật khẩu liên tiếp không bị chặn dù limit đặt 10/60s. Test
+  // này xác nhận logic "binding nói OK vẫn phải qua Map" hoạt động ĐÚNG
+  // TRONG PHẠM VI 1 ISOLATE (Miniflare giữ nguyên 1 isolate suốt test) — đây
+  // KHÔNG phải bằng chứng giới hạn cứng trên production thật: Cloudflare có
+  // thể tạo isolate mới mỗi request ở traffic thấp, lúc đó Map cũng mất tác
+  // dụng y hệt binding. Giới hạn cứng thật cần bộ đếm ngoài isolate (Durable
+  // Object/D1) — chưa làm, xem comment tại chỗ gọi trong src/index.js.
+  const worker=await loadWorker();let now=1000;t.mock.method(Date,'now',()=>now);
+  const permissiveBinding={limit:async()=>({success:true})}; // luôn cho qua, mô phỏng đúng hành vi thật đã quan sát
+  const env={AUTH_RATE_LIMITER:permissiveBinding};
+  for(let i=0;i<10;i++)assert.equal((await worker.fetch(req('auth/login'),env,{})).status,503);
+  const limited=await worker.fetch(req('auth/login'),env,{});
+  assert.equal(limited.status,429);assert.equal(limited.headers.get('Retry-After'),'60');
+});
+
 test('binding errors fail closed for login and use local fallback for public reads',async()=>{
   const worker=await loadWorker();const broken={limit:async()=>{throw new Error('offline');}};
   assert.equal((await worker.fetch(req('auth/login'),{AUTH_RATE_LIMITER:broken},{})).status,503);

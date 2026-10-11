@@ -12,6 +12,7 @@ import NovelCover from '../components/NovelCover'
 import { getLastReadForSlug, fmtChapterLabel, getReadChapters } from '../utils/readingHistory'
 import { fmtTimeAgo, fmtNumber } from '../utils/format'
 import SynopsisPanel from '../components/SynopsisPanel'
+import { normalizeChapterCatalog } from '../utils/chapters'
 
 const PAGE_SIZE = 100
 
@@ -51,7 +52,7 @@ export default function NovelPage() {
       .then(([nRes, cRes]) => {
         if (!alive) return
         setNovel(nRes.data)
-        setChapters(cRes.data || [])
+        setChapters(normalizeChapterCatalog(cRes.data))
       })
       .catch(() => { if (alive) setError('Không tải được thông tin truyện.') })
     return () => { alive = false }

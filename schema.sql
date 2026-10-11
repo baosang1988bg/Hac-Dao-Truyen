@@ -63,14 +63,19 @@ CREATE INDEX IF NOT EXISTS idx_chapters_novel ON chapters(novel_slug, chapter_nu
 -- Bảng: users, user_sessions, bookmarks, reading_progress, comments
 -- Chạy: npx wrangler d1 execute hacdao-db --file=migrations/002_users.sql --remote
 
--- Tài khoản người dùng (đăng ký bằng email + mật khẩu PBKDF2)
+-- Tài khoản người dùng (đăng ký bằng email + mật khẩu PBKDF2, hoặc Google)
+-- Migration 009: google_id/avatar_url — tài khoản đăng nhập bằng Google có
+-- password_hash rỗng ('') vì không có mật khẩu, chỉ đăng nhập qua Google.
 CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   email         TEXT UNIQUE NOT NULL,
   name          TEXT DEFAULT '',
-  password_hash TEXT NOT NULL,               -- format: pbkdf2$100000$<salt_hex>$<hash_hex>
+  password_hash TEXT NOT NULL,               -- format: pbkdf2$100000$<salt_hex>$<hash_hex>, hoặc '' nếu chỉ đăng nhập Google
+  google_id     TEXT,                        -- "sub" trong id_token Google — định danh bất biến, NULL nếu chưa liên kết
+  avatar_url    TEXT,
   created_at    TEXT DEFAULT (datetime('now'))
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;
 
 -- Session token (Bearer u_<hex>), TTL 30 ngày
 CREATE TABLE IF NOT EXISTS user_sessions (

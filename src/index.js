@@ -49,7 +49,7 @@ async function handleApi(request, url, env, ctx) {
   const isSync = ['/api/admin/sync-novel', '/api/admin/sync-rankings'].includes(path) && method === 'POST';
   // Chỉ phân loại sync sau khi xác minh key; header giả không được bypass.
   const verifiedSync = isSync && env.SYNC_KEY && timingSafeEqualStr(request.headers.get('x-sync-key') || '', env.SYNC_KEY);
-  const isLogin = ['/api/auth/login','/api/user/login','/api/user/register'].includes(path);
+  const isLogin = ['/api/auth/login','/api/user/login','/api/user/register','/api/user/google-login'].includes(path);
   const category = verifiedSync ? 'sync' : isLogin ? 'auth' : 'public';
   const binding = env[category === 'sync' ? 'SYNC_RATE_LIMITER' : category === 'auth' ? 'AUTH_RATE_LIMITER' : 'PUBLIC_RATE_LIMITER'];
   const key = category === 'sync' ? 'sync:authorized' : `${category}:${clientIp(request)}`;
@@ -57,6 +57,19 @@ async function handleApi(request, url, env, ctx) {
   let permitted;
   try {
     permitted = binding ? (await binding.limit({key})).success : checkRateLimit(key,60_000,maximum);
+    // Rate Limiting binding của Cloudflare tự nhận là "permissive, eventually
+    // consistent" — xác nhận bằng test thật trên production (2026-09-17): 47
+    // request sai mật khẩu liên tiếp không bị chặn dù limit đặt 10/60s. Cộng
+    // thêm Map in-memory cho 'auth' là best-effort, KHÔNG phải giới hạn cứng:
+    // Cloudflare có thể tạo isolate mới cho mỗi request (traffic thấp →
+    // isolate nhàn rỗi bị thu hồi nhanh), lúc đó Map cũng "mới tinh" mỗi lần
+    // y hệt hạn chế của binding. Giới hạn cứng thật sự cần bộ đếm dùng chung
+    // ngoài isolate (Durable Object/D1 atomic increment) — chưa làm, out of
+    // scope phiên này. Giữ lớp này vì "tốt hơn không có gì" khi isolate được
+    // tái sử dụng (traffic cao/liên tục), không phải vì nó đảm bảo tuyệt đối.
+    if (binding && permitted && category === 'auth') {
+      permitted = checkRateLimit(key,60_000,maximum);
+    }
   } catch {
     if (category !== 'public') return jsonResponse({error:'Rate limiter unavailable'},503);
     permitted = checkRateLimit(key,60_000,maximum);
@@ -192,6 +205,9 @@ async function handleApi(request, url, env, ctx) {
   }
   if (path === '/api/user/login' && method === 'POST') {
     return userLogin(request, env);
+  }
+  if (path === '/api/user/google-login' && method === 'POST') {
+    return userGoogleLogin(request, env);
   }
   if (path === '/api/user/logout' && method === 'POST') {
     return userLogout(request, env);
@@ -479,11 +495,21 @@ async function getNovels(env, params = new URLSearchParams()) {
            n.updated_at, n.views, n.has_epub, n.drive_file_id,
            CASE WHEN n.rating_count > 0 THEN ROUND(CAST(n.rating_sum AS REAL) / n.rating_count, 1) ELSE 0.0 END AS rating,
            n.rating_count,
-           (SELECT COUNT(*) FROM chapters c WHERE c.novel_slug = n.slug) AS chapter_count,
+           (SELECT COUNT(DISTINCT CASE WHEN c.chapter_number > 0 THEN c.chapter_number END)
+              FROM chapters c WHERE c.novel_slug = n.slug) AS chapter_count,
            COALESCE((
              SELECT c.title FROM chapters c
-             WHERE c.novel_slug = n.slug
-             ORDER BY c.chapter_number DESC, c.filename DESC
+             WHERE c.novel_slug = n.slug AND c.chapter_number > 0
+             ORDER BY c.chapter_number DESC,
+               CASE
+                 WHEN LOWER(COALESCE(c.title, '')) LIKE 'chương ' || c.chapter_number || '%'
+                   OR LOWER(COALESCE(c.title, '')) LIKE 'chapter ' || c.chapter_number || '%'
+                   OR COALESCE(c.title, '') LIKE '第' || c.chapter_number || '章%'
+                   THEN 0
+                 WHEN c.filename GLOB '[0-9]*' THEN 1
+                 ELSE 2
+               END,
+               c.filename ASC
              LIMIT 1
            ), '') AS latest_chapter_title,
            n.updated_at AS last_created_at,
@@ -733,14 +759,24 @@ async function getNovel(env, slug, request) {
     return jsonResponse({ error: 'Novel not found' }, 404);
   }
 
-  // chapter_count phải dùng CÙNG công thức với getNovels() (đếm từ bảng D1
-  // `chapters`, nguồn sự thật), KHÔNG dùng độ dài catalog.json (có thể lệch
-  // với dữ liệu D1 thật, gây bug tương tự chapter_count sai ở getNovels()).
+  // chapter_count phải dùng CÙNG công thức với getNovels(): đếm số chương
+  // dương KHÁC NHAU, không đếm số dòng thô vì một lần đồng bộ lỗi có thể tạo
+  // nhiều filename cho cùng chapter_number. Author note không có số không
+  // được tính vào tiến độ dịch.
   const chapStatsRow = await env.DB.prepare(
-    `SELECT COUNT(*) AS cnt,
-            (SELECT title FROM chapters
-             WHERE novel_slug = ?
-             ORDER BY chapter_number DESC, filename DESC
+    `SELECT COUNT(DISTINCT CASE WHEN chapter_number > 0 THEN chapter_number END) AS cnt,
+            (SELECT c2.title FROM chapters c2
+             WHERE c2.novel_slug = ? AND c2.chapter_number > 0
+             ORDER BY c2.chapter_number DESC,
+               CASE
+                 WHEN LOWER(COALESCE(c2.title, '')) LIKE 'chương ' || c2.chapter_number || '%'
+                   OR LOWER(COALESCE(c2.title, '')) LIKE 'chapter ' || c2.chapter_number || '%'
+                   OR COALESCE(c2.title, '') LIKE '第' || c2.chapter_number || '章%'
+                   THEN 0
+                 WHEN c2.filename GLOB '[0-9]*' THEN 1
+                 ELSE 2
+               END,
+               c2.filename ASC
              LIMIT 1) AS latest_title
      FROM chapters WHERE novel_slug = ?`
   ).bind(slug, slug).first();
@@ -829,27 +865,68 @@ async function getEpub(env, slug) {
     },
   });
 }
+function catalogChapterNumber(item) {
+  const raw = item?.chapter_number ?? item?.number;
+  const number = Number(raw);
+  return Number.isSafeInteger(number) && number > 0 ? number : null;
+}
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function canonicalChapterScore(item, number) {
+  const n = escapeRegex(number);
+  const title = String(item?.title || '');
+  const filename = String(item?.filename || '');
+  let score = 0;
+  if (new RegExp(`(?:第\\s*0*${n}\\s*章|(?:chương|chapter)\\s*0*${n}(?:\\D|$))`, 'i').test(title)) score += 100;
+  if (new RegExp(`^0*${n}(?:\\D|$)`).test(filename)) score += 50;
+  if (new RegExp(`(?:第\\s*0*${n}\\s*章|(?:chương|chapter)[-_\\s]*0*${n}(?:\\D|$))`, 'i').test(filename)) score += 25;
+  return score;
+}
+
+function preferCanonicalChapter(current, candidate, number) {
+  const scoreDiff = canonicalChapterScore(candidate, number) - canonicalChapterScore(current, number);
+  if (scoreDiff !== 0) return scoreDiff > 0 ? candidate : current;
+  const filenameDiff = String(candidate.filename).localeCompare(String(current.filename), undefined, { numeric: true });
+  return filenameDiff < 0 ? candidate : current;
+}
+
+function pickCanonicalChapter(catalog, number) {
+  let best = null;
+  for (const item of catalog || []) {
+    if (!item?.filename || catalogChapterNumber(item) !== number) continue;
+    best = best ? preferCanonicalChapter(best, item, number) : item;
+  }
+  return best;
+}
+
 function sortAndDeduplicateCatalog(catalog) {
   if (!Array.isArray(catalog)) return [];
-  const seen = new Set();
-  const unique = [];
 
+  const byFilename = new Map();
   for (const item of catalog) {
-    if (!item || !item.filename) continue;
-    if (!seen.has(item.filename)) {
-      seen.add(item.filename);
-      unique.push(item);
-    }
+    if (item?.filename && !byFilename.has(item.filename)) byFilename.set(item.filename, item);
   }
 
-  unique.sort((a, b) => {
-    const numA = a.chapter_number != null ? a.chapter_number : (a.number != null ? a.number : 0);
-    const numB = b.chapter_number != null ? b.chapter_number : (b.number != null ? b.number : 0);
-    if (numA !== numB) return numA - numB;
-    return (a.filename || '').localeCompare(b.filename || '', undefined, { numeric: true });
-  });
+  const byNumber = new Map();
+  const unnumbered = [];
+  for (const item of byFilename.values()) {
+    const number = catalogChapterNumber(item);
+    if (number === null) {
+      unnumbered.push(item);
+      continue;
+    }
+    const current = byNumber.get(number);
+    byNumber.set(number, current ? preferCanonicalChapter(current, item, number) : item);
+  }
 
-  return unique;
+  const numbered = [...byNumber.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, item]) => item);
+  unnumbered.sort((a, b) => String(a.filename).localeCompare(String(b.filename), undefined, { numeric: true }));
+  return [...numbered, ...unnumbered];
 }
 
 // Tra cuu "upload_state.json" (ghi boi cong cu upload len Google Drive, KHAC
@@ -930,7 +1007,10 @@ async function getChapterContentFromDrive(env, slug, num, identifier, ctx) {
   const allChaps = await fetchDriveAllChapters(env, slug);
   if (!allChaps) return null;
 
-  const ch = allChaps.find(c => (c.number === num || c.chapter_number === num || c.filename === identifier));
+  const exact = !/^\d+$/.test(identifier)
+    ? allChaps.find(c => c?.filename === identifier)
+    : null;
+  const ch = exact || (num > 0 ? pickCanonicalChapter(allChaps, num) : null);
   if (!ch || typeof ch.content !== 'string' || !ch.filename) return null;
 
   const body = ch.content.startsWith('#') ? ch.content : `# ${ch.title || ch.filename}\n\n${ch.content}`;
@@ -1029,19 +1109,31 @@ async function getChapterContent(env, slug, identifier, ctx) {
     return jsonResponse({ error: 'Chapter content not found', identifier, slug }, 404);
   }
 
-  let num = /^\d+$/.test(identifier) ? parseInt(identifier) : 0;
+  const numericIdentifier = /^\d+$/.test(identifier);
+  let num = numericIdentifier ? parseInt(identifier) : 0;
   if (!num) {
     const m = identifier.match(/(?:Chương|第)\s*(\d+)/i) || identifier.match(/(\d+)/);
     if (m) num = parseInt(m[1]);
   }
 
-  // 1. Ưu tiên tra cứu r2_key trực tiếp từ D1 Database (nhanh & 100% chuẩn xác)
+  // 1. Ưu tiên tra cứu r2_key trực tiếp từ D1 Database. Với URL dùng số
+  // chương, lấy mọi candidate rồi chọn bản canonical; LIMIT 1 không có ORDER
+  // có thể trả nhầm bản ghi lẫn truyện khi D1 chứa chapter_number trùng.
   try {
-    const row = await env.DB.prepare(`
-      SELECT r2_key, filename FROM chapters
-      WHERE novel_slug = ? AND (chapter_number = ? OR filename = ?)
-      LIMIT 1
-    `).bind(slug, num, identifier).first();
+    let row = null;
+    if (!numericIdentifier) {
+      row = await env.DB.prepare(`
+        SELECT r2_key, filename, title, chapter_number FROM chapters
+        WHERE novel_slug = ? AND filename = ? LIMIT 1
+      `).bind(slug, identifier).first();
+    }
+    if (!row && num > 0) {
+      const { results } = await env.DB.prepare(`
+        SELECT r2_key, filename, title, chapter_number FROM chapters
+        WHERE novel_slug = ? AND chapter_number = ?
+      `).bind(slug, num).all();
+      row = pickCanonicalChapter(results, num);
+    }
 
     if (row && row.r2_key) {
       const obj = await env.CHAPTERS.get(row.r2_key);
@@ -1070,7 +1162,10 @@ async function getChapterContent(env, slug, identifier, ctx) {
       let rawText = await catObj.text();
       rawText = rawText.replace(/^\uFEFF/, '').trim();
       const catalog = JSON.parse(rawText);
-      const ch = catalog.find(c => (c.chapter_number === num || c.number === num || c.filename === identifier));
+      const exact = !numericIdentifier && Array.isArray(catalog)
+        ? catalog.find(c => c?.filename === identifier)
+        : null;
+      const ch = exact || (num > 0 ? pickCanonicalChapter(catalog, num) : null);
       if (ch && ch.filename) {
         const encoded = btoa(unescape(encodeURIComponent(ch.filename))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
         const r2Key = `${slug}/b64_${encoded}`;
@@ -1474,6 +1569,79 @@ async function userLogin(request, env) {
   // Không phân biệt "email không tồn tại" và "sai mật khẩu" (tránh dò email)
   if (!user || !(await verifyPassword(password, user.password_hash))) {
     return jsonResponse({ error: 'Email hoặc mật khẩu không đúng' }, 401);
+  }
+
+  const token = await createUserSession(env, user.id);
+  return jsonResponse({ token, user: { id: user.id, email: user.email, name: user.name } });
+}
+
+// Xác minh id_token Google bằng endpoint tokeninfo chính thức của Google thay
+// vì tự implement verify JWKS/RS256 — Worker không có thư viện JWT sẵn, và
+// việc tự verify chữ ký sai sẽ là lỗ hổng bảo mật nghiêm trọng (giả mạo được
+// đăng nhập của bất kỳ ai). Đổi lại là 1 request mạng phụ thuộc Google mỗi
+// lần đăng nhập — chấp nhận được vì đây vốn đã là hành động không thường
+// xuyên (đăng nhập), không phải đường nóng (hot path).
+// https://developers.google.com/identity/sign-in/web/backend-auth
+async function verifyGoogleIdToken(idToken, expectedAudience) {
+  const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+  if (!res.ok) return null;
+  const payload = await res.json();
+  if (payload.aud !== expectedAudience) return null;
+  if (payload.iss !== 'https://accounts.google.com' && payload.iss !== 'accounts.google.com') return null;
+  if (payload.email_verified !== 'true' && payload.email_verified !== true) return null;
+  if (!payload.email || !payload.sub) return null;
+  return payload;
+}
+
+async function userGoogleLogin(request, env) {
+  if (!env.GOOGLE_CLIENT_ID) {
+    return jsonResponse({ error: 'Đăng nhập Google chưa được cấu hình trên server' }, 503);
+  }
+  const __parsed = await readLimitedJson(request, DEFAULT_JSON_MAX_BYTES);
+  if (!__parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, __parsed.status);
+  const credential = String(__parsed.body.credential || '');
+  if (!credential || credential.length > 4096) {
+    return jsonResponse({ error: 'Thiếu hoặc sai định dạng credential' }, 400);
+  }
+
+  const payload = await verifyGoogleIdToken(credential, env.GOOGLE_CLIENT_ID);
+  if (!payload) return jsonResponse({ error: 'Xác thực Google thất bại' }, 401);
+
+  const email = String(payload.email).trim().toLowerCase();
+  const googleId = String(payload.sub);
+  const name = String(payload.name || '').trim().slice(0, 100);
+  const avatarUrl = String(payload.picture || '').slice(0, 512);
+
+  // Tìm theo google_id trước (định danh bất biến), rồi mới tới email (liên
+  // kết tài khoản email/password đã đăng ký từ trước với cùng địa chỉ email).
+  let user = await env.DB.prepare(
+    `SELECT id, email, name FROM users WHERE google_id = ?`
+  ).bind(googleId).first();
+
+  if (!user) {
+    const byEmail = await env.DB.prepare(
+      `SELECT id, email, name FROM users WHERE email = ?`
+    ).bind(email).first();
+    if (byEmail) {
+      // Tài khoản đã tồn tại (đăng ký bằng email/password trước đó) → liên
+      // kết thêm google_id, KHÔNG đổi password_hash/name đã có.
+      await env.DB.prepare(
+        `UPDATE users SET google_id = ?, avatar_url = COALESCE(NULLIF(avatar_url, ''), ?) WHERE id = ?`
+      ).bind(googleId, avatarUrl, byEmail.id).run();
+      user = byEmail;
+    } else {
+      try {
+        const { meta } = await env.DB.prepare(
+          `INSERT INTO users (email, name, password_hash, google_id, avatar_url) VALUES (?, ?, '', ?, ?)`
+        ).bind(email, name, googleId, avatarUrl).run();
+        user = { id: meta.last_row_id, email, name };
+      } catch (err) {
+        if (String(err.message || '').includes('UNIQUE')) {
+          return jsonResponse({ error: 'Email đã được đăng ký' }, 409);
+        }
+        throw err;
+      }
+    }
   }
 
   const token = await createUserSession(env, user.id);
