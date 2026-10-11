@@ -9,6 +9,7 @@ Hệ thống quản lý, thu thập và dịch truyện chữ Trung → Việt, 
 | [Bắt đầu](docs/getting-started.md) | Cài đặt, cấu hình, chạy local và kiểm tra |
 | [Kiến trúc](docs/architecture.md) | Thành phần, dữ liệu, xác thực và giới hạn |
 | [Sử dụng](use.md) | Import, dịch, kiểm tra, đồng bộ và phục hồi |
+| [Tự động cập nhật](docs/auto-check-guide.md) | Quản lý danh sách & tự động cập nhật chương mới |
 | [Triển khai](deploy.md) | Cloudflare, schema, secrets và checklist phát hành |
 | [Kiểm soát chi phí](docs/cost-controls.md) | Cờ ghi cloud, ngân sách, rate limit và phạm vi bảo vệ |
 | [Nghiệm thu](docs/release-verification.md) | Bằng chứng local, đối soát offline và điều kiện rollout |

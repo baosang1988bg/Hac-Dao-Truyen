@@ -75,3 +75,30 @@ Khi người dùng gõ `/epub-help` hoặc hỏi về câu lệnh tải/upload E
     --epub-dir D:\epub_library ^
     --folder-id 1RKfWakoQOidHnxLXnZNgWoF_YokNt9lV
   ```
+
+---
+
+## Command Shortcut: /update-help (Tự Động Cập Nhật Chương Mới)
+Khi người dùng gõ `/update-help` hoặc hỏi về cách quản lý danh sách auto-check / cập nhật chương mới, hiển thị các lệnh:
+
+1. **Cập nhật tất cả truyện trong danh sách:**
+   ```cmd
+   python -u tools/manage_auto_check.py run
+   ```
+2. **Cập nhật 1 truyện cụ thể:**
+   ```cmd
+   python -u tools/manage_auto_check.py run --slug <slug>
+   ```
+3. **Xem danh sách truyện đang theo dõi:**
+   ```cmd
+   python -u tools/manage_auto_check.py list
+   ```
+4. **Thêm truyện vào danh sách theo dõi:**
+   ```cmd
+   python -u tools/manage_auto_check.py add <slug> [--url <source_index_url>]
+   ```
+5. **Hủy theo dõi một truyện:**
+   ```cmd
+   python -u tools/manage_auto_check.py remove <slug>
+   ```
+
