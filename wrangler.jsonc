@@ -16,6 +16,8 @@
 	],
 	"vars": {
 		"ALLOW_SYNC_WRITES": "true",
+		// Origin chuẩn cho canonical/sitemap/robots (src/index.js). Thiếu thì lấy origin của request.
+		"SITE_ORIGIN": "https://hacdaotruyen.com",
 		// Client ID OAuth 2.0 (Web application) tạo ở Google Cloud Console >
 		// APIs & Services > Credentials. KHÔNG phải secret (cùng giá trị này
 		// cũng lộ ra ở frontend qua VITE_GOOGLE_CLIENT_ID) — dùng để verify

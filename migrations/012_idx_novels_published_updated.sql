@@ -1,0 +1,12 @@
+-- HacDaoTruyen — Migration 012: index phục vụ danh sách công khai/sitemap
+-- Các truy vấn nóng nhất (GET /api/novels mặc định, /sitemap.xml) đều là
+-- `WHERE published = 1 ORDER BY updated_at DESC LIMIT ...` trên ~28k dòng.
+-- Index ghép (published, updated_at DESC) cho phép SQLite đọc thẳng theo thứ
+-- tự, dừng sau LIMIT thay vì quét + sort toàn bảng (giảm rows_read D1).
+--
+-- Ghi chú: index cũ `idx_novels_chapter_count` thực chất là index trên
+-- novels(updated_at) — tên gây hiểu lầm nhưng GIỮ NGUYÊN để tools/migrate_schema.py
+-- --check-drift không báo lệch (đổi tên = drop + create trên production).
+--
+-- Chạy: npx wrangler d1 execute hacdao-db --file=migrations/012_idx_novels_published_updated.sql --remote
+CREATE INDEX IF NOT EXISTS idx_novels_published_updated ON novels(published, updated_at DESC);

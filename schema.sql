@@ -150,6 +150,10 @@ CREATE INDEX IF NOT EXISTS idx_novel_requests_status ON novel_requests(status);
 
 CREATE INDEX IF NOT EXISTS idx_novels_views ON novels(views DESC);
 CREATE INDEX IF NOT EXISTS idx_novels_chapter_count ON novels(updated_at);
+-- Ghi chú: idx_novels_chapter_count thực chất index theo updated_at (tên lịch sử,
+-- KHÔNG đổi tên để tránh drift với production). Migration 012: index ghép cho
+-- `WHERE published = 1 ORDER BY updated_at DESC` (danh sách công khai, sitemap).
+CREATE INDEX IF NOT EXISTS idx_novels_published_updated ON novels(published, updated_at DESC);
 
 -- HacDaoTruyen — Migration 005: phiếu đánh giá có định danh (F02).
 -- Thay cho việc cộng dồn vô hạn vào novels.rating_sum/rating_count mỗi lần

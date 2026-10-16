@@ -32,14 +32,205 @@ export default {
       }
     }
 
+    // ── SEO: robots.txt + sitemap.xml do Worker sinh động ───────────────
+    if (url.pathname === '/robots.txt' && (request.method === 'GET' || request.method === 'HEAD')) {
+      return robotsTxt(url, env);
+    }
+    if (url.pathname === '/sitemap.xml' && (request.method === 'GET' || request.method === 'HEAD')) {
+      return cachedJsonResponse(request, ctx, 86400, () => sitemapXml(url, env));
+    }
+
     // ── Static assets + SPA fallback ────────────────────────────────────
     const assetRes = await env.ASSETS.fetch(request);
     if (assetRes.status === 404) {
-      return env.ASSETS.fetch(new Request(new URL('/index.html', request.url).toString(), { method: 'GET' }));
+      // File build có hash (/assets/*) mà không tồn tại thì PHẢI 404 thật:
+      // trả index.html (text/html) cho URL .js/.css khiến trình duyệt báo lỗi
+      // MIME khó hiểu, và tệ hơn là bị cache nhầm như asset bất biến.
+      if (url.pathname.startsWith('/assets/')) {
+        return new Response('Not found', {
+          status: 404,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+        });
+      }
+      const indexRes = await env.ASSETS.fetch(new Request(new URL('/index.html', request.url).toString(), { method: 'GET' }));
+      const seoRes = await injectNovelSeo(indexRes, url, env);
+      return withStaticCacheHeaders(seoRes, url.pathname, true);
     }
-    return assetRes;
+    return withStaticCacheHeaders(assetRes, url.pathname, false);
   },
 };
+
+// ── Cache-Control cho asset tĩnh ──────────────────────────────────────────────
+// - /assets/* (Vite build, tên file có hash nội dung) → bất biến 1 năm.
+// - index.html / SPA fallback / mọi text/html → no-cache (luôn revalidate, để
+//   bản deploy mới trỏ đúng bundle hash mới).
+// - sw.js → no-cache (trình duyệt phải thấy service worker mới ngay).
+// - manifest + icon → 1 ngày.
+// - File khác: giữ nguyên header ASSETS trả về.
+function withStaticCacheHeaders(response, pathname, isSpaFallback) {
+  let cacheControl = null;
+  const contentType = response.headers.get('Content-Type') || '';
+  if (pathname.startsWith('/assets/') && response.status === 200) {
+    cacheControl = 'public, max-age=31536000, immutable';
+  } else if (pathname === '/sw.js') {
+    cacheControl = 'no-cache';
+  } else if (isSpaFallback || contentType.includes('text/html')) {
+    cacheControl = 'no-cache';
+  } else if (response.status === 200 && (/\.webmanifest$/.test(pathname) || /\.(?:svg|png|ico|webp)$/.test(pathname))) {
+    cacheControl = 'public, max-age=86400';
+  }
+  if (!cacheControl) return response;
+  const res = new Response(response.body, response);
+  res.headers.set('Cache-Control', cacheControl);
+  return res;
+}
+
+// ── SEO ───────────────────────────────────────────────────────────────────────
+// Origin chuẩn cho canonical/sitemap: ưu tiên biến SITE_ORIGIN (vd
+// https://hacdaotruyen.com) nếu có, không thì lấy origin của request.
+function siteOrigin(url, env) {
+  const configured = env && typeof env.SITE_ORIGIN === 'string' ? env.SITE_ORIGIN.trim().replace(/\/+$/, '') : '';
+  return /^https?:\/\//.test(configured) ? configured : url.origin;
+}
+
+function robotsTxt(url, env) {
+  const body = [
+    'User-agent: *',
+    'Allow: /',
+    'Allow: /api/proxy-cover',
+    'Disallow: /admin',
+    'Disallow: /login',
+    'Disallow: /account',
+    'Disallow: /api/',
+    '',
+    `Sitemap: ${siteOrigin(url, env)}/sitemap.xml`,
+    '',
+  ].join('\n');
+  return new Response(body, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' },
+  });
+}
+
+function escapeXml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;',
+  }[ch]));
+}
+
+// D1 lưu updated_at dạng "YYYY-MM-DD HH:MM:SS" (UTC) hoặc ISO — đổi về
+// "YYYY-MM-DD" cho <lastmod>; giá trị hỏng thì bỏ trống.
+function toLastmod(value) {
+  if (!value) return '';
+  const iso = /Z$|[+-]\d{2}:\d{2}$/.test(value) ? value : String(value).replace(' ', 'T') + 'Z';
+  const ms = Date.parse(iso);
+  return Number.isFinite(ms) ? new Date(ms).toISOString().slice(0, 10) : '';
+}
+
+const SITEMAP_MAX_NOVELS = 5000;
+
+async function sitemapXml(url, env) {
+  const origin = siteOrigin(url, env);
+  // idx_novels_published_updated (migration 012) → đọc theo thứ tự, dừng ở LIMIT.
+  const { results } = await env.DB.prepare(`
+    SELECT slug, updated_at FROM novels
+    WHERE published = 1
+    ORDER BY updated_at DESC
+    LIMIT ?
+  `).bind(SITEMAP_MAX_NOVELS).all();
+  const entries = [
+    { loc: `${origin}/`, changefreq: 'daily' },
+    { loc: `${origin}/epub`, changefreq: 'weekly' },
+    { loc: `${origin}/library`, changefreq: 'weekly' },
+  ];
+  for (const row of results || []) {
+    if (!row.slug || !SLUG_RE.test(row.slug)) continue;
+    entries.push({ loc: `${origin}/novel/${row.slug}`, lastmod: toLastmod(row.updated_at) });
+  }
+  const body = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    + entries.map(e => '  <url><loc>' + escapeXml(e.loc) + '</loc>'
+      + (e.lastmod ? `<lastmod>${e.lastmod}</lastmod>` : '')
+      + (e.changefreq ? `<changefreq>${e.changefreq}</changefreq>` : '')
+      + '</url>').join('\n')
+    + '\n</urlset>\n';
+  return new Response(body, {
+    headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=86400' },
+  });
+}
+
+function escapeHtmlAttr(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[ch]));
+}
+
+// Ảnh bìa cho og:image: phải là URL tuyệt đối; host chặn hotlink
+// (audiotruyenfull) đi qua /api/proxy-cover giống NovelCover.jsx ở frontend.
+function publicCoverUrl(coverUrl, origin) {
+  if (!coverUrl || !/^https?:\/\//i.test(coverUrl)) return '';
+  if (coverUrl.includes('audiotruyenfull.org')) {
+    return `${origin}/api/proxy-cover?url=${encodeURIComponent(coverUrl)}`;
+  }
+  return coverUrl;
+}
+
+// Tên hiển thị khi title trống hoặc chỉ là slug: "ten-truyen" → "Ten Truyen".
+function displayNovelTitle(novel) {
+  const title = String(novel?.title || '').trim();
+  if (title && title !== novel.slug) return title;
+  return String(novel?.slug || '').split('-').filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+// Chèn <title>/meta description/Open Graph/canonical vào index.html cho
+// request HTML tới /novel/:slug (KHÔNG áp dụng cho /read/, /epub-reader) để
+// crawler + link preview mạng xã hội thấy đúng tên truyện mà không cần chạy
+// JS. Mọi lỗi (D1, thiếu HTMLRewriter...) → trả index.html gốc nguyên vẹn.
+async function injectNovelSeo(indexRes, url, env) {
+  const m = url.pathname.match(/^\/novel\/([^/]+)\/?$/);
+  if (!m || !indexRes.ok || typeof HTMLRewriter === 'undefined' || !env.DB) return indexRes;
+  const slug = m[1];
+  if (!SLUG_RE.test(slug)) return indexRes;
+  try {
+    const novel = await env.DB.prepare(
+      `SELECT slug, title, synopsis, cover_url, published FROM novels WHERE slug = ?`
+    ).bind(slug).first();
+    if (!novel || !novel.published) return indexRes;
+    const origin = siteOrigin(url, env);
+    const name = displayNovelTitle(novel);
+    const pageTitle = `${name} – Hắc Đạo Truyện`;
+    const description = synopsisShort(novel.synopsis) || `Đọc truyện ${name} bản dịch tiếng Việt trên Hắc Đạo Truyện.`;
+    const canonical = `${origin}/novel/${slug}`;
+    const image = publicCoverUrl(novel.cover_url, origin);
+    const metas = [
+      `<meta name="description" content="${escapeHtmlAttr(description)}" />`,
+      `<link rel="canonical" href="${escapeHtmlAttr(canonical)}" />`,
+      '<meta property="og:type" content="book" />',
+      '<meta property="og:site_name" content="Hắc Đạo Truyện" />',
+      '<meta property="og:locale" content="vi_VN" />',
+      `<meta property="og:title" content="${escapeHtmlAttr(pageTitle)}" />`,
+      `<meta property="og:description" content="${escapeHtmlAttr(description)}" />`,
+      `<meta property="og:url" content="${escapeHtmlAttr(canonical)}" />`,
+      image ? `<meta property="og:image" content="${escapeHtmlAttr(image)}" />` : '',
+      `<meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}" />`,
+    ].filter(Boolean).join('\n    ');
+    const drop = { element(el) { el.remove(); } };
+    return new HTMLRewriter()
+      // setInnerContent mặc định escape text (html: false) — an toàn với tên truyện bất kỳ.
+      .on('title', { element(el) { el.setInnerContent(pageTitle); } })
+      // index.html có sẵn thẻ SEO mặc định cấp site → gỡ rồi chèn bản theo
+      // truyện, tránh trùng 2 description/og:title/canonical.
+      .on('meta[name="description"]', drop)
+      .on('meta[property^="og:"]', drop)
+      .on('meta[name^="twitter:"]', drop)
+      .on('link[rel="canonical"]', drop)
+      .on('head', { element(el) { el.append(metas, { html: true }); } })
+      .transform(indexRes);
+  } catch (err) {
+    console.warn('SEO inject failed:', err && err.message ? err.message : err);
+    return indexRes;
+  }
+}
 
 // ── Router ────────────────────────────────────────────────────────────────────
 async function handleApi(request, url, env, ctx) {
@@ -88,7 +279,7 @@ async function handleApi(request, url, env, ctx) {
 
   // POST /api/admin/sync-novel — high-speed batch sync endpoint
   if (path === '/api/admin/sync-novel' && method === 'POST') {
-    return syncNovelBatch(env, request);
+    return syncNovelBatch(env, request, ctx);
   }
 
   if (path === '/api/admin/sync-rankings' && method === 'POST') return syncRankings(env, request);
@@ -114,7 +305,7 @@ async function handleApi(request, url, env, ctx) {
   // GET /api/stats — tổng số truyện/chương/thuật ngữ, tính bằng SQL aggregate
   // ở server thay vì client tự tải toàn bộ catalog rồi cộng dồn (HomePage cũ).
   if (path === '/api/stats' && method === 'GET') {
-    return cachedJsonResponse(request, ctx, 300, () => getStats(env));
+    return cachedJsonResponse(request, ctx, 300, () => getStats(env, ctx));
   }
 
   // GET /api/server-info
@@ -178,9 +369,25 @@ async function handleApi(request, url, env, ctx) {
   }
 
   // GET /api/novels/:slug/chapters/:filename
+  // Kiểm tra published TRƯỚC edge cache (1 dòng D1 theo PK, rất rẻ) để truyện
+  // bị takedown hết đọc được NGAY, kể cả khi colo nào đó còn giữ bản cache.
+  // Nội dung chương: trình duyệt 5 phút, edge 1 giờ. Chương MỚI không bị ảnh
+  // hưởng (404 không bao giờ được cache); chương sửa lại được purge best-effort
+  // trong syncNovelBatch (chỉ colo hiện tại) — colo khác cũ tối đa 1 giờ.
   const chapterMatch = path.match(/^\/api\/novels\/([^/]+)\/chapters\/(.+)$/);
   if (chapterMatch && method === 'GET') {
-    return getChapterContent(env, chapterMatch[1], decodeURIComponent(chapterMatch[2]), ctx);
+    const chSlug = chapterMatch[1];
+    let identifier;
+    try { identifier = decodeURIComponent(chapterMatch[2]); }
+    catch { return jsonResponse({ error: 'Chapter content not found' }, 404); }
+    if (!SLUG_RE.test(chSlug)) return jsonResponse({ error: 'Chapter content not found', identifier, slug: chSlug }, 404);
+    const pubRow = await env.DB.prepare(`SELECT published FROM novels WHERE slug = ?`).bind(chSlug).first();
+    if (pubRow && !pubRow.published) {
+      return jsonResponse({ error: 'Chapter content not found', identifier, slug: chSlug }, 404, { 'Cache-Control': 'no-store' });
+    }
+    return cachedJsonResponse(request, ctx, 300,
+      () => getChapterContent(env, chSlug, identifier, ctx, { publishedChecked: true }),
+      { sMaxAge: 3600 });
   }
 
   // POST /api/novels/:slug/glossary
@@ -293,12 +500,29 @@ async function handleApi(request, url, env, ctx) {
   }
 
   // ── Proxy translate jobs → Python backend (nếu có BACKEND_URL) ──────
-  if (path.includes('/translate') || path.includes('/tools') || path === '/api/logs'
-      || path === '/api/admin/sync-usage') {
+  if (isBackendProxyPath(path)) {
     return proxyToBackend(request, url, env);
   }
 
-  return jsonResponse({ error: 'Not found', received_path: path, received_method: method }, 404);
+  // Không echo lại path/method (tránh phản chiếu input người dùng vào response).
+  return jsonResponse({ error: 'Not found' }, 404);
+}
+
+// Route do Python backend phục vụ (routers/translate.py, routers/tools.py,
+// logs, admin_usage). So khớp CHÍNH XÁC theo prefix/pattern thay vì
+// path.includes('/translate') (bản cũ forward cả path lạ chứa chuỗi đó).
+const BACKEND_PROXY_PATTERNS = [
+  /^\/api\/translate(?:\/|$)/,                        // /api/translate/active
+  /^\/api\/translate-quick$/,
+  /^\/api\/tools(?:\/|$)/,
+  /^\/api\/novels\/[^/]+\/translate(?:\/(?:status|stop))?$/,
+  /^\/api\/novels\/[^/]+\/tools\/[^/]+$/,
+  /^\/api\/logs$/,
+  /^\/api\/admin\/sync-usage$/,
+];
+
+function isBackendProxyPath(path) {
+  return BACKEND_PROXY_PATTERNS.some(re => re.test(path));
 }
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
@@ -440,9 +664,21 @@ async function getNovels(env, params = new URLSearchParams()) {
   const genre   = (params.get('genre') || '').trim();
   const status  = params.get('status') || '';           // ongoing | completed
   const hasEpub = params.get('has_epub');               // '1' | 'true' | ''
-  const page    = Math.max(1, parseInt(params.get('page') || '1'));
-  const limit   = Math.min(200, Math.max(1, parseInt(params.get('limit') || '48')));
+  const page    = Math.max(1, parseInt(params.get('page') || '1') || 1);
+  const limit   = Math.min(200, Math.max(1, parseInt(params.get('limit') || '48') || 48));
   const offset  = (page - 1) * limit;
+  // slugs=a,b,c — tra cứu đúng các truyện cho trước (tủ truyện, lịch sử
+  // đọc...) trong 1 request thay vì N request /api/novels/:slug. Tối đa 24
+  // slug hợp lệ (SLUG_RE), bỏ trùng; slug lạ/không hợp lệ bị bỏ qua.
+  const slugsParam = params.has('slugs');
+  const slugs = slugsParam
+    ? [...new Set((params.get('slugs') || '').split(',').map(x => x.trim()).filter(x => SLUG_RE.test(x)))].slice(0, NOVELS_SLUGS_MAX)
+    : null;
+  if (slugs && !slugs.length) {
+    return jsonResponse({ novels: [], total: 0, page, limit, pages: 0 }, 200, {
+      'Cache-Control': 'public, max-age=120, s-maxage=120'
+    });
+  }
 
   const SORT_COLS = {
     updated_at:    'n.updated_at',
@@ -452,6 +688,7 @@ async function getNovels(env, params = new URLSearchParams()) {
     title:         'n.title',
   };
   const sortCol = SORT_COLS[sort] || 'n.updated_at';
+  const sortByChapterCount = sortCol === 'chapter_count';
 
   // Build WHERE clauses
   // F03: truyện bị gỡ (takedown) không xuất hiện trong danh sách công khai —
@@ -460,9 +697,15 @@ async function getNovels(env, params = new URLSearchParams()) {
   const where = ['n.published = 1'];
   const binds = [];
 
+  if (slugs) {
+    where.push(`n.slug IN (${slugs.map(() => '?').join(',')})`);
+    binds.push(...slugs);
+  }
   if (genre) {
-    where.push("n.genre LIKE ?");
-    binds.push(`%${genre}%`);
+    // Khớp cả nhãn tiếng Việt lẫn giá trị thô tương ứng (xem genreFilterVariants).
+    const variants = genreFilterVariants(genre);
+    where.push(`(${variants.map(() => 'n.genre LIKE ?').join(' OR ')})`);
+    binds.push(...variants.map(v => `%${v}%`));
   }
   if (status === 'ongoing' || status === 'completed') {
     where.push("n.status = ?");
@@ -475,7 +718,7 @@ async function getNovels(env, params = new URLSearchParams()) {
     // SQLite LOWER() chỉ hạ chữ ASCII ("Đ" giữ nguyên) trong khi q đã qua JS
     // toLowerCase() → tên có chữ hoa có dấu không bao giờ khớp. Slug là tên
     // đã bỏ dấu, nên so thêm q dạng slug: có dấu/không dấu đều tìm được.
-    const qSlug = q.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd')
+    const qSlug = q.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd')
       .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     where.push("(LOWER(n.title) LIKE ? OR LOWER(n.slug) LIKE ? OR LOWER(n.author) LIKE ? OR LOWER(n.original_title) LIKE ? OR n.slug LIKE ?)");
     const qLike = `%${q}%`;
@@ -484,20 +727,20 @@ async function getNovels(env, params = new URLSearchParams()) {
 
   const whereStr = where.join(' AND ');
 
+  // Có slugs và không chỉ định sort → giữ đúng thứ tự slug client gửi lên.
+  const orderStr = slugs && !params.has('sort')
+    ? `CASE n.slug ${slugs.map((_, i) => `WHEN ? THEN ${i}`).join(' ')} END ASC`
+    : `${sortCol} ${order}`;
+  const orderBinds = slugs && !params.has('sort') ? slugs : [];
+
   // Count total matching records using index
   const countRes = await env.DB.prepare(`SELECT COUNT(*) as cnt FROM novels n WHERE ${whereStr}`).bind(...binds).first();
   const total = countRes ? countRes.cnt : 0;
 
-  // Fetch only requested page (LIMIT & OFFSET in SQL)
-  const { results } = await env.DB.prepare(`
-    SELECT n.slug, n.title, n.original_title, n.author, n.genre, n.notes,
-           n.total_chapters, n.cover_url, n.translation_style, n.status,
-           n.updated_at, n.views, n.has_epub, n.drive_file_id,
-           CASE WHEN n.rating_count > 0 THEN ROUND(CAST(n.rating_sum AS REAL) / n.rating_count, 1) ELSE 0.0 END AS rating,
-           n.rating_count,
-           (SELECT COUNT(DISTINCT CASE WHEN c.chapter_number > 0 THEN c.chapter_number END)
-              FROM chapters c WHERE c.novel_slug = n.slug) AS chapter_count,
-           COALESCE((
+  // Subquery đếm chương/tên chương mới nhất — chạy trên bảng chapters lớn.
+  const chapterCountSql = `(SELECT COUNT(DISTINCT CASE WHEN c.chapter_number > 0 THEN c.chapter_number END)
+              FROM chapters c WHERE c.novel_slug = n.slug)`;
+  const latestTitleSql = `COALESCE((
              SELECT c.title FROM chapters c
              WHERE c.novel_slug = n.slug AND c.chapter_number > 0
              ORDER BY c.chapter_number DESC,
@@ -511,17 +754,62 @@ async function getNovels(env, params = new URLSearchParams()) {
                END,
                c.filename ASC
              LIMIT 1
-           ), '') AS latest_chapter_title,
-           n.updated_at AS last_created_at,
-           n.glossary_count
-    FROM novels n
-    WHERE ${whereStr}
-    ORDER BY ${sortCol} ${order}
-    LIMIT ? OFFSET ?
-  `).bind(...binds, limit, offset).all();
+           ), '')`;
 
-  const novels = (results || []).map(({ last_created_at, ...n }) => ({
+  // HIỆU NĂNG: khi sort KHÁC chapter_count, KHÔNG tính subquery cho mọi dòng
+  // khớp WHERE (SQLite phải đưa cả cột subquery vào sorter → chạy cho toàn bộ
+  // ~28k truyện). Bước 1 chỉ lấy trang cần trả (cột rẻ của novels), bước 2
+  // tính chapter_count/latest_chapter_title cho đúng ≤ limit slug đó.
+  // Chỉ sort=chapter_count mới buộc phải tính cho toàn bộ (giữ cách cũ).
+  const baseCols = `n.slug, n.title, n.original_title, n.author, n.genre, n.notes,
+           n.total_chapters, n.cover_url, n.translation_style, n.status,
+           n.updated_at, n.views, n.has_epub, n.drive_file_id,
+           CASE WHEN n.rating_count > 0 THEN ROUND(CAST(n.rating_sum AS REAL) / n.rating_count, 1) ELSE 0.0 END AS rating,
+           n.rating_count,
+           SUBSTR(COALESCE(n.synopsis, ''), 1, 1200) AS synopsis_head,
+           n.updated_at AS last_created_at,
+           n.glossary_count`;
+  let rows;
+  if (sortByChapterCount) {
+    const { results } = await env.DB.prepare(`
+      SELECT ${baseCols},
+             ${chapterCountSql} AS chapter_count,
+             ${latestTitleSql} AS latest_chapter_title
+      FROM novels n
+      WHERE ${whereStr}
+      ORDER BY ${orderStr}
+      LIMIT ? OFFSET ?
+    `).bind(...binds, ...orderBinds, limit, offset).all();
+    rows = results || [];
+  } else {
+    const { results } = await env.DB.prepare(`
+      SELECT ${baseCols}
+      FROM novels n
+      WHERE ${whereStr}
+      ORDER BY ${orderStr}
+      LIMIT ? OFFSET ?
+    `).bind(...binds, ...orderBinds, limit, offset).all();
+    rows = results || [];
+    const stats = new Map();
+    // D1 giới hạn ~100 tham số bind/câu → chia lô 90 slug.
+    for (let i = 0; i < rows.length; i += 90) {
+      const chunk = rows.slice(i, i + 90).map(r => r.slug);
+      const { results: statRows } = await env.DB.prepare(`
+        SELECT n.slug, ${chapterCountSql} AS chapter_count, ${latestTitleSql} AS latest_chapter_title
+        FROM novels n WHERE n.slug IN (${chunk.map(() => '?').join(',')})
+      `).bind(...chunk).all();
+      for (const r of statRows || []) stats.set(r.slug, r);
+    }
+    rows = rows.map(r => ({
+      ...r,
+      chapter_count: stats.get(r.slug)?.chapter_count || 0,
+      latest_chapter_title: stats.get(r.slug)?.latest_chapter_title || '',
+    }));
+  }
+
+  const novels = rows.map(({ last_created_at, synopsis_head, ...n }) => ({
     ...n,
+    synopsis_short: synopsisShort(synopsis_head),
     last_translated_at: last_created_at
       ? Math.floor(Date.parse(/Z$|[+-]\d{2}:\d{2}$/.test(last_created_at) ? last_created_at : last_created_at.replace(' ', 'T') + 'Z') / 1000)
       : null,
@@ -533,16 +821,129 @@ async function getNovels(env, params = new URLSearchParams()) {
   });
 }
 
+const NOVELS_SLUGS_MAX = 24;
+
+
+// ── Thể loại ──────────────────────────────────────────────────────────────────
+// Cột novels.genre là chuỗi tự do nhiều nguồn: "Tiên Hiệp, Hệ Thống" (EPUB
+// import), "cultivation" (pipeline dịch), slug "tien-hiep" chưa map, "Unknown"...
+// Ánh xạ khoá thô (chữ thường) → nhãn tiếng Việt hiển thị. Khoá dạng slug
+// cũng khớp bản có dấu cách ("tien hiep") vì so khoá đã đổi khoảng trắng → '-'.
+const GENRE_ALIASES = {
+  'cultivation': 'Tu Tiên', 'tu-tien': 'Tu Tiên',
+  'xianxia': 'Tiên Hiệp', 'tien-hiep': 'Tiên Hiệp',
+  'fantasy': 'Huyền Huyễn', 'xuanhuan': 'Huyền Huyễn', 'huyen-huyen': 'Huyền Huyễn',
+  'urban': 'Đô Thị', 'do-thi': 'Đô Thị',
+  'romance': 'Ngôn Tình', 'ngon-tinh': 'Ngôn Tình',
+  'wuxia': 'Kiếm Hiệp', 'kiem-hiep': 'Kiếm Hiệp', 'martial-arts': 'Kiếm Hiệp',
+  'system': 'Hệ Thống', 'he-thong': 'Hệ Thống',
+  'sci-fi': 'Khoa Huyễn', 'scifi': 'Khoa Huyễn', 'science-fiction': 'Khoa Huyễn', 'khoa-huyen': 'Khoa Huyễn',
+  'fanfiction': 'Đồng Nhân', 'fanfic': 'Đồng Nhân', 'dong-nhan': 'Đồng Nhân',
+  'game': 'Võng Du', 'gaming': 'Võng Du', 'litrpg': 'Võng Du', 'vong-du': 'Võng Du',
+  'history': 'Lịch Sử', 'historical': 'Lịch Sử', 'lich-su': 'Lịch Sử',
+  'horror': 'Kinh Dị', 'kinh-di': 'Kinh Dị',
+  'mystery': 'Linh Dị', 'supernatural': 'Linh Dị', 'linh-di': 'Linh Dị',
+  'military': 'Quân Sự', 'quan-su': 'Quân Sự',
+  'isekai': 'Dị Giới', 'di-gioi': 'Dị Giới',
+  'transmigration': 'Xuyên Không', 'xuyen-khong': 'Xuyên Không',
+  'reincarnation': 'Trọng Sinh', 'rebirth': 'Trọng Sinh', 'trong-sinh': 'Trọng Sinh',
+  'apocalypse': 'Mạt Thế', 'post-apocalyptic': 'Mạt Thế', 'mat-the': 'Mạt Thế',
+  'dam-my': 'Đam Mỹ',
+  'ceo': 'Tổng Tài', 'tong-tai': 'Tổng Tài',
+  'ancient': 'Cổ Đại', 'co-dai': 'Cổ Đại',
+  'official-career': 'Quan Trường', 'quan-truong': 'Quan Trường',
+  'other': 'Khác', 'others': 'Khác', 'misc': 'Khác', 'khac': 'Khác',
+};
+// Giá trị coi như "không có thể loại" — bị loại khỏi danh sách chip.
+const GENRE_IGNORED = new Set(['', 'unknown', 'n/a', 'none', 'null', 'undefined', '-']);
+
+function genreKey(raw) {
+  return String(raw || '').trim().toLowerCase().replace(/[\s_]+/g, '-');
+}
+
+// Nhãn hiển thị cho 1 thể loại thô; null nếu là giá trị rác/"Unknown".
+function normalizeGenreLabel(raw) {
+  const trimmed = String(raw || '').trim().replace(/\s+/g, ' ');
+  const key = genreKey(trimmed);
+  if (GENRE_IGNORED.has(key)) return null;
+  if (Object.hasOwn(GENRE_ALIASES, key)) return GENRE_ALIASES[key];
+  // Khoá slug lạ chưa có trong bảng ("xuyen-nhanh") → "Xuyen Nhanh" cho dễ đọc.
+  if (/^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(trimmed)) {
+    return trimmed.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+  return trimmed;
+}
+
+function splitGenres(value) {
+  return String(value || '').split(/[,;|/、，]+/).map(s => s.trim()).filter(Boolean);
+}
+
+// Mọi chuỗi thô cần LIKE khi lọc theo 1 thể loại: nhãn tiếng Việt + mọi khoá
+// thô ánh xạ về cùng nhãn (cả dạng có dấu cách). Vd "Tu Tiên" → ['Tu Tiên',
+// 'cultivation', 'tu-tien', 'tu tien']. LIKE của SQLite không phân biệt hoa
+// thường với ASCII nên 'cultivation' khớp cả 'Cultivation'.
+function genreFilterVariants(genre) {
+  const label = normalizeGenreLabel(genre) || String(genre).trim();
+  const variants = new Set([String(genre).trim(), label]);
+  for (const [key, value] of Object.entries(GENRE_ALIASES)) {
+    // Khoá quá ngắn (vd 'ceo') dễ LIKE trúng nhầm chuỗi khác → bỏ qua.
+    if (value !== label || key.length < 4) continue;
+    variants.add(key);
+    if (key.includes('-')) variants.add(key.replace(/-/g, ' '));
+  }
+  return [...variants].filter(Boolean).slice(0, 12);
+}
 
 async function getGenres(env) {
   const { results } = await env.DB.prepare(`
     SELECT DISTINCT genre FROM novels
-    WHERE genre IS NOT NULL AND genre != ''
-    ORDER BY genre ASC
+    WHERE published = 1 AND genre IS NOT NULL AND genre != ''
   `).all();
-  return jsonResponse(results.map(r => r.genre), 200, {
+  const labels = new Set();
+  for (const row of results || []) {
+    for (const part of splitGenres(row.genre)) {
+      const label = normalizeGenreLabel(part);
+      if (label) labels.add(label);
+    }
+  }
+  // "Khác" luôn cuối; còn lại sắp theo tiếng Việt.
+  const sorted = [...labels].filter(l => l !== 'Khác').sort((a, b) => a.localeCompare(b, 'vi'));
+  if (labels.has('Khác')) sorted.push('Khác');
+  return jsonResponse(sorted, 200, {
     'Cache-Control': 'public, max-age=3600, s-maxage=3600'
   });
+}
+
+// ── Synopsis ──────────────────────────────────────────────────────────────────
+// Dữ liệu import từ EPUB audiotruyenfull hay kèm dòng ghi công ("Epub tạo
+// bởi...", "Nguồn: ...") — lọc khi TRẢ VỀ, không sửa dữ liệu gốc trong D1/R2.
+const SYNOPSIS_CREDIT_RE = /epub\s+(?:được\s+)?tạo\s+bởi|audiotruyenfull|truyenfull\.|^\s*(?:nguồn|source)\s*[:：]|^\s*(?:tạo|created)\s+(?:bởi|by)\b/i;
+
+// Khối thông tin đầu sách EPUB ("Tác giả", "Tác giả: X", "Thể loại: ...", "Trạng
+// thái: Full") — chỉ khớp dòng NHÃN đứng riêng hoặc nhãn + giá trị ngắn, không
+// đụng câu văn bình thường bắt đầu bằng "Tác giả ...".
+const SYNOPSIS_INFO_LABEL_RE = /^\s*(?:tác\s*giả|thể\s*loại|trạng\s*thái|tình\s*trạng|số\s*chương|nguồn\s*truyện)\s*(?:[:：].{0,80})?\s*$/i;
+
+function cleanSynopsis(text) {
+  if (typeof text !== 'string' || !text) return text || '';
+  return text.split(/\r?\n/)
+    .filter(line => !SYNOPSIS_CREDIT_RE.test(line) && !SYNOPSIS_INFO_LABEL_RE.test(line))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+const SYNOPSIS_SHORT_MAX = 280;
+
+// Bản ngắn 1 đoạn cho thẻ danh sách / meta description: đã lọc ghi công, gộp
+// khoảng trắng, cắt ở ranh giới từ ≤ 280 ký tự.
+function synopsisShort(text) {
+  // Bỏ ký hiệu markdown đầu dòng (#, >) và nhấn mạnh (*, _, `) — chỉ cần văn bản thuần.
+  const flat = cleanSynopsis(text || '').replace(/^[ \t]*[#>]+[ \t]*/gm, '').replace(/[*_`]+/g, '').replace(/\s+/g, ' ').trim();
+  if (flat.length <= SYNOPSIS_SHORT_MAX) return flat;
+  const cut = flat.slice(0, SYNOPSIS_SHORT_MAX - 1);
+  const space = cut.lastIndexOf(' ');
+  return (space > SYNOPSIS_SHORT_MAX * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,.;:–-]+$/, '') + '…';
 }
 
 // GET /api/stats — 3 số tổng cho StatsSection trang chủ. Aggregate thẳng
@@ -611,7 +1012,47 @@ async function getRankings(env) {
   });
 }
 
-async function getStats(env) {
+// translated_chapters = số dòng chương thật trong D1 (chapter_number > 0).
+// COUNT trên bảng chapters lớn tốn rows_read D1 ∝ số chương, nên tách khỏi
+// truy vấn novels (TTL 5 phút) và cache riêng 6 giờ: biến module theo isolate
+// + Cache API (key nội bộ, không trùng URL công khai). Lỗi → bỏ qua (null),
+// không làm hỏng các khoá cũ.
+const TRANSLATED_CHAPTERS_TTL_S = 6 * 3600;
+let _translatedChaptersMemo = null; // { value, expiresAt }
+
+async function getTranslatedChapterCount(env, ctx) {
+  const now = Date.now();
+  if (_translatedChaptersMemo && _translatedChaptersMemo.expiresAt > now) return _translatedChaptersMemo.value;
+  const cache = globalThis.caches?.default;
+  const cacheKey = new Request('https://stats-cache.hacdao.internal/translated_chapters', { method: 'GET' });
+  try {
+    if (cache) {
+      const hit = await cache.match(cacheKey);
+      if (hit) {
+        const value = Number((await hit.json()).value);
+        if (Number.isFinite(value)) {
+          _translatedChaptersMemo = { value, expiresAt: now + 10 * 60 * 1000 };
+          return value;
+        }
+      }
+    }
+    const row = await env.DB.prepare(`SELECT COUNT(*) AS n FROM chapters WHERE chapter_number > 0`).first();
+    const value = Number(row?.n) || 0;
+    _translatedChaptersMemo = { value, expiresAt: now + TRANSLATED_CHAPTERS_TTL_S * 1000 };
+    if (cache) {
+      const put = cache.put(cacheKey, new Response(JSON.stringify({ value }), {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${TRANSLATED_CHAPTERS_TTL_S}` },
+      })).catch(() => {});
+      if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(put); else await put;
+    }
+    return value;
+  } catch (err) {
+    console.warn('translated_chapters failed:', err && err.message ? err.message : err);
+    return null;
+  }
+}
+
+async function getStats(env, ctx) {
   const row = await env.DB.prepare(`
     SELECT
       COUNT(*) AS total_novels,
@@ -620,10 +1061,12 @@ async function getStats(env) {
     FROM novels
     WHERE published = 1
   `).first();
+  const translated = await getTranslatedChapterCount(env, ctx);
   return jsonResponse({
     total_novels: row?.total_novels || 0,
     total_chapters: row?.total_chapters || 0,
     total_glossary: row?.total_glossary || 0,
+    translated_chapters: translated ?? 0,
   }, 200, {
     'Cache-Control': 'public, max-age=300, s-maxage=300'
   });
@@ -656,7 +1099,17 @@ function clientIp(request) {
   return request.headers.get('CF-Connecting-IP') || 'unknown';
 }
 
+// Truyện tồn tại VÀ đang công khai? Dùng cho các route ghi công khai (view,
+// rate, comment) — không cho ghi số liệu/bình luận vào slug rác hay truyện
+// đã bị takedown (F03).
+async function isPublishedNovel(env, slug) {
+  if (typeof slug !== 'string' || !SLUG_RE.test(slug)) return false;
+  const row = await env.DB.prepare(`SELECT published FROM novels WHERE slug = ?`).bind(slug).first();
+  return Boolean(row && row.published);
+}
+
 async function trackView(env, slug, request) {
+  if (!(await isPublishedNovel(env, slug))) return jsonResponse({ error: 'Novel not found' }, 404);
   // 1 lượt xem / IP / truyện / 10 giây — chặn spam nhưng không cản người đọc thật
   if (!checkRateLimit(`view:${clientIp(request)}:${slug}`, 10_000)) {
     return jsonResponse({ ok: true, throttled: true });
@@ -673,6 +1126,7 @@ async function trackView(env, slug, request) {
 // tuyệt đối (client kiểm soát giá trị này). Nếu không có user lẫn guest_id,
 // từ chối thay vì âm thầm cộng dồn không định danh (hành vi cũ, đã gây lỗi).
 async function rateNovel(env, slug, request) {
+  if (!(await isPublishedNovel(env, slug))) return jsonResponse({ error: 'Novel not found' }, 404);
   let body;
   try { body = await request.json(); } catch { return jsonResponse({ error: 'Invalid JSON' }, 400); }
   const stars = parseInt(body.stars);
@@ -726,6 +1180,10 @@ async function rateNovel(env, slug, request) {
 async function isAdminRequest(request, env) {
   const auth = request.headers.get('Authorization') || '';
   if (!auth.startsWith('Bearer ') || !env.BACKEND_URL) return false;
+  // Token độc giả (prefix u_, sinh bởi createUserSession) KHÔNG bao giờ là
+  // admin — không forward sang backend (tránh lộ session người dùng cho bên
+  // thứ ba và tốn 1 round-trip vô ích ở mọi request có đăng nhập).
+  if (auth.startsWith('Bearer u_')) return false;
   try {
     const res = await fetch(`${env.BACKEND_URL}/api/auth/verify`, {
       headers: { Authorization: auth },
@@ -786,6 +1244,9 @@ async function getNovel(env, slug, request) {
   const common = {
     chapter_count,
     latest_chapter_title,
+    // title trống hoặc chỉ là slug (dữ liệu import thiếu tên) → giữ nguyên
+    // giá trị cũ nhưng báo cờ để frontend tự dùng tên fallback đẹp hơn.
+    title_is_slug: !String(novel.title || '').trim() || String(novel.title).trim() === novel.slug,
     last_translated_at: novel.updated_at
       ? Math.floor(Date.parse(/Z$|[+-]\d{2}:\d{2}$/.test(novel.updated_at) ? novel.updated_at : novel.updated_at.replace(' ', 'T') + 'Z') / 1000)
       : null,
@@ -796,6 +1257,9 @@ async function getNovel(env, slug, request) {
     // Guest: chỉ field whitelist + thống kê
     const pub = {};
     for (const k of NOVEL_PUBLIC_FIELDS) if (k in novel) pub[k] = novel[k];
+    // Lọc dòng ghi công audiotruyenfull ("Epub tạo bởi...", "Nguồn:") khi trả về.
+    if (typeof pub.synopsis === 'string') pub.synopsis = cleanSynopsis(pub.synopsis);
+    pub.synopsis_short = synopsisShort(pub.synopsis);
     // synopsis preview: cắt 500 ký tự cho NovelPage, lazy load full qua /synopsis
     if (pub.synopsis && pub.synopsis.length > 500) {
       pub.synopsis_preview = pub.synopsis.slice(0, 500);
@@ -935,33 +1399,105 @@ function sortAndDeduplicateCatalog(catalog) {
 // Duoc dung chung boi ca getChaptersFromDriveFallback() (muc luc) LAN
 // getChapterContentFromDrive() (noi dung tung chuong, xem ben duoi) de tranh
 // lap code fetch/parse Drive o 2 noi.
-async function fetchDriveAllChapters(env, slug) {
-  try {
-    const stateObj = await env.CHAPTERS.get('upload_state.json');
-    if (!stateObj) return null;
-    const state = await stateObj.json();
-    const novelData = state.uploaded ? state.uploaded[slug] : null;
-    if (!novelData) return null;
+//
+// HIỆU NĂNG/DoS: upload_state.json ~15 MB / 28k mục — bản cũ GET R2 + parse
+// toàn bộ file ở MỖI request (kể cả slug rác). Giờ:
+//   1. Validate slug bằng SLUG_RE trước mọi thứ.
+//   2. Chỉ mục slug → Drive file id của chapters.json được giữ trong biến
+//      module theo isolate (TTL 10 phút, dedupe request đồng thời bằng chung
+//      1 promise). Chỉ giữ chuỗi id, bỏ phần còn lại của file.
+//   3. Slug không có trong chỉ mục → trả null ngay, không gọi Drive.
+//   4. chapters.json đã tải: LRU Map nhỏ trong isolate + Cache API (edge,
+//      1 giờ) theo file id, để isolate mới không phải tải lại từ Drive.
+const DRIVE_INDEX_TTL_MS = 10 * 60 * 1000;
+const DRIVE_CHAPTERS_LRU_MAX = 3;
+const DRIVE_CHAPTERS_EDGE_TTL = 3600;
+let _driveIndex = null;          // { map: Map<slug, fileId>, expiresAt }
+let _driveIndexPromise = null;
+const _driveChaptersLru = new Map(); // fileId → mảng chương (thứ tự chèn = LRU)
 
-    const chapsFileId = novelData.files && novelData.files.chapters ? novelData.files.chapters.id : null;
+async function loadDriveIndex(env) {
+  const now = Date.now();
+  if (_driveIndex && _driveIndex.expiresAt > now) return _driveIndex.map;
+  if (!_driveIndexPromise) {
+    _driveIndexPromise = (async () => {
+      const map = new Map();
+      try {
+        const stateObj = await env.CHAPTERS.get('upload_state.json');
+        const state = stateObj ? await stateObj.json() : null;
+        const uploaded = state && typeof state.uploaded === 'object' ? state.uploaded : {};
+        for (const [slug, data] of Object.entries(uploaded || {})) {
+          const id = data?.files?.chapters?.id;
+          if (SLUG_RE.test(slug) && typeof id === 'string' && /^[A-Za-z0-9_-]{1,200}$/.test(id)) map.set(slug, id);
+        }
+      } catch (err) {
+        console.warn('Drive index load failed:', err && err.message ? err.message : err);
+      }
+      // Kể cả khi rỗng/lỗi cũng giữ đến hết TTL — tránh mỗi request lại đọc R2.
+      _driveIndex = { map, expiresAt: Date.now() + DRIVE_INDEX_TTL_MS };
+      return map;
+    })().finally(() => { _driveIndexPromise = null; });
+  }
+  return _driveIndexPromise;
+}
+
+function rememberDriveChapters(fileId, chapters) {
+  _driveChaptersLru.delete(fileId);
+  _driveChaptersLru.set(fileId, chapters);
+  while (_driveChaptersLru.size > DRIVE_CHAPTERS_LRU_MAX) {
+    _driveChaptersLru.delete(_driveChaptersLru.keys().next().value);
+  }
+}
+
+async function fetchDriveAllChapters(env, slug, ctx) {
+  if (typeof slug !== 'string' || !SLUG_RE.test(slug)) return null;
+  try {
+    const index = await loadDriveIndex(env);
+    const chapsFileId = index.get(slug);
     if (!chapsFileId) return null;
 
-    const driveUrl = `https://drive.usercontent.google.com/download?id=${chapsFileId}&export=download`;
-    const res = await fetch(driveUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-      redirect: 'follow'
-    });
-    if (!res.ok) return null;
+    if (_driveChaptersLru.has(chapsFileId)) {
+      const hit = _driveChaptersLru.get(chapsFileId);
+      rememberDriveChapters(chapsFileId, hit);
+      return hit;
+    }
 
-    const allChaps = await res.json();
-    return Array.isArray(allChaps) ? allChaps : null;
+    const cache = globalThis.caches?.default;
+    const cacheKey = new Request(`https://drive-cache.hacdao.internal/chapters/${chapsFileId}`, { method: 'GET' });
+    let text = null;
+    if (cache) {
+      try {
+        const cached = await cache.match(cacheKey);
+        if (cached) text = await cached.text();
+      } catch { /* cache lỗi → tải Drive */ }
+    }
+    if (text === null) {
+      const driveUrl = `https://drive.usercontent.google.com/download?id=${chapsFileId}&export=download`;
+      const res = await fetch(driveUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        redirect: 'follow'
+      });
+      if (!res.ok) return null;
+      text = await res.text();
+      if (cache) {
+        const put = cache.put(cacheKey, new Response(text, {
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${DRIVE_CHAPTERS_EDGE_TTL}` },
+        })).catch(() => {});
+        if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(put); else await put;
+      }
+    }
+
+    const allChaps = JSON.parse(text);
+    if (!Array.isArray(allChaps)) return null;
+    rememberDriveChapters(chapsFileId, allChaps);
+    return allChaps;
   } catch (e) {
     return null;
   }
 }
 
 async function getChaptersFromDriveFallback(env, slug, ctx) {
-  const allChaps = await fetchDriveAllChapters(env, slug);
+  const allChaps = await fetchDriveAllChapters(env, slug, ctx);
   if (!allChaps) return null;
 
   const catalog = sortAndDeduplicateCatalog(allChaps.map(c => ({
@@ -1004,7 +1540,7 @@ async function getChaptersFromDriveFallback(env, slug, ctx) {
 // (lan doc dau tien), khong phai backfill hang loat toan bo truyen, nen rui
 // ro vuot free tier R2/D1 rat thap.
 async function getChapterContentFromDrive(env, slug, num, identifier, ctx) {
-  const allChaps = await fetchDriveAllChapters(env, slug);
+  const allChaps = await fetchDriveAllChapters(env, slug, ctx);
   if (!allChaps) return null;
 
   const exact = !/^\d+$/.test(identifier)
@@ -1040,6 +1576,7 @@ async function getChapterContentFromDrive(env, slug, num, identifier, ctx) {
 }
 
 async function getChapters(env, slug, ctx) {
+  if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Novel not found' }, 404);
   // F03: truyện bị gỡ không được liệt kê chương qua đường này (bao gồm cả
   // fallback catalog.json/Drive bên dưới).
   const pubRow = await env.DB.prepare(`SELECT published FROM novels WHERE slug = ?`).bind(slug).first();
@@ -1101,12 +1638,16 @@ async function getChapterFromBundle(env, slug, filename) {
   }
 }
 
-async function getChapterContent(env, slug, identifier, ctx) {
+async function getChapterContent(env, slug, identifier, ctx, { publishedChecked = false } = {}) {
+  if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Chapter content not found', identifier, slug }, 404);
   // F03: truyện bị gỡ không được trả nội dung chương qua bất kỳ fallback nào
-  // (D1/catalog/bundle/Drive) bên dưới.
-  const pubRow = await env.DB.prepare(`SELECT published FROM novels WHERE slug = ?`).bind(slug).first();
-  if (pubRow && !pubRow.published) {
-    return jsonResponse({ error: 'Chapter content not found', identifier, slug }, 404);
+  // (D1/catalog/bundle/Drive) bên dưới. Router đã kiểm tra thì bỏ qua để
+  // không tốn thêm 1 lượt đọc D1.
+  if (!publishedChecked) {
+    const pubRow = await env.DB.prepare(`SELECT published FROM novels WHERE slug = ?`).bind(slug).first();
+    if (pubRow && !pubRow.published) {
+      return jsonResponse({ error: 'Chapter content not found', identifier, slug }, 404);
+    }
   }
 
   const numericIdentifier = /^\d+$/.test(identifier);
@@ -1239,11 +1780,11 @@ async function getSynopsis(env, slug) {
     const obj = await env.CHAPTERS.get(`${slug}/synopsis.md`);
     if (obj) {
       const text = await obj.text();
-      return jsonResponse({ slug, synopsis: text, source: 'r2' });
+      return jsonResponse({ slug, synopsis: cleanSynopsis(text), source: 'r2' });
     }
   } catch { /* R2 lỗi tạm thời → fallback D1 bên dưới, không 500 */ }
 
-  return jsonResponse({ slug, synopsis: novel.synopsis || '', source: 'd1' });
+  return jsonResponse({ slug, synopsis: cleanSynopsis(novel.synopsis || ''), source: 'd1' });
 }
 
 async function getHealth(env, slug) {
@@ -1275,7 +1816,7 @@ async function getHealth(env, slug) {
   });
 }
 
-async function syncNovelBatch(env, request) {
+async function syncNovelBatch(env, request, ctx) {
   const authHeader = request.headers.get('x-sync-key') || '';
   if (!env.SYNC_KEY || !timingSafeEqualStr(authHeader, env.SYNC_KEY)) {
     return jsonResponse({ error: 'Unauthorized sync key' }, 401);
@@ -1365,6 +1906,17 @@ async function syncNovelBatch(env, request) {
   if (prepared.some(c => keys.get(c.filename) !== c.key)) return jsonResponse({error:'Concurrent chapter change; reconcile and retry'},409);
   // Catalog remains a legacy read source. Never overwrite it from a chunk.
   // getChapters merges D1 entries over legacy entries by filename.
+  // Purge edge cache (colo hiện tại) của mục lục/chi tiết/nội dung chương vừa
+  // ghi để chương sửa lại hiện ngay; colo khác hết hạn theo TTL (≤ 1 giờ).
+  const origin = new URL(request.url).origin;
+  const base = `${origin}/api/novels/${slug}`;
+  const purgeUrls = [base, `${base}/chapters`];
+  for (const c of prepared) {
+    if (c.number > 0) purgeUrls.push(`${base}/chapters/${c.number}`);
+    purgeUrls.push(`${base}/chapters/${encodeURIComponent(c.filename)}`);
+  }
+  const purge = purgeEdgeCache(purgeUrls);
+  if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(purge); else await purge;
   return jsonResponse({success:true,slug,chapters_synced:chapters.length});
 }
 
@@ -1754,6 +2306,8 @@ async function userProgressUpdate(request, env, slug) {
 
 async function commentsList(env, slug, url) {
   if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
+  // F03: truyện bị gỡ/không tồn tại → 404, không lộ bình luận cũ.
+  if (!(await isPublishedNovel(env, slug))) return jsonResponse({ error: 'Novel not found' }, 404);
   const chapterParam = url.searchParams.get('chapter');
 
   let chapNum = null;
@@ -1800,7 +2354,8 @@ async function recentComments(env, url) {
       SELECT c.id, c.slug, n.title AS novel_title, u.name AS user_name, c.chapter, c.content, c.created_at
       FROM comments c
       JOIN users u ON u.id = c.user_id
-      LEFT JOIN novels n ON n.slug = c.slug
+      JOIN novels n ON n.slug = c.slug
+      WHERE n.published = 1
       ORDER BY c.id DESC LIMIT ?
     `).bind(limit).all();
     return jsonResponse(results || []);
@@ -1813,6 +2368,7 @@ async function commentCreate(request, env, slug) {
   const user = await getUserFromRequest(request, env);
   if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
   if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
+  if (!(await isPublishedNovel(env, slug))) return jsonResponse({ error: 'Novel not found' }, 404);
 
   const __parsed = await readLimitedJson(request, DEFAULT_JSON_MAX_BYTES);
   if (!__parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, __parsed.status);
@@ -2009,6 +2565,11 @@ async function adminTakedownRestore(request, env, slug, action) {
     INSERT INTO admin_actions (action, slug, note) VALUES (?, ?, ?)
   `).bind(action, slug, reason).run();
 
+  // Purge best-effort edge cache chi tiết/mục lục (colo hiện tại). Nội dung
+  // chương luôn kiểm tra published trước cache nên không cần purge từng chương.
+  const base = `${new URL(request.url).origin}/api/novels/${slug}`;
+  await purgeEdgeCache([base, `${base}/chapters`, `${base}/synopsis`]);
+
   return jsonResponse({ status: 'success', published: Boolean(published) });
 }
 
@@ -2032,7 +2593,8 @@ async function proxyToBackend(request, url, env) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-async function cachedJsonResponse(request, ctx, ttlSeconds, loadResponse) {
+// options.sMaxAge: TTL riêng cho edge/shared cache (mặc định = ttlSeconds).
+async function cachedJsonResponse(request, ctx, ttlSeconds, loadResponse, options = {}) {
   const withCacheHeaders = (response, status, cacheControl) => {
     const result = new Response(response.body, response);
     result.headers.set('Cache-Control', cacheControl);
@@ -2053,10 +2615,11 @@ async function cachedJsonResponse(request, ctx, ttlSeconds, loadResponse) {
   }
 
   const cache = globalThis.caches?.default;
-  const publicCacheControl = `public, max-age=${ttlSeconds}, s-maxage=${ttlSeconds}`;
+  const sMaxAge = Number.isSafeInteger(options.sMaxAge) ? options.sMaxAge : ttlSeconds;
+  const publicCacheControl = `public, max-age=${ttlSeconds}, s-maxage=${sMaxAge}`;
   if (!cache) {
     const response = await loadResponse();
-    return withCacheHeaders(response, 'UNAVAILABLE', publicCacheControl);
+    return withCacheHeaders(response, 'UNAVAILABLE', response.ok ? publicCacheControl : 'no-store');
   }
 
   // Chuẩn hóa query để crawler không thể thêm tham số rác nhằm tạo vô hạn
@@ -2064,7 +2627,7 @@ async function cachedJsonResponse(request, ctx, ttlSeconds, loadResponse) {
   // lại gọi helper này đều không đọc query string.
   const cacheUrl = new URL(request.url);
   if (cacheUrl.pathname === '/api/novels') {
-    const allowed = ['genre', 'has_epub', 'limit', 'order', 'page', 'q', 'sort', 'status'];
+    const allowed = ['genre', 'has_epub', 'limit', 'order', 'page', 'q', 'slugs', 'sort', 'status'];
     const normalized = new URLSearchParams();
     for (const name of allowed) {
       if (cacheUrl.searchParams.has(name)) normalized.set(name, cacheUrl.searchParams.get(name));
@@ -2080,15 +2643,25 @@ async function cachedJsonResponse(request, ctx, ttlSeconds, loadResponse) {
   const cached = await cache.match(cacheKey);
   if (cached) return withCacheHeaders(cached, 'HIT', publicCacheControl);
 
-  const response = withCacheHeaders(await loadResponse(), 'MISS', publicCacheControl);
-  if (response.ok) {
-    const cacheWrite = cache.put(cacheKey, response.clone()).catch(err => {
-      console.warn('Edge cache put failed:', err && err.message ? err.message : err);
-    });
-    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(cacheWrite);
-    else await cacheWrite;
-  }
+  const loaded = await loadResponse();
+  // Lỗi/404 (vd chương chưa dịch, truyện vừa bị gỡ) không được để trình duyệt
+  // giữ lại — nếu không chương mới đăng vẫn "404" thêm vài phút ở client.
+  if (!loaded.ok) return withCacheHeaders(loaded, 'MISS', 'no-store');
+  const response = withCacheHeaders(loaded, 'MISS', publicCacheControl);
+  const cacheWrite = cache.put(cacheKey, response.clone()).catch(err => {
+    console.warn('Edge cache put failed:', err && err.message ? err.message : err);
+  });
+  if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(cacheWrite);
+  else await cacheWrite;
   return response;
+}
+
+// Xoá best-effort các key edge cache (Cache API chỉ purge được colo hiện tại;
+// colo khác tự hết hạn theo TTL). Không bao giờ ném lỗi ra ngoài.
+async function purgeEdgeCache(urls) {
+  const cache = globalThis.caches?.default;
+  if (!cache) return;
+  await Promise.all(urls.map(u => cache.delete(new Request(u, { method: 'GET' })).catch(() => false)));
 }
 
 function jsonResponse(data, status = 200, customHeaders = {}) {
@@ -2124,6 +2697,6 @@ function corsResponse(response, request, env) {
     res.headers.append('Vary', 'Origin');
   }
   res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Guest-Id');
   return res;
 }
