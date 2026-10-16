@@ -24,7 +24,10 @@ import os
 import posixpath
 import re
 import sys
+import unicodedata
+import xml.etree.ElementTree as ET
 import zipfile
+from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -236,6 +239,186 @@ def _validate_epub_archive(epub_path: str) -> None:
                 )
 
 
+
+# ── Metadata OPF (tên/tác giả/thể loại thật của truyện) ───────────────────────
+# Đọc thẳng bằng zipfile + ElementTree (KHÔNG cần ebooklib) để tools quét hàng
+# chục nghìn EPUB (tools/fix_epub_metadata.py) chạy nhanh. EPUB audiotruyenfull
+# chỉ có dc:title/dc:creator trong OPF; thể loại + giới thiệu nằm ở trang
+# info.xhtml dạng <dl class="metadata"><dt>Thể loại</dt><dd>…</dd></dl>.
+
+DC_NS = 'http://purl.org/dc/elements/1.1/'
+MAX_OPF_BYTES = 5 * 1024 * 1024
+
+# Hậu tố rác nhà cung cấp gắn vào tên truyện / tên file.
+_SOURCE_SUFFIX_RE = re.compile(
+    r'(?:\s*[-–—|:_]\s*|\s+)?[\(\[]?\s*(?:www\.)?audiotruyenfull(?:\.org)?\s*[\)\]]?\s*$', re.I)
+_TITLE_JUNK_RE = re.compile(r'\s*[\(\[]\s*(?:full|epub)\s*[\)\]]\s*$|\s+[-–—]\s*epub\s*$', re.I)
+_JUNK_AUTHORS = {'', 'unknown', 'n/a', 'na', 'none', 'null', 'đang cập nhật', 'dang cap nhat', 'updating'}
+
+# Dòng ghi công nhà cung cấp trong synopsis (vd "Epub tạo bởi: audiotruyenfull.org").
+_CREDIT_LINE_RE = re.compile(
+    r'^\s*(?:epub\s+(?:tạo|được\s+tạo)\s+bởi\s*:.*|(?:nguồn|source)\s*:\s*\S*audiotruyenfull.*|'
+    r'\[?(?:https?://)?(?:www\.)?audiotruyenfull(?:\.org)?\S*\]?)\s*$', re.I)
+_INFO_LABELS = {'tác giả': 'author', 'thể loại': 'genres', 'trạng thái': 'status'}
+_INTRO_HEADING_RE = re.compile(r'^#*\s*giới\s+thiệu(?:\s+truyện)?\s*:?\s*$', re.I)
+
+
+def normalize_text(value) -> str:
+    """NFC + gộp khoảng trắng + trim; None → ''."""
+    if value is None:
+        return ''
+    text = unicodedata.normalize('NFC', str(value)).replace('\x00', '')
+    return re.sub(r'\s+', ' ', text).strip()
+
+
+def strip_source_suffix(text: str) -> str:
+    """Bỏ hậu tố '- audiotruyenfull.org' / '(audiotruyenfull)' ở cuối tên truyện/tên file."""
+    prev = None
+    while prev != text:
+        prev = text
+        text = _SOURCE_SUFFIX_RE.sub('', text).strip()
+    return text
+
+
+def clean_book_title(title) -> str:
+    """Chuẩn hoá tên truyện lấy từ OPF/meta: NFC, trim, bỏ hậu tố rác nhà cung cấp."""
+    title = strip_source_suffix(normalize_text(title))
+    title = _TITLE_JUNK_RE.sub('', title).strip()
+    return title.strip(' -–—|:')
+
+
+def clean_author(name) -> str:
+    name = strip_source_suffix(normalize_text(name))
+    if name.lower() in _JUNK_AUTHORS or 'audiotruyenfull' in name.lower():
+        return ''
+    return name
+
+
+def split_genres(value) -> list[str]:
+    """'A, B; C' hoặc list → ['A', 'B', 'C'] (NFC, bỏ trùng, giữ thứ tự)."""
+    items = value if isinstance(value, (list, tuple)) else re.split(r'\s*[,;/|]\s*', str(value or ''))
+    out: list[str] = []
+    for item in items:
+        if isinstance(item, dict):
+            item = item.get('name') or item.get('title') or ''
+        name = normalize_text(item)
+        if name and name.lower() not in {g.lower() for g in out}:
+            out.append(name)
+    return out
+
+
+def clean_synopsis(text) -> str:
+    """Lọc dòng ghi công nhà cung cấp + khối 'Tác giả/Thể loại/Trạng thái' đứng
+    trước tiêu đề 'Giới thiệu truyện' (do synopsis được trích nguyên trang
+    info.xhtml). Giữ nguyên phần giới thiệu thật."""
+    if not text:
+        return ''
+    text = unicodedata.normalize('NFC', str(text)).replace('\r\n', '\n').replace('\x00', '')
+    paragraphs = [p.strip() for p in re.split(r'\n\s*\n', text) if p.strip()]
+    # Khối metadata đầu synopsis → bỏ tới hết tiêu đề "Giới thiệu truyện".
+    for i, para in enumerate(paragraphs[:15]):
+        if _INTRO_HEADING_RE.match(para):
+            head = paragraphs[:i]
+            if any(_CREDIT_LINE_RE.match(h) or h.lower().rstrip(':') in _INFO_LABELS for h in head):
+                paragraphs = paragraphs[i + 1:]
+            break
+    kept = []
+    for para in paragraphs:
+        lines = [ln for ln in para.split('\n') if not _CREDIT_LINE_RE.match(ln)]
+        para = '\n'.join(lines).strip()
+        if para:
+            kept.append(para)
+    return '\n\n'.join(kept).strip()
+
+
+def _xml_text(elem) -> str:
+    return normalize_text(''.join(elem.itertext())) if elem is not None else ''
+
+
+def _strip_html(fragment: str) -> str:
+    return normalize_text(unescape(re.sub(r'<[^>]+>', ' ', fragment or '')))
+
+
+def _parse_info_page(html: str) -> dict:
+    """Trang thông tin truyện: <dt>Tác giả</dt><dd>…</dd> + phần sau 'Giới thiệu truyện'."""
+    info: dict = {}
+    for dt, dd in re.findall(r'<dt[^>]*>(.*?)</dt>\s*<dd[^>]*>(.*?)</dd>', html, re.S | re.I):
+        key = _INFO_LABELS.get(_strip_html(dt).lower().rstrip(':'))
+        if key and key not in info:
+            info[key] = _strip_html(dd)
+    intro = re.search(r'<h[1-6][^>]*>\s*Giới\s+thiệu(?:\s+truyện)?\s*:?\s*</h[1-6]>(.*)', html, re.S | re.I)
+    if intro:
+        info['description'] = clean_synopsis(html_to_text(intro.group(1).encode('utf-8')))
+    return info
+
+
+def read_epub_metadata(epub_path) -> dict:
+    """Đọc metadata thật của truyện từ OPF (+ trang info.xhtml nếu có).
+
+    Trả về dict: title, authors (list), author (chuỗi nối ', '), subjects (list),
+    description, status. Thiếu thì để rỗng — không bao giờ bịa giá trị.
+    Raise EpubValidationError nếu EPUB không an toàn/không đọc được.
+    """
+    _validate_epub_archive(str(epub_path))
+    meta = {'title': '', 'authors': [], 'author': '', 'subjects': [], 'description': '', 'status': ''}
+    with zipfile.ZipFile(epub_path) as zf:
+        names = set(zf.namelist())
+        opf_path = None
+        if 'META-INF/container.xml' in names:
+            container = zf.read('META-INF/container.xml').decode('utf-8', errors='replace')
+            match = re.search(r'full-path\s*=\s*["\']([^"\']+)["\']', container)
+            opf_path = match.group(1) if match and match.group(1) in names else None
+        if opf_path is None:
+            opf_path = next((n for n in sorted(names) if n.lower().endswith('.opf')), None)
+        if opf_path is None:
+            raise EpubValidationError(f'EPUB không có file OPF: {epub_path}')
+        if zf.getinfo(opf_path).file_size > MAX_OPF_BYTES:
+            raise EpubValidationError(f'OPF quá lớn: {opf_path}')
+        try:
+            root = ET.fromstring(zf.read(opf_path))
+        except ET.ParseError as exc:
+            raise EpubValidationError(f'OPF không phải XML hợp lệ: {exc}') from exc
+
+        def dc(tag):
+            return [_xml_text(e) for e in root.iter(f'{{{DC_NS}}}{tag}')]
+
+        titles = [t for t in (clean_book_title(t) for t in dc('title')) if t]
+        meta['title'] = titles[0] if titles else ''
+        meta['authors'] = list(dict.fromkeys(a for a in (clean_author(c) for c in dc('creator')) if a))
+        subjects: list[str] = []
+        for subject in dc('subject'):
+            subjects.extend(split_genres(subject))
+        meta['subjects'] = split_genres(subjects)
+        descriptions = [d for d in dc('description') if d]
+        if descriptions:
+            meta['description'] = clean_synopsis(_strip_html(descriptions[0]))
+
+        # Trang info (audiotruyenfull): ưu tiên item id/href chứa "info", rồi vài trang đầu.
+        base = posixpath.dirname(opf_path)
+        hrefs = []
+        for item in root.iter('{http://www.idpf.org/2007/opf}item'):
+            href, media = item.get('href') or '', item.get('media-type') or ''
+            if 'html' in media:
+                full = posixpath.normpath(posixpath.join(base, href)) if base else href
+                hrefs.append((0 if 'info' in (item.get('id', '') + href).lower() else 1, full))
+        for _, href in sorted(hrefs, key=lambda x: x[0])[:4]:
+            if href not in names or zf.getinfo(href).file_size > MAX_OPF_BYTES:
+                continue
+            info = _parse_info_page(zf.read(href).decode('utf-8', errors='replace'))
+            if not info:
+                continue
+            if not meta['authors'] and clean_author(info.get('author')):
+                meta['authors'] = [clean_author(info['author'])]
+            if not meta['subjects'] and info.get('genres'):
+                meta['subjects'] = split_genres(info['genres'])
+            if not meta['description'] and info.get('description'):
+                meta['description'] = info['description']
+            meta['status'] = meta['status'] or info.get('status', '')
+            break
+    meta['author'] = ', '.join(meta['authors'])
+    return meta
+
+
 def _try_import_ebooklib():
     try:
         import ebooklib
@@ -423,6 +606,8 @@ def parse_epub(epub_path: str) -> dict:
     Parse EPUB và trả về dict gồm:
     - synopsis: str (toàn bộ nội dung từ SAU tên truyện đến TRƯỚC mục lục)
     - chapters: list[dict] với keys: number, title, content (giữ format markdown)
+    - title / author / subjects: metadata thật từ OPF (xem read_epub_metadata);
+      rỗng nếu EPUB không khai báo.
     """
     ebooklib, epub = _try_import_ebooklib()
 
@@ -538,7 +723,18 @@ def parse_epub(epub_path: str) -> dict:
     # Sắp xếp theo số chương
     chapters.sort(key=lambda c: c['number'])
 
-    return {'synopsis': synopsis, 'chapters': chapters}
+    # Metadata thật từ OPF (tên có dấu, tác giả, thể loại) — để import KHÔNG phải
+    # dùng tên file/'Unknown'. Lỗi đọc metadata không được làm hỏng việc tách chương.
+    try:
+        opf = read_epub_metadata(epub_path)
+    except Exception:
+        opf = {'title': '', 'author': '', 'subjects': [], 'description': ''}
+    title = opf['title'] or clean_book_title(book_title)
+    if not synopsis and opf.get('description'):
+        synopsis = opf['description']
+
+    return {'synopsis': clean_synopsis(synopsis), 'chapters': chapters,
+            'title': title, 'author': opf['author'], 'subjects': opf['subjects']}
 
 
 # ── File output ────────────────────────────────────────────────────────────────

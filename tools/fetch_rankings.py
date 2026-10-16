@@ -22,18 +22,24 @@ if __package__ in (None, ''):
 from tools.sync_transport import send_sync_request
 
 LOG = logging.getLogger(__name__)
+# `category`/`window` là KHOÁ đã lưu trong D1 (external_rankings) và được
+# frontend (ExternalRankingsSection.jsx) ánh xạ ra nhãn — KHÔNG đổi, nếu không
+# snapshot cũ của khoá cũ sẽ nằm lại vĩnh viễn trên UI. Ý nghĩa thật của từng
+# bảng nằm ở `label` (tiếng Việt) + `stat_label` từng mục (đã dịch, xem
+# normalize_stat): yuepiao=月票 là PHIẾU THÁNG (không phải đề cử), hotsales=畅销
+# là BÁN CHẠY trong ngày (không phải lượt đọc).
 RANKING_SOURCES = [
-    {"source": "qidian", "category": "recommend", "window": "monthly",
+    {"source": "qidian", "category": "recommend", "window": "monthly", "label": "Phiếu tháng (月票榜)",
      "rank_url": "https://www.qidian.com/rank/yuepiao/", "parser": "parse_qidian_rank"},
-    {"source": "qidian", "category": "recommend", "window": "weekly",
+    {"source": "qidian", "category": "recommend", "window": "weekly", "label": "Đề cử tuần (推荐榜)",
      "rank_url": "https://www.qidian.com/rank/recom/", "parser": "parse_qidian_rank"},
-    {"source": "qidian", "category": "follows", "window": "all_time",
+    {"source": "qidian", "category": "follows", "window": "all_time", "label": "Lượt lưu (收藏榜)",
      "rank_url": "https://www.qidian.com/rank/collect/", "parser": "parse_qidian_rank"},
-    {"source": "qidian", "category": "views", "window": "daily",
+    {"source": "qidian", "category": "views", "window": "daily", "label": "Bán chạy trong ngày (畅销榜)",
      "rank_url": "https://www.qidian.com/rank/hotsales/", "parser": "parse_qidian_rank"},
-    {"source": "faloo", "category": "views", "window": "weekly",
+    {"source": "faloo", "category": "views", "window": "weekly", "label": "Lượt click tuần (周点击)",
      "rank_url": "https://b.faloo.com/y_0_0_0_0_0_1_1.html", "parser": "parse_faloo_rank"},
-    {"source": "faloo", "category": "views", "window": "monthly",
+    {"source": "faloo", "category": "views", "window": "monthly", "label": "Lượt click tháng (月点击)",
      "rank_url": "https://b.faloo.com/y_0_0_0_0_0_2_1.html", "parser": "parse_faloo_rank"},
 ]
 # No invented daily/quarterly windows for pages that do not publish them.
@@ -49,9 +55,56 @@ def _match(pattern, text):
     return match.group(1).strip() if match else ''
 
 
+# Nhãn chỉ số tiếng Trung → tiếng Việt (khoá dài đặt trước để 月点击 không bị
+# bắt nhầm thành 点击/月票...).
+STAT_LABELS_VI = {
+    '月点击': 'Lượt click tháng',
+    '周点击': 'Lượt click tuần',
+    '总点击': 'Tổng click',
+    '月票': 'Phiếu tháng',
+    '推荐': 'Đề cử',
+    '收藏': 'Lượt lưu',
+    '畅销': 'Bán chạy',
+    '字数': 'Số chữ',
+}
+_CN_UNITS = {'万': 10_000, '萬': 10_000, '亿': 100_000_000, '億': 100_000_000}
+
+
+def parse_stat_number(raw):
+    """'222447' → 222447, '12.3万' → 123000, '1,234' → 1234, '1.2亿' → 120000000.
+    Không có chữ số đọc được (vd số bị font-obfuscate) → None."""
+    match = re.search(r'(\d[\d,]*(?:\.\d+)?)\s*([万萬亿億]?)', raw or '')
+    if not match:
+        return None
+    number = float(match.group(1).replace(',', ''))
+    return int(round(number * _CN_UNITS.get(match.group(2), 1)))
+
+
+def _format_vi_number(value):
+    return f'{value:,}'.replace(',', '.')
+
+
+def normalize_stat(raw):
+    """Dịch stat_label sang tiếng Việt, giữ con số. Trả (stat_label, stat_value|None).
+    '1234 月票' → ('Phiếu tháng: 1.234', 1234); '周点击：12万' → ('Lượt click tuần: 120.000', 120000).
+    Nhãn lạ vẫn giữ nguyên chuỗi gốc (không bịa nghĩa)."""
+    raw = (raw or '').strip()
+    if not raw:
+        return '', None
+    value = parse_stat_number(raw)
+    for cn, vi in STAT_LABELS_VI.items():
+        if cn in raw:
+            return f'{vi}: {_format_vi_number(value)}' if value is not None else vi, value
+    return raw, value
+
+
 def _item(rank, title, url, author='', cover='', stat=''):
-    return dict(rank=int(rank), title=title.strip(), source_url=url,
-                author=author, cover_url=cover, stat_label=stat)
+    stat_label, stat_value = normalize_stat(stat)
+    item = dict(rank=int(rank), title=title.strip(), source_url=url,
+                author=author, cover_url=cover, stat_label=stat_label)
+    if stat_value is not None:
+        item['stat_value'] = stat_value
+    return item
 
 
 def parse_qidian_rank(text):
@@ -135,6 +188,13 @@ def parse_faloo_rank(text):
                            _match(r'((?:周|月)点击[：:]\s*[\d.,万億亿]+)', block)))
         if len(items) == 20:
             break
+    # Giữ thứ tự trang; chỉ khi MỌI mục đều có số click thì xếp lại theo số
+    # (giảm dần, ổn định) và đánh lại rank — trang Faloo đôi khi chèn truyện
+    # quảng cáo lên đầu dù số click thấp hơn.
+    if items and all('stat_value' in item for item in items):
+        items.sort(key=lambda item: -item['stat_value'])
+        for rank, item in enumerate(items, 1):
+            item['rank'] = rank
     return items
 
 
@@ -237,7 +297,7 @@ def collect_rankings(sources=None, fetch=fetch_markdown):
             if len({item['source_url'] for item in items}) != len(items):
                 raise ValueError('Duplicate books; ranking format may have changed')
             batches[config['source']].extend(dict(item, category=config['category'], window=config['window']) for item in items)
-            LOG.info('%s: %d items', combo, len(items))
+            LOG.info('%s [%s]: %d items', combo, config.get('label', ''), len(items))
         except Exception as exc:
             LOG.warning('%s skipped: %s', combo, exc)
     return batches

@@ -111,3 +111,43 @@ def test_oversized_compressed_file_rejected(tmp_path, monkeypatch):
 
     with pytest.raises(m.EpubValidationError, match="quá lớn"):
         m.parse_epub(str(small_path))
+
+
+def test_parse_epub_returns_opf_title_author_subjects(tmp_path):
+    from ebooklib import epub
+
+    book = epub.EpubBook()
+    book.set_identifier("meta-id")
+    book.set_title("Lãnh Chúa Cầu Sinh - audiotruyenfull.org")
+    book.set_language("vi")
+    book.add_author("Kỳ Khai")
+    book.add_metadata("DC", "subject", "Huyền Huyễn, Toàn Dân")
+    chap1 = epub.EpubHtml(title="Chương 1", file_name="chap_01.xhtml", lang="vi")
+    chap1.content = "<h1>Chương 1</h1><p>Nội dung chương một dùng để kiểm thử.</p>"
+    book.add_item(chap1)
+    book.toc = (epub.Link("chap_01.xhtml", "Chương 1", "chap1"),)
+    book.add_item(epub.EpubNcx())
+    book.add_item(epub.EpubNav())
+    book.spine = ["nav", chap1]
+    path = tmp_path / "meta.epub"
+    epub.write_epub(str(path), book)
+
+    result = m.parse_epub(str(path))
+    assert result["title"] == "Lãnh Chúa Cầu Sinh"
+    assert result["author"] == "Kỳ Khai"
+    assert result["subjects"] == ["Huyền Huyễn", "Toàn Dân"]
+    assert len(result["chapters"]) == 1  # khoá cũ vẫn giữ nguyên
+
+
+def test_batch_processor_uses_opf_title_and_author(tmp_path):
+    import json
+
+    from tools import batch_epub_processor as bep
+
+    src = _build_valid_epub(tmp_path / "truyen-test-audiotruyenfull.org.epub")
+    res = bep.process_single_epub((str(src), str(tmp_path / "out"), False))
+    assert res["status"] == "success" and res["slug"] == "truyen-test"
+    data = json.loads((tmp_path / "out" / "truyen-test" / "novel.json").read_text(encoding="utf-8"))
+    assert data["title"] == "Truyện Test"
+    assert data["author"] == "Unknown"  # EPUB mẫu không có dc:creator → fallback cũ
+    assert data["genre"] == "Khác"

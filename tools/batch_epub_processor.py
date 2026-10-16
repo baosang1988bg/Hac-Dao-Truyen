@@ -21,7 +21,7 @@ from datetime import datetime
 
 # Import parse_epub và helper từ tools.epub_to_chapters
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from tools.epub_to_chapters import parse_epub, _clean_chapter_title
+from tools.epub_to_chapters import parse_epub, _clean_chapter_title, strip_source_suffix
 
 
 def slugify(text: str) -> str:
@@ -54,7 +54,9 @@ def process_single_epub(args_tuple):
     epub_path = Path(epub_path_str)
     output_novels_dir = Path(output_novels_dir_str)
 
-    filename_stem = epub_path.stem
+    # Tên file kiểu "{slug}-audiotruyenfull.org.epub" → bỏ hậu tố nhà cung cấp
+    # trước khi slugify (nếu không slug sẽ dính "-audiotruyenfullorg").
+    filename_stem = strip_source_suffix(epub_path.stem)
     slug = slugify(filename_stem)
 
     novel_dir = output_novels_dir / slug
@@ -97,18 +99,19 @@ def process_single_epub(args_tuple):
             c_path.write_text(body, encoding='utf-8')
             write_count += 1
 
-        # 3. Tạo/Cập nhật novel.json
-        clean_title = filename_stem.replace('_', ' ').replace('-', ' ').strip()
-        if chapters and chapters[0].get('title'):
-            # Thử lấy tiêu đề đẹp hơn
-            clean_title = filename_stem
+        # 3. Tạo/Cập nhật novel.json — tên/tác giả/thể loại lấy từ OPF của EPUB
+        # (dc:title/dc:creator/dc:subject hoặc trang info). Chỉ khi EPUB không khai
+        # báo mới fallback về tên file / 'Unknown' / 'Khác'.
+        clean_title = res.get('title') or filename_stem.replace('_', ' ').replace('-', ' ').strip()
+        author = res.get('author') or 'Unknown'
+        genre = ', '.join(res.get('subjects') or []) or 'Khác'
 
         novel_data = {
             'slug': slug,
             'title': clean_title,
             'original_title': '',
-            'author': 'Unknown',
-            'genre': 'Khác',
+            'author': author,
+            'genre': genre,
             'source_url': '',
             'last_translated_url': '',
             'last_chapter_number': len(chapters),

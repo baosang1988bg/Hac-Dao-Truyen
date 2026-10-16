@@ -178,3 +178,7 @@ backups/
 !.agents/skills/
 # Công cụ nội bộ — repo PRIVATE baosang1988bg/hacdao-private-tools clone vào đây (xem .agents/AGENTS.md)
 tools/private/
+
+# tools/fix_epub_metadata.py — trạng thái resume & thư mục SQL sinh ra (không commit)
+tools/.fix_epub_metadata_state.json
+out/

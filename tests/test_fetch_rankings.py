@@ -26,8 +26,11 @@ def test_observed_cards(name, parser, title, author):
 
 def test_qidian_counts_and_obfuscated_numbers():
     items = rankings.parse_qidian_rank(fixture('qidian'))
-    assert items[0]['stat_label'] == '1234 月票'
+    assert items[0]['stat_label'] == 'Phiếu tháng: 1.234'
+    assert items[0]['stat_value'] == 1234
+    # Số bị font-obfuscate: bỏ hẳn, không bịa stat_value.
     assert items[1]['stat_label'] == ''
+    assert 'stat_value' not in items[1]
 
 
 @pytest.mark.parametrize('name,parser', [
@@ -121,3 +124,52 @@ def test_sync_unauthorized_is_not_retried(monkeypatch):
     with pytest.raises(RuntimeError, match='401'):
         rankings.sync_via_worker_api({'entries': []})
     assert transport.call_count == 1
+
+
+@pytest.mark.parametrize('raw,label,value', [
+    ('1234 月票', 'Phiếu tháng: 1.234', 1234),
+    ('周点击：222447', 'Lượt click tuần: 222.447', 222447),
+    ('月点击:12.3万', 'Lượt click tháng: 123.000', 123000),
+    ('总点击：1,234', 'Tổng click: 1.234', 1234),
+    ('56 推荐', 'Đề cử: 56', 56),
+    ('收藏 1.2亿', 'Lượt lưu: 120.000.000', 120_000_000),
+    ('畅销 7', 'Bán chạy: 7', 7),
+    ('字数：109万', 'Số chữ: 1.090.000', 1_090_000),
+    ('', '', None),
+    ('月票', 'Phiếu tháng', None),
+    ('人气 99', '人气 99', 99),
+])
+def test_normalize_stat_translates_label_and_keeps_number(raw, label, value):
+    assert rankings.normalize_stat(raw) == (label, value)
+
+
+def test_faloo_stat_label_is_vietnamese_with_value():
+    items = rankings.parse_faloo_rank(fixture('faloo'))
+    assert items[0]['stat_label'] == 'Lượt click tuần: 222.447'
+    assert [i['stat_value'] for i in items] == [222447, 205299]
+
+
+def test_faloo_resorts_by_stat_value_when_all_items_have_it():
+    text = fixture('faloo').replace('周点击：222447', '周点击：1000')
+    items = rankings.parse_faloo_rank(text)
+    assert [i['rank'] for i in items] == [1, 2]
+    assert [i['stat_value'] for i in items] == [205299, 1000]
+    assert items[1]['title'] == '名义：水木圣子，从中枢开始进部'
+
+
+def test_faloo_keeps_page_order_when_some_stat_missing():
+    text = fixture('faloo').replace('周点击：222447', '周点击：??').replace('周点击：205299', '周点击：1000')
+    items = rankings.parse_faloo_rank(text)
+    assert items[0]['title'] == '名义：水木圣子，从中枢开始进部'
+    assert 'stat_value' not in items[0] and items[1]['stat_value'] == 1000
+
+
+def test_ranking_source_keys_stay_compatible_and_labels_fixed():
+    """category/window là khoá D1 + frontend: giữ nguyên; nghĩa thật nằm ở label."""
+    by_url = {s['rank_url'].split('/rank/')[-1].strip('/'): s for s in rankings.RANKING_SOURCES
+              if s['source'] == 'qidian'}
+    assert (by_url['yuepiao']['category'], by_url['yuepiao']['window']) == ('recommend', 'monthly')
+    assert by_url['yuepiao']['label'].startswith('Phiếu tháng')
+    assert (by_url['hotsales']['category'], by_url['hotsales']['window']) == ('views', 'daily')
+    assert by_url['hotsales']['label'].startswith('Bán chạy')
+    assert all(s.get('label') for s in rankings.RANKING_SOURCES)

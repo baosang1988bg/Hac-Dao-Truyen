@@ -211,9 +211,81 @@ def retry(fn, *a, n=4, d=3, **kw):
             time.sleep(d*(i+1))
 
 # ── Genre scraper ─────────────────────────────────────────────────────────────
+# Lỗi cũ: lấy MỌI link /the-loai/ trên trang → dính cả menu điều hướng, nên truyện
+# nào cũng ra "Tiên Hiệp, Huyền Huyễn, Đô Thị" (3 mục đầu menu). Giờ chỉ lấy link
+# NGOÀI <nav>/<header>/<footer>/<aside>/menu; nếu có vùng thông tin truyện
+# (class/id chứa info/detail/meta/genre/the-loai) thì chỉ lấy trong vùng đó.
+from html.parser import HTMLParser as _HTMLParser
+
+_GENRE_LINK_RE = re.compile(r'/the-loai/([^/"?#\s]+)')
+_EXCLUDE_TAGS  = {"nav", "header", "footer", "aside"}
+_EXCLUDE_HINT  = re.compile(r'(?:^|[\s_-])(?:menu|nav|navbar|navigation|dropdown|header|footer|sidebar|breadcrumb)(?:$|[\s_-])', re.I)
+_INFO_HINT     = re.compile(r'info|detail|meta|genre|the-loai|theloai|categor|story|book', re.I)
+_VOID_TAGS     = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
+MENU_DUMP_MIN  = 10   # cache cũ có ≥ 10 thể loại cho 1 truyện = dump menu → fetch lại
+
+
+class _GenreLinkParser(_HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.stack = []          # [(tag, excluded, info)]
+        self.info_links = []
+        self.other_links = []
+
+    def _flags(self):
+        return (any(e for _, e, _ in self.stack), any(i for _, _, i in self.stack))
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        hint = f"{a.get('class') or ''} {a.get('id') or ''} {a.get('role') or ''}"
+        if tag == "a":
+            m = _GENRE_LINK_RE.search(a.get("href") or "")
+            excluded, info = self._flags()
+            if m and not excluded:
+                (self.info_links if info else self.other_links).append(m.group(1))
+        if tag in _VOID_TAGS:
+            return
+        excluded = tag in _EXCLUDE_TAGS or bool(_EXCLUDE_HINT.search(hint)) or a.get("role") == "navigation"
+        self.stack.append((tag, excluded, bool(_INFO_HINT.search(hint)) and not excluded))
+
+    def handle_endtag(self, tag):
+        for i in range(len(self.stack) - 1, -1, -1):
+            if self.stack[i][0] == tag:
+                del self.stack[i:]
+                return
+
+
+def extract_story_genres(html: str) -> list:
+    """Slug thể loại CỦA TRUYỆN trên trang /truyen/<slug>/ (bỏ link menu điều hướng)."""
+    parser = _GenreLinkParser()
+    try:
+        parser.feed(html)
+        parser.close()
+    except Exception:
+        pass
+    links = parser.info_links or parser.other_links
+    return list(dict.fromkeys(links))  # unique, giữ thứ tự
+
+
+def drop_ubiquitous_genres(genre_cache: dict, ratio: float = 0.8, min_pages: int = 20) -> dict:
+    """Heuristic dự phòng: thể loại xuất hiện ở > ratio số trang gần như chắc chắn
+    là link menu/footer chứ không phải thể loại thật → bỏ. Cần ≥ min_pages trang để
+    thống kê có nghĩa (ít trang thì giữ nguyên)."""
+    pages = [g for g in genre_cache.values() if g]
+    if len(pages) < min_pages:
+        return dict(genre_cache)
+    counts = {}
+    for genres in pages:
+        for g in set(genres):
+            counts[g] = counts.get(g, 0) + 1
+    common = {g for g, n in counts.items() if n / len(pages) > ratio}
+    return {slug: [g for g in genres if g not in common] for slug, genres in genre_cache.items()}
+
+
 def fetch_genres(slug, cache: dict) -> list:
-    if slug in cache:
-        return cache[slug]
+    cached = cache.get(slug)
+    if cached is not None and len(cached) < MENU_DUMP_MIN:
+        return cached
     try:
         req = urllib.request.Request(
             f"{VIP_URL}/{slug}/",
@@ -221,8 +293,7 @@ def fetch_genres(slug, cache: dict) -> list:
         )
         with urllib.request.urlopen(req, timeout=15) as r:
             html = r.read().decode("utf-8", errors="replace")
-        cats = re.findall(r'/the-loai/([^/"]+)', html)
-        genres = list(dict.fromkeys(cats))  # unique, preserve order
+        genres = extract_story_genres(html)
         cache[slug] = genres
         return genres
     except:
@@ -282,6 +353,7 @@ def build_genre_catalog(items, genre_cache: dict, outdir: Path):
     print(f"\n{BLU}[catalog] Đang xây dựng genre catalog...{R}")
     genres_map = {}   # genre_slug -> [item]
     no_genre   = []
+    genre_cache = drop_ubiquitous_genres(genre_cache)  # bỏ thể loại "có ở mọi trang" (menu)
 
     total = len(items)
     for i, item in enumerate(items):
