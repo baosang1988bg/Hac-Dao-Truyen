@@ -4,14 +4,16 @@ import { novelType } from '../../utils/propTypes'
 import { Link } from 'react-router-dom'
 import { BookOpen, User, Clock, Eye, Star } from 'lucide-react'
 import NovelCover from '../NovelCover'
-import { fmtNovelTitle, fmtTimeAgo, fmtNumber } from '../../utils/format'
+import { novelDisplayTitle, fmtTimeAgo, fmtNumber, cleanAuthor } from '../../utils/format'
+import { primaryGenre } from '../../utils/genreLabels'
 
 /**
  * NovelList — Component hiển thị danh sách truyện dạng LIST ROW COMPACT.
  * Thiết kế gọn nhẹ (chiều cao ~50px/dòng) giúp cuộn mượt mà và hiển thị được nhiều
  * truyện trên một màn hình theo đúng phong cách Qidian / Truyentrung.
+ * showCover=false bỏ ảnh bìa thu nhỏ (danh sách dài: tránh tải hàng chục ảnh ngay).
  */
-export default function NovelList({ novels = [], showRank = false, showViews = false, showRating = false }) {
+export default function NovelList({ novels = [], showRank = false, showViews = false, showRating = false, showCover = true }) {
   if (!novels || novels.length === 0) {
     return (
       <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
@@ -23,7 +25,9 @@ export default function NovelList({ novels = [], showRank = false, showViews = f
   return (
     <div className="novel-list">
       {novels.map((novel, index) => {
-        const titleFormatted = fmtNovelTitle(novel.title, novel.slug)
+        const titleFormatted = novelDisplayTitle(novel)
+        const genre = primaryGenre(novel.genre)
+        const author = cleanAuthor(novel.author)
         const chapCount = novel.chapter_count || novel.total_chapters || 0
         const updatedTime = novel.updated_at || novel.last_translated_at
 
@@ -39,26 +43,28 @@ export default function NovelList({ novels = [], showRank = false, showViews = f
               </span>
             )}
 
-            <div className="novel-list-cover">
-              <NovelCover novel={novel} size="xs" />
-            </div>
+            {showCover && (
+              <div className="novel-list-cover">
+                <NovelCover novel={novel} size="xs" />
+              </div>
+            )}
 
             <div className="novel-list-info">
               <div className="novel-list-header">
                 <span className="novel-list-title" title={titleFormatted}>
                   {titleFormatted}
                 </span>
-                {novel.genre && (
+                {genre && (
                   <span className="novel-list-genre">
-                    {novel.genre.split(',')[0].trim()}
+                    {genre}
                   </span>
                 )}
               </div>
 
               <div className="novel-list-meta">
-                {novel.author && (
+                {author && (
                   <span className="meta-item">
-                    <User size={11} /> {novel.author}
+                    <User size={11} aria-hidden="true" /> {author}
                   </span>
                 )}
                 {chapCount > 0 && (
@@ -94,4 +100,5 @@ NovelList.propTypes = {
   showRank: PropTypes.bool,
   showViews: PropTypes.bool,
   showRating: PropTypes.bool,
+  showCover: PropTypes.bool,
 };

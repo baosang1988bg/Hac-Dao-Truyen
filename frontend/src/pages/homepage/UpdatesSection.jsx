@@ -1,31 +1,23 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Sparkles, ArrowRight } from 'lucide-react'
-import api from '../../api'
-import { extractNovels } from '../../utils/novelsApi'
+import { extractNovels, LATEST_UPDATED_PARAMS } from '../../utils/novelsApi'
+import { useCachedGet } from '../../utils/apiCache'
 import SectionHeader from '../../components/ui/SectionHeader'
 import NovelTable from '../../components/ui/NovelTable'
 
 const LIMIT = 15
 
 /**
- * UpdatesSection — Section "Truyện Mới Cập Nhật" dạng BẢNG TABLE (Chuẩn 100% Truyentrung.com)
+ * UpdatesSection — Section "Truyện Mới Cập Nhật" dạng BẢNG.
  * Cột: Thể loại | Tên truyện | Tác giả | Tình trạng | Số Chương.
- * Tự fetch 15 truyện cập nhật gần nhất — không nhận cả catalog từ HomePage.
+ * Dùng CHUNG request với AllNovelsSection (tab "Tất cả", trang 1) qua apiCache
+ * + LATEST_UPDATED_PARAMS (limit 30) rồi lấy 15 truyện đầu — trước đây 2
+ * section bắn 2 request sort=updated_at gần như trùng nhau.
  */
 export default function UpdatesSection() {
-  const [novels, setNovels] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let alive = true
-    const controller = new AbortController()
-    api.get('/novels', { params: { sort: 'updated_at', order: 'desc', limit: LIMIT }, signal: controller.signal })
-      .then(res => { if (alive) setNovels(extractNovels(res.data)) })
-      .catch(() => { /* im lặng — section tự ẩn nếu không tải được */ })
-      .finally(() => { if (alive) setLoading(false) })
-    return () => { alive = false; controller.abort() }
-  }, [])
+  const { data, loading: fetching } = useCachedGet('/novels', { params: LATEST_UPDATED_PARAMS })
+  const novels = extractNovels(data).slice(0, LIMIT)
+  const loading = fetching && novels.length === 0
 
   if (loading) {
     return (
@@ -49,18 +41,18 @@ export default function UpdatesSection() {
           to="/epub"
           className="hp-secondary-link hp-updates-more"
         >
-          Xem thêm truyện nguồn Qidian <ArrowRight size={13} />
+          Xem tất cả truyện <ArrowRight size={13} aria-hidden="true" />
         </Link>
       </div>
 
       <div className="glass-panel" style={{ borderRadius: '14px', overflow: 'hidden' }}>
         <NovelTable
           novels={novels}
-          limit={15}
+          limit={LIMIT}
           colWidths={{ genre: '15%', title: '40%', author: '20%', status: '13%', chapters: '12%' }}
           ongoingLabel="Đang ra"
-          genreFallback="Tiên Hiệp"
-          authorFallback="Đang cập nhật"
+          genreFallback="—"
+          authorFallback="Chưa rõ"
         />
       </div>
     </section>

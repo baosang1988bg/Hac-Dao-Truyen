@@ -21,7 +21,7 @@ import StatsSection from './homepage/StatsSection'
  * HomePage – Orchestrator trang chủ HacDaoTruyen.
  * Thứ tự ưu tiên thị giác (anchor chính lên đầu, phần cá nhân/phụ xuống
  * sidebar — xem audit UX 2026-09-11):
- *   1. Monthly Popular Hero: Section "Nhân Khí Tháng" (anchor chính, full-width)
+ *   1. Hero "Xem Nhiều Nhất" (MonthlyPopularSection — tổng lượt xem, anchor chính, full-width)
  *   2. Top Notice Bar: Khung Truy Thư Lệnh & Thông Báo Tìm Truyện
  *   3. [Cột chính] Recently Updated Table → GenreChips → All Novels Tabbed List
  *   4. [Sidebar] Recently Read → Multi-Ranking Widgets → Khung thông báo tĩnh
@@ -84,7 +84,7 @@ export default function HomePage() {
       {/* Các section chính – ẩn khi đang tìm kiếm */}
       {!isSearching && (
         <>
-          {/* 1. Anchor chính above-the-fold: Section "Nhân Khí Tháng" ngay sau
+          {/* 1. Anchor chính above-the-fold: hero "Xem Nhiều Nhất" ngay sau
               thanh tìm kiếm — trước đây bị Thông báo/GenreChips/Recently Read
               che mất phía trên, không có điểm nhấn thị giác rõ ràng khi vào trang. */}
           <MonthlyPopularSection />

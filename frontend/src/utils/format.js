@@ -98,20 +98,121 @@ export function fmtTokens(n) {
   return String(n)
 }
 
-/** Chuẩn hóa tiêu đề truyện nếu là slug chưa format (ví dụ bat-dau-dung-hop -> Bắt Đầu Dùng Hợp / Bat Dau...). */
-export function fmtNovelTitle(title, slug) {
-  if (!title && slug) {
-    return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-  }
-  if (!title) return ''
+/** "bat-dau-dung-hop" → "Bat Dau Dung Hop" (chỉ dùng khi không còn gì tốt hơn). */
+function titleCaseSlug(s) {
+  return str(s).trim().replace(/-+/g, ' ').replace(/\s+/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
+// Tiêu đề "trông như slug": không có khoảng trắng, có gạch nối, chỉ a-z/0-9.
+function looksLikeSlug(t) {
+  return /^[a-z0-9]+(?:-+[a-z0-9]+)+$/i.test(t)
+}
+
+/**
+ * Tên truyện để hiển thị.
+ * - Tiêu đề hợp lệ → giữ nguyên (chỉ trim).
+ * - Tiêu đề trống / trùng slug / trông như slug ("bat-dau-dung-hop") →
+ *   ưu tiên `originalTitle` (tên gốc, thường là tiếng Trung) nếu có chữ cái,
+ *   nếu không thì title-case từ slug ("Bat Dau Dung Hop").
+ */
+export function fmtNovelTitle(title, slug, originalTitle) {
   const t = str(title).trim()
-  if (t.includes('-') && !t.includes(' ')) {
-    return t.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  const s = str(slug).trim()
+  const isSlugLike = !t || (s && t === s) || looksLikeSlug(t)
+  if (!isSlugLike) return t
+  const orig = str(originalTitle).trim()
+  if (orig && /\p{L}/u.test(orig) && !looksLikeSlug(orig)) return orig
+  return titleCaseSlug(t || s)
+}
+
+/** Tiện ích: tên hiển thị của 1 object truyện (title/slug/original_title). */
+export function novelDisplayTitle(novel) {
+  return fmtNovelTitle(novel?.title, novel?.slug, novel?.original_title)
+}
+
+// Giá trị tác giả "giả" do crawler/nguồn điền khi không biết tác giả thật.
+const PLACEHOLDER_AUTHORS = new Set(['', 'unknown', 'n/a', 'na', 'none', 'null', '-', '—', 'tác giả', 'đang cập nhật', 'chưa rõ', 'không rõ', '未知', '佚名'])
+
+/** Tên tác giả thật, hoặc '' nếu trống/placeholder (nơi gọi tự ẩn hoặc ghi "Chưa rõ"). */
+export function cleanAuthor(author) {
+  const a = str(author).replace(/\s+/g, ' ').trim()
+  if (PLACEHOLDER_AUTHORS.has(a.toLowerCase())) return ''
+  return a
+}
+
+// ── Nhãn chỉ số của BXH nguồn Trung Quốc (/api/rankings → item.stat_label) ──
+// Ví dụ dữ liệu thô: "月点击：462859", "月票 1234", "总字数：356.2万字".
+// Khoá dài đứng trước để "总推荐" không bị khớp nhầm thành "推荐".
+const STAT_LABELS_ZH = [
+  ['月点击', 'Lượt click tháng'],
+  ['周点击', 'Lượt click tuần'],
+  ['日点击', 'Lượt click ngày'],
+  ['总点击', 'Tổng click'],
+  ['点击', 'Lượt click'],
+  ['月推荐票', 'Phiếu đề cử tháng'],
+  ['周推荐票', 'Phiếu đề cử tuần'],
+  ['推荐票', 'Phiếu đề cử'],
+  ['月推荐', 'Đề cử tháng'],
+  ['周推荐', 'Đề cử tuần'],
+  ['总推荐', 'Tổng đề cử'],
+  ['推荐', 'Đề cử'],
+  ['月票', 'Phiếu tháng'],
+  ['总收藏', 'Tổng lượt lưu'],
+  ['收藏', 'Lượt lưu'],
+  ['总字数', 'Tổng số chữ'],
+  ['字数', 'Số chữ'],
+  ['畅销', 'Bán chạy'],
+  ['人气', 'Độ nổi tiếng'],
+  ['热度', 'Độ hot'],
+  ['在读', 'Đang đọc'],
+  ['阅读', 'Lượt đọc'],
+  ['订阅', 'Lượt đặt mua'],
+  ['打赏', 'Lượt thưởng'],
+  ['粉丝', 'Người hâm mộ'],
+  ['评分', 'Điểm đánh giá'],
+  ['评论', 'Bình luận'],
+].sort((a, b) => b[0].length - a[0].length)
+
+const ZH_UNITS = { '万': 1e4, '萬': 1e4, '亿': 1e8, '億': 1e8 }
+
+/**
+ * "462859" / "46.2万" / "1,234" → số nguyên (hoặc null nếu không phải số).
+ * Trả kèm phần chữ còn thừa phía sau để nơi gọi quyết định giữ hay bỏ.
+ */
+export function parseZhNumber(text) {
+  const m = /^\s*([\d][\d,.]*)\s*([万萬亿億])?/.exec(str(text))
+  if (!m) return null
+  const digits = m[1].replace(/,/g, '')
+  const base = Number(digits)
+  if (!Number.isFinite(base)) return null
+  const value = Math.round(base * (m[2] ? ZH_UNITS[m[2]] : 1))
+  return { value, rest: str(text).slice(m[0].length).trim() }
+}
+
+/**
+ * Dịch nhãn chỉ số BXH tiếng Trung sang tiếng Việt + định dạng số vi-VN.
+ *   "月点击：462859"   → "Lượt click tháng: 462.859"
+ *   "总字数：356.2万字" → "Tổng số chữ: 3.562.000"
+ * Nhãn không nhận ra → trả nguyên văn (không đoán bừa).
+ */
+export function fmtStatLabel(label) {
+  const raw = str(label).trim()
+  if (!raw) return ''
+  const hit = STAT_LABELS_ZH.find(([zh]) => raw.startsWith(zh))
+  if (!hit) {
+    // Chỉ có số trơn → vẫn định dạng cho dễ đọc.
+    const onlyNum = parseZhNumber(raw)
+    if (onlyNum && !onlyNum.rest) return fmtNumber(onlyNum.value)
+    return raw
   }
-  if (slug && t === slug) {
-    return t.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-  }
-  return t
+  const [zh, vi] = hit
+  const rest = raw.slice(zh.length).replace(/^[\s:：=]+/, '')
+  if (!rest) return vi
+  const num = parseZhNumber(rest)
+  if (!num) return `${vi}: ${rest}`
+  // Bỏ đơn vị đếm tiếng Trung đứng sau số (字/票/人/次/本) — nhãn Việt đã đủ nghĩa.
+  const tail = /^[字票人次本个個]*$/.test(num.rest) ? '' : ` ${num.rest}`
+  return `${vi}: ${fmtNumber(num.value)}${tail}`
 }
 
 function str(val) {

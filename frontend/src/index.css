@@ -19,6 +19,10 @@
   --accent-gradient: linear-gradient(135deg, #a8291f 0%, #c9932e 100%);
   --success: #10b981;
   --danger: #ef4444;
+  /* Nền trang chính — vài khối sticky (vd .epub-catalog__toolbar) dùng biến này. */
+  --bg-main: var(--bg-dark);
+  /* Màu viền focus bàn phím (WCAG 2.4.7) */
+  --focus-ring: var(--accent);
 
   /* Spacing scale (mobile-first, dùng thay cho margin/padding hard-code) */
   --space-1: 4px;
@@ -520,15 +524,26 @@ a:hover {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
   flex-shrink: 0;
 }
+.novel-cover--xs { width: 100%; height: 100%; border-radius: 6px; box-shadow: none; }
 .novel-cover--sm { width: 72px; border-radius: 8px; }
 .novel-cover--md { width: 100%; }
 .novel-cover--lg { width: 100%; border-radius: 14px; }
 
+/* Ảnh thật đè lên lớp gradient, mờ dần hiện ra khi tải xong (NovelCover onLoad). */
 .novel-cover__img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.novel-cover__img.is-loaded { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .novel-cover__img { transition: none; }
 }
 
 .novel-cover__art {
@@ -586,6 +601,10 @@ a:hover {
   overflow: hidden;
 }
 .novel-cover--sm .novel-cover__title { font-size: var(--font-xs, 0.75rem); -webkit-line-clamp: 3; }
+/* xs (36px, NovelList): quá nhỏ để đọc tên → chỉ giữ chữ cái đầu. */
+.novel-cover--xs .novel-cover__title,
+.novel-cover--xs .novel-cover__highlight { display: none; }
+.novel-cover--xs .novel-cover__letter { top: 50%; transform: translate(-50%, -50%); font-size: 1.3rem; color: rgba(255, 255, 255, 0.55); }
 .novel-cover--lg .novel-cover__title { font-size: 1rem; }
 
 /* Dải thể loại đáy bìa — chỉ size lg */
@@ -1844,7 +1863,12 @@ a:hover {
   gap: var(--space-3, 12px);
   margin-bottom: var(--section-gap);
 }
+/* 4 ô (có "Chương đã dịch") → lưới 2×2 cho vừa sidebar hẹp. */
+.hp-stats--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .hp-stats__item {
+  /* <dt> nhãn đứng trước trong DOM (đúng ngữ nghĩa), hiển thị số lên trên. */
+  display: flex;
+  flex-direction: column-reverse;
   min-width: 0;
   background: rgba(201, 147, 46, 0.06);
   border: 1px solid rgba(201, 147, 46, 0.12);
@@ -2385,3 +2409,53 @@ a:hover {
 .reader-settings-tts-note {
   margin: 0; font-size: .78rem; line-height: 1.5; opacity: .7;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ACCESSIBILITY (WCAG 2.1 AA) — đặt CUỐI file để thắng các rule cùng độ
+   ưu tiên phía trên vốn đặt `outline: none` (vd .input-field).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Viền focus rõ ràng khi điều hướng bằng bàn phím (không hiện khi bấm chuột). */
+:focus-visible {
+  outline: 2px solid var(--focus-ring, var(--accent));
+  outline-offset: 2px;
+}
+.input-field:focus-visible,
+.hp-search-input:focus-visible,
+.epub-catalog__search-input:focus-visible {
+  outline: 2px solid var(--focus-ring, var(--accent));
+  outline-offset: 1px;
+}
+
+/* Skip-link "Bỏ qua tới nội dung" (GuestLayout): ẩn ngoài màn hình, hiện khi focus. */
+.skip-link {
+  position: absolute;
+  left: var(--space-2, 8px);
+  top: -100px;
+  z-index: 1000;
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #000;
+  font-weight: 700;
+  text-decoration: none;
+}
+.skip-link:focus,
+.skip-link:focus-visible { top: var(--space-2, 8px); }
+/* main nhận focus qua skip-link — không cần viền quanh cả vùng nội dung. */
+#main-content:focus { outline: none; }
+
+/* Footer: chữ màu muted (≈7:1 trên nền tối) thay cho opacity 0.3 (<3:1, trượt AA). */
+.app-footer__text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Link đăng nhập quản trị dành cho khách: thu nhỏ, kém nổi nhưng vẫn truy cập được. */
+.site-header__navlink.site-header__admin-login {
+  padding-inline: var(--space-2, 8px);
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+.site-header__navlink.site-header__admin-login:hover,
+.site-header__navlink.site-header__admin-login:focus-visible { opacity: 1; }

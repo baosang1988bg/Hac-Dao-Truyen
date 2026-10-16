@@ -5,6 +5,9 @@ import { Search, BookMarked, Star, Eye, BookOpen, SlidersHorizontal, X, Clock, A
 import api from '../api'
 import { EpubCard } from '../components/EpubCard'
 import { fmtNumber } from '../utils/format';
+import { extractNovels } from '../utils/novelsApi'
+import { cachedGet, peekCache } from '../utils/apiCache'
+import { normalizeGenreList, GENRES_URL, GENRES_TTL } from '../utils/genreLabels'
 
 const LIMIT = 24
 
@@ -26,7 +29,7 @@ export default function EpubCatalogPage() {
   const [page, setPage]           = useState(1)
   const [pages, setPages]         = useState(1)
   const [loading, setLoading]     = useState(true)
-  const [genres, setGenres]       = useState([])
+  const [genres, setGenres]       = useState(() => normalizeGenreList(peekCache(GENRES_URL)))
 
   // Filter state
   const [q, setQ]               = useState('')
@@ -38,9 +41,14 @@ export default function EpubCatalogPage() {
 
   const debounceRef = useRef(null)
 
-  // Load genres
+  // Load genres — dùng chung cache với GenreChips trang chủ; chuẩn hoá nhãn
+  // tiếng Việt (tách chuỗi gộp, "cultivation"→"Tu Tiên", bỏ Unknown/trùng).
   useEffect(() => {
-    api.get('/novels/genres').then(r => setGenres(r.data || [])).catch(() => {})
+    let alive = true
+    cachedGet(GENRES_URL, { ttl: GENRES_TTL })
+      .then(data => { if (alive) setGenres(normalizeGenreList(data)) })
+      .catch(() => {})
+    return () => { alive = false }
   }, [])
 
   const fetchNovels = useCallback(async (pg = 1, reset = false) => {
@@ -57,9 +65,9 @@ export default function EpubCatalogPage() {
 
       const res = await api.get(`/novels?${params}`)
       const data = res.data
-      const list = data.novels || data // backwards compat
-      setTotal(data.total ?? list.length)
-      setPages(data.pages ?? 1)
+      const list = extractNovels(data) // chịu được cả {novels} lẫn mảng thẳng
+      setTotal(data?.total ?? list.length)
+      setPages(data?.pages ?? 1)
       setNovels(prev => (reset || pg === 1) ? list : [...prev, ...list])
       setPage(pg)
     } catch { /* silent */ }
@@ -104,6 +112,7 @@ export default function EpubCatalogPage() {
               type="text"
               inputMode="search"
               enterKeyHint="search"
+              aria-label="Tìm tên truyện hoặc tác giả"
               className="epub-catalog__search-input"
               placeholder="Tìm tên truyện, tác giả..."
               value={q}
@@ -112,7 +121,7 @@ export default function EpubCatalogPage() {
                 width: '100%', padding: '10px 48px 10px 36px',
                 background: 'var(--glass-bg)', border: '1px solid var(--border)',
                 borderRadius: '10px', color: 'var(--text-main)',
-                outline: 'none', boxSizing: 'border-box',
+                boxSizing: 'border-box',
               }}
             />
             {q && (
@@ -129,6 +138,7 @@ export default function EpubCatalogPage() {
             className="epub-catalog__filter-toggle"
             onClick={() => setShowFilter(s => !s)}
             aria-expanded={showFilter}
+            aria-label={hasActiveFilters ? 'Lọc (đang áp dụng bộ lọc)' : 'Lọc'}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px',
               background: showFilter ? 'rgba(201,147,46,0.2)' : 'var(--glass-bg)',
@@ -138,9 +148,9 @@ export default function EpubCatalogPage() {
               position: 'relative',
             }}
           >
-            <SlidersHorizontal size={15} /> Lọc
+            <SlidersHorizontal size={15} aria-hidden="true" /> Lọc
             {hasActiveFilters && (
-              <span style={{ position: 'absolute', top: '4px', right: '4px', width: '7px', height: '7px', background: 'var(--accent)', borderRadius: '50%' }} />
+              <span aria-hidden="true" style={{ position: 'absolute', top: '4px', right: '4px', width: '7px', height: '7px', background: 'var(--accent)', borderRadius: '50%' }} />
             )}
           </button>
         </div>
@@ -159,6 +169,7 @@ export default function EpubCatalogPage() {
                       type="button"
                       key={opt.value}
                       className="epub-filter-chip"
+                      aria-pressed={sort === opt.value}
                       onClick={() => setSort(opt.value)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '5px',
@@ -228,6 +239,7 @@ export default function EpubCatalogPage() {
               type="button"
               key={opt.value}
               className="epub-filter-chip"
+              aria-pressed={sort === opt.value}
               onClick={() => setSort(opt.value)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '5px',
@@ -292,6 +304,7 @@ function FilterChip({ label, active, onClick }) {
     <button
       type="button"
       className="epub-filter-chip"
+      aria-pressed={Boolean(active)}
       onClick={onClick}
       style={{
         padding: '5px 12px', borderRadius: '20px', cursor: 'pointer', fontSize: '0.8rem',

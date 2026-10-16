@@ -47,6 +47,7 @@ export default function SearchSection({
           />
           {searchQuery && (
             <button
+              type="button"
               onClick={() => setSearchQuery('')}
               className="hp-search-clear"
               aria-label="Xóa tìm kiếm"

@@ -4,7 +4,7 @@ import { novelType } from '../../utils/propTypes'
 import { Link } from 'react-router-dom'
 import NovelCover from '../NovelCover'
 import Badge from './Badge'
-import { fmtNumber, fmtNovelTitle } from '../../utils/format'
+import { fmtNumber, novelDisplayTitle } from '../../utils/format'
 
 /**
  * NovelGrid – Grid truyện responsive dùng chung.
@@ -27,7 +27,7 @@ export default function NovelGrid({ novels, cols, getBadge }) {
     >
       {novels.map(n => {
         const badge = getBadge ? getBadge(n) : null
-        const titleFormatted = fmtNovelTitle(n.title, n.slug)
+        const titleFormatted = novelDisplayTitle(n)
         return (
           <Link
             key={n.slug}
@@ -46,7 +46,7 @@ export default function NovelGrid({ novels, cols, getBadge }) {
               <span className="novel-grid__title" title={titleFormatted}>{titleFormatted}</span>
               {(n.chapter_count || 0) > 0 && (
                 <span className="novel-grid__count">
-                  {fmtNumber(n.chapter_count)} ch.
+                  {fmtNumber(n.chapter_count)} chương
                 </span>
               )}
             </div>

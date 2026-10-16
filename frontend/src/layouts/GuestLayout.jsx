@@ -18,14 +18,27 @@ export default function GuestLayout() {
     return <Outlet />
   }
 
+  // Skip-link: tự focus <main> thay vì đổi hash URL (tránh để lại "#main-content"
+  // trên thanh địa chỉ của SPA).
+  const skipToContent = (e) => {
+    const main = document.getElementById('main-content')
+    if (!main) return
+    e.preventDefault()
+    main.focus()
+    main.scrollIntoView({ block: 'start' })
+  }
+
   return (
     <>
+      <a href="#main-content" className="skip-link" onClick={skipToContent}>
+        Bỏ qua tới nội dung
+      </a>
       <SiteHeader />
-      <main className="guest-main has-tab-bar">
+      <main id="main-content" tabIndex={-1} className="guest-main has-tab-bar">
         <Outlet />
       </main>
       <footer className="app-footer">
-        <div style={{ opacity: 0.3, fontSize: '0.8rem' }}>
+        <div className="app-footer__text">
           Hắc Đạo Truyện &copy; 2026 • Dịch truyện bằng AI
         </div>
       </footer>

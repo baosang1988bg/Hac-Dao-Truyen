@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Globe } from 'lucide-react'
 import api from '../../api'
 import SectionHeader from '../../components/ui/SectionHeader'
+import { fmtStatLabel } from '../../utils/format'
 import './ExternalRankingsSection.css'
 
 const SOURCES = { qidian: 'Qidian', '69shuba': '69shuba', novel543: 'Novel543', fanqie: 'Fanqie', faloo: 'Faloo' }
@@ -33,7 +34,7 @@ export default function ExternalRankingsSection() {
   const group = available.find(g => `${g.category}/${g.window}` === combo) || available[0]
   return (
     <section className="home-section external-rankings" aria-label="Bảng xếp hạng truyện Trung Quốc">
-      <SectionHeader icon={<Globe size={16} />} title="Khám Phá Truyện Trung Quốc" />
+      <SectionHeader icon={<Globe size={16} aria-hidden="true" />} title="Khám Phá Truyện Trung Quốc" />
       {loading ? <div className="glass-panel external-rankings-loading" role="status" aria-label="Đang tải bảng xếp hạng" /> : <div className="glass-panel external-rankings-panel">
         <p>Truyện nổi bật trên các trang nguồn. Liên kết mở trang gốc.</p>
         <div className="external-rankings-sources" role="group" aria-label="Nguồn truyện">
@@ -48,11 +49,11 @@ export default function ExternalRankingsSection() {
         <ol className="external-rankings-list">
           {group.items.map(item => <li key={item.rank}>
             <span className="external-rankings-rank">{item.rank}</span>
-            {safeUrl(item.cover_url) && <img src={item.cover_url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.display = 'none' }} />}
+            {safeUrl(item.cover_url) && <img src={item.cover_url} alt="" width={42} height={58} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.display = 'none' }} />}
             <div>
               {safeUrl(item.source_url) ? <a href={item.source_url} target="_blank" rel="noopener noreferrer">{item.title}</a> : <span>{item.title}</span>}
               {item.author && <small>{item.author}</small>}
-              {item.stat_label && <small>{item.stat_label}</small>}
+              {item.stat_label && <small>{fmtStatLabel(item.stat_label)}</small>}
             </div>
           </li>)}
         </ol>

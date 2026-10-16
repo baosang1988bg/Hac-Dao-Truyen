@@ -5,7 +5,8 @@ import { User, LogOut, BookOpen, HeartOff, Loader2 } from 'lucide-react'
 import userApi, {
   saveUserSession, clearUserSession, getUserInfo, isLoggedIn,
 } from '../userApi'
-import { fetchNovelsBySlugs } from '../utils/novelsApi'
+import { fetchNovelsBySlugsBatch } from '../utils/novelsApi'
+import { novelDisplayTitle } from '../utils/format'
 import GoogleLoginButton from '../components/GoogleLoginButton'
 
 /**
@@ -160,9 +161,9 @@ function AccountDashboard({ user, onLogout }) {
         // B01: KHÔNG tải page=1 của /api/novels rồi .find() — bookmark có thể
         // trỏ tới truyện nằm ở bất kỳ trang nào của danh sách chung (contract
         // mới luôn trả {novels,total,page,limit,pages}, không phải mảng). Gọi
-        // riêng GET /api/novels/:slug cho từng slug đã bookmark — vừa đúng
-        // (không bao giờ bỏ sót do phân trang) vừa nhẹ hơn tải cả catalog.
-        const novelsBySlug = await fetchNovelsBySlugs(userApi, bookmarks.map(bm => bm.slug))
+        // theo đúng các slug đã bookmark — gom 1 request GET /novels?slugs=...
+        // (≤24 slug/lô), tự fallback gọi lẻ /novels/:slug nếu backend cũ.
+        const novelsBySlug = await fetchNovelsBySlugsBatch(userApi, bookmarks.map(bm => bm.slug))
         if (!alive) return
         const list = bookmarks.map(bm => {
           const novel = novelsBySlug.get(bm.slug)
@@ -249,7 +250,7 @@ function AccountDashboard({ user, onLogout }) {
             <div key={slug} className="glass-panel bookmark-row">
               <div className="bookmark-row__body">
                 <Link to={`/novel/${slug}`} className="bookmark-row__title">
-                  {novel.title}
+                  {novelDisplayTitle(novel)}
                 </Link>
                 <div className="bookmark-row__meta">
                   <span>{chapterCount} chương</span>
@@ -274,7 +275,7 @@ function AccountDashboard({ user, onLogout }) {
               <button
                 className="bookmark-row__remove"
                 title="Bỏ theo dõi"
-                aria-label={`Bỏ theo dõi ${novel.title}`}
+                aria-label={`Bỏ theo dõi ${novelDisplayTitle(novel)}`}
                 onClick={() => unfollow(slug)}
               >
                 <HeartOff size={16} />

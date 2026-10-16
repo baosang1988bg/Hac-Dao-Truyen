@@ -5,7 +5,8 @@ import { Link } from 'react-router-dom'
 import { BookOpen, Eye, Star, BookMarked, Download, Check } from 'lucide-react'
 import NovelCover from './NovelCover'
 import Badge from './ui/Badge'
-import { fmtNumber, fmtNovelTitle } from '../utils/format'
+import { fmtNumber, novelDisplayTitle } from '../utils/format'
+import { splitGenres } from '../utils/genreLabels'
 import { isEpubDownloaded, downloadEpubOffline } from '../utils/epubOffline'
 import { isNovelCompleted } from '../utils/novelStatus'
 
@@ -15,6 +16,8 @@ import { isNovelCompleted } from '../utils/novelStatus'
  * chủ (eager-loaded) không kéo theo toàn bộ code của trang /epub (lazy-loaded).
  */
 export function EpubCard({ novel }) {
+  const genres = splitGenres(novel.genre)
+  const title = novelDisplayTitle(novel)
   const hasChapters = Number(novel.chapter_count) > 0;
   const isEpubOnly = !hasChapters && Boolean(novel.has_epub)
 
@@ -48,8 +51,8 @@ export function EpubCard({ novel }) {
       onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
     >
       {/* Cover */}
-      <Link to={`/novel/${novel.slug}`} style={{ position: 'relative', display: 'block', aspectRatio: '2/3', overflow: 'hidden' }}>
-        <NovelCover novel={novel} size="lg" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      <Link to={`/novel/${novel.slug}`} aria-label={title} style={{ position: 'relative', display: 'block', aspectRatio: '2/3', overflow: 'hidden' }}>
+        <NovelCover novel={novel} size="lg" style={{ width: '100%', height: '100%' }} />
         {hasChapters ? (
           <span className="badge-overlay badge-overlay--left"><Badge variant="live">TRỰC TIẾP</Badge></span>
         ) : novel.has_epub ? (
@@ -64,13 +67,13 @@ export function EpubCard({ novel }) {
       <div style={{ padding: 'var(--space-3, 12px)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2, 8px)', flex: 1, minWidth: 0 }}>
         <Link to={`/novel/${novel.slug}`} style={{ display: 'flex', alignItems: 'center', minHeight: 'var(--tap-target-min, 44px)', color: 'var(--text-main)', textDecoration: 'none' }}>
           <div style={{ fontWeight: 600, fontSize: '0.82rem', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            {fmtNovelTitle(novel.title, novel.slug)}
+            {title}
           </div>
         </Link>
 
-        {novel.genre ? (
+        {genres.length > 0 ? (
           <div style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {novel.genre}
+            {genres.join(', ')}
           </div>
         ) : null}
 

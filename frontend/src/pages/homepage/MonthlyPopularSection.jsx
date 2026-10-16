@@ -1,50 +1,49 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Flame, Play, Eye, BookOpen } from 'lucide-react'
-import api from '../../api'
-import { extractNovels } from '../../utils/novelsApi'
+import { extractNovels, TOP_VIEWS_PARAMS } from '../../utils/novelsApi'
+import { useCachedGet } from '../../utils/apiCache'
 import NovelCover from '../../components/NovelCover'
 import SectionHeader from '../../components/ui/SectionHeader'
-import { fmtNovelTitle, fmtNumber } from '../../utils/format'
+import { novelDisplayTitle, fmtNumber, cleanAuthor } from '../../utils/format'
+import { primaryGenre } from '../../utils/genreLabels'
+
+const SECTION_TITLE = 'Xem Nhiều Nhất'
 
 /**
- * MonthlyPopularSection — Section "Nhân Khí Tháng" (Chuẩn Truyentrung.com).
- * Tự fetch riêng truyện xem nhiều nhất (limit=1) — KHÔNG nhận cả catalog từ
- * HomePage như trước (tránh kéo theo việc tải toàn bộ danh sách truyện chỉ để
- * lấy 1 novel).
+ * MonthlyPopularSection — Hero "Xem Nhiều Nhất": truyện có TỔNG lượt xem cao
+ * nhất (sort=views). Không gọi là "tháng" vì backend không có lượt xem theo
+ * tháng — chỉ có cột views tích luỹ.
+ *
+ * Dùng chung response với TruyenTrungRankings (tab Tổng Hợp/Lượt Đọc) qua
+ * apiCache + TOP_VIEWS_PARAMS → trang chủ chỉ bắn 1 request sort=views.
+ * Mô tả lấy từ synopsis_short (API mới) / synopsis_preview / synopsis; không
+ * có thì ẩn — KHÔNG điền câu mô tả bịa.
  */
 export default function MonthlyPopularSection() {
-  const [novel, setNovel] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { data, loading } = useCachedGet('/novels', { params: TOP_VIEWS_PARAMS })
+  const novel = extractNovels(data)[0] || null
 
-  useEffect(() => {
-    let alive = true
-    const controller = new AbortController()
-    api.get('/novels', { params: { sort: 'views', order: 'desc', limit: 1 }, signal: controller.signal })
-      .then(res => { if (alive) setNovel(extractNovels(res.data)[0] || null) })
-      .catch(() => { /* im lặng — section tự ẩn nếu không tải được */ })
-      .finally(() => { if (alive) setLoading(false) })
-    return () => { alive = false; controller.abort() }
-  }, [])
-
-  if (loading) {
+  if (loading && !novel) {
     return (
       <section className="home-section" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
-        <SectionHeader icon={<Flame size={16} style={{ color: '#f59e0b' }} />} title="Nhân Khí Tháng" />
-        <div className="glass-panel" style={{ height: '212px', borderRadius: '16px' }} />
+        <SectionHeader icon={<Flame size={16} style={{ color: '#f59e0b' }} />} title={SECTION_TITLE} />
+        <div className="glass-panel" style={{ height: '212px', borderRadius: '16px' }} role="status" aria-label="Đang tải" />
       </section>
     )
   }
   if (!novel) return null
 
-  const formattedTitle = fmtNovelTitle(novel.title, novel.slug)
+  const formattedTitle = novelDisplayTitle(novel)
   const chapCount = novel.chapter_count || novel.total_chapters || 0
+  const author = cleanAuthor(novel.author)
+  const genre = primaryGenre(novel.genre)
+  const synopsis = String(novel.synopsis_short || novel.synopsis_preview || novel.synopsis || '').trim()
 
   return (
     <section className="home-section" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
       <SectionHeader
         icon={<Flame size={16} style={{ color: '#f59e0b' }} />}
-        title="Nhân Khí Tháng"
+        title={SECTION_TITLE}
       />
 
       <div className="glass-panel" style={{
@@ -58,12 +57,12 @@ export default function MonthlyPopularSection() {
         background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%)'
       }}>
         <div style={{ width: '120px', aspectRatio: '2 / 3', flexShrink: 0, borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 20px rgba(0,0,0,0.4)' }}>
-          <NovelCover novel={novel} size="lg" />
+          <NovelCover novel={novel} size="lg" priority />
         </div>
 
         <div style={{ flex: '1 1 240px', minWidth: 0 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1, 4px)', fontSize: 'var(--font-xs, 0.75rem)', color: '#f59e0b', fontWeight: 700, textTransform: 'uppercase', marginBottom: 'var(--space-1, 4px)' }}>
-            <Flame size={12} /> TOP 1 HOTTEST NOVEL
+            <Flame size={12} aria-hidden="true" /> Hạng 1 · Tổng lượt xem
           </div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 'var(--space-2, 8px)', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             <Link to={`/novel/${novel.slug}`} style={{ color: 'inherit', textDecoration: 'none', overflowWrap: 'anywhere' }}>
@@ -72,10 +71,11 @@ export default function MonthlyPopularSection() {
           </h2>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3, 12px)', flexWrap: 'wrap', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 'var(--space-3, 12px)' }}>
-            {novel.author && <span>Tác giả: <strong style={{ color: 'var(--text-main)' }}>{novel.author}</strong></span>}
-            {novel.genre && <span style={{ padding: '2px 8px', borderRadius: '6px', background: 'rgba(201,147,46,0.15)', color: 'var(--accent)' }}>{novel.genre.split(',')[0]}</span>}
+            {author && <span>Tác giả: <strong style={{ color: 'var(--text-main)' }}>{author}</strong></span>}
+            {genre && <span style={{ padding: '2px 8px', borderRadius: '6px', background: 'rgba(201,147,46,0.15)', color: 'var(--accent)' }}>{genre}</span>}
           </div>
 
+          {synopsis && (
           <p style={{
             fontSize: '0.84rem',
             color: 'var(--text-muted)',
@@ -86,8 +86,9 @@ export default function MonthlyPopularSection() {
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden'
           }}>
-            {novel.synopsis || novel.synopsis_preview || 'Bộ truyện đang thu hút sự chú ý lớn từ đông đảo độc giả trong tháng với cốt truyện lôi cuốn và các tình tiết kịch tính.'}
+            {synopsis}
           </p>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2, 8px)', flexWrap: 'wrap' }}>
             <Link to={`/novel/${novel.slug}`} className="btn btn-primary hp-touch-target" style={{ padding: 'var(--space-2, 8px) var(--space-4, 16px)', fontSize: '0.85rem' }}>

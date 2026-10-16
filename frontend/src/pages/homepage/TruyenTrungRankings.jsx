@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trophy, Flame, Eye, Star, Sparkles } from 'lucide-react';
-import api from '../../api'
-import { extractNovels } from '../../utils/novelsApi'
-import { fmtNovelTitle, fmtNumber } from '../../utils/format'
+import { extractNovels, TOP_VIEWS_PARAMS } from '../../utils/novelsApi'
+import { cachedGet, peekCache } from '../../utils/apiCache'
+import { novelDisplayTitle, fmtNumber, cleanAuthor } from '../../utils/format'
 
 // Mỗi tab tương ứng 1 cột sort mà backend hỗ trợ (xem SORT_COLS trong
 // src/index.js getNovels) — server trả sẵn top 10, không cần tải cả catalog
@@ -17,7 +17,24 @@ const SORT_BY_CATEGORY = {
 // "Tổng Hợp" dùng công thức nội bộ (views + rating*150 + chapter_count*2),
 // backend không có cột sort tương ứng — lấy 30 truyện xem nhiều nhất làm tập
 // xấp xỉ rồi tự tính công thức trên tập nhỏ này (không cần cả 28k+ truyện).
-const TONGHOP_SAMPLE_SIZE = 30
+// Tab "Tổng Hợp" và "Lượt Đọc" dùng CHUNG TOP_VIEWS_PARAMS với hero
+// MonthlyPopularSection → apiCache gộp thành 1 request sort=views.
+function paramsFor(category) {
+  if (category === 'tonghop' || category === 'luotdoc') return TOP_VIEWS_PARAMS
+  return { sort: SORT_BY_CATEGORY[category], order: 'desc', limit: 10 }
+}
+
+function rankList(category, data) {
+  let list = extractNovels(data)
+  if (category === 'tonghop') {
+    list = [...list].sort((a, b) => {
+      const sA = (a.views || 0) + (a.rating || 0) * 150 + (a.chapter_count || 0) * 2
+      const sB = (b.views || 0) + (b.rating || 0) * 150 + (b.chapter_count || 0) * 2
+      return sB - sA
+    })
+  }
+  return list.slice(0, 10)
+}
 
 /**
  * TruyenTrungRankings — Khối 5 Bảng Xếp Hạng Độc Lập chuẩn Truyentrung.com
@@ -37,38 +54,27 @@ const TONGHOP_SAMPLE_SIZE = 30
  */
 export default function TruyenTrungRankings() {
   const [activeCategory, setActiveCategory] = useState('tonghop')
-  const [currentList, setCurrentList] = useState([])
+  const [currentList, setCurrentList] = useState(() => {
+    const cached = peekCache('/novels', paramsFor('tonghop'))
+    return cached !== undefined ? rankList('tonghop', cached) : []
+  })
   const [loading, setLoading] = useState(true)
 
   const categories = [
-    { key: 'tonghop',   label: 'BXH Tổng Hợp',      icon: <Flame size={13} /> },
-    { key: 'banchay',   label: 'BXH Nhiều Chương',  icon: <Trophy size={13} /> },
-    { key: 'luotdoc',   label: 'BXH Lượt Đọc',      icon: <Eye size={13} /> },
-    { key: 'sachmoi',   label: 'BXH Sách Mới',      icon: <Sparkles size={13} /> },
-    { key: 'danhgia',   label: 'BXH Đánh Giá',      icon: <Star size={13} /> },
+    { key: 'tonghop',   label: 'BXH Tổng Hợp',      icon: <Flame size={13} aria-hidden="true" /> },
+    { key: 'banchay',   label: 'BXH Nhiều Chương',  icon: <Trophy size={13} aria-hidden="true" /> },
+    { key: 'luotdoc',   label: 'BXH Lượt Đọc',      icon: <Eye size={13} aria-hidden="true" /> },
+    { key: 'sachmoi',   label: 'BXH Sách Mới',      icon: <Sparkles size={13} aria-hidden="true" /> },
+    { key: 'danhgia',   label: 'BXH Đánh Giá',      icon: <Star size={13} aria-hidden="true" /> },
   ]
 
   useEffect(() => {
     let alive = true
     setLoading(true)
     const controller = new AbortController()
-
-    const request = activeCategory === 'tonghop'
-      ? api.get('/novels', { params: { sort: 'views', order: 'desc', limit: TONGHOP_SAMPLE_SIZE }, signal: controller.signal })
-      : api.get('/novels', { params: { sort: SORT_BY_CATEGORY[activeCategory], order: 'desc', limit: 10 }, signal: controller.signal })
-
-    request.then(res => {
-      if (!alive) return
-      let list = extractNovels(res.data)
-      if (activeCategory === 'tonghop') {
-        list = [...list].sort((a, b) => {
-          const sA = (a.views || 0) + (a.rating || 0) * 150 + (a.chapter_count || 0) * 2
-          const sB = (b.views || 0) + (b.rating || 0) * 150 + (b.chapter_count || 0) * 2
-          return sB - sA
-        }).slice(0, 10)
-      }
-      setCurrentList(list)
-    }).catch(() => { /* im lặng — giữ danh sách cũ (nếu có) khi lỗi */ })
+    cachedGet('/novels', { params: paramsFor(activeCategory), signal: controller.signal })
+      .then(data => { if (alive) setCurrentList(rankList(activeCategory, data)) })
+      .catch(() => { /* im lặng — giữ danh sách cũ (nếu có) khi lỗi */ })
       .finally(() => { if (alive) setLoading(false) })
 
     return () => { alive = false; controller.abort() }
@@ -100,6 +106,8 @@ export default function TruyenTrungRankings() {
         {categories.map(cat => (
           <button
             key={cat.key}
+            type="button"
+            aria-pressed={activeCategory === cat.key}
             onClick={() => setActiveCategory(cat.key)}
             className={`qidian-rank-tab ${activeCategory === cat.key ? 'active' : ''}`}
             style={{ scrollSnapAlign: 'start' }}
@@ -112,7 +120,8 @@ export default function TruyenTrungRankings() {
       {/* 10 Vị trí Top chuẩn Truyentrung */}
       <div className="qidian-rank-list">
         {currentList.map((novel, idx) => {
-          const formattedTitle = fmtNovelTitle(novel.title, novel.slug)
+          const formattedTitle = novelDisplayTitle(novel)
+          const author = cleanAuthor(novel.author)
           const chapCount = novel.chapter_count || novel.total_chapters || 0
 
           let rankBadgeClass = 'rank-num'
@@ -131,9 +140,11 @@ export default function TruyenTrungRankings() {
                 <span className="qidian-rank-title" title={formattedTitle}>
                   {formattedTitle}
                 </span>
-                <span className="qidian-rank-author">
-                  {novel.author || 'Tác giả'}
-                </span>
+                {author && (
+                  <span className="qidian-rank-author">
+                    {author}
+                  </span>
+                )}
               </div>
               <span className="qidian-rank-metric">
                 {metricText}

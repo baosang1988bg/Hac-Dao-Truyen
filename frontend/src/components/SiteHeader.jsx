@@ -22,10 +22,11 @@ export default function SiteHeader() {
           }}>
             <BookOpen size={17} color="white" />
           </span>
-          <span>Hắc Đạo<span style={{ color: 'var(--accent)' }}>Truyện</span></span>
+          {/* Khoảng trắng tách "Hắc Đạo" và "Truyện" (trước đây dính thành "Hắc ĐạoTruyện"). */}
+          <span>Hắc Đạo{' '}<span style={{ color: 'var(--accent)' }}>Truyện</span></span>
         </Link>
 
-        <nav className="site-header__nav">
+        <nav className="site-header__nav" aria-label="Điều hướng trang">
           <NavLink to="/" end className={navCls}>
             <Home size={16} /> Trang chủ
           </NavLink>
@@ -46,8 +47,15 @@ export default function SiteHeader() {
               <Shield size={15} /> Quản trị
             </Link>
           ) : (
-            <Link to="/login" className="site-header__navlink" style={{ opacity: 0.7, fontSize: '0.82rem' }}>
-              <LogIn size={14} /> Admin
+            // Khách không cần lối vào quản trị nổi bật: chỉ còn icon nhỏ, mờ —
+            // vẫn truy cập được bằng chuột/bàn phím/trình đọc màn hình.
+            <Link
+              to="/login"
+              className="site-header__navlink site-header__admin-login"
+              title="Đăng nhập quản trị"
+              aria-label="Đăng nhập quản trị"
+            >
+              <LogIn size={14} aria-hidden="true" />
             </Link>
           )}
         </div>

@@ -2,7 +2,8 @@ import PropTypes from 'prop-types'
 import { novelType } from '../../utils/propTypes'
 
 import { Link } from 'react-router-dom'
-import { fmtNumber, fmtNovelTitle } from '../../utils/format'
+import { fmtNumber, novelDisplayTitle, cleanAuthor } from '../../utils/format'
+import { primaryGenre } from '../../utils/genreLabels'
 import { isNovelCompleted } from '../../utils/novelStatus'
 
 /**
@@ -15,7 +16,8 @@ import { isNovelCompleted } from '../../utils/novelStatus'
  *   limit         – giới hạn số dòng hiển thị (mặc định: hiện hết)
  *   colWidths     – { genre, title, author, status, chapters } độ rộng cột (%), tuỳ chọn
  *   ongoingLabel  – nhãn trạng thái "chưa hoàn thành" (mặc định 'Đang dịch')
- *   genreFallback / authorFallback – text hiện khi thiếu dữ liệu
+ *   genreFallback / authorFallback – text hiện khi thiếu dữ liệu (mặc định "—";
+ *                   KHÔNG điền giá trị giả như "Tiên Hiệp"/"Đang cập nhật")
  */
 export default function NovelTable({ novels, limit, colWidths, ongoingLabel = 'Đang dịch', genreFallback = '—', authorFallback = '—' }) {
   const rows = limit ? novels.slice(0, limit) : novels
@@ -35,16 +37,16 @@ export default function NovelTable({ novels, limit, colWidths, ongoingLabel = '�
         <tbody>
           {rows.map(n => {
             const isCompleted = isNovelCompleted(n)
-            const title = fmtNovelTitle(n.title, n.slug)
+            const title = novelDisplayTitle(n)
             return (
               <tr key={n.slug}>
-                <td>{n.genre ? n.genre.split(',')[0].trim() : genreFallback}</td>
+                <td>{primaryGenre(n.genre) || genreFallback}</td>
                 <td>
                   <Link to={`/novel/${n.slug}`} className="hp-novel-table__title-link" title={title}>
                     {title}
                   </Link>
                 </td>
-                <td>{n.author || authorFallback}</td>
+                <td>{cleanAuthor(n.author) || authorFallback}</td>
                 <td>
                   <span className={`hp-novel-table__status${isCompleted ? ' is-done' : ''}`}>
                     {isCompleted ? 'Hoàn thành' : ongoingLabel}

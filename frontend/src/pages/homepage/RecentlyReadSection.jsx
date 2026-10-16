@@ -2,35 +2,89 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { History, Clock, BookOpen, BookMarked } from 'lucide-react'
 import api from '../../api'
-import { fetchNovelsBySlugs } from '../../utils/novelsApi'
+import { fetchNovelsBySlugsBatch } from '../../utils/novelsApi'
 import NovelCover from '../../components/NovelCover'
 import SectionHeader from '../../components/ui/SectionHeader'
 import { getAllHistory, fmtChapterLabel } from '../../utils/readingHistory'
-import { fmtTimeAgo, fmtNovelTitle } from '../../utils/format'
+import { fmtTimeAgo, novelDisplayTitle } from '../../utils/format'
+
+const MAX_ITEMS = 8
+
+// Khoá so trùng: slug đã decode, thường, bỏ khoảng trắng/gạch thừa ở 2 đầu —
+// lịch sử cũ có thể lưu cùng 1 truyện dưới slug encode khác nhau.
+function slugKey(slug) {
+  let s = String(slug || '')
+  try { s = decodeURIComponent(s) } catch { /* giữ nguyên nếu decode lỗi */ }
+  return s.trim().toLowerCase().replace(/^-+|-+$/g, '')
+}
+
+/** Lịch sử (đã sort mới nhất trước) → tối đa MAX_ITEMS mục, bỏ trùng slug. */
+function pickHistory(history) {
+  const seen = new Set()
+  const out = []
+  for (const h of history || []) {
+    const key = slugKey(h?.slug)
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    out.push(h)
+    if (out.length >= MAX_ITEMS) break
+  }
+  return out
+}
+
+// Thông tin hiển thị có sẵn trong mục lịch sử (readingHistory mới lưu title/cover_url).
+function novelFromHistory(h) {
+  if (!h?.title) return null
+  return { slug: h.slug, title: h.title, cover_url: h.cover_url || '' }
+}
+
+/** Bỏ mục trùng sau khi đã có dữ liệu truyện (slug chuẩn hoá từ API / cùng tên). */
+function dedupeResolved(items) {
+  const seenSlug = new Set()
+  const seenTitle = new Set()
+  return items.filter(item => {
+    const slug = slugKey(item.novel?.slug || item.slug)
+    const title = novelDisplayTitle(item.novel).toLocaleLowerCase('vi')
+    if (seenSlug.has(slug) || (title && seenTitle.has(title))) return false
+    seenSlug.add(slug)
+    if (title) seenTitle.add(title)
+    return true
+  })
+}
 
 /**
  * RecentlyReadSection – Truyện vừa đọc gần đây từ localStorage (Web + EPUB).
- * Chỉ gọi API cho đúng vài slug đã đọc (fetchNovelsBySlugs, song song) — không
- * cần cả catalog để "tìm" novel như trước.
+ * - Tối đa 8 mục, bỏ trùng.
+ * - Hiện NGAY từ title/cover_url lưu trong lịch sử; chỉ hỏi API cho mục thiếu
+ *   thông tin, gom 1 request GET /novels?slugs=... (fetchNovelsBySlugsBatch tự
+ *   fallback gọi lẻ /novels/:slug nếu backend cũ chưa hỗ trợ).
  */
 export default function RecentlyReadSection() {
-  const [items, setItems] = useState(null) // null = đang tải, [] = tải xong nhưng rỗng
+  // null = đang tải (chưa có mục nào hiển thị được), [] = rỗng
+  const [items, setItems] = useState(() => {
+    const picked = pickHistory(getAllHistory())
+    if (!picked.length) return []
+    const ready = picked.filter(novelFromHistory).map(h => ({ ...h, novel: novelFromHistory(h) }))
+    return ready.length ? dedupeResolved(ready) : null
+  })
 
   useEffect(() => {
     let alive = true
-    const history = getAllHistory()
-    if (!history || history.length === 0) {
-      setItems([])
-      return
-    }
-    fetchNovelsBySlugs(api, history.map(h => h.slug)).then(novelMap => {
+    const controller = new AbortController()
+    const picked = pickHistory(getAllHistory())
+    const missing = picked.filter(h => !novelFromHistory(h)).map(h => h.slug)
+    if (!missing.length) return undefined
+    fetchNovelsBySlugsBatch(api, missing, { signal: controller.signal }).then(novelMap => {
       if (!alive) return
-      setItems(history.map(h => {
-        const novel = novelMap.get(h.slug)
+      const merged = picked.map(h => {
+        const novel = novelMap.get(h.slug) || novelFromHistory(h)
         return novel ? { ...h, novel } : null
-      }).filter(Boolean))
+      }).filter(Boolean)
+      setItems(dedupeResolved(merged))
+    }).catch(() => {
+      if (alive) setItems(prev => prev || [])
     })
-    return () => { alive = false }
+    return () => { alive = false; controller.abort() }
   }, [])
 
   if (items === null) {
@@ -58,7 +112,7 @@ export default function RecentlyReadSection() {
             ? `/novel/${item.slug}/epub-reader`
             : `/novel/${item.slug}/read/${item.chapter}`
 
-          const formattedTitle = fmtNovelTitle(item.novel.title, item.slug)
+          const formattedTitle = novelDisplayTitle({ ...item.novel, slug: item.novel.slug || item.slug })
 
           return (
             <div
