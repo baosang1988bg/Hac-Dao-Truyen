@@ -222,6 +222,51 @@ def test_update_does_not_overwrite_title_changed_after_snapshot():
     assert con.execute('SELECT title FROM novels').fetchone()[0] == 'Tên Admin Sửa Tay'
 
 
+def test_decide_keeps_none_for_null_columns():
+    """Cột NULL trên D1 → giá trị cũ giữ None (không ép '') để WHERE dùng IS NULL."""
+    d = fx.decide('lanh-chua-cau-sinh', row(title=None, author=None, genre=None, synopsis=None), META, set(),
+                  fix_synopsis=True)
+    assert d['changes']['author'] == (None, 'Kỳ Khai')
+    assert d['changes']['genre'] == (None, 'Huyền Huyễn, Toàn Dân')
+    assert d['changes']['title'] == (None, 'Lãnh Chúa Cầu Sinh')
+    assert d['changes']['synopsis'] == (None, 'Giới thiệu')
+    upd = fx.build_update('lanh-chua-cau-sinh', d['changes'])
+    assert 'author IS NULL' in upd and "author IS ''" not in upd
+
+
+def test_null_columns_update_and_rollback_back_to_null_on_sqlite(tmp_path):
+    """sqlite3 thật: dòng có cột NULL được cập nhật (trước đây `IS ''` không khớp
+    → 0 dòng) và rollback trả về đúng NULL (không phải '')."""
+    con = sqlite3.connect(':memory:')
+    con.execute('CREATE TABLE novels (slug TEXT PRIMARY KEY, title TEXT, author TEXT, genre TEXT, synopsis TEXT, '
+                'source_url TEXT)')
+    con.execute('INSERT INTO novels VALUES (?,?,?,?,?,?)', ('lanh-chua-cau-sinh', None, None, None, None, None))
+    current = {'slug': 'lanh-chua-cau-sinh', 'title': None, 'author': None, 'genre': None, 'synopsis': None,
+               'source_url': None}
+    d = fx.decide('lanh-chua-cau-sinh', current, META, set(), fix_synopsis=True)
+    files = fx.write_sql_batches([d], tmp_path, batch_size=10)
+    fx.write_reports([d], tmp_path)   # report chịu được giá trị None
+    before = con.total_changes
+    con.executescript(files[0].read_text(encoding='utf-8'))
+    assert con.total_changes - before == 1
+    assert con.execute('SELECT title, author, genre, synopsis FROM novels').fetchone() == \
+        ('Lãnh Chúa Cầu Sinh', 'Kỳ Khai', 'Huyền Huyễn, Toàn Dân', 'Giới thiệu')
+    con.executescript((tmp_path / 'rollback_0001.sql').read_text(encoding='utf-8'))
+    assert con.execute('SELECT title, author, genre, synopsis FROM novels').fetchone() == (None, None, None, None)
+    assert con.execute('SELECT COUNT(*) FROM novels WHERE author IS NULL AND genre IS NULL').fetchone()[0] == 1
+
+
+def test_parse_changes_reads_wrangler_json_meta():
+    out = ('wrangler 3.x\n[{"results": [], "success": true, "meta": {"changes": 3, "rows_written": 3}},'
+           ' {"results": [], "success": true, "meta": {"changes": 2}}]')
+    assert fx.parse_changes(out) == 5
+    assert fx.parse_changes('[{"results": [], "meta": {"rows_written": 4}}]') == 4
+    assert fx.parse_changes('{"meta": {"changes": 0}}') == 0
+    assert fx.parse_changes('') is None
+    assert fx.parse_changes('{}') is None
+    assert fx.parse_changes('không phải json') is None
+
+
 def _decision(slug, title):
     return {'slug': slug, 'changes': {'title': (slug, title)}, 'reasons': {'title': 'r'}, 'skip': None, 'review': []}
 
@@ -324,6 +369,28 @@ def test_apply_reruns_file_whose_content_changed(tmp_path, monkeypatch):
     f = sql / 'update_0001.sql'
     f.write_text(f.read_text(encoding='utf-8') + '\n', encoding='utf-8')
     assert fx.apply_batches(sql, state, 100, budget=FakeBudget(100), runner=ok)['applied'] == ['update_0001.sql']
+
+
+def test_apply_records_real_changes_and_warns_on_zero_row_batch(tmp_path, monkeypatch):
+    """--apply ghi số dòng THỰC (meta.changes) vào state; lô 0 dòng / không đọc
+    được output → cảnh báo rõ, không im lặng."""
+    monkeypatch.setenv('HACDAO_ALLOW_CLOUD_WRITES', 'true')
+    sql, state = _sql_dir(tmp_path), tmp_path / 'st.json'
+    outputs = {
+        'update_0001.sql': '[{"results": [], "success": true, "meta": {"changes": 2}}]',
+        'update_0002.sql': '[{"results": [], "success": true, "meta": {"changes": 0}}]',
+        'update_0003.sql': 'not json',
+    }
+    logs = []
+    r = fx.apply_batches(sql, state, 100, budget=FakeBudget(100), runner=lambda p: (True, outputs[p.name]),
+                         log=logs.append)
+    assert r['applied'] == ['update_0001.sql', 'update_0002.sql', 'update_0003.sql']
+    done = json.loads(state.read_text(encoding='utf-8'))['update']
+    assert done['update_0001.sql']['changes'] == 2 and done['update_0001.sql']['warning'] is None
+    assert done['update_0002.sql']['changes'] == 0 and '0/2' in done['update_0002.sql']['warning']
+    assert done['update_0003.sql']['changes'] is None
+    assert len(r['warnings']) == 2 and any('0/2' in w for w in r['warnings'])
+    assert any('0/2' in line for line in logs)
 
 
 def test_apply_uses_repo_budget_module_from_env(tmp_path, monkeypatch):

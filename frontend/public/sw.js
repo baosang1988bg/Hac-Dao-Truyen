@@ -21,7 +21,10 @@
 // Tăng version khi đổi logic SW/app shell → activate xoá cache cũ, client nhận bản mới.
 const STATIC_CACHE = 'hacdao-static-v2'
 const CHAPTER_CACHE = 'hacdao-chapters-v1'
-const API_CACHE = 'hacdao-api-v2'
+// GIỮ tên v1: dữ liệu API (mục lục/chi tiết truyện) là thứ người dùng cần để
+// đọc offline — đổi tên sẽ khiến activate xoá sạch. Đổi logic route API không
+// cần bump tên cache này (xem migrateLegacyApiCaches bên dưới).
+const API_CACHE = 'hacdao-api-v1'
 const EPUB_CACHE = 'hacdao-epub-v1'
 const KNOWN_CACHES = [STATIC_CACHE, CHAPTER_CACHE, API_CACHE, EPUB_CACHE]
 const EPUB_QUOTA_BYTES = 200 * 1024 * 1024 // 200MB tổng cho toàn bộ EPUB đã tải offline
@@ -46,10 +49,45 @@ self.addEventListener('install', (event) => {
   )
 })
 
+/** Route API được cache network-first (danh sách, chi tiết, mục lục truyện). */
+function isCacheableNovelApi(pathname) {
+  if (pathname === '/api/novels') return true
+  const m = pathname.match(/^\/api\/novels\/([^/]+)(\/chapters)?$/)
+  return Boolean(m && !RESERVED_NOVEL_SEGMENTS.has(m[1]))
+}
+
+/**
+ * Bản SW trước từng dùng 'hacdao-api-v2' → chép entry còn hợp lệ sang API_CACHE
+ * (không ghi đè entry đã có) TRƯỚC khi activate xoá cache lạ. Lỗi từng entry
+ * bỏ qua — best-effort, không được chặn activate. Không đụng CHAPTER_CACHE.
+ */
+async function migrateLegacyApiCaches(keys) {
+  const legacy = keys.filter((k) => /^hacdao-api-v\d+$/.test(k) && k !== API_CACHE)
+  if (!legacy.length) return
+  const target = await caches.open(API_CACHE)
+  for (const name of legacy) {
+    try {
+      const old = await caches.open(name)
+      for (const req of await old.keys()) {
+        try {
+          if (!isCacheableNovelApi(new URL(req.url).pathname)) continue
+          if (await target.match(req)) continue
+          const res = await old.match(req)
+          if (res) await target.put(req, res)
+        } catch { /* entry hỏng / quota — bỏ qua */ }
+      }
+    } catch { /* bỏ qua */ }
+  }
+}
+
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
+      .then(async (keys) => {
+        await migrateLegacyApiCaches(keys).catch(() => {})
+        return keys
+      })
       .then((keys) =>
         Promise.all(
           keys
@@ -240,11 +278,7 @@ self.addEventListener('fetch', (event) => {
   // Danh sách truyện / chi tiết truyện / mục lục chương: cần dữ liệu tươi.
   // Loại trừ các route tĩnh nằm cùng cấp với :slug (genres, sitemap...) — trước
   // đây regex coi `/api/novels/genres` là một slug.
-  const novelMatch = url.pathname.match(/^\/api\/novels\/([^/]+)(\/chapters)?$/)
-  if (
-    url.pathname === '/api/novels' ||
-    (novelMatch && !RESERVED_NOVEL_SEGMENTS.has(novelMatch[1]))
-  ) {
+  if (isCacheableNovelApi(url.pathname)) {
     event.respondWith(networkFirst(request, API_CACHE))
     return
   }

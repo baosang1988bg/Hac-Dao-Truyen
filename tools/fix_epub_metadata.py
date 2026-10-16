@@ -254,7 +254,11 @@ def protected_slugs(novels_dir: Path, extra=()) -> set:
 def decide(slug: str, current: dict | None, meta: dict, protected: set,
            fix_synopsis: bool = False, unknown_genre: str = UNKNOWN_GENRE) -> dict:
     """Trả {'changes': {field: (cũ, mới)}, 'reasons': {field: lý do}, 'skip': lý do|None,
-    'review': [ghi chú cần duyệt tay]}."""
+    'review': [ghi chú cần duyệt tay]}.
+
+    Giá trị CŨ trong `changes` giữ nguyên kiểu D1 (None khi cột NULL) để
+    build_update sinh `col IS NULL` và rollback đặt lại đúng NULL — ép về ''
+    sẽ làm điều kiện WHERE `col IS ''` không khớp dòng NULL (UPDATE ghi 0 dòng)."""
     result = {'slug': slug, 'changes': {}, 'reasons': {}, 'skip': None, 'review': []}
     if slug in protected:
         result['skip'] = 'slug được bảo vệ (novels/ trong repo)'
@@ -266,7 +270,8 @@ def decide(slug: str, current: dict | None, meta: dict, protected: set,
         result['skip'] = 'có source_url (truyện dịch) — không đụng'
         return result
 
-    cur_title = current.get('title') or ''
+    raw_title = current.get('title')
+    cur_title = raw_title or ''
     new_title = clean_book_title(meta.get('title'))
     if new_title and new_title != cur_title:
         slug_like = not cur_title.strip() or cur_title.isascii()
@@ -276,30 +281,33 @@ def decide(slug: str, current: dict | None, meta: dict, protected: set,
         elif not (_has_vietnamese_letters(new_title) or not new_title.isascii() or not cur_title.strip()):
             pass  # title mới cũng không dấu → không cải thiện gì
         elif matches:
-            result['changes']['title'] = (cur_title, new_title)
+            result['changes']['title'] = (raw_title, new_title)
             result['reasons']['title'] = 'title hiện tại trống/không dấu; OPF khớp slug'
         else:
             result['review'].append(f'title OPF "{new_title}" không khớp title/slug hiện tại "{cur_title}"')
 
-    cur_author = current.get('author') or ''
+    raw_author = current.get('author')
+    cur_author = raw_author or ''
     new_author = clean_author(meta.get('author'))
     if new_author and is_placeholder_author(cur_author) and new_author != cur_author:
-        result['changes']['author'] = (cur_author, new_author)
+        result['changes']['author'] = (raw_author, new_author)
         result['reasons']['author'] = 'author trống/Unknown'
 
-    cur_genre = current.get('genre') or ''
+    raw_genre = current.get('genre')
+    cur_genre = raw_genre or ''
     if is_bad_genre(cur_genre) or not cur_genre.strip():
         new_genre = ', '.join(meta.get('subjects') or []) or unknown_genre
         if new_genre != cur_genre:
-            result['changes']['genre'] = (cur_genre, new_genre)
+            result['changes']['genre'] = (raw_genre, new_genre)
             result['reasons']['genre'] = ('genre gán sai/trống → thể loại EPUB' if meta.get('subjects')
                                           else f'genre gán sai/trống, EPUB không có thể loại → {unknown_genre!r}')
 
     if fix_synopsis and 'synopsis' in current:
-        cur_syn = current.get('synopsis') or ''
+        raw_syn = current.get('synopsis')
+        cur_syn = raw_syn or ''
         new_syn = clean_synopsis(cur_syn) if cur_syn.strip() else clean_synopsis(meta.get('description'))
         if new_syn and new_syn != cur_syn:
-            result['changes']['synopsis'] = (cur_syn, new_syn)
+            result['changes']['synopsis'] = (raw_syn, new_syn)
             result['reasons']['synopsis'] = 'lọc dòng ghi công' if cur_syn.strip() else 'synopsis trống → giới thiệu trong EPUB'
     return result
 
@@ -319,7 +327,8 @@ def sql_str(value) -> str:
 
 def build_update(slug: str, changes: dict, reverse: bool = False) -> str:
     """UPDATE có điều kiện: chỉ ghi khi các cột cần đổi vẫn còn đúng giá trị cũ
-    (chạy lại lần 2 = không làm gì; ai đó sửa tay trong lúc chờ = không đè)."""
+    (chạy lại lần 2 = không làm gì; ai đó sửa tay trong lúc chờ = không đè).
+    Giá trị None → `col IS NULL` (guard) / `col = NULL` (rollback về NULL)."""
     fields = [f for f in UPDATE_FIELDS if f in changes]
     if not fields:
         return ''
@@ -369,6 +378,8 @@ def write_reports(decisions: list, out_dir: Path) -> tuple[Path, Path]:
         for d in decisions:
             for field, (old, new) in d['changes'].items():
                 def short(s, field=field):
+                    if s is None:
+                        return 'NULL'
                     if field != 'synopsis':
                         return s
                     s = re.sub(r'\s*\n+\s*', ' ⏎ ', s)
@@ -452,9 +463,38 @@ def count_statements(path: Path) -> int:
 
 
 def run_wrangler_file(path: Path) -> tuple[bool, str]:
+    """Thành công → trả NGUYÊN stdout (JSON `--json`, cần để đọc meta.changes);
+    lỗi → 2000 ký tự cuối stdout+stderr để báo lỗi."""
     cmd = [_npx(), 'wrangler', 'd1', 'execute', D1_DB, '--remote', '--yes', '--json', '--file', str(path)]
     res = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
-    return res.returncode == 0, (res.stdout + res.stderr)[-2000:]
+    if res.returncode == 0:
+        return True, res.stdout
+    return False, (res.stdout + res.stderr)[-2000:]
+
+
+def parse_changes(output: str) -> int | None:
+    """Tổng số dòng THỰC ghi từ output `wrangler d1 execute --json`:
+    [{results, success, meta: {changes, rows_written, …}}, …]. Ưu tiên
+    `meta.changes` (số dòng UPDATE khớp WHERE), thiếu thì `meta.rows_written`.
+    Không đọc được → None (KHÔNG đoán là thành công)."""
+    text = (output or '').strip()
+    starts = [i for i in (text.find('['), text.find('{')) if i >= 0]
+    if not starts:
+        return None
+    try:
+        data, _ = json.JSONDecoder().raw_decode(text[min(starts):])
+    except ValueError:
+        return None
+    total, found = 0, False
+    for block in (data if isinstance(data, list) else [data]):
+        meta = block.get('meta') if isinstance(block, dict) else None
+        if not isinstance(meta, dict):
+            continue
+        val = meta.get('changes', meta.get('rows_written'))
+        if isinstance(val, (int, float)) and not isinstance(val, bool):
+            total += int(val)
+            found = True
+    return total if found else None
 
 
 def apply_batches(sql_dir: Path, state_path: Path, max_rows: int, budget=None, rollback=False,
@@ -472,7 +512,7 @@ def apply_batches(sql_dir: Path, state_path: Path, max_rows: int, budget=None, r
     files = sorted(sql_dir.glob(f'{kind}_*.sql'))
     state = load_state(state_path)
     done = state.setdefault(kind, {})
-    run_rows, applied, stop = 0, [], None
+    run_rows, applied, stop, warnings = 0, [], None, []
     for path in files:
         digest = _sha(path)
         if done.get(path.name, {}).get('sha256') == digest:
@@ -492,13 +532,29 @@ def apply_batches(sql_dir: Path, state_path: Path, max_rows: int, budget=None, r
             stop = f'wrangler lỗi ở {path.name}: {out.strip()[-300:]}'
             break
         run_rows += rows
-        done[path.name] = {'sha256': digest, 'rows_estimate': rows,
+        statements = count_statements(path)
+        changes = parse_changes(out)
+        # Ghi rõ số dòng THỰC ghi vào state: lô 0 dòng (WHERE không khớp — dữ
+        # liệu đổi sau snapshot, hoặc chạy lại) không được coi là "xong" im lặng.
+        warn = None
+        if changes is None:
+            warn = f'{path.name}: không đọc được số dòng ghi từ output wrangler — kiểm tra tay'
+        elif changes == 0:
+            warn = f'{path.name}: 0/{statements} dòng được ghi (WHERE không khớp) — kiểm tra lại snapshot'
+        elif changes < statements:
+            warn = f'{path.name}: chỉ {changes}/{statements} dòng được ghi'
+        if warn:
+            warnings.append(warn)
+            log(f'⚠️  {warn}')
+        done[path.name] = {'sha256': digest, 'rows_estimate': rows, 'statements': statements,
+                           'changes': changes, 'warning': warn,
                            'at': datetime.now(timezone.utc).isoformat(timespec='seconds')}
         state['sql_dir'] = str(sql_dir)
         save_state(state_path, state)
         applied.append(path.name)
     remaining = [p.name for p in files if done.get(p.name, {}).get('sha256') != _sha(p)]
     return {'applied': applied, 'rows': run_rows, 'stopped': stop, 'remaining': remaining,
+            'warnings': warnings,
             'budget': budget.summary() if hasattr(budget, 'summary') else ''}
 
 
@@ -533,7 +589,7 @@ def _print_sample(decisions: list, n: int):
     if rows:
         print(f'\n📝 Mẫu {len(rows)} thay đổi đầu tiên:')
         for slug, f, old, new in rows:
-            cut = (lambda s: (s[:60] + '…') if len(s) > 60 else s)
+            cut = (lambda s: None if s is None else ((s[:60] + '…') if len(s) > 60 else s))
             print(f'  {slug:<45} {f:<8} {cut(old)!r} → {cut(new)!r}')
 
 
@@ -550,6 +606,8 @@ def main(argv=None) -> int:
             return 2
         print(f"✅ Đã chạy {len(res['applied'])} file ({res['rows']:,} dòng ghi ước tính): {', '.join(res['applied']) or '—'}")
         print(f"📦 Còn lại {len(res['remaining'])} file. 💰 {res['budget']}")
+        for warn in res['warnings']:
+            print(f'⚠️  {warn}')
         if res['stopped']:
             print(f"⏸️  Dừng: {res['stopped']}")
         return 0 if not res['stopped'] or not res['remaining'] or res['applied'] else 1

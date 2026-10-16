@@ -37,7 +37,7 @@ export default {
       return robotsTxt(url, env);
     }
     if (url.pathname === '/sitemap.xml' && (request.method === 'GET' || request.method === 'HEAD')) {
-      return cachedJsonResponse(request, ctx, 86400, () => sitemapXml(url, env));
+      return sitemapResponse(request, url, env, ctx);
     }
 
     // ── Static assets + SPA fallback ────────────────────────────────────
@@ -52,8 +52,17 @@ export default {
           headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
         });
       }
-      const indexRes = await env.ASSETS.fetch(new Request(new URL('/index.html', request.url).toString(), { method: 'GET' }));
-      const seoRes = await injectNovelSeo(indexRes, url, env);
+      let indexRes = await env.ASSETS.fetch(new Request(new URL('/index.html', request.url).toString(), { method: 'GET' }));
+      // html_handling mặc định của Cloudflare ("auto-trailing-slash") có thể
+      // trả 307 /index.html → / thay vì nội dung — khi đó (hoặc mọi lỗi khác)
+      // xin lại thẳng "/" để SPA fallback luôn ra HTML thật, không ra redirect.
+      if ((indexRes.status >= 300 && indexRes.status < 400) || !indexRes.ok) {
+        try { await indexRes.body?.cancel(); } catch { /* bỏ qua */ }
+        indexRes = await env.ASSETS.fetch(new Request(new URL('/', request.url).toString(), { method: 'GET' }));
+      }
+      // Chỉ rewrite SEO khi chắc chắn đang cầm trang HTML 200.
+      const isHtml200 = indexRes.status === 200 && (indexRes.headers.get('Content-Type') || '').includes('text/html');
+      const seoRes = isHtml200 ? await injectNovelSeo(indexRes, url, env) : indexRes;
       return withStaticCacheHeaders(seoRes, url.pathname, true);
     }
     return withStaticCacheHeaders(assetRes, url.pathname, false);
@@ -127,6 +136,56 @@ function toLastmod(value) {
 }
 
 const SITEMAP_MAX_NOVELS = 5000;
+const SITEMAP_TTL = 86400;
+
+// Rate limit lớp 'public' giống hệt handleApi (PUBLIC_RATE_LIMITER, fallback
+// Map in-memory 120/phút/IP; binding lỗi → vẫn dùng Map, không chặn cứng).
+async function allowPublicRequest(request, env) {
+  const key = `public:${clientIp(request)}`;
+  try {
+    const binding = env.PUBLIC_RATE_LIMITER;
+    return binding ? (await binding.limit({ key })).success : checkRateLimit(key, 60_000, 120);
+  } catch {
+    return checkRateLimit(key, 60_000, 120);
+  }
+}
+
+// /sitemap.xml đọc tới 5000 dòng D1 → KHÔNG đi qua cachedJsonResponse (helper
+// đó bypass cache khi HEAD/Authorization, ai cũng ép được đọc D1 mỗi lượt).
+// Ở đây: cache key cố định (URL không query, GET), bỏ qua Authorization (nội
+// dung sitemap như nhau với mọi người), HEAD trả header từ cache không body,
+// và chỉ khi MISS mới phải qua rate limit + truy vấn D1.
+async function sitemapResponse(request, url, env, ctx) {
+  const isHead = request.method === 'HEAD';
+  const finish = (res, status) => {
+    const out = new Response(isHead ? null : res.body, res);
+    out.headers.set('X-Worker-Cache', status);
+    return out;
+  };
+  const cache = globalThis.caches?.default;
+  const cacheKey = new Request(`${url.origin}/sitemap.xml`, { method: 'GET' });
+  if (cache) {
+    try {
+      const cached = await cache.match(cacheKey);
+      if (cached) return finish(cached, 'HIT');
+    } catch { /* cache lỗi → sinh mới */ }
+  }
+  if (!(await allowPublicRequest(request, env))) {
+    return new Response('Too many requests', {
+      status: 429,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '60', 'Cache-Control': 'no-store' },
+    });
+  }
+  const fresh = await sitemapXml(url, env);
+  fresh.headers.set('Cache-Control', `public, max-age=${SITEMAP_TTL}, s-maxage=${SITEMAP_TTL}`);
+  if (cache && fresh.ok) {
+    const put = cache.put(cacheKey, fresh.clone()).catch(err => {
+      console.warn('Sitemap cache put failed:', err && err.message ? err.message : err);
+    });
+    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(put); else await put;
+  }
+  return finish(fresh, cache ? 'MISS' : 'UNAVAILABLE');
+}
 
 async function sitemapXml(url, env) {
   const origin = siteOrigin(url, env);
@@ -718,7 +777,7 @@ async function getNovels(env, params = new URLSearchParams()) {
     // SQLite LOWER() chỉ hạ chữ ASCII ("Đ" giữ nguyên) trong khi q đã qua JS
     // toLowerCase() → tên có chữ hoa có dấu không bao giờ khớp. Slug là tên
     // đã bỏ dấu, nên so thêm q dạng slug: có dấu/không dấu đều tìm được.
-    const qSlug = q.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd')
+    const qSlug = q.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd')
       .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     where.push("(LOWER(n.title) LIKE ? OR LOWER(n.slug) LIKE ? OR LOWER(n.author) LIKE ? OR LOWER(n.original_title) LIKE ? OR n.slug LIKE ?)");
     const qLike = `%${q}%`;
@@ -882,16 +941,36 @@ function splitGenres(value) {
 // thô ánh xạ về cùng nhãn (cả dạng có dấu cách). Vd "Tu Tiên" → ['Tu Tiên',
 // 'cultivation', 'tu-tien', 'tu tien']. LIKE của SQLite không phân biệt hoa
 // thường với ASCII nên 'cultivation' khớp cả 'Cultivation'.
+// Thêm cả biến thể suy ra từ chính nhãn: genreKey(label) ("Xuyen Nhanh" →
+// 'xuyen-nhanh', khớp dữ liệu slug chưa có trong GENRE_ALIASES) + dạng dấu
+// cách tương ứng, và dạng thường/Title Case ("Đô thị" ↔ "Đô Thị") vì LIKE của
+// SQLite chỉ không phân biệt hoa thường với chữ ASCII (Đ/đ vẫn khác nhau).
 function genreFilterVariants(genre) {
-  const label = normalizeGenreLabel(genre) || String(genre).trim();
-  const variants = new Set([String(genre).trim(), label]);
+  const raw = String(genre).trim();
+  const label = normalizeGenreLabel(genre) || raw;
+  const variants = new Set([raw, label]);
+  for (const key of [genreKey(label), genreKey(raw)]) {
+    variants.add(key);
+    if (key.includes('-')) variants.add(key.replace(/-/g, ' '));
+  }
+  variants.add(label.toLocaleLowerCase('vi'));
+  variants.add(toTitleCaseVi(label));
   for (const [key, value] of Object.entries(GENRE_ALIASES)) {
     // Khoá quá ngắn (vd 'ceo') dễ LIKE trúng nhầm chuỗi khác → bỏ qua.
     if (value !== label || key.length < 4) continue;
     variants.add(key);
     if (key.includes('-')) variants.add(key.replace(/-/g, ' '));
   }
-  return [...variants].filter(Boolean).slice(0, 12);
+  return [...variants].filter(Boolean).slice(0, 16);
+}
+
+function toTitleCaseVi(label) {
+  return String(label).split(' ')
+    .map(w => w ? w.charAt(0).toLocaleUpperCase('vi') + w.slice(1) : w).join(' ');
+}
+
+function isTitleCaseVi(label) {
+  return toTitleCaseVi(label) === label;
 }
 
 async function getGenres(env) {
@@ -899,13 +978,19 @@ async function getGenres(env) {
     SELECT DISTINCT genre FROM novels
     WHERE published = 1 AND genre IS NOT NULL AND genre != ''
   `).all();
-  const labels = new Set();
+  // Gộp nhãn chỉ khác hoa/thường ("Tiên hiệp" vs "Tiên Hiệp") về 1 chip;
+  // ưu tiên dạng Title Case nếu dữ liệu có, không thì giữ dạng gặp đầu tiên.
+  const byLower = new Map();
   for (const row of results || []) {
     for (const part of splitGenres(row.genre)) {
       const label = normalizeGenreLabel(part);
-      if (label) labels.add(label);
+      if (!label) continue;
+      const lower = label.toLocaleLowerCase('vi');
+      const prev = byLower.get(lower);
+      if (!prev || (!isTitleCaseVi(prev) && isTitleCaseVi(label))) byLower.set(lower, label);
     }
   }
+  const labels = new Set(byLower.values());
   // "Khác" luôn cuối; còn lại sắp theo tiếng Việt.
   const sorted = [...labels].filter(l => l !== 'Khác').sort((a, b) => a.localeCompare(b, 'vi'));
   if (labels.has('Khác')) sorted.push('Khác');
@@ -1180,10 +1265,12 @@ async function rateNovel(env, slug, request) {
 async function isAdminRequest(request, env) {
   const auth = request.headers.get('Authorization') || '';
   if (!auth.startsWith('Bearer ') || !env.BACKEND_URL) return false;
-  // Token độc giả (prefix u_, sinh bởi createUserSession) KHÔNG bao giờ là
-  // admin — không forward sang backend (tránh lộ session người dùng cho bên
-  // thứ ba và tốn 1 round-trip vô ích ở mọi request có đăng nhập).
-  if (auth.startsWith('Bearer u_')) return false;
+  // Token độc giả (sinh bởi createUserSession: 'u_' + 64 ký tự hex thường)
+  // KHÔNG bao giờ là admin — không forward sang backend (tránh lộ session
+  // người dùng cho bên thứ ba và tốn 1 round-trip vô ích). So ĐÚNG định dạng
+  // thay vì chỉ prefix 'u_': token admin secrets.token_urlsafe(32) cũng có thể
+  // tình cờ bắt đầu bằng 'u_' và vẫn phải được hỏi backend.
+  if (USER_TOKEN_RE.test(auth.slice('Bearer '.length))) return false;
   try {
     const res = await fetch(`${env.BACKEND_URL}/api/auth/verify`, {
       headers: { Authorization: auth },
@@ -1409,12 +1496,20 @@ function sortAndDeduplicateCatalog(catalog) {
 //   3. Slug không có trong chỉ mục → trả null ngay, không gọi Drive.
 //   4. chapters.json đã tải: LRU Map nhỏ trong isolate + Cache API (edge,
 //      1 giờ) theo file id, để isolate mới không phải tải lại từ Drive.
+//
+// RAM: isolate Workers chỉ có 128 MB; chapters.json 10-30 MB parse ra mảng còn
+// nặng hơn nhiều lần chuỗi gốc. LRU vì vậy giới hạn theo TỔNG BYTE (đo xấp xỉ
+// bằng độ dài chuỗi text trước khi parse) thay vì số mục, và file > 4 MB không
+// bao giờ được giữ trong RAM (chỉ Cache API edge giữ hộ).
 const DRIVE_INDEX_TTL_MS = 10 * 60 * 1000;
 const DRIVE_CHAPTERS_LRU_MAX = 3;
+const DRIVE_CHAPTERS_LRU_MAX_BYTES = 8 * 1024 * 1024;
+const DRIVE_CHAPTERS_LRU_ITEM_MAX_BYTES = 4 * 1024 * 1024;
 const DRIVE_CHAPTERS_EDGE_TTL = 3600;
 let _driveIndex = null;          // { map: Map<slug, fileId>, expiresAt }
 let _driveIndexPromise = null;
-const _driveChaptersLru = new Map(); // fileId → mảng chương (thứ tự chèn = LRU)
+const _driveChaptersLru = new Map(); // fileId → { chapters, bytes } (thứ tự chèn = LRU)
+let _driveChaptersLruBytes = 0;
 
 async function loadDriveIndex(env) {
   const now = Date.now();
@@ -1441,11 +1536,24 @@ async function loadDriveIndex(env) {
   return _driveIndexPromise;
 }
 
-function rememberDriveChapters(fileId, chapters) {
+function forgetDriveChapters(fileId) {
+  const prev = _driveChaptersLru.get(fileId);
+  if (!prev) return;
   _driveChaptersLru.delete(fileId);
-  _driveChaptersLru.set(fileId, chapters);
-  while (_driveChaptersLru.size > DRIVE_CHAPTERS_LRU_MAX) {
-    _driveChaptersLru.delete(_driveChaptersLru.keys().next().value);
+  _driveChaptersLruBytes -= prev.bytes;
+}
+
+// bytes = độ dài chuỗi JSON gốc. File quá lớn → không giữ (chỉ trả về cho
+// request hiện tại rồi để GC thu hồi); còn lại đẩy mục cũ nhất ra tới khi tổng
+// byte và số mục đều nằm trong giới hạn.
+function rememberDriveChapters(fileId, chapters, bytes) {
+  forgetDriveChapters(fileId);
+  if (!Number.isFinite(bytes) || bytes > DRIVE_CHAPTERS_LRU_ITEM_MAX_BYTES) return;
+  _driveChaptersLru.set(fileId, { chapters, bytes });
+  _driveChaptersLruBytes += bytes;
+  while (_driveChaptersLru.size > 0 && (_driveChaptersLruBytes > DRIVE_CHAPTERS_LRU_MAX_BYTES
+    || _driveChaptersLru.size > DRIVE_CHAPTERS_LRU_MAX)) {
+    forgetDriveChapters(_driveChaptersLru.keys().next().value);
   }
 }
 
@@ -1456,10 +1564,12 @@ async function fetchDriveAllChapters(env, slug, ctx) {
     const chapsFileId = index.get(slug);
     if (!chapsFileId) return null;
 
-    if (_driveChaptersLru.has(chapsFileId)) {
-      const hit = _driveChaptersLru.get(chapsFileId);
-      rememberDriveChapters(chapsFileId, hit);
-      return hit;
+    const hit = _driveChaptersLru.get(chapsFileId);
+    if (hit) {
+      // Chạm lại để thành mục mới nhất (LRU).
+      _driveChaptersLru.delete(chapsFileId);
+      _driveChaptersLru.set(chapsFileId, hit);
+      return hit.chapters;
     }
 
     const cache = globalThis.caches?.default;
@@ -1487,9 +1597,13 @@ async function fetchDriveAllChapters(env, slug, ctx) {
       }
     }
 
+    const bytes = text.length;
     const allChaps = JSON.parse(text);
+    // Bỏ tham chiếu chuỗi gốc ngay sau khi parse để GC thu hồi sớm (không giữ
+    // cùng lúc cả chuỗi 10-30 MB lẫn mảng đã parse suốt phần còn lại request).
+    text = null;
     if (!Array.isArray(allChaps)) return null;
-    rememberDriveChapters(chapsFileId, allChaps);
+    rememberDriveChapters(chapsFileId, allChaps, bytes);
     return allChaps;
   } catch (e) {
     return null;
@@ -1910,12 +2024,18 @@ async function syncNovelBatch(env, request, ctx) {
   // ghi để chương sửa lại hiện ngay; colo khác hết hạn theo TTL (≤ 1 giờ).
   const origin = new URL(request.url).origin;
   const base = `${origin}/api/novels/${slug}`;
-  const purgeUrls = [base, `${base}/chapters`];
-  for (const c of prepared) {
-    if (c.number > 0) purgeUrls.push(`${base}/chapters/${c.number}`);
-    purgeUrls.push(`${base}/chapters/${encodeURIComponent(c.filename)}`);
+  // Giới hạn số lệnh cache.delete mỗi request (mỗi lệnh là 1 subrequest; gói
+  // Free chỉ 50/request và batch còn tốn R2/D1). Ưu tiên chi tiết truyện + mục
+  // lục, rồi tới các chương số lớn nhất (mới nhất) — chương cũ còn lại tự hết
+  // hạn theo TTL edge (≤ 1 giờ).
+  const purgeUrls = new Set([base, `${base}/chapters`]);
+  const newestFirst = [...prepared].sort((a, b) => (Number(b.number) || 0) - (Number(a.number) || 0));
+  for (const c of newestFirst) {
+    if (c.number > 0) purgeUrls.add(`${base}/chapters/${c.number}`);
+    purgeUrls.add(`${base}/chapters/${encodeURIComponent(c.filename)}`);
+    if (purgeUrls.size >= PURGE_MAX_PER_REQUEST) break;
   }
-  const purge = purgeEdgeCache(purgeUrls);
+  const purge = purgeEdgeCache([...purgeUrls].slice(0, PURGE_MAX_PER_REQUEST));
   if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(purge); else await purge;
   return jsonResponse({success:true,slug,chapters_synced:chapters.length});
 }
@@ -1925,6 +2045,8 @@ async function syncNovelBatch(env, request, ctx) {
 // bookmarks, reading progress, comments. Dữ liệu ở D1 (migrations/002_users.sql).
 
 const SLUG_RE = /^[a-z0-9-]{1,100}$/;
+// Định dạng chính xác token độc giả do createUserSession sinh: 'u_' + toHex(32 byte).
+const USER_TOKEN_RE = /^u_[0-9a-f]{64}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 ngày
 
@@ -2658,10 +2780,11 @@ async function cachedJsonResponse(request, ctx, ttlSeconds, loadResponse, option
 
 // Xoá best-effort các key edge cache (Cache API chỉ purge được colo hiện tại;
 // colo khác tự hết hạn theo TTL). Không bao giờ ném lỗi ra ngoài.
+const PURGE_MAX_PER_REQUEST = 40;
 async function purgeEdgeCache(urls) {
   const cache = globalThis.caches?.default;
   if (!cache) return;
-  await Promise.all(urls.map(u => cache.delete(new Request(u, { method: 'GET' })).catch(() => false)));
+  await Promise.all(urls.slice(0, PURGE_MAX_PER_REQUEST).map(u => cache.delete(new Request(u, { method: 'GET' })).catch(() => false)));
 }
 
 function jsonResponse(data, status = 200, customHeaders = {}) {

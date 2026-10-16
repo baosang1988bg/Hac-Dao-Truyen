@@ -1,9 +1,11 @@
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import GuestLayout from './layouts/GuestLayout'
 import AdminLayout from './layouts/AdminLayout'
 import RequireAdmin from './components/admin/RequireAdmin'
 import { SpinnerIcon } from './components/shared/ui'
+import AppErrorBoundary from './components/AppErrorBoundary'
+import { lazyWithReload } from './utils/lazyWithReload'
 import { initAnalytics, trackPageView } from './utils/analytics'
 import { runWhenIdle } from './utils/idle'
 // Trang chủ là điểm vào phổ biến nhất → giữ eager để không nháy loading.
@@ -13,22 +15,23 @@ import './styles/reading.css'
 
 // Trang đọc (chi tiết truyện, Reader, Tủ truyện) → chunk riêng. NovelPage được
 // prefetch khi trình duyệt rảnh sau khi trang chủ tải xong (xem App bên dưới).
-const loadNovelPage = () => import('./pages/NovelPage')
-const NovelPage = lazy(loadNovelPage)
-const Reader = lazy(() => import('./pages/Reader'))
-const LibraryPage = lazy(() => import('./pages/LibraryPage'))
+// Mọi trang lazy đi qua lazyWithReload: deploy mới làm chunk hash cũ 404 → tự
+// tải lại trang 1 lần thay vì trắng trang.
+const NovelPage = lazyWithReload(() => import('./pages/NovelPage'))
+const Reader = lazyWithReload(() => import('./pages/Reader'))
+const LibraryPage = lazyWithReload(() => import('./pages/LibraryPage'))
 
 // Trang phụ / ít dùng (admin, epub, tài khoản, đăng nhập, logs) → tách chunk riêng, tải khi cần
-const AccountPage = lazy(() => import('./pages/AccountPage'))
-const LoginPage = lazy(() => import('./pages/LoginPage'))
-const Logs = lazy(() => import('./pages/Logs'))
-const EpubReader = lazy(() => import('./pages/EpubReader'))
-const EpubCatalogPage = lazy(() => import('./pages/EpubCatalogPage'))
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
-const AdminNovels = lazy(() => import('./pages/admin/AdminNovels'))
-const AdminNovelDetail = lazy(() => import('./pages/admin/AdminNovelDetail'))
-const AdminNovelRequests = lazy(() => import('./pages/admin/AdminNovelRequests'))
-const AdminUsage = lazy(() => import('./pages/admin/AdminUsage'))
+const AccountPage = lazyWithReload(() => import('./pages/AccountPage'))
+const LoginPage = lazyWithReload(() => import('./pages/LoginPage'))
+const Logs = lazyWithReload(() => import('./pages/Logs'))
+const EpubReader = lazyWithReload(() => import('./pages/EpubReader'))
+const EpubCatalogPage = lazyWithReload(() => import('./pages/EpubCatalogPage'))
+const AdminDashboard = lazyWithReload(() => import('./pages/admin/AdminDashboard'))
+const AdminNovels = lazyWithReload(() => import('./pages/admin/AdminNovels'))
+const AdminNovelDetail = lazyWithReload(() => import('./pages/admin/AdminNovelDetail'))
+const AdminNovelRequests = lazyWithReload(() => import('./pages/admin/AdminNovelRequests'))
+const AdminUsage = lazyWithReload(() => import('./pages/admin/AdminUsage'))
 
 /** Fallback tối giản khi chờ tải chunk của trang lazy. */
 function PageLoading() {
@@ -97,6 +100,7 @@ function AnalyticsTracker() {
 }
 
 function App() {
+  const { pathname } = useLocation()
   useEffect(() => { initAnalytics() }, [])
 
   // Prefetch chunk NovelPage khi trang đã tải xong + trình duyệt rảnh: click
@@ -104,7 +108,8 @@ function App() {
   useEffect(() => {
     let cancelIdle = () => {}
     const schedule = () => {
-      cancelIdle = runWhenIdle(() => { loadNovelPage().catch(() => { /* offline — bỏ qua */ }) }, { timeout: 4000 })
+      // preload dùng chung factory với lazy, tự nuốt lỗi (offline / chunk cũ).
+      cancelIdle = runWhenIdle(() => { NovelPage.preload() }, { timeout: 4000 })
     }
     if (document.readyState === 'complete') schedule()
     else window.addEventListener('load', schedule, { once: true })
@@ -117,6 +122,7 @@ function App() {
   return (
     <Suspense fallback={<PageLoading />}>
     <AnalyticsTracker />
+    <AppErrorBoundary resetKey={pathname}>
     <Routes>
       <Route path="/login" element={<LoginPage />} />
 
@@ -150,6 +156,7 @@ function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </AppErrorBoundary>
     </Suspense>
   )
 }

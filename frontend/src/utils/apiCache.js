@@ -16,7 +16,8 @@
  * Lưu ý: chỉ dùng cho dữ liệu công khai. Không cache request admin/đăng nhập.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import api from '../api'
+// Ghi rõ đuôi .js để test node (frontend/tests) import được module này.
+import api from '../api.js'
 
 const DEFAULT_TTL = 60_000
 const MAX_ENTRIES = 200
@@ -59,11 +60,27 @@ export function invalidateCache(prefix = '') {
   }
 }
 
+/**
+ * Phiên admin (localStorage.authToken) → interceptor của `api` gắn header
+ * Authorization, Worker có thể trả dữ liệu riêng của admin (vd truyện ẩn).
+ * Không được lưu kết quả đó vào cache dùng chung → chỉ gộp request đang bay.
+ */
+export function hasAdminSession() {
+  try {
+    return Boolean(globalThis.localStorage?.getItem('authToken'))
+  } catch {
+    return false
+  }
+}
+
 export function cachedGet(url, { params, ttl = DEFAULT_TTL, signal, force = false } = {}) {
   const key = cacheKey(url, params)
+  // Admin: TTL = 0 → không lưu store, không đọc hit cũ (có thể là dữ liệu guest).
+  const admin = hasAdminSession()
+  if (admin) ttl = 0
   if (!force) {
     const hit = store.get(key)
-    if (hit && hit.expires >= Date.now()) return Promise.resolve(hit.data)
+    if (!admin && hit && hit.expires >= Date.now()) return Promise.resolve(hit.data)
     const pending = inflight.get(key)
     if (pending) return pending
   }
@@ -71,7 +88,7 @@ export function cachedGet(url, { params, ttl = DEFAULT_TTL, signal, force = fals
   // khác có thể đang chờ cùng promise. Huỷ chỉ áp dụng cho phía người gọi.
   const p = api.get(url, { params })
     .then(res => {
-      setEntry(key, res.data, ttl)
+      if (ttl > 0) setEntry(key, res.data, ttl)
       return res.data
     })
     .finally(() => {
@@ -94,7 +111,11 @@ export function cachedGet(url, { params, ttl = DEFAULT_TTL, signal, force = fals
  */
 export function useCachedGet(url, { params, ttl = DEFAULT_TTL, enabled = true } = {}) {
   const key = url ? cacheKey(url, params) : null
+  // State gắn với `key` của nó: khi key đổi mà chưa có cache thì KHÔNG được
+  // hiện tạm `data` của key cũ (vd truyện trước) — chỉ giữ data cũ khi reload
+  // cùng key.
   const [state, setState] = useState(() => ({
+    key,
     data: url ? peekCache(url, params) : undefined,
     error: null,
     loading: Boolean(url && enabled && peekCache(url, params) === undefined),
@@ -107,18 +128,28 @@ export function useCachedGet(url, { params, ttl = DEFAULT_TTL, enabled = true } 
     if (!url || !enabled) return undefined
     const controller = new AbortController()
     const cached = peekCache(url, paramsRef.current)
-    setState(s => ({ data: cached !== undefined ? cached : s.data, error: null, loading: cached === undefined }))
+    setState(s => ({
+      key,
+      data: cached !== undefined ? cached : (s.key === key ? s.data : undefined),
+      error: null,
+      loading: cached === undefined,
+    }))
     if (cached !== undefined && nonce === 0) return () => controller.abort()
     cachedGet(url, { params: paramsRef.current, ttl, signal: controller.signal, force: nonce > 0 })
-      .then(data => setState({ data, error: null, loading: false }))
+      .then(data => setState({ key, data, error: null, loading: false }))
       .catch(error => {
         if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') return
-        setState(s => ({ data: s.data, error, loading: false }))
+        setState(s => ({ key, data: s.key === key ? s.data : undefined, error, loading: false }))
       })
     return () => controller.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, ttl, enabled, nonce])
 
   const reload = useCallback(() => setNonce(n => n + 1), [])
-  return { ...state, reload }
+  if (state.key !== key) {
+    // Render đầu tiên sau khi key đổi (effect chưa chạy): suy ra từ cache của key mới.
+    const peek = url ? peekCache(url, params) : undefined
+    return { data: peek, error: null, loading: Boolean(url && enabled && peek === undefined), reload }
+  }
+  return { data: state.data, error: state.error, loading: state.loading, reload }
 }

@@ -314,7 +314,7 @@ test('isAdminRequest không forward token độc giả u_; proxy backend chỉ m
   const env = { BACKEND_URL: 'https://backend.invalid',
     DB: { prepare: () => ({ bind: () => ({ first: async () => null }) }) } };
   const res = await worker.fetch(new Request('https://t.invalid/api/debug/chapter/demo/1', {
-    headers: { Authorization: 'Bearer u_reader-session' } }), env, {});
+    headers: { Authorization: `Bearer u_${'ab12'.repeat(16)}` } }), env, {});
   assert.equal(res.status, 401);
   assert.equal(forwarded.length, 0, 'token u_ không được gửi sang backend');
 
