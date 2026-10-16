@@ -10,6 +10,13 @@ export const DEFAULT_SETTINGS = {
   ttsRate: 1,
 }
 
+// Font đọc web (Google Fonts, có dấu tiếng Việt) — [giá trị CSS, nhãn hiển thị].
+// Settings cũ lưu font hệ thống (vd 'Times New Roman, serif') vẫn giữ nguyên.
+export const READER_FONTS = [
+  ["'Literata', 'Noto Serif', Georgia, serif", 'Literata (đọc sách)'],
+  ["'Noto Serif', Georgia, serif", 'Noto Serif'],
+]
+
 // Danh sách duy nhất; màu lấy từ .reader--<id> trong index.css.
 export const THEMES = {
   white: 'Trắng',

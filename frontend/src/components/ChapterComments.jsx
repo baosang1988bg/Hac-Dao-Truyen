@@ -93,7 +93,7 @@ export default function ChapterComments({ slug, chapter }) {
   return (
     <section className="chapter-comments" aria-label="Bình luận chương">
       <div className="chapter-comments__head">
-        <MessageSquare size={17} />
+        <MessageSquare size={17} aria-hidden="true" />
         <span>Bình luận{comments && comments.length > 0 ? ` (${comments.length})` : ''}</span>
       </div>
 
@@ -102,6 +102,7 @@ export default function ChapterComments({ slug, chapter }) {
         <form className="chapter-comments__form" onSubmit={handleSubmit}>
           <textarea
             className="chapter-comments__input"
+            aria-label="Nội dung bình luận"
             placeholder={`Cảm nghĩ của ${user?.name || 'bạn'} về chương này...`}
             value={text}
             onChange={e => setText(e.target.value)}
@@ -136,7 +137,7 @@ export default function ChapterComments({ slug, chapter }) {
         <div className="chapter-comments__list">
           {comments.map(c => (
             <div key={c.id} className="comment-item">
-              <div className="comment-item__avatar">
+              <div className="comment-item__avatar" aria-hidden="true">
                 {(c.user_name || '?').charAt(0).toUpperCase()}
               </div>
               <div className="comment-item__body">
@@ -153,7 +154,8 @@ export default function ChapterComments({ slug, chapter }) {
                       aria-label="Xóa bình luận"
                       disabled={deletingId === c.id}
                       onClick={() => handleDelete(c)}
-                      style={{ opacity: deletingId === c.id ? 0.5 : 1 }}
+                      aria-busy={deletingId === c.id}
+                      style={{ opacity: deletingId === c.id ? 0.5 : 1, cursor: deletingId === c.id ? 'wait' : 'pointer' }}
                     >
                       {deletingId === c.id ? <Loader2 size={13} className="spin" /> : <Trash2 size={13} />}
                     </button>

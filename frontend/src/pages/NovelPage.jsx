@@ -4,82 +4,105 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Play, BookOpen, Search, ArrowUpDown,
-  ChevronDown, ChevronUp, Shield, Heart, BookMarked,
+  ChevronDown, ChevronUp, Shield, Heart, BookMarked, RefreshCw,
 } from 'lucide-react'
-import api from '../api'
 import userApi, { isLoggedIn } from '../userApi'
 import NovelCover from '../components/NovelCover'
 import { getLastReadForSlug, fmtChapterLabel, getReadChapters } from '../utils/readingHistory'
-import { fmtTimeAgo, fmtNumber, fmtChapterDate, isRecentChapter } from '../utils/format'
+import { fmtTimeAgo, fmtNumber, fmtChapterDate, isRecentChapter, fmtNovelTitle, cleanAuthor } from '../utils/format'
+import { splitGenres } from '../utils/genreLabels'
 import SynopsisPanel from '../components/SynopsisPanel'
-import { normalizeChapterCatalog } from '../utils/chapters'
+import { normalizeChapterCatalog, getChapNum, chapterUrl } from '../utils/chapters'
+import { useCachedGet } from '../utils/apiCache'
+import { runWhenIdle } from '../utils/idle'
+import useDocumentTitle from '../hooks/useDocumentTitle'
+import '../styles/reading.css'
 
 const PAGE_SIZE = 100
-
-// Lấy số chương từ tiêu đề (giống Reader.jsx)
-const getChapNum = (title) => {
-  const m = title.match(/第(\d+)章|[Cc]hapter\s*(\d+)|Chương\s*(\d+)|(\d+)\./)
-  return m ? (m[1] || m[2] || m[3] || m[4]) : null
-}
-
-const chapterUrl = (slug, chap) => {
-  const num = chap.number || chap.chapter_number || getChapNum(chap.title || '') || getChapNum(chap.filename || '')
-  return `/novel/${slug}/read/${num || encodeURIComponent(chap.filename)}`
-}
 
 const cleanTitle = (title) =>
   title.replace(/第\d+章\s*/, '').replace(/Chapter\s*\d+[\s:.]*/i, '').trim() || title
 
+/** Tên truyện hiển thị: title_is_slug (Worker chưa có tên thật) → làm đẹp slug. */
+function displayNovelTitle(novel, slug) {
+  if (!novel) return ''
+  return fmtNovelTitle(novel.title_is_slug ? '' : novel.title, novel.slug || slug, novel.original_title)
+}
+
+/** Truyện chỉ có EPUB (chưa có chương dịch online). */
+function isEpubOnly(novel) {
+  return Boolean(novel?.has_epub) && !(Number(novel?.chapter_count) > 0)
+}
+
+/** Nhãn số chương ở hero — truyện chỉ có EPUB không hiện "0 chương đã dịch". */
+function chapterCountLabel(novel) {
+  if (isEpubOnly(novel)) {
+    const total = Number(novel.total_chapters)
+    return total > 0 ? `${fmtNumber(total)} chương (EPUB)` : 'Bản EPUB'
+  }
+  return `${fmtNumber(novel.chapter_count || 0)} chương đã dịch`
+}
+
 /**
  * Trang chi tiết truyện dành cho GUEST (public).
  * Hero + thanh hành động + danh sách chương (tìm kiếm, đảo chiều, tải thêm 100).
+ * `key={slug}` → đổi truyện thì state reset sạch (không hiện tạm dữ liệu truyện cũ).
  */
 export default function NovelPage() {
   const { slug } = useParams()
-  const [novel, setNovel] = useState(null)
-  const [chapters, setChapters] = useState([])
-  const [error, setError] = useState(null)
+  return <NovelPageContent key={slug} slug={slug} />
+}
 
-  useEffect(() => {
-    let alive = true
-    setNovel(null)
-    setChapters([])
-    setError(null)
-    Promise.all([
-      api.get(`/novels/${slug}`),
-      api.get(`/novels/${slug}/chapters`),
-    ])
-      .then(([nRes, cRes]) => {
-        if (!alive) return
-        setNovel(nRes.data)
-        setChapters(normalizeChapterCatalog(cRes.data))
-      })
-      .catch(() => { if (alive) setError('Không tải được thông tin truyện.') })
-    return () => { alive = false }
-  }, [slug])
+/**
+ * Render tiến dần: chi tiết truyện và mục lục tải ĐỘC LẬP qua apiCache (dùng
+ * chung với Reader) → hero hiện ngay khi có chi tiết (hoặc tức thì nếu đã cache),
+ * danh sách chương có skeleton riêng.
+ */
+function NovelPageContent({ slug }) {
+  const novelReq = useCachedGet(`/novels/${slug}`)
+  const chaptersReq = useCachedGet(`/novels/${slug}/chapters`)
+  const novel = novelReq.data
+  const chapters = useMemo(() => normalizeChapterCatalog(chaptersReq.data), [chaptersReq.data])
+  const title = displayNovelTitle(novel, slug)
+  useDocumentTitle(title)
 
-  if (error) {
+  // Người đọc thường bấm "Đọc" ngay sau đó → tải sẵn chunk Reader khi rảnh.
+  useEffect(() => runWhenIdle(() => { import('./Reader').catch(() => {}) }, { timeout: 3000 }), [])
+
+  if (!novel && novelReq.error) {
+    const notFound = novelReq.error?.response?.status === 404
     return (
       <div className="container" style={{ paddingTop: '2rem' }}>
-        <div className="glass-panel p-6" style={{ color: '#fca5a5' }}>{error}</div>
-        <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '1rem' }}>
-          <ArrowLeft size={15} /> Về trang chủ
-        </Link>
+        <div className="glass-panel hd-error-block" role="alert">
+          <div className="hd-error-block__title" style={{ color: '#fca5a5' }}>
+            {notFound ? 'Không tìm thấy truyện.' : 'Không tải được thông tin truyện.'}
+          </div>
+          {!notFound && (
+            <div className="hd-error-block__desc">Kiểm tra kết nối mạng rồi thử lại.</div>
+          )}
+          <div className="hd-error-block__actions">
+            {!notFound && (
+              <button type="button" className="btn btn-primary" onClick={() => { novelReq.reload(); chaptersReq.reload() }}>
+                <RefreshCw size={15} /> Thử lại
+              </button>
+            )}
+            <Link to="/" className="btn btn-secondary">
+              <ArrowLeft size={15} /> Về trang chủ
+            </Link>
+          </div>
+        </div>
       </div>
     )
   }
 
   if (!novel) {
-    return (
-      <div className="container" style={{ paddingTop: '3rem', color: 'var(--text-muted)' }}>
-        Đang tải...
-      </div>
-    )
+    return <NovelPageSkeleton />
   }
 
   const isAdmin = localStorage.getItem('userRole') === 'admin'
   const lastRead = getLastReadForSlug(slug)
   const firstChapter = chapters[0]
+  const epubOnly = isEpubOnly(novel)
 
   return (
     <div className="container animate-fade-in">
@@ -92,18 +115,21 @@ export default function NovelPage() {
 
       {/* ── Hero ── */}
       <div className="novel-hero">
-        <NovelCover novel={novel} size="lg" />
+        <NovelCover novel={{ ...novel, title }} size="lg" />
         <div className="novel-hero__info">
-          <h1 className="novel-hero__title">{novel.title}</h1>
+          <h1 className="novel-hero__title">{title}</h1>
           <div className="novel-hero__sub">
-            {[novel.original_title, novel.author].filter(Boolean).join(' • ')}
+            {[novel.original_title !== title ? novel.original_title : '', cleanAuthor(novel.author)].filter(Boolean).join(' • ')}
           </div>
           <div className="novel-hero__badges">
-            {novel.genre && <span className="novel-hero__badge">{novel.genre}</span>}
+            {/* Thể loại: tách chuỗi gộp + Việt hoá mã thô (cultivation → Tu Tiên), tối đa 4 badge */}
+            {splitGenres(novel.genre).slice(0, 4).map(g => (
+              <span key={g} className="novel-hero__badge">{g}</span>
+            ))}
             <span className="novel-hero__badge" style={{
               background: 'rgba(16,185,129,0.1)', color: 'var(--success)', borderColor: 'rgba(16,185,129,0.2)',
             }}>
-              {fmtNumber(novel.chapter_count)} chương đã dịch
+              {chapterCountLabel(novel)}
             </span>
           </div>
           {novel.last_translated_at && (
@@ -139,7 +165,7 @@ export default function NovelPage() {
         )}
         <Link
           to={`/novel/${slug}/epub-reader`}
-          className="btn btn-secondary"
+          className={`btn ${epubOnly && !firstChapter ? 'btn-primary' : 'btn-secondary'}`}
           title="Đọc EPUB trực tiếp trên trình duyệt"
           style={{ gap: '6px' }}
         >
@@ -148,8 +174,21 @@ export default function NovelPage() {
         <FollowButton slug={slug} />
       </div>
 
-      {/* ── Danh sách chương ── */}
-      <ChapterList slug={slug} chapters={chapters} />
+      {/* ── Danh sách chương (skeleton/lỗi riêng, không chặn hero) ── */}
+      {chaptersReq.data === undefined ? (
+        chaptersReq.error ? (
+          <div className="glass-panel hd-error-block" role="alert" style={{ padding: '2rem 1rem' }}>
+            <div className="hd-error-block__desc">Không tải được danh sách chương.</div>
+            <button type="button" className="btn btn-secondary" onClick={chaptersReq.reload}>
+              <RefreshCw size={15} /> Thử lại
+            </button>
+          </div>
+        ) : (
+          <ChapterListSkeleton />
+        )
+      ) : (
+        <ChapterList slug={slug} chapters={chapters} epubOnly={epubOnly} />
+      )}
 
       {/* Link nhỏ cho admin */}
       {isAdmin && (
@@ -162,6 +201,40 @@ export default function NovelPage() {
           </Link>
         </div>
       )}
+    </div>
+  )
+}
+NovelPageContent.propTypes = {
+  slug: PropTypes.string.isRequired,
+}
+
+/** Skeleton cả trang khi chưa có chi tiết truyện. */
+function NovelPageSkeleton() {
+  return (
+    <div className="container hd-page-skeleton" role="status" aria-live="polite" aria-label="Đang tải thông tin truyện">
+      <div className="hd-page-skeleton__hero">
+        <span className="hd-skel hd-page-skeleton__cover" />
+        <div className="hd-page-skeleton__lines">
+          <span className="hd-skel hd-page-skeleton__line hd-page-skeleton__line--title" />
+          <span className="hd-skel hd-page-skeleton__line" style={{ width: '45%' }} />
+          <span className="hd-skel hd-page-skeleton__line" style={{ width: '30%' }} />
+        </div>
+      </div>
+      <ChapterListSkeleton />
+    </div>
+  )
+}
+
+/** Skeleton riêng cho mục lục (hero đã hiện). */
+function ChapterListSkeleton() {
+  return (
+    <div className="glass-panel chapter-list-panel" role="status" aria-label="Đang tải danh sách chương">
+      <div className="hd-chapter-skeleton">
+        <span className="hd-skel hd-chapter-skeleton__row" style={{ height: '44px', marginBottom: '6px' }} />
+        {Array.from({ length: 8 }, (_, i) => (
+          <span key={i} className="hd-skel hd-chapter-skeleton__row" />
+        ))}
+      </div>
     </div>
   )
 }
@@ -259,7 +332,7 @@ CollapsibleNotes.propTypes = {
  * Danh sách chương guest: tìm kiếm + đảo chiều mới/cũ + phân trang "Tải thêm 100".
  * Không bao giờ render toàn bộ (xich-tam có 1835 chương).
  */
-function ChapterList({ slug, chapters }) {
+function ChapterList({ slug, chapters, epubOnly }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortDesc, setSortDesc] = useState(false) // mặc định cũ → mới (đọc từ đầu)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
@@ -284,7 +357,9 @@ function ChapterList({ slug, chapters }) {
   if (chapters.length === 0) {
     return (
       <div className="glass-panel p-6 text-center text-muted">
-        Chưa có chương nào được dịch.
+        {epubOnly
+          ? <>Truyện này hiện có bản EPUB — bấm <Link to={`/novel/${slug}/epub-reader`}>Đọc EPUB</Link> để đọc.</>
+          : 'Chưa có chương nào được dịch.'}
       </div>
     )
   }
@@ -307,6 +382,7 @@ function ChapterList({ slug, chapters }) {
             enterKeyHint="search"
             className="input-field"
             placeholder="Tìm chương..."
+            aria-label="Tìm chương theo tên hoặc số"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             style={{ paddingLeft: '32px', fontSize: '0.875rem' }}
@@ -321,6 +397,7 @@ function ChapterList({ slug, chapters }) {
           type="button"
           className="chapter-sort-button"
           onClick={() => setSortDesc(v => !v)}
+          aria-label={sortDesc ? 'Đang xếp mới đến cũ — đổi thành cũ đến mới' : 'Đang xếp cũ đến mới — đổi thành mới đến cũ'}
         >
           <ArrowUpDown size={13} />
           {sortDesc ? 'Mới → Cũ' : 'Cũ → Mới'}
@@ -399,4 +476,5 @@ function ChapterList({ slug, chapters }) {
 ChapterList.propTypes = {
   slug: PropTypes.string,
   chapters: PropTypes.arrayOf(chapterType),
+  epubOnly: PropTypes.bool,
 };

@@ -1,7 +1,10 @@
 import PropTypes from 'prop-types'
-import { THEMES } from '../hooks/useReaderSettings'
+import { THEMES, READER_FONTS } from '../hooks/useReaderSettings'
 
+// Literata/Noto Serif tải từ Google Fonts (index.html, subset vietnamese) —
+// hiển thị dấu tiếng Việt chuẩn hơn các font hệ thống.
 const FONTS = [
+  ...READER_FONTS,
   ['Times New Roman, serif', 'Times New Roman'],
   ['Arial, sans-serif', 'Arial'],
   ['Georgia, serif', 'Georgia'],

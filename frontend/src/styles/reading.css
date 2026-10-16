@@ -1,0 +1,82 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Style riêng cho luồng đọc (App fallback, NovelPage, Reader, LibraryPage).
+   Tách khỏi index.css để không đụng file do agent khác giữ.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Skeleton shimmer dùng chung ─────────────────────────────────────────── */
+.hd-skel {
+  display: block;
+  border-radius: 10px;
+  background: linear-gradient(90deg,
+    rgba(148, 163, 184, 0.08) 25%,
+    rgba(148, 163, 184, 0.18) 37%,
+    rgba(148, 163, 184, 0.08) 63%);
+  background-size: 400% 100%;
+  animation: hd-shimmer 1.4s ease infinite;
+}
+@keyframes hd-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hd-skel { animation: none; }
+}
+
+.hd-page-skeleton { padding-top: 1.5rem; }
+.hd-page-skeleton__hero { display: flex; gap: 1.25rem; margin-bottom: 1.5rem; }
+.hd-page-skeleton__cover { width: 140px; height: 200px; flex-shrink: 0; border-radius: 14px; }
+.hd-page-skeleton__lines { flex: 1; display: flex; flex-direction: column; gap: 0.75rem; padding-top: 0.5rem; }
+.hd-page-skeleton__line { height: 14px; }
+.hd-page-skeleton__line--title { height: 28px; width: 70%; }
+@media (max-width: 600px) {
+  .hd-page-skeleton__cover { width: 96px; height: 136px; }
+}
+
+/* Skeleton danh sách chương (NovelPage) */
+.hd-chapter-skeleton { display: flex; flex-direction: column; gap: 8px; }
+.hd-chapter-skeleton__row { height: 40px; border-radius: 8px; }
+
+/* Skeleton nội dung chương (Reader) — màu theo theme đọc */
+.reader-skeleton { padding: 1.5rem 0 4rem; }
+.reader-skeleton .hd-skel {
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--reader-text, #888) 8%, transparent) 25%,
+    color-mix(in srgb, var(--reader-text, #888) 16%, transparent) 37%,
+    color-mix(in srgb, var(--reader-text, #888) 8%, transparent) 63%);
+  background-size: 400% 100%;
+}
+.reader-skeleton__title { height: 2rem; width: 65%; margin-bottom: 2.5rem; }
+.reader-skeleton__line { height: 1em; margin-bottom: 1.1em; }
+
+/* ── Khối lỗi có nút Thử lại ─────────────────────────────────────────────── */
+.hd-error-block {
+  display: flex; flex-direction: column; align-items: center; gap: 0.85rem;
+  text-align: center; padding: 3rem 1rem;
+}
+.hd-error-block__title { font-weight: 700; font-size: 1.1rem; }
+.hd-error-block__desc { opacity: 0.75; font-size: 0.9rem; max-width: 34rem; line-height: 1.6; }
+.hd-error-block__actions { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
+
+/* ── Trạng thái disabled / focus cho nút điều hướng Reader ──────────────── */
+.reader-nav button:disabled,
+.reader-nav__chapter-button:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed;
+  box-shadow: none !important;
+}
+.reader-root a:focus-visible,
+.reader-root button:focus-visible,
+.reader-root select:focus-visible,
+.chapter-list-panel a:focus-visible,
+.chapter-list-panel button:focus-visible,
+.chapter-list-panel input:focus-visible,
+.library-card a:focus-visible,
+.novel-action-bar a:focus-visible,
+.novel-action-bar button:focus-visible,
+.hd-error-block button:focus-visible {
+  outline: 3px solid var(--accent, #c9932e);
+  outline-offset: 2px;
+}
+
+/* Nút gửi bình luận khi disabled: không chỉ mờ — đổi con trỏ */
+.chapter-comments__send:disabled { opacity: 0.55; cursor: not-allowed; }

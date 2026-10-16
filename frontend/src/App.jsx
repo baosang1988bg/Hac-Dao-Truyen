@@ -5,12 +5,18 @@ import AdminLayout from './layouts/AdminLayout'
 import RequireAdmin from './components/admin/RequireAdmin'
 import { SpinnerIcon } from './components/shared/ui'
 import { initAnalytics, trackPageView } from './utils/analytics'
-// Trang lõi (luôn cần hiển thị ngay, không lazy để tránh nháy loading với đa số người dùng)
+import { runWhenIdle } from './utils/idle'
+// Trang chủ là điểm vào phổ biến nhất → giữ eager để không nháy loading.
 import HomePage from './pages/HomePage'
-import LibraryPage from './pages/LibraryPage'
-import NovelPage from './pages/NovelPage'
-import Reader from './pages/Reader'
 import './index.css'
+import './styles/reading.css'
+
+// Trang đọc (chi tiết truyện, Reader, Tủ truyện) → chunk riêng. NovelPage được
+// prefetch khi trình duyệt rảnh sau khi trang chủ tải xong (xem App bên dưới).
+const loadNovelPage = () => import('./pages/NovelPage')
+const NovelPage = lazy(loadNovelPage)
+const Reader = lazy(() => import('./pages/Reader'))
+const LibraryPage = lazy(() => import('./pages/LibraryPage'))
 
 // Trang phụ / ít dùng (admin, epub, tài khoản, đăng nhập, logs) → tách chunk riêng, tải khi cần
 const AccountPage = lazy(() => import('./pages/AccountPage'))
@@ -35,6 +41,32 @@ function PageLoading() {
       Đang tải...
     </div>
   )
+}
+
+/**
+ * Skeleton nhẹ cho trang guest lazy (NovelPage/Reader/LibraryPage): giữ nguyên
+ * header/layout, chỉ thay vùng nội dung → không nháy trắng khi chờ chunk.
+ */
+function PageSkeleton() {
+  return (
+    <div className="container hd-page-skeleton" role="status" aria-live="polite" aria-label="Đang tải trang">
+      <div className="hd-page-skeleton__hero">
+        <span className="hd-skel hd-page-skeleton__cover" />
+        <div className="hd-page-skeleton__lines">
+          <span className="hd-skel hd-page-skeleton__line hd-page-skeleton__line--title" />
+          <span className="hd-skel hd-page-skeleton__line" style={{ width: '45%' }} />
+          <span className="hd-skel hd-page-skeleton__line" style={{ width: '30%' }} />
+        </div>
+      </div>
+      <span className="hd-skel hd-page-skeleton__line" style={{ height: '120px', marginBottom: '1rem' }} />
+      <span className="hd-skel hd-page-skeleton__line" style={{ height: '48px' }} />
+    </div>
+  )
+}
+
+/** Bọc trang lazy trong Suspense riêng để header/layout không bị thay bằng fallback. */
+function lazyPage(element) {
+  return <Suspense fallback={<PageSkeleton />}>{element}</Suspense>
 }
 
 /**
@@ -67,6 +99,21 @@ function AnalyticsTracker() {
 function App() {
   useEffect(() => { initAnalytics() }, [])
 
+  // Prefetch chunk NovelPage khi trang đã tải xong + trình duyệt rảnh: click
+  // vào một truyện từ trang chủ sẽ không phải chờ tải JS.
+  useEffect(() => {
+    let cancelIdle = () => {}
+    const schedule = () => {
+      cancelIdle = runWhenIdle(() => { loadNovelPage().catch(() => { /* offline — bỏ qua */ }) }, { timeout: 4000 })
+    }
+    if (document.readyState === 'complete') schedule()
+    else window.addEventListener('load', schedule, { once: true })
+    return () => {
+      window.removeEventListener('load', schedule)
+      cancelIdle()
+    }
+  }, [])
+
   return (
     <Suspense fallback={<PageLoading />}>
     <AnalyticsTracker />
@@ -93,10 +140,10 @@ function App() {
 
       <Route element={<GuestLayout />}>
         <Route path="/" element={<HomePage />} />
-        <Route path="/library" element={<LibraryPage />} />
+        <Route path="/library" element={lazyPage(<LibraryPage />)} />
         <Route path="/account" element={<AccountPage />} />
-        <Route path="/novel/:slug" element={<NovelPage />} />
-        <Route path="/novel/:slug/read/:chapter" element={<Reader />} />
+        <Route path="/novel/:slug" element={lazyPage(<NovelPage />)} />
+        <Route path="/novel/:slug/read/:chapter" element={lazyPage(<Reader />)} />
         <Route path="/novel/:slug/epub-reader" element={<EpubReader />} />
         <Route path="/epub" element={<EpubCatalogPage />} />
       </Route>

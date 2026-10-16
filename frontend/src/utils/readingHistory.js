@@ -1,16 +1,94 @@
-// ── Reading history (read-only side) ─────────────────────────────────────────
-// Gom logic đọc cookie/localStorage vốn nằm rải rác ở App.jsx / Dashboard.jsx.
-// Phía GHI (saveReadProgress) vẫn nằm nguyên trong Reader.jsx — không đổi.
+// ── Reading history ──────────────────────────────────────────────────────────
+// Gom logic đọc/ghi cookie/localStorage của lịch sử đọc (Reader ghi qua
+// saveReadProgress, trang chủ / Tủ truyện / NovelPage đọc).
 //
 // Khóa lưu trữ:
 //   last_read_novel                → slug truyện đọc gần nhất
 //   last_read_chapter_<slug>       → chương đọc gần nhất của truyện đó
+//   last_read_time_<slug>          → mốc thời gian (ms) lần đọc gần nhất
 // (cả cookie lẫn localStorage, localStorage ưu tiên)
+//   reading_history_v2             → JSON [{slug, chapter, title, cover_url, timestamp}]
+//                                    (dedupe theo slug, tối đa HISTORY_LIMIT mục) — có
+//                                    tên + bìa để trang chủ hiển thị không cần gọi API.
+//                                    Dữ liệu cũ (chỉ có khóa per-slug) vẫn đọc được.
 
 const CHAPTER_PREFIX = 'last_read_chapter_'
 // Khóa cũ do Reader.jsx ghi từ trước — DÙNG LẠI, không tạo khóa mới trùng lặp:
 //   read_chapters_<slug> → JSON array các chương (số hoặc filename) đã mở
 const READ_SET_PREFIX = 'read_chapters_'
+const HISTORY_KEY = 'reading_history_v2'
+export const HISTORY_LIMIT = 50
+
+/**
+ * Hàm thuần: chèn/cập nhật một mục lịch sử lên đầu danh sách, dedupe theo slug,
+ * giữ tối đa `limit` mục. Giữ lại title/cover_url cũ nếu mục mới không có.
+ */
+export function mergeHistoryEntry(list, entry, limit = HISTORY_LIMIT) {
+  const safe = Array.isArray(list) ? list.filter(e => e && typeof e.slug === 'string' && e.slug) : []
+  if (!entry || !entry.slug) return safe.slice(0, limit)
+  const prev = safe.find(e => e.slug === entry.slug)
+  const merged = {
+    slug: entry.slug,
+    chapter: entry.chapter != null ? String(entry.chapter) : prev?.chapter ?? null,
+    title: entry.title || prev?.title || null,
+    cover_url: entry.cover_url || prev?.cover_url || null,
+    timestamp: Number.isFinite(entry.timestamp) ? entry.timestamp : Date.now(),
+  }
+  return [merged, ...safe.filter(e => e.slug !== entry.slug)].slice(0, limit)
+}
+
+function readHistoryList() {
+  try {
+    const list = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
+    return Array.isArray(list) ? list : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Ghi tiến trình đọc (Reader gọi mỗi khi mở chương thành công).
+ * meta: { title, cover_url } — tuỳ chọn, để trang chủ hiện ngay tên + bìa.
+ */
+export function saveReadProgress(slug, chapId, meta = {}) {
+  if (!slug || chapId === null || chapId === undefined) return
+  try {
+    // 1. Cookie (tương thích dữ liệu cũ / trình duyệt chặn localStorage)
+    document.cookie = `last_read_novel=${slug}; path=/; max-age=31536000; SameSite=Lax`
+    document.cookie = `${CHAPTER_PREFIX}${slug}=${encodeURIComponent(chapId)}; path=/; max-age=31536000; SameSite=Lax`
+  } catch { /* bỏ qua */ }
+  try {
+    // 2. localStorage — khóa per-slug cũ (giữ nguyên để các bản cũ vẫn đọc được)
+    const now = Date.now()
+    localStorage.setItem('last_read_novel', slug)
+    localStorage.setItem(`${CHAPTER_PREFIX}${slug}`, String(chapId))
+    localStorage.setItem(`last_read_time_${slug}`, String(now))
+    // 3. Danh sách có meta (tên + bìa)
+    const next = mergeHistoryEntry(readHistoryList(), {
+      slug, chapter: chapId, title: meta?.title, cover_url: meta?.cover_url, timestamp: now,
+    })
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
+  } catch { /* localStorage bị chặn/đầy — bỏ qua */ }
+  // 4. Đánh dấu chương đã đọc (helper dùng chung với mục lục NovelPage)
+  markChapterRead(slug, chapId)
+}
+
+/**
+ * Bổ sung meta (tên/bìa) cho mục lịch sử đã có — vd Reader tải xong chi tiết
+ * truyện SAU khi đã lưu chương. Không tạo mục mới nếu slug chưa có trong lịch sử.
+ */
+export function updateHistoryMeta(slug, meta = {}) {
+  if (!slug || (!meta.title && !meta.cover_url)) return
+  try {
+    const list = readHistoryList()
+    const idx = list.findIndex(e => e && e.slug === slug)
+    if (idx === -1) return
+    const cur = list[idx]
+    if (cur.title === (meta.title || cur.title) && cur.cover_url === (meta.cover_url || cur.cover_url)) return
+    list[idx] = { ...cur, title: meta.title || cur.title || null, cover_url: meta.cover_url || cur.cover_url || null }
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list))
+  } catch { /* bỏ qua */ }
+}
 
 function getCookie(name) {
   const value = `; ${document.cookie}`
@@ -44,11 +122,16 @@ export function getLastRead() {
 }
 
 /**
- * Toàn bộ lịch sử đọc: [{ slug, chapter, isCurrent }].
- * Truyện đang đọc dở gần nhất được đưa lên đầu danh sách.
+ * Toàn bộ lịch sử đọc: [{ slug, chapter, timestamp, isCurrent, title?, cover_url? }].
+ * Sắp xếp mới nhất trước. title/cover_url chỉ có với mục ghi từ bản mới
+ * (reading_history_v2) — mục cũ thì nơi hiển thị tự gọi API bổ sung.
  */
 export function getAllHistory() {
   const map = new Map()
+  const metaBySlug = new Map()
+  for (const e of readHistoryList()) {
+    if (e && e.slug && !metaBySlug.has(e.slug)) metaBySlug.set(e.slug, e)
+  }
 
   // 1. localStorage
   try {
@@ -79,12 +162,22 @@ export function getAllHistory() {
   })
 
   const current = getLastRead()?.slug || null
-  const list = [...map.entries()].map(([slug, data]) => ({
-    slug,
-    chapter: data.chapter,
-    timestamp: data.timestamp,
-    isCurrent: slug === current,
-  }))
+  // 3. Mục chỉ có trong reading_history_v2 (hiếm — vd khóa per-slug bị xoá)
+  for (const [slug, e] of metaBySlug) {
+    if (!map.has(slug) && e.chapter) map.set(slug, { chapter: String(e.chapter), timestamp: Number(e.timestamp) || 0 })
+  }
+
+  const list = [...map.entries()].map(([slug, data]) => {
+    const meta = metaBySlug.get(slug)
+    return {
+      slug,
+      chapter: data.chapter,
+      timestamp: data.timestamp,
+      isCurrent: slug === current,
+      ...(meta?.title ? { title: meta.title } : {}),
+      ...(meta?.cover_url ? { cover_url: meta.cover_url } : {}),
+    }
+  })
   list.sort((a, b) => b.timestamp - a.timestamp)
   return list
 }

@@ -3,17 +3,55 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- SEO mặc định: Worker (HTMLRewriter) ghi đè các thẻ title / meta[name=description] /
+         meta[property^=og:] theo từng trang và tự chèn link[rel=canonical] cho /novel/:slug.
+         KHÔNG đặt canonical cố định ở đây (mọi trang sẽ bị coi là bản sao trang chủ). -->
+    <title>Hắc Đạo Truyện</title>
+    <meta name="description" content="Hắc Đạo Truyện – đọc truyện dịch tiếng Việt miễn phí: tiểu thuyết Trung Quốc cập nhật liên tục, đọc online hoặc tải EPUB đọc offline." />
     <meta name="theme-color" content="#0f172a" />
+    <meta property="og:site_name" content="Hắc Đạo Truyện" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Hắc Đạo Truyện" />
+    <meta property="og:description" content="Đọc truyện dịch tiếng Việt miễn phí, cập nhật liên tục, hỗ trợ đọc offline." />
+    <meta property="og:locale" content="vi_VN" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icon-192.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" />
-    <title>Hắc Đạo Truyện</title>
+    <!-- Inter/Outfit cho giao diện; Literata + Noto Serif (đủ dấu tiếng Việt) cho font đọc. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,700;1,7..72,400&family=Noto+Serif:ital,wght@0,400;0,700;1,400&subset=vietnamese&display=swap" />
+    <style>
+      /* Skeleton tĩnh hiển thị trước khi JS chạy — React sẽ thay toàn bộ #root. */
+      html, body { margin: 0; background: #0f172a; }
+      .boot-skel { min-height: 100vh; background: #0f172a; }
+      .boot-skel__bar { height: 56px; background: rgba(15, 23, 42, 0.9); border-bottom: 1px solid rgba(148, 163, 184, 0.12); display: flex; align-items: center; padding: 0 16px; gap: 12px; }
+      .boot-skel__wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+      .boot-skel__b { display: block; border-radius: 10px; margin-bottom: 14px; background: linear-gradient(90deg, rgba(148,163,184,.08) 25%, rgba(148,163,184,.18) 37%, rgba(148,163,184,.08) 63%); background-size: 400% 100%; animation: boot-shimmer 1.4s ease infinite; }
+      .boot-skel__row { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 14px; }
+      @keyframes boot-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+      @media (prefers-reduced-motion: reduce) { .boot-skel__b { animation: none; } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot-skel" aria-busy="true" aria-label="Đang tải Hắc Đạo Truyện">
+        <div class="boot-skel__bar">
+          <span class="boot-skel__b" style="width:36px;height:36px;margin:0;border-radius:10px"></span>
+          <span class="boot-skel__b" style="width:140px;height:18px;margin:0"></span>
+        </div>
+        <div class="boot-skel__wrap">
+          <span class="boot-skel__b" style="height:180px"></span>
+          <span class="boot-skel__b" style="width:40%;height:22px"></span>
+          <div class="boot-skel__row">
+            <span class="boot-skel__b" style="height:170px"></span>
+            <span class="boot-skel__b" style="height:170px"></span>
+            <span class="boot-skel__b" style="height:170px"></span>
+            <span class="boot-skel__b" style="height:170px"></span>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

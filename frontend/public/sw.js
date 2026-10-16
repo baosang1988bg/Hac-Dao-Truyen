@@ -18,13 +18,16 @@
    - Các /api khác (auth, admin, POST...)       : KHÔNG can thiệp
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const STATIC_CACHE = 'hacdao-static-v1'
+// Tăng version khi đổi logic SW/app shell → activate xoá cache cũ, client nhận bản mới.
+const STATIC_CACHE = 'hacdao-static-v2'
 const CHAPTER_CACHE = 'hacdao-chapters-v1'
-const API_CACHE = 'hacdao-api-v1'
+const API_CACHE = 'hacdao-api-v2'
 const EPUB_CACHE = 'hacdao-epub-v1'
 const KNOWN_CACHES = [STATIC_CACHE, CHAPTER_CACHE, API_CACHE, EPUB_CACHE]
 const EPUB_QUOTA_BYTES = 200 * 1024 * 1024 // 200MB tổng cho toàn bộ EPUB đã tải offline
 const EPUB_INDEX_KEY = '/__sw_epub_index__' // key nội bộ, không phải route thật
+// Segment cố định dưới /api/novels/ KHÔNG phải slug truyện.
+const RESERVED_NOVEL_SEGMENTS = new Set(['genres', 'sitemap', 'sitemap.xml', 'search'])
 
 const APP_SHELL = [
   '/',
@@ -234,10 +237,13 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Danh sách truyện / chi tiết truyện / mục lục chương: cần dữ liệu tươi
+  // Danh sách truyện / chi tiết truyện / mục lục chương: cần dữ liệu tươi.
+  // Loại trừ các route tĩnh nằm cùng cấp với :slug (genres, sitemap...) — trước
+  // đây regex coi `/api/novels/genres` là một slug.
+  const novelMatch = url.pathname.match(/^\/api\/novels\/([^/]+)(\/chapters)?$/)
   if (
     url.pathname === '/api/novels' ||
-    /^\/api\/novels\/[^/]+(\/chapters)?$/.test(url.pathname)
+    (novelMatch && !RESERVED_NOVEL_SEGMENTS.has(novelMatch[1]))
   ) {
     event.respondWith(networkFirst(request, API_CACHE))
     return
