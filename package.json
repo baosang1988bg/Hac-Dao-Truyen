@@ -4,6 +4,7 @@
   "description": "Hệ thống tự động crawl & dịch tiểu thuyết Trung Quốc sang tiếng Việt bằng AI đa provider",
   "private": true,
   "scripts": {
+    "lint": "npm run lint --prefix frontend && node --check src/index.js",
     "test": "npm run test:python && npm run test:worker && npm run test:frontend",
     "build:frontend": "npm ci --prefix frontend && npm run build --prefix frontend",
     "deploy": "npm run build:frontend && wrangler deploy",

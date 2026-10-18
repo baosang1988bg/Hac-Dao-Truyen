@@ -1,0 +1,25 @@
+# HacDaoTruyen OpenHands Instructions
+
+## 1. Project Context
+- Multi-tier system: React 18 SPA (`frontend/`), Cloudflare Worker Edge API (`src/index.js`), Python 3.11 crawlers & tools (`tools/`).
+- Working directory: `/workspace` (or current repository root).
+
+## 2. STRICT SAFETY RULES (NON-NEGOTIABLE)
+- NEVER run `wrangler deploy` or `npm run deploy`. Production deployment is strictly forbidden for automated agents.
+- NEVER commit or expose secret files (`.env`, `credentials.json`, `key_status.json`, API tokens).
+- Work ONLY on dedicated feature branches (e.g. `feature/...` or `chore/...`), NEVER directly on `main`.
+- Never upload crawl source catalogs (`novels/<slug>/catalog.json`) to Cloudflare R2.
+- Always preserve Vietnamese novel titles (`"title"` in `novel.json`).
+
+## 3. Spec-Driven Development Workflow
+Follow GitHub Spec Kit conventions located in `.specify/`:
+1. Check constitution: `.specify/memory/constitution.md`
+2. Feature specs: Store in `specs/<feature>/spec.md`
+3. Plans: Store in `specs/<feature>/plan.md`
+4. Tasks: Store in `specs/<feature>/tasks.md`
+
+## 4. Definition of Done (Quality Gates)
+Before considering any task completed, verify:
+1. `npm run lint` (ESLint on frontend with `--max-warnings 0` and `node --check src/index.js`) must exit with code 0.
+2. Relevant unit tests must pass (`npm run test:frontend`, `npm run test:worker`, or `npm test`).
+3. Frontend build must succeed: `npm run build:frontend`.

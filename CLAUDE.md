@@ -13,3 +13,14 @@ chung cho MỌI agent nằm ở file dưới — tuân thủ y như quy tắc c�
 
 Đầu phiên: `git pull --rebase` và đọc ~20 dòng cuối `.agents/WORKLOG.md`. Sau mọi
 việc chạm production: thêm 1 dòng vào `.agents/WORKLOG.md`.
+
+# Quy trình phát triển tính năng mới (GitHub Spec Kit)
+
+Dự án sử dụng quy trình Spec-Driven Development (Spec Kit) tại thư mục `.specify/`:
+- `/speckit-constitution`: Kiểm tra hiến pháp và quy ước dự án (`.specify/memory/constitution.md`).
+- `/speckit-specify <mô tả>`: Phân tích yêu cầu và tạo đặc tả tính năng trong `specs/<feature>/spec.md`.
+- `/speckit-plan`: Nghiên cứu kỹ thuật và lập kế hoạch triển khai.
+- `/speckit-tasks`: Chia nhỏ danh sách công việc có thể kiểm thử.
+- `/speckit-implement`: Triển khai code theo từng task.
+- `/speckit-converge`: Chạy test (`npm test`), tự sửa lỗi và đối chiếu kết quả với spec.
+
