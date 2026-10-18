@@ -2459,3 +2459,41 @@ a:hover {
 }
 .site-header__navlink.site-header__admin-login:hover,
 .site-header__navlink.site-header__admin-login:focus-visible { opacity: 1; }
+
+/* Nút cuộn lên đầu trang (components/ui/ScrollToTopButton.jsx).
+   Dùng biến theme thay vì màu hard-code; vị trí bottom/right do prop truyền inline. */
+.scroll-to-top-btn {
+  position: fixed;
+  z-index: 90;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 1px solid var(--border-panel);
+  background: var(--bg-panel);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-main);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: hover) {
+  .scroll-to-top-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
+.scroll-to-top-btn:active { transform: scale(0.94); }
+.scroll-to-top-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-to-top-btn { transition: none; }
+  .scroll-to-top-btn:hover, .scroll-to-top-btn:active { transform: none; }
+}

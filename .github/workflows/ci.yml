@@ -52,7 +52,8 @@ jobs:
         with:
           python-version: '3.11'
       - run: npm ci --prefix frontend
-      - run: npm run lint --prefix frontend
+      # Script lint ở root: ESLint frontend + node --check src/index.js (cùng lệnh agent dùng làm Definition of Done)
+      - run: npm run lint
       - run: npm run build --prefix frontend
       - name: Chuẩn bị trình duyệt
         run: |

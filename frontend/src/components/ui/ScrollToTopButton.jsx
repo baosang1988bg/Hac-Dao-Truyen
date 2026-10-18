@@ -36,32 +36,15 @@ export default function ScrollToTopButton({
 
   if (!visible) return null
 
+  // Màu/viền/hover nằm ở class .scroll-to-top-btn (index.css, dùng biến theme);
+  // inline chỉ giữ vị trí để caller chỉnh theo từng trang.
   return (
     <button
       type="button"
       onClick={handleClick}
       className={`scroll-to-top-btn ${className}`.trim()}
       aria-label={ariaLabel}
-      style={{
-        position: 'fixed',
-        bottom: bottomOffset,
-        right: rightOffset,
-        zIndex: 90,
-        width: '44px',
-        height: '44px',
-        borderRadius: '14px',
-        border: '1px solid rgba(255, 255, 255, 0.15)',
-        background: 'rgba(30, 41, 59, 0.88)',
-        backdropFilter: 'blur(12px)',
-        color: 'rgba(255, 255, 255, 0.9)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
-        transition: 'transform 0.18s ease, background-color 0.18s ease',
-        ...style,
-      }}
+      style={{ bottom: bottomOffset, right: rightOffset, ...style }}
     >
       <ChevronUp size={22} aria-hidden="true" />
     </button>

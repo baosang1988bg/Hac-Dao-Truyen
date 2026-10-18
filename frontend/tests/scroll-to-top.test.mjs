@@ -46,3 +46,17 @@ test('scrollToTop: gọi an toàn khi window hoặc window.scrollTo không tồn
   // Dọn dẹp mock
   delete globalThis.window
 })
+
+test('scrollToTop: tôn trọng prefers-reduced-motion (chuyển smooth → auto)', () => {
+  let calledWith = null
+  globalThis.window = {
+    matchMedia: (q) => ({ matches: q === '(prefers-reduced-motion: reduce)' }),
+    scrollTo: (options) => { calledWith = options },
+  }
+  try {
+    scrollToTop('smooth')
+    assert.deepEqual(calledWith, { top: 0, behavior: 'auto' })
+  } finally {
+    delete globalThis.window
+  }
+})

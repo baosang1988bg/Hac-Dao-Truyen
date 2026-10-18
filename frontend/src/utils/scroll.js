@@ -18,9 +18,13 @@ export function shouldShowScrollToTop(scrollY, threshold = 400) {
  */
 export function scrollToTop(behavior = 'smooth') {
   if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+    // Tôn trọng cài đặt giảm chuyển động của hệ điều hành (WCAG 2.3.3).
+    const reduce = behavior === 'smooth'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches
     window.scrollTo({
       top: 0,
-      behavior,
+      behavior: reduce ? 'auto' : behavior,
     })
   }
 }
