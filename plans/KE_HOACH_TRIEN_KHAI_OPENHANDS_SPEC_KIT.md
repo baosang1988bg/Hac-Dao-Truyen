@@ -25,7 +25,7 @@
 ```mermaid
 flowchart TD
     G1["Giai đoạn 1: Chuẩn bị repo & Blocker<br/>- Branch chore/spec-kit-setup<br/>- Thêm script lint root"] --> G2["Giai đoạn 2: Cài & Khởi tạo Spec Kit<br/>- Cài specify-cli qua uv<br/>- specify init<br/>- Soạn constitution.md"]
-    G2 --> G3["Giai đoạn 3: Tích hợp Agent Runtimes<br/>- Skill .agents/skills/spec-kit<br/>- Runbook OpenHands Docker<br/>- .openhands_instructions"]
+    G2 --> G3["Giai đoạn 3: Tích hợp Agent Runtimes<br/>- Skill .agents/skills/spec-kit<br/>- Runbook OpenHands Docker<br/>- AGENTS.md + .openhands/hooks"]
     G3 --> G4["Giai đoạn 4: Chạy thử nghiệm Pilot<br/>- Tính năng: Back-to-Top Button<br/>- Đi qua trọn vẹn Spec Kit Loop"]
     G4 --> G5["Giai đoạn 5: Tổng kết & Bàn giao<br/>- Đánh giá độ trễ & token<br/>- Cập nhật WORKLOG.md"]
 ```
@@ -67,21 +67,21 @@ flowchart TD
   - `/speckit.tasks`: Chia nhỏ task có kiểm thử vào `specs/<feature>/tasks.md`.
   - `/speckit.implement`: Triển khai code từng task.
   - `/speckit.converge`: Tự kiểm thử, sửa lỗi đối chiếu với spec.
-- [ ] **3.2 Cập nhật tài liệu phối hợp:** Đồng bộ hướng dẫn vào [CLAUDE.md](file:///e:/AOO/HacDaoTruyen/CLAUDE.md) và [.agents/AGENTS.md](file:///e:/AOO/HacDaoTruyen/.agents/AGENTS.md).
+- [ ] **3.2 Cập nhật tài liệu phối hợp:** Đồng bộ hướng dẫn vào [CLAUDE.md](../CLAUDE.md) và [.agents/AGENTS.md](../.agents/AGENTS.md).
 
 #### B. Tích hợp OpenHands (Docker Sandbox / Web UI)
-- [ ] **3.3 Tạo file cấu hình OpenHands:** Tạo `.openhands_instructions` ở thư mục gốc để OpenHands hiểu bối cảnh và cấm chạm production.
+- [x] **3.3 Tạo file cấu hình OpenHands:** `AGENTS.md` ở gốc (OpenHands V1 tự nạp) + `.openhands/hooks.json` chặn cứng lệnh production *(thay cho `.openhands_instructions` — V1 không đọc file đó)*.
 - [ ] **3.4 Soạn Runbook khởi động OpenHands:** Hướng dẫn lệnh Docker chạy OpenHands trên Windows/WSL2 mount workspace an toàn.
 - [ ] **3.5 Cấu hình Model Routing:**
-  - Phase 1 & 2 (Spec, Plan): Gemini 1.5 Pro / Claude 3.5 Sonnet.
-  - Phase 4 & 5 (Code, Fix): Gemini 1.5 Flash hoặc Ollama local (`qwen2.5:7b` qua RTX 4060).
+  - Phase 1 & 2 (Spec, Plan): Claude Sonnet 5.5 / Gemini 3.x Pro (xác minh tên model, xem runbook mục 3).
+  - Phase 4 & 5 (Code, Fix): Claude Sonnet 5.5, hoặc Ollama local (`qwen2.5-coder:7b` qua RTX 4060) cho việc nhỏ.
 
 ---
 
 ### Giai đoạn 4: Thử Nghiệm Pilot Đầu Tiên
 
 - [ ] **4.1 Chọn tính năng thử nghiệm:** 
-  - **Tên tính năng:** Nút "Cuộn lên đầu trang" (Back to Top Button) trên trang đọc truyện `Reader.jsx`.
+  - **Tên tính năng:** Nút "Cuộn lên đầu trang" (Back to Top Button) — thực tế làm trên `NovelPage.jsx` vì `Reader.jsx` đã có sẵn nút này.
   - **Phạm vi:** Frontend React Component + CSS + Unit Test bằng `node --test`.
 - [ ] **4.2 Thực thi vòng lặp Spec Kit:**
   1. `specify`: Viết đặc tả tính năng UI/UX và hành vi scroll.
@@ -95,7 +95,7 @@ flowchart TD
 ### Giai đoạn 5: Đánh Giá, Bàn Giao & Ghi WORKLOG
 
 - [ ] **5.1 Đo lường hiệu quả:** Đánh giá thời gian hoàn thành, số lượt lặp (iterations), chi phí token.
-- [ ] **5.2 Ghi nhận WORKLOG:** Thêm dòng ghi nhận vào [.agents/WORKLOG.md](file:///e:/AOO/HacDaoTruyen/.agents/WORKLOG.md) theo đúng quy tắc phối hợp agent của repo.
+- [ ] **5.2 Ghi nhận WORKLOG:** Thêm dòng ghi nhận vào [.agents/WORKLOG.md](../.agents/WORKLOG.md) theo đúng quy tắc phối hợp agent của repo.
 
 ---
 
@@ -103,7 +103,7 @@ flowchart TD
 
 | Rủi ro | Mức độ | Biện pháp kiểm soát |
 |---|---|---|
-| Agent vô tình gọi deploy production | **Cao** | Khóa lệnh trong `constitution.md` và `.openhands_instructions`. Mọi lệnh `deploy` bị cấm hoàn toàn trong runtime agent. |
-| Lộ secret API keys qua sandbox | **Cao** | `.gitignore` đã chặn; không mount `.env` thật vào Docker container; chỉ dùng mock token khi test. |
+| Agent vô tình gọi deploy production | **Cao** | Sandbox không có token ghi production; hook `.openhands/hooks/block_dangerous.sh` chặn cứng lệnh deploy/D1/R2; quy tắc trong `constitution.md` + `AGENTS.md`. |
+| Lộ secret API keys qua sandbox | **Cao** | Mount bản clone sạch (`SANDBOX_VOLUMES`), không mount thư mục làm việc chính; hook chặn đọc `.env`/`credentials.json`/`key_status.json`. |
 | Xung đột nhánh `main` với các agent khác | **Trung bình** | Luôn làm việc trên nhánh `chore/spec-kit-setup`; rebase trước khi merge. |
 | Docker mount ổ E: bị chậm I/O | **Thấp** | Ưu tiên dùng Native Loop cho công việc thường ngày; chỉ dùng Docker khi cần sandbox tách biệt. |

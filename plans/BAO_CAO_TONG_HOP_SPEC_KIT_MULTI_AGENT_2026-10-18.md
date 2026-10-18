@@ -14,7 +14,7 @@ Trong phiên làm việc này, Antigravity Agent đã hoàn thành 5 nhóm nhi�
 
 1. **Khảo sát & Xử lý Blocker Repository:**
    - Đánh giá 10 tiêu chuẩn pilot của GitHub Spec Kit đối với `HacDaoTruyen`.
-   - Bổ sung lệnh lint tập trung vào root [package.json](file:///e:/AOO/HacDaoTruyen/package.json):
+   - Bổ sung lệnh lint tập trung vào root [package.json](../package.json):
      ```json
      "lint": "npm run lint --prefix frontend && node --check src/index.js"
      ```
@@ -22,59 +22,60 @@ Trong phiên làm việc này, Antigravity Agent đã hoàn thành 5 nhóm nhi�
 
 2. **Cài đặt & Khởi tạo GitHub Spec Kit:**
    - Cài đặt `specify-cli` v1.2.2.dev0 thông qua công cụ quản lý gói tốc độ cao `uv`.
-   - Khởi tạo Spec Kit với integration chuẩn dành cho Antigravity (`agy`), đồng bộ 10 skills Spec Kit vào thư mục [`.agents/skills/`](file:///e:/AOO/HacDaoTruyen/.agents/skills) (gồm `speckit-constitution`, `speckit-specify`, `speckit-plan`, `speckit-tasks`, `speckit-implement`, `speckit-converge`,...).
-   - Soạn thảo và ban hành Hiến pháp dự án tại [`.specify/memory/constitution.md`](file:///e:/AOO/HacDaoTruyen/.specify/memory/constitution.md):
+   - Khởi tạo Spec Kit với integration chuẩn dành cho Antigravity (`agy`), đồng bộ 10 skills Spec Kit vào thư mục [`.agents/skills/`](../.agents/skills) (gồm `speckit-constitution`, `speckit-specify`, `speckit-plan`, `speckit-tasks`, `speckit-implement`, `speckit-converge`,...).
+   - Soạn thảo và ban hành Hiến pháp dự án tại [`.specify/memory/constitution.md`](../.specify/memory/constitution.md):
      - Rào chắn an toàn: Cấm tuyệt đối chạy deploy production (`wrangler deploy`, `npm run deploy`) từ agent sandbox; cấm commit secret (`.env`, `credentials.json`, `key_status.json`); cấm đẩy catalog nguồn lên Cloudflare R2.
      - Quy chuẩn chất lượng (Definition of Done): Lint 0 lỗi (`--max-warnings 0`), syntax Worker hợp lệ (`node --check`), 100% unit tests pass, bundle Vite thành công.
 
-3. **Cấu hình OpenHands Sandbox & Runbook Vận Hành:**
-   - Tạo file [`.openhands_instructions`](file:///e:/AOO/HacDaoTruyen/.openhands_instructions) ở thư mục gốc để rào chắn an toàn khi OpenHands chạy container.
-   - Soạn thảo Runbook chi tiết tại [`docs/RUNBOOK_OPENHANDS.md`](file:///e:/AOO/HacDaoTruyen/docs/RUNBOOK_OPENHANDS.md) hướng dẫn khởi động OpenHands qua Docker Desktop (WSL2) mount thư mục `E:\AOO\HacDaoTruyen`.
+3. **Cấu hình OpenHands Sandbox & Runbook Vận Hành** *(đã sửa sau review — xem mục 5)*:
+   - [`AGENTS.md`](../AGENTS.md) ở gốc repo (OpenHands V1 và Codex tự nạp) thay cho `.openhands_instructions` (OpenHands V1 không đọc file này).
+   - [`.openhands/hooks.json`](../.openhands/hooks.json): hook `PreToolUse` chặn cứng lệnh deploy/ghi D1-R2/đọc secret; hook `Stop` bắt `npm run lint` + `npm run test:frontend` xanh.
+   - Runbook [`docs/RUNBOOK_OPENHANDS.md`](../docs/RUNBOOK_OPENHANDS.md): OpenHands 1.8 chạy trong WSL, mount **bản clone sạch** (không có secret), UI chỉ mở trên `127.0.0.1`.
 
 4. **Thử Nghiệm Pilot Hoàn Chỉnh Theo Chu Trình Spec Kit:**
-   - Tính năng thử nghiệm: **Nút cuộn lên đầu trang (Back to Top Button) mượt mà** trên trang chi tiết tiểu thuyết [`NovelPage.jsx`](file:///e:/AOO/HacDaoTruyen/frontend/src/pages/NovelPage.jsx).
-   - Đã sinh đầy đủ tài liệu chuẩn Spec Kit tại [`specs/scroll-to-top/`](file:///e:/AOO/HacDaoTruyen/specs/scroll-to-top/):
+   - Tính năng thử nghiệm: **Nút cuộn lên đầu trang (Back to Top Button) mượt mà** trên trang chi tiết tiểu thuyết [`NovelPage.jsx`](../frontend/src/pages/NovelPage.jsx).
+   - Đã sinh đầy đủ tài liệu chuẩn Spec Kit tại [`specs/scroll-to-top/`](../specs/scroll-to-top/):
      - `spec.md`: Đặc tả yêu cầu, hành vi người dùng, tiêu chuẩn A11y (phím Tab, aria-label).
      - `plan.md`: Thiết kế kiến trúc component, props, hooks, chiến lược kiểm thử.
      - `tasks.md`: Phân rã 4 tasks chi tiết có dependency rõ ràng.
    - Triển khai mã nguồn:
-     - Tạo component tái sử dụng [`frontend/src/components/ui/ScrollToTopButton.jsx`](file:///e:/AOO/HacDaoTruyen/frontend/src/components/ui/ScrollToTopButton.jsx).
-     - Tạo module tiện ích [`frontend/src/utils/scroll.js`](file:///e:/AOO/HacDaoTruyen/frontend/src/utils/scroll.js) (`shouldShowScrollToTop`, `scrollToTop`).
-     - Tích hợp vào cuối trang [`frontend/src/pages/NovelPage.jsx`](file:///e:/AOO/HacDaoTruyen/frontend/src/pages/NovelPage.jsx).
-     - Viết bộ unit test mới [`frontend/tests/scroll-to-top.test.mjs`](file:///e:/AOO/HacDaoTruyen/frontend/tests/scroll-to-top.test.mjs) (4/4 test cases pass).
+     - Tạo component tái sử dụng [`frontend/src/components/ui/ScrollToTopButton.jsx`](../frontend/src/components/ui/ScrollToTopButton.jsx).
+     - Tạo module tiện ích [`frontend/src/utils/scroll.js`](../frontend/src/utils/scroll.js) (`shouldShowScrollToTop`, `scrollToTop`).
+     - Tích hợp vào cuối trang [`frontend/src/pages/NovelPage.jsx`](../frontend/src/pages/NovelPage.jsx).
+     - Viết bộ unit test mới [`frontend/tests/scroll-to-top.test.mjs`](../frontend/tests/scroll-to-top.test.mjs) (4/4 test cases pass).
 
 5. **Nghiệm Thu Cổng Chất Lượng (Quality Gates) & WORKLOG:**
    - `npm run lint`: **PASS 100%** (0 errors, 0 warnings).
-   - `npm run test:frontend`: **PASS 34/34 tests** (bao gồm 4 tests mới).
+   - `npm run test:frontend`: **PASS 34/34 tests** (bao gồm 4 tests mới; sau review: 35/35).
    - `npm run build:frontend`: **PASS 100%** (Vite build thành công trong 2.12s, kích thước chunk tối ưu).
-   - Cập nhật nhật ký phối hợp tại [`.agents/WORKLOG.md`](file:///e:/AOO/HacDaoTruyen/.agents/WORKLOG.md).
+   - Cập nhật nhật ký phối hợp tại [`.agents/WORKLOG.md`](../.agents/WORKLOG.md).
 
 ---
 
 ## 2. DANH MỤC FILE THAY ĐỔI & THÊM MỚI TRÊN NHÁNH `chore/spec-kit-setup`
 
 ### A. Cấu hình & Tài liệu quy trình
-- [x] [package.json](file:///e:/AOO/HacDaoTruyen/package.json): Thêm script `"lint": "npm run lint --prefix frontend && node --check src/index.js"`.
-- [x] [CLAUDE.md](file:///e:/AOO/HacDaoTruyen/CLAUDE.md): Bổ sung mục "Quy trình phát triển tính năng mới (GitHub Spec Kit)".
-- [x] [plans/KE_HOACH_TRIEN_KHAI_OPENHANDS_SPEC_KIT.md](file:///e:/AOO/HacDaoTruyen/plans/KE_HOACH_TRIEN_KHAI_OPENHANDS_SPEC_KIT.md): Kế hoạch 5 giai đoạn chi tiết.
-- [x] [.openhands_instructions](file:///e:/AOO/HacDaoTruyen/.openhands_instructions): Hướng dẫn bối cảnh và cấm deploy dành cho OpenHands Docker container.
-- [x] [docs/RUNBOOK_OPENHANDS.md](file:///e:/AOO/HacDaoTruyen/docs/RUNBOOK_OPENHANDS.md): Lệnh chạy Docker và kết nối model cho OpenHands.
-- [x] [.agents/WORKLOG.md](file:///e:/AOO/HacDaoTruyen/.agents/WORKLOG.md): Dòng ghi nhận nhật ký bàn giao.
+- [x] [package.json](../package.json): Thêm script `"lint": "npm run lint --prefix frontend && node --check src/index.js"`.
+- [x] [CLAUDE.md](../CLAUDE.md): Bổ sung mục "Quy trình phát triển tính năng mới (GitHub Spec Kit)".
+- [x] [plans/KE_HOACH_TRIEN_KHAI_OPENHANDS_SPEC_KIT.md](../plans/KE_HOACH_TRIEN_KHAI_OPENHANDS_SPEC_KIT.md): Kế hoạch 5 giai đoạn chi tiết.
+- [x] [AGENTS.md](../AGENTS.md) + [.openhands/](../.openhands/hooks.json) (hooks, setup.sh): bối cảnh repo và rào chắn kỹ thuật cho OpenHands (thay `.openhands_instructions`).
+- [x] [docs/RUNBOOK_OPENHANDS.md](../docs/RUNBOOK_OPENHANDS.md): Lệnh chạy Docker và kết nối model cho OpenHands.
+- [x] [.agents/WORKLOG.md](../.agents/WORKLOG.md): Dòng ghi nhận nhật ký bàn giao.
 
 ### B. Hạ tầng GitHub Spec Kit
-- [x] [.specify/memory/constitution.md](file:///e:/AOO/HacDaoTruyen/.specify/memory/constitution.md): Bản Hiến pháp dự án chuẩn hóa.
-- [x] [.specify/](file:///e:/AOO/HacDaoTruyen/.specify): Chứa templates, scripts (`ps`), workflows của Spec Kit.
-- [x] `.agents/skills/speckit-*/SKILL.md`: 10 skills tích hợp tự động cho Antigravity / Claude Code:
+- [x] [.specify/memory/constitution.md](../.specify/memory/constitution.md): Bản Hiến pháp dự án chuẩn hóa.
+- [x] [.specify/](../.specify): Chứa templates, scripts (`ps`), workflows của Spec Kit.
+- [x] `.agents/skills/speckit-*/SKILL.md` (Antigravity, script PowerShell) và `.claude/skills/speckit-*/SKILL.md` (Claude Code, script bash `.specify/scripts/bash/` — bổ sung sau review): 10 skills:
   - `speckit-constitution`, `speckit-specify`, `speckit-plan`, `speckit-tasks`, `speckit-implement`, `speckit-converge`, `speckit-clarify`, `speckit-analyze`, `speckit-checklist`, `speckit-taskstoissues`.
 
 ### C. Mã nguồn tính năng Pilot (`ScrollToTopButton`)
-- [x] [specs/scroll-to-top/spec.md](file:///e:/AOO/HacDaoTruyen/specs/scroll-to-top/spec.md): Tài liệu đặc tả.
-- [x] [specs/scroll-to-top/plan.md](file:///e:/AOO/HacDaoTruyen/specs/scroll-to-top/plan.md): Kế hoạch kỹ thuật.
-- [x] [specs/scroll-to-top/tasks.md](file:///e:/AOO/HacDaoTruyen/specs/scroll-to-top/tasks.md): Danh sách tasks (4/4 hoàn thành).
-- [x] [frontend/src/components/ui/ScrollToTopButton.jsx](file:///e:/AOO/HacDaoTruyen/frontend/src/components/ui/ScrollToTopButton.jsx): UI component với safe area, backdrop-filter, ChevronUp icon.
-- [x] [frontend/src/utils/scroll.js](file:///e:/AOO/HacDaoTruyen/frontend/src/utils/scroll.js): Logic kiểm tra threshold và cuộn trang an toàn.
-- [x] [frontend/src/pages/NovelPage.jsx](file:///e:/AOO/HacDaoTruyen/frontend/src/pages/NovelPage.jsx): Gắn component vào cuối trang chi tiết truyện.
-- [x] [frontend/tests/scroll-to-top.test.mjs](file:///e:/AOO/HacDaoTruyen/frontend/tests/scroll-to-top.test.mjs): Unit test Node native runner.
+- [x] [specs/scroll-to-top/spec.md](../specs/scroll-to-top/spec.md): Tài liệu đặc tả.
+- [x] [specs/scroll-to-top/plan.md](../specs/scroll-to-top/plan.md): Kế hoạch kỹ thuật.
+- [x] [specs/scroll-to-top/tasks.md](../specs/scroll-to-top/tasks.md): Danh sách tasks (4/4 hoàn thành).
+- [x] [frontend/src/components/ui/ScrollToTopButton.jsx](../frontend/src/components/ui/ScrollToTopButton.jsx): UI component với safe area, backdrop-filter, ChevronUp icon.
+- [x] [frontend/src/utils/scroll.js](../frontend/src/utils/scroll.js): Logic kiểm tra threshold và cuộn trang an toàn.
+- [x] [frontend/src/pages/NovelPage.jsx](../frontend/src/pages/NovelPage.jsx): Gắn component vào cuối trang chi tiết truyện.
+- [x] [frontend/tests/scroll-to-top.test.mjs](../frontend/tests/scroll-to-top.test.mjs): Unit test Node native runner.
 
 ---
 
@@ -98,8 +99,8 @@ Người dùng đã định hướng rõ giai đoạn kế tiếp: **Chỉ cần
        ▼                                    ▼                                    ▼
 ┌───────────────────────┐       ┌───────────────────────┐       ┌───────────────────────┐
 │ 🎯 SPEC LEAD AGENT     │       │ 🏗️ ARCH & CODER AGENT │       │ 🧪 ADVERSARIAL QA     │
-│ Model: Gemini 1.5 Pro │       │ Model: Claude 3.5     │       │ Model: xAI Grok-2     │
-│ Context: 2M tokens    │       │ Sonnet                │       │ Nhiệm vụ: Phản biện,  │
+│ Model: Gemini 3.x Pro │       │ Model: Claude Sonnet  │       │ Model: xAI Grok 4.x   │
+│ Context: ~1M tokens   │       │ 5.5                   │       │ Nhiệm vụ: Phản biện,  │
 │ Nhiệm vụ: Nuốt toàn bộ│       │ Nhiệm vụ: Thiết kế    │       │ bẻ gãy code, tìm edge │
 │ codebase HacDaoTruyen │       │ React/Worker, viết    │       │ cases & kiểm tra bảo  │
 │ và lập Spec chuẩn xác │       │ code logic chính xác  │       │ mật SSRF              │
@@ -108,8 +109,8 @@ Người dùng đã định hướng rõ giai đoạn kế tiếp: **Chỉ cần
                                             ▼
                                 ┌───────────────────────┐
                                 │ 🔧 LOCAL QUICK-FIXER  │
-                                │ Model: Qwen 2.5 Coder │
-                                │ (Ollama trên RTX 4060)│
+                                │ Model: Qwen2.5-Coder  │
+                                │ 7B (Ollama, RTX 4060) │
                                 │ Nhiệm vụ: Sửa lỗi     │
                                 │ ESLint/formatting     │
                                 │ miễn phí 100% token   │
@@ -134,28 +135,31 @@ providers:
     api_base: http://localhost:11434
 
 roles:
+  # Tên model kiểm tra ngày 2026-10-18 — xác minh lại trên trang models của từng provider
+  # trước khi dùng (Gemini/xAI đổi tên thường xuyên). Bản cũ dùng gemini-1.5-pro,
+  # claude-3-5-sonnet-20241022, grok-2 — đều là đời cũ, không dùng nữa.
   spec_agent:
-    model: gemini/gemini-1.5-pro
+    model: gemini/gemini-3.1-pro-preview
     temperature: 0.2
     description: "Khảo sát toàn bộ context codebase và tạo spec.md"
 
   architect_agent:
-    model: claude-3-5-sonnet-20241022
+    model: anthropic/claude-sonnet-5-5
     temperature: 0.1
     description: "Lập kế hoạch kỹ thuật plan.md và chia tasks.md"
 
   coder_agent:
-    model: claude-3-5-sonnet-20241022
+    model: anthropic/claude-sonnet-5-5
     temperature: 0.1
     description: "Triển khai mã nguồn chính xác theo tasks.md"
 
   tester_agent:
-    model: xai/grok-2
+    model: xai/grok-4.5          # xác minh tên chính xác trên docs.x.ai
     temperature: 0.3
     description: "Soi lỗi phản biện, edge cases, bảo mật và test suite"
 
   local_healer:
-    model: ollama/qwen2.5:7b
+    model: ollama/qwen2.5-coder:7b
     temperature: 0.0
     description: "Chạy trên GPU RTX 4060 để auto-fix lỗi lint/cú pháp nhỏ"
 ```
@@ -173,10 +177,28 @@ Giao diện trực quan tương tác (Generative UI / Live Panel) sẽ hiển th
 
 1. **Kiểm tra tính tương thích:**
    - Toàn bộ thay đổi mã nguồn nằm gọn trong nhánh `chore/spec-kit-setup`.
-   - Script `"lint"` mới trong root `package.json` hoàn toàn an toàn và chạy tốt trong môi trường CI Linux (`node --check` + `eslint`).
+   - Script `"lint"` mới trong root `package.json` chạy tốt trên Linux; CI (`ci.yml`, job frontend) đã chuyển sang gọi `npm run lint` để kiểm thêm `node --check src/index.js`.
 2. **Kiểm tra tính cô lập:**
    - Không có file secret nào bị theo dõi (`git status --ignored` bảo đảm `.env`, `credentials.json`, `key_status.json` được ignore).
    - Component `ScrollToTopButton` được cô lập trong `frontend/src/components/ui/`, không làm ảnh hưởng đến luồng đọc hay API của `NovelPage.jsx`.
 3. **Kế hoạch merge nhánh `chore/spec-kit-setup`:**
    - Sau khi Claude Code / Codex review xong, có thể tạo PR hoặc merge trực tiếp nhánh này vào `main` khi người dùng đồng ý.
-   - Khi đã merge vào `main`, các skill `/speckit-*` sẽ trở thành chuẩn phát triển mặc định của repository `HacDaoTruyen`.
+   - Khi đã merge vào `main`, `/speckit-*` dùng được trên cả Antigravity (Windows, PowerShell) và Claude Code (Mac/Linux, bash). OpenHands không có slash command — agent đọc template trong `.specify/` theo runbook.
+
+---
+
+## 5. SỬA SAU REVIEW (Claude Cowork, 2026-10-18)
+
+| # | Vấn đề phát hiện | Đã sửa |
+|---|---|---|
+| 1 | Runbook mount nguyên `E:\AOO\HacDaoTruyen` (có `.env`, `credentials.json`, `key_status.json`, phiên `wrangler`) vào container — "cấm deploy" chỉ là lời dặn | Mount bản clone sạch qua `SANDBOX_VOLUMES`; không đưa token ghi production vào sandbox; agent không push |
+| 2 | Không có rào chắn kỹ thuật | `.openhands/hooks/block_dangerous.sh` (PreToolUse, exit 2 = chặn) + test `test_block_dangerous.sh` |
+| 3 | `-p 3000:3000` mở UI ra LAN; image `openhands:0.14` rất cũ; dùng named pipe Windows | `-p 127.0.0.1:3000:3000`, `openhands:1.8` chạy trong WSL theo docs chính thức |
+| 4 | `.openhands_instructions` không được OpenHands V1 đọc | `AGENTS.md` ở gốc + `.openhands/setup.sh` (cài Node 22) + Stop hook cổng chất lượng |
+| 5 | Model cũ (`gemini-1.5-pro`, `claude-3-5-sonnet-20241022`, `grok-2`) | Cập nhật mục 3.2 và runbook, kèm ghi chú xác minh |
+| 6 | `/speckit-*` chỉ có cho Antigravity + script PowerShell, nhưng CLAUDE.md quảng cáo cho Claude Code | Thêm `.claude/skills/speckit-*` + `.specify/scripts/bash/` (cùng bản spec-kit 1.2.2.dev0), cập nhật `integration.json` |
+| 7 | `ScrollToTopButton` hard-code màu tối, `transition` không có hover | Class `.scroll-to-top-btn` dùng biến theme, có hover/active/focus-visible, tôn trọng `prefers-reduced-motion` (+1 test) |
+| 8 | CI chỉ lint frontend | `ci.yml` gọi `npm run lint` (gồm `node --check src/index.js`) |
+| 9 | Link `file:///e:/...` chỉ mở được trên máy Windows | Đổi thành link tương đối |
+
+Kiểm tra: `npm run lint` sạch, `npm run test:frontend` 35/35, `vite build` thành công, hook chặn 28/28 case.

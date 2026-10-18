@@ -16,3 +16,7 @@
   - Chạy `npm run lint` xác nhận ESLint 9 + node check syntax không có cảnh báo.
   - Chạy `npm run test:frontend` xác nhận toàn bộ 34/34 unit test frontend pass.
   - Chạy `npm run build:frontend` xác nhận Vite bundle thành công (2.12s).
+
+- [x] **Task 5: Sửa sau review (2026-10-18)**
+  - Chuyển style sang class `.scroll-to-top-btn` trong `frontend/src/index.css`, dùng biến theme (`--bg-panel`, `--border-panel`, `--text-main`, `--accent`, `--focus-ring`); thêm hover/active/focus-visible.
+  - `scrollToTop` chuyển `smooth` → `auto` khi người dùng bật `prefers-reduced-motion`; thêm 1 test (35/35 pass).
