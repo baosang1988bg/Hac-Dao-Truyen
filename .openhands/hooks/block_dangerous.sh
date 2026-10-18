@@ -26,7 +26,7 @@ check 'deploy\.bat|migrate_to_cloudflare\.py'              && deny "Cấm đồn
 check 'gh (workflow run|variable set|secret (set|delete))' && deny "Cấm kích hoạt workflow/đổi biến GitHub từ agent."
 check 'git push[^"]*(--force|-f( |$)|--force-with-lease)'  && deny "Cấm git push --force."
 check 'git push[^"]*( |:)(refs/heads/)?main( |"|$)'        && deny "Cấm push thẳng lên main — tạo nhánh feature/… hoặc chore/…."
-check '(^|[^A-Za-z0-9_.-])(\.env|\.dev\.vars|credentials\.json|key_status\.json)([^A-Za-z0-9_.-]|$)' \
+check '(^|[^A-Za-z0-9_.-])(\.env|\.env\.swarm|\.dev\.vars|credentials\.json|key_status\.json)([^A-Za-z0-9_.-]|$)' \
   && deny "Cấm đọc/sửa file secret (.env, .dev.vars, credentials.json, key_status.json)."
 
 exit 0

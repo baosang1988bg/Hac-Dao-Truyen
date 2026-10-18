@@ -182,3 +182,7 @@ tools/private/
 # tools/fix_epub_metadata.py — trạng thái resume & thư mục SQL sinh ra (không commit)
 tools/.fix_epub_metadata_state.json
 out/
+
+# Multi-Provider Agent Swarm (/speckit-auto): nhật ký run + key riêng
+.swarm/
+.env.swarm

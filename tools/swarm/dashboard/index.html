@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HacDao Swarm</title>
+<style>
+:root {
+  --bg: #f6f4ef; --panel: #ffffff; --panel-2: #f1eee6; --border: #e2ddd0;
+  --text: #1d1b16; --muted: #6b6558; --accent: #a86f12; --accent-soft: #f4e6c8;
+  --ok: #1f8a5b; --ok-soft: #dcf2e7; --warn: #b7791f; --warn-soft: #fbefd5;
+  --err: #c0392b; --err-soft: #fadbd7; --info: #2f6fb0; --info-soft: #dce9f7;
+  --idle: #8a8578; --idle-soft: #ecebe6;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f172a; --panel: #162033; --panel-2: #1c2940; --border: #2a3953;
+    --text: #e8edf5; --muted: #94a3b8; --accent: #e0a947; --accent-soft: #3a2e17;
+    --ok: #34c38f; --ok-soft: #12352a; --warn: #f0b44c; --warn-soft: #3a2e14;
+    --err: #ff6b5e; --err-soft: #3d1c1a; --info: #6aa8ec; --info-soft: #172d48;
+    --idle: #8b97a8; --idle-soft: #1f2a3c;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f172a; --panel: #162033; --panel-2: #1c2940; --border: #2a3953;
+  --text: #e8edf5; --muted: #94a3b8; --accent: #e0a947; --accent-soft: #3a2e17;
+  --ok: #34c38f; --ok-soft: #12352a; --warn: #f0b44c; --warn-soft: #3a2e14;
+  --err: #ff6b5e; --err-soft: #3d1c1a; --info: #6aa8ec; --info-soft: #172d48;
+  --idle: #8b97a8; --idle-soft: #1f2a3c;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { position: sticky; top: 0; z-index: 5; background: var(--panel); border-bottom: 1px solid var(--border);
+  padding: 10px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+header h1 { font-size: 16px; margin: 0; letter-spacing: .2px; }
+header h1 span { color: var(--accent); }
+.conn { width: 9px; height: 9px; border-radius: 50%; background: var(--idle); display: inline-block; }
+.conn.on { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+.spacer { flex: 1; }
+.meter { flex: 0 1 260px; min-width: 200px; }
+.meter .bar { height: 8px; border-radius: 99px; background: var(--panel-2); overflow: hidden; border: 1px solid var(--border); }
+.meter .fill { height: 100%; width: 0; background: var(--accent); transition: width .4s ease; }
+.meter .fill.hot { background: var(--err); }
+.meter small { color: var(--muted); font-variant-numeric: tabular-nums; }
+main { max-width: 1280px; margin: 0 auto; padding: 16px 20px 60px; display: grid; gap: 16px; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 0 0 10px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+textarea, input, select { font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; }
+textarea { width: 100%; min-height: 64px; resize: vertical; }
+button { font: inherit; border-radius: 8px; border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+  padding: 7px 14px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+button.danger { color: var(--err); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.stages { display: flex; gap: 6px; flex-wrap: wrap; }
+.stage { padding: 4px 10px; border-radius: 99px; font-size: 12px; background: var(--idle-soft); color: var(--idle); border: 1px solid transparent; }
+.stage.active { background: var(--info-soft); color: var(--info); border-color: var(--info); }
+.stage.done { background: var(--ok-soft); color: var(--ok); }
+.stage.wait { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
+.agents { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px;
+  display: grid; gap: 8px; transition: border-color .2s, box-shadow .2s; }
+.card.running, .card.reviewing { border-color: var(--info); box-shadow: 0 0 0 3px var(--info-soft); }
+.card.waiting { border-color: var(--warn); box-shadow: 0 0 0 3px var(--warn-soft); }
+.card.failed { border-color: var(--err); }
+.card-top { display: flex; gap: 10px; align-items: center; }
+.avatar { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-weight: 700; color: #fff; flex: none; }
+.card-title { font-weight: 600; }
+.chip { font-size: 11px; padding: 1px 8px; border-radius: 99px; background: var(--panel-2); border: 1px solid var(--border);
+  color: var(--muted); font-family: var(--mono); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge { margin-left: auto; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+.b-running, .b-reviewing { background: var(--info-soft); color: var(--info); }
+.b-waiting { background: var(--warn-soft); color: var(--warn); }
+.b-completed { background: var(--ok-soft); color: var(--ok); }
+.b-failed { background: var(--err-soft); color: var(--err); }
+.b-idle, .b-skipped { background: var(--idle-soft); color: var(--idle); }
+.detail { color: var(--muted); font-size: 12px; min-height: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stats { display: flex; gap: 12px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats b { color: var(--text); font-weight: 600; }
+.pulse { animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } .meter .fill { transition: none; } }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+.gate { border: 2px solid var(--warn); background: var(--warn-soft); }
+.gate h3 { margin: 0 0 6px; font-size: 15px; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+.tabs button { padding: 4px 10px; font-size: 12px; }
+.tabs button[aria-selected="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.doc { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
+  max-height: 520px; overflow: auto; }
+.doc h1, .doc h2, .doc h3, .doc h4 { margin: .8em 0 .3em; line-height: 1.3; }
+.doc h1 { font-size: 18px; } .doc h2 { font-size: 15px; } .doc h3 { font-size: 14px; }
+.doc p { margin: .4em 0; } .doc ul { margin: .3em 0; padding-left: 1.3em; }
+.doc code { font-family: var(--mono); font-size: 12px; background: var(--panel); padding: 0 4px; border-radius: 4px; }
+.doc pre, pre.diff { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-word; margin: 0; }
+.doc blockquote { margin: .4em 0; padding-left: 10px; border-left: 3px solid var(--accent); color: var(--muted); }
+.diff .add { color: var(--ok); } .diff .del { color: var(--err); } .diff .hunk { color: var(--info); } .diff .file { font-weight: 700; }
+.log { max-height: 560px; overflow: auto; font-size: 12.5px; display: grid; gap: 2px; }
+.log-item { display: grid; grid-template-columns: 62px 96px minmax(0, 1fr); gap: 8px; padding: 3px 4px; border-radius: 6px; }
+.log-item:hover { background: var(--panel-2); }
+.log-item time { color: var(--muted); font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 11.5px; }
+.log-item .who { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log-item .msg { white-space: pre-wrap; word-break: break-word; }
+.log-item.warn .msg { color: var(--warn); } .log-item.error .msg { color: var(--err); }
+.log-item.handoff { background: var(--accent-soft); }
+.log-item.handoff .msg { color: var(--accent); font-weight: 600; }
+.result { display: grid; gap: 8px; }
+.result pre { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-family: var(--mono);
+  font-size: 12px; white-space: pre-wrap; word-break: break-all; margin: 0; }
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+.notice { padding: 10px 12px; border-radius: 8px; background: var(--err-soft); color: var(--err); }
+@media (max-width: 600px) {
+  header, main { padding-left: 16px; padding-right: 16px; }
+  .meter { min-width: 0; width: 100%; }
+  .log-item { grid-template-columns: 54px minmax(0, 1fr); }
+  .log-item .who { grid-column: 2; }
+  .log-item .msg { grid-column: 1 / -1; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>HacDao <span>Swarm</span></h1>
+  <span class="conn" id="conn" title="Kết nối live"></span>
+  <select id="runSelect" aria-label="Chọn run"><option value="">— Run mới —</option></select>
+  <span class="spacer"></span>
+  <button id="themeBtn" title="Đổi giao diện sáng/tối" aria-label="Đổi giao diện sáng/tối">◐</button>
+  <div class="meter" aria-live="polite">
+    <div class="row" style="justify-content:space-between"><small id="costText">$0.000 / $2.00</small><small id="tokText">0 token</small></div>
+    <div class="bar"><div class="fill" id="costFill"></div></div>
+  </div>
+</header>
+
+<main>
+  <div id="authErr" class="notice hidden">Thiếu token. Mở dashboard bằng đường link mà lệnh <code>python -m tools.swarm serve</code> in ra (có <code>#token=…</code>).</div>
+
+  <section class="panel" id="newRun">
+    <h2>/speckit-auto — tính năng mới</h2>
+    <textarea id="reqInput" placeholder="Mô tả tính năng bằng tiếng Việt, vd: Thêm nút chia sẻ chương lên Facebook/Zalo ở cuối Reader"></textarea>
+    <div class="row" style="margin-top:8px">
+      <label>Ngân sách $ <input id="budgetInput" type="number" min="0.1" step="0.5" value="2" style="width:80px"></label>
+      <label><input id="demoInput" type="checkbox"> Demo (giả lập, không tốn tiền)</label>
+      <span class="spacer"></span>
+      <span class="muted" id="keyInfo"></span>
+      <button class="primary" id="startBtn">Chạy</button>
+    </div>
+    <div id="startErr" class="notice hidden" style="margin-top:8px"></div>
+  </section>
+
+  <section class="panel hidden" id="runPanel">
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <h2 style="margin:0">Run <span id="runId" class="chip"></span></h2>
+        <div id="runReq" style="font-weight:600;margin-top:4px"></div>
+        <div class="muted" style="font-size:12px">Nhánh <span id="runBranch" class="chip"></span> · trạng thái <b id="runStatus"></b></div>
+      </div>
+      <button class="danger" id="cancelBtn">Huỷ run</button>
+    </div>
+    <div class="stages" id="stages" style="margin-top:10px"></div>
+  </section>
+
+  <section class="panel gate hidden" id="gatePanel" aria-live="assertive">
+    <h3 id="gateTitle"></h3>
+    <div id="gateMsg" class="muted" style="margin-bottom:8px"></div>
+    <div class="tabs" id="gateTabs" role="tablist"></div>
+    <div class="doc" id="gateDoc"></div>
+    <textarea id="gateFeedback" placeholder="Góp ý khi yêu cầu sửa (bắt buộc), hoặc số tiền muốn tăng ở gate ngân sách" style="margin-top:8px"></textarea>
+    <div class="row" style="margin-top:8px">
+      <button class="primary" data-decision="approve">Duyệt</button>
+      <button data-decision="revise">Yêu cầu sửa</button>
+      <button class="danger" data-decision="stop">Dừng</button>
+      <span class="muted" id="gateErr"></span>
+    </div>
+  </section>
+
+  <section class="agents" id="agents" aria-label="Các agent"></section>
+
+  <div class="grid2">
+    <section class="panel">
+      <h2>Tài liệu & thay đổi</h2>
+      <div class="tabs" id="artTabs" role="tablist"></div>
+      <div class="doc" id="artDoc"><span class="muted">Chưa có tài liệu.</span></div>
+    </section>
+    <section class="panel">
+      <h2>Luồng hội thoại giữa agent</h2>
+      <div class="log" id="log" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <section class="panel hidden" id="resultPanel">
+    <h2>Kết quả</h2>
+    <div class="result" id="result"></div>
+  </section>
+</main>
+
+<script>
+(() => {
+  'use strict';
+  // ------------------------------------------------------------ token & helpers
+  let token = '';
+  const m = location.hash.match(/token=([^&]+)/);
+  try {
+    if (m) { token = decodeURIComponent(m[1]); sessionStorage.setItem('swarmToken', token); }
+    else token = sessionStorage.getItem('swarmToken') || '';
+  } catch (_) { if (m) token = decodeURIComponent(m[1]); }
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  async function api(path, opts = {}) {
+    const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', 'X-Swarm-Token': token, ...(opts.headers || {}) } });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401) $('authErr').classList.remove('hidden');
+    if (!res.ok) throw new Error(data.detail ? (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)) : res.statusText);
+    return data;
+  }
+
+  // ------------------------------------------------------------ theme
+  try { const t = localStorage.getItem('swarmTheme'); if (t) document.documentElement.dataset.theme = t; } catch (_) {}
+  $('themeBtn').onclick = () => {
+    const dark = document.documentElement.dataset.theme
+      ? document.documentElement.dataset.theme === 'dark'
+      : matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = dark ? 'light' : 'dark';
+    try { localStorage.setItem('swarmTheme', document.documentElement.dataset.theme); } catch (_) {}
+  };
+
+  // ------------------------------------------------------------ static meta
+  const AGENTS = {
+    lead: { title: 'Orchestrator', icon: '♛', color: '#7c5cbf' },
+    spec: { title: 'Spec Lead', icon: 'S', color: '#2f80ed' },
+    architect: { title: 'Architect', icon: 'A', color: '#c9932e' },
+    coder: { title: 'Coder', icon: '</>', color: '#a8291f' },
+    qa: { title: 'Adversarial QA', icon: 'Q', color: '#27ae60' },
+    healer: { title: 'Local Healer', icon: '✚', color: '#5d6d7e' },
+  };
+  const PROVIDERS = { google: 'Google', anthropic: 'Anthropic', xai: 'xAI', openai: 'OpenAI', ollama: 'Local GPU' };
+  const BADGES = {
+    running: '🟢 RUNNING', reviewing: '🟡 REVIEWING', completed: '🔵 COMPLETED', idle: '💤 IDLE',
+    waiting: '⏸ CHỜ DUYỆT', failed: '🔴 FAILED', skipped: '⏭ BỎ QUA',
+  };
+  const STAGES = [
+    ['spec', 'Spec'], ['g-spec', 'Duyệt spec'], ['architect', 'Plan + Tasks'], ['g-plan', 'Duyệt plan'],
+    ['coder', 'Code'], ['qa', 'QA'], ['healer', 'Heal'], ['checks', 'Kiểm tra'], ['done', 'Commit'],
+  ];
+  const ART_ORDER = ['spec.md', 'plan.md', 'tasks.md', 'diff', 'qa_report.json'];
+
+  // ------------------------------------------------------------ state
+  let cfg = null, runId = '', es = null, state = null, artSel = 'spec.md', gateSel = '';
+
+  function freshState() {
+    return { agents: {}, gates: {}, artifacts: {}, budget: {}, status: '', result: null, checks: null };
+  }
+
+  // ------------------------------------------------------------ markdown (an toàn: escape trước)
+  function md(src) {
+    const lines = esc(src).split('\n');
+    let html = '', inList = false, inCode = false, code = [];
+    const inline = (s) => s
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+      .replace(/(^|[^*])\*([^*]+)\*/g, '$1<i>$2</i>');
+    for (const ln of lines) {
+      if (ln.startsWith('```')) {
+        if (inCode) { html += '<pre>' + code.join('\n') + '</pre>'; code = []; }
+        inCode = !inCode; continue;
+      }
+      if (inCode) { code.push(ln); continue; }
+      const h = ln.match(/^(#{1,4})\s+(.*)$/);
+      const li = ln.match(/^\s*[-*]\s+(.*)$/) || ln.match(/^\s*\d+\.\s+(.*)$/);
+      if (!li && inList) { html += '</ul>'; inList = false; }
+      if (h) html += `<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`;
+      else if (li) {
+        if (!inList) { html += '<ul>'; inList = true; }
+        html += '<li>' + inline(li[1].replace(/^\[ \]/, '☐').replace(/^\[[xX]\]/, '☑')) + '</li>';
+      } else if (ln.startsWith('&gt;')) html += '<blockquote>' + inline(ln.slice(4)) + '</blockquote>';
+      else if (ln.trim()) html += '<p>' + inline(ln) + '</p>';
+    }
+    if (inList) html += '</ul>';
+    if (inCode) html += '<pre>' + code.join('\n') + '</pre>';
+    return html;
+  }
+  function renderDiff(src) {
+    const pre = el('pre', 'diff');
+    for (const ln of String(src || '(chưa có thay đổi)').split('\n')) {
+      const cls = ln.startsWith('diff --git') ? 'file' : ln.startsWith('@@') ? 'hunk'
+        : ln.startsWith('+') && !ln.startsWith('+++') ? 'add' : ln.startsWith('-') && !ln.startsWith('---') ? 'del' : '';
+      pre.appendChild(el('span', cls, ln + '\n'));
+    }
+    return pre;
+  }
+  function renderArtifact(container, name) {
+    container.textContent = '';
+    const a = state.artifacts[name];
+    if (!a) { container.appendChild(el('span', 'muted', 'Chưa có.')); return; }
+    if (name === 'diff') container.appendChild(renderDiff(a.content));
+    else if (name.endsWith('.json')) container.appendChild(el('pre', '', a.content));
+    else container.innerHTML = md(a.content);   // md() đã escape toàn bộ HTML
+  }
+  function tabs(container, names, selected, onPick) {
+    container.textContent = '';
+    for (const n of names) {
+      const b = el('button', '', n);
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', String(n === selected));
+      b.onclick = () => onPick(n);
+      container.appendChild(b);
+    }
+  }
+
+  // ------------------------------------------------------------ render
+  function render() {
+    if (!state) return;
+    $('runPanel').classList.toggle('hidden', !runId);
+    $('newRun').classList.toggle('hidden', !!runId);
+    $('runId').textContent = runId;
+    $('runReq').textContent = state.request || '';
+    $('runBranch').textContent = state.branch || '…';
+    $('runStatus').textContent = state.status || '';
+    $('cancelBtn').disabled = !!state.result;
+
+    // budget
+    const b = state.budget || {};
+    const spent = b.spent || 0, limit = b.limit || (cfg ? cfg.budget_usd : 2);
+    $('costText').textContent = `$${spent.toFixed(3)} / $${limit.toFixed(2)}`;
+    $('tokText').textContent = `${((b.input_tokens || 0) + (b.output_tokens || 0)).toLocaleString('vi-VN')} token`;
+    const pct = Math.min(100, (spent / (limit || 1)) * 100);
+    $('costFill').style.width = pct + '%';
+    $('costFill').classList.toggle('hot', pct > 85);
+
+    // agents
+    const box = $('agents'); box.textContent = '';
+    for (const [role, meta] of Object.entries(AGENTS)) {
+      const a = state.agents[role] || { status: 'idle' };
+      const st = a.status || 'idle';
+      const card = el('article', 'card ' + st);
+      const top = el('div', 'card-top');
+      const av = el('div', 'avatar', meta.icon); av.style.background = meta.color;
+      const tbox = el('div'); tbox.style.minWidth = '0';
+      tbox.appendChild(el('div', 'card-title', a.title || meta.title));
+      const prov = a.provider ? (PROVIDERS[a.provider] || a.provider) : (role === 'lead' ? 'Swarm' : '');
+      if (prov) tbox.appendChild(el('span', 'chip', prov + (a.model ? ' · ' + a.model.split('/').slice(1).join('/') : '')));
+      const badge = el('span', 'badge b-' + st + (st === 'running' || st === 'reviewing' ? ' pulse' : ''), BADGES[st] || st);
+      top.append(av, tbox, badge);
+      const usage = (b.by_agent || {})[role] || {};
+      const stats = el('div', 'stats');
+      stats.innerHTML = `<span>gọi <b>${usage.calls || 0}</b></span><span>token <b>${((usage.input_tokens || 0) + (usage.output_tokens || 0)).toLocaleString('vi-VN')}</b></span><span>chi phí <b>$${(usage.cost || 0).toFixed(4)}</b></span>`;
+      card.append(top, el('div', 'detail', a.detail || ''), stats);
+      box.appendChild(card);
+    }
+
+    // stages
+    const sbox = $('stages'); sbox.textContent = '';
+    const agentSt = (r) => (state.agents[r] || {}).status;
+    for (const [key, label] of STAGES) {
+      let cls = '';
+      if (key.startsWith('g-')) {
+        const g = state.gates[key.slice(2)];
+        cls = g ? (g.status === 'open' ? 'wait' : g.status === 'approve' ? 'done' : '') : '';
+      } else if (key === 'checks') cls = state.checks ? 'done' : '';
+      else if (key === 'done') cls = state.result ? (state.result.commit ? 'done' : '') : '';
+      else {
+        const s = agentSt(key);
+        cls = s === 'completed' || s === 'skipped' ? 'done' : s === 'running' || s === 'reviewing' ? 'active' : s === 'waiting' ? 'wait' : '';
+      }
+      sbox.appendChild(el('span', 'stage ' + cls, label));
+    }
+
+    // gate
+    const open = Object.entries(state.gates).find(([, g]) => g.status === 'open');
+    $('gatePanel').classList.toggle('hidden', !open);
+    if (open) {
+      const [gname, g] = open;
+      $('gatePanel').dataset.gate = gname;
+      $('gateTitle').textContent = '⏸ ' + (g.title || gname);
+      $('gateMsg').textContent = g.message || 'Đọc tài liệu bên dưới rồi chọn Duyệt, Yêu cầu sửa (kèm góp ý) hoặc Dừng.';
+      const names = g.artifacts || [];
+      if (!names.includes(gateSel)) gateSel = names[0] || '';
+      tabs($('gateTabs'), names, gateSel, (n) => { gateSel = n; render(); });
+      $('gateDoc').classList.toggle('hidden', !names.length);
+      if (names.length) renderArtifact($('gateDoc'), gateSel);
+    }
+
+    // artifacts
+    const arts = ART_ORDER.filter((n) => state.artifacts[n]);
+    if (!arts.includes(artSel)) artSel = arts[0] || '';
+    tabs($('artTabs'), arts, artSel, (n) => { artSel = n; render(); });
+    if (arts.length) renderArtifact($('artDoc'), artSel);
+
+    // result
+    const r = state.result;
+    $('resultPanel').classList.toggle('hidden', !r);
+    if (r) {
+      const box2 = $('result'); box2.textContent = '';
+      const ok = r.status === 'completed';
+      box2.appendChild(el('div', '', (ok ? '✅ Hoàn tất' : '⚠️ Kết thúc: ' + r.status) + (r.error ? ' — ' + r.error : '')));
+      if (r.commit) box2.appendChild(el('div', '', `Commit ${r.commit} trên nhánh ${r.branch} (chưa push).`));
+      if (r.checks && Object.keys(r.checks).length) {
+        box2.appendChild(el('div', '', 'Cổng kiểm tra: ' + Object.entries(r.checks).map(([k, v]) => (v ? '✅ ' : '❌ ') + k).join('  ')));
+      }
+      if (r.qa && r.qa.summary) box2.appendChild(el('div', '', 'QA: ' + r.qa.summary));
+      if (r.diff_stat) box2.appendChild(el('pre', '', r.diff_stat));
+      if (r.next_steps && r.next_steps.length) {
+        box2.appendChild(el('div', 'muted', 'Bước tiếp theo (bạn tự làm):'));
+        const pre = el('pre', '', r.next_steps.join('\n'));
+        const copy = el('button', '', 'Sao chép lệnh');
+        copy.onclick = () => navigator.clipboard && navigator.clipboard.writeText(r.next_steps.join('\n'));
+        box2.append(pre, copy);
+      }
+    }
+  }
+
+  // ------------------------------------------------------------ log
+  function addLog(ev) {
+    const log = $('log');
+    const t = new Date(ev.ts * 1000).toLocaleTimeString('vi-VN', { hour12: false });
+    let who, msg, cls = 'log-item ' + (ev.level || '');
+    if (ev.type === 'handoff') {
+      who = (AGENTS[ev.src] || {}).title || ev.src; cls += ' handoff';
+      msg = `→ ${(AGENTS[ev.dst] || {}).title || ev.dst}: ${ev.message}`;
+    } else if (ev.type === 'llm_call') {
+      who = (AGENTS[ev.agent] || {}).title || ev.agent;
+      msg = `${ev.model} · ${ev.input_tokens.toLocaleString('vi-VN')}→${ev.output_tokens.toLocaleString('vi-VN')} token · $${ev.cost.toFixed(4)} · ${ev.seconds}s`;
+      cls += ' muted';
+    } else if (ev.type === 'gate_opened') { who = 'Bạn'; msg = '⏸ Chờ duyệt: ' + (ev.title || ev.gate); cls += ' warn'; }
+    else if (ev.type === 'gate_resolved') { who = 'Bạn'; msg = `${ev.decision === 'approve' ? '✔ Duyệt' : ev.decision === 'revise' ? '✎ Yêu cầu sửa' : '■ Dừng'} ${ev.gate}${ev.feedback ? ': ' + ev.feedback : ''}`; }
+    else if (ev.type === 'run_finished') { who = 'Orchestrator'; msg = 'Kết thúc: ' + ev.status; }
+    else { who = (AGENTS[ev.agent] || {}).title || ev.agent || ''; msg = ev.message; }
+    const row = el('div', cls);
+    row.append(el('time', '', t), el('span', 'who', who), el('span', 'msg', msg));
+    const stick = log.scrollTop + log.clientHeight >= log.scrollHeight - 30;
+    log.appendChild(row);
+    if (stick) log.scrollTop = log.scrollHeight;
+  }
+
+  // ------------------------------------------------------------ events
+  function apply(ev) {
+    const s = state;
+    switch (ev.type) {
+      case 'run_started':
+        Object.assign(s, { status: 'running', request: ev.request, branch: ev.branch, budget: ev.budget });
+        for (const [r, info] of Object.entries(ev.agents || {})) s.agents[r] = { status: 'idle', ...info };
+        break;
+      case 'agent_status': s.agents[ev.agent] = { ...(s.agents[ev.agent] || {}), status: ev.status, detail: ev.detail ?? (s.agents[ev.agent] || {}).detail }; break;
+      case 'agent_model': s.agents[ev.agent] = { ...(s.agents[ev.agent] || {}), model: ev.model, provider: ev.provider }; break;
+      case 'llm_call': case 'budget_changed': s.budget = ev.budget || s.budget; break;
+      case 'artifact': s.artifacts[ev.name] = { path: ev.path, content: ev.content }; if (ev.name !== 'qa_report.json') artSel = ev.name; break;
+      case 'gate_opened': s.gates[ev.gate] = { status: 'open', title: ev.title, artifacts: ev.artifacts, message: ev.message }; s.status = 'waiting'; gateSel = ''; break;
+      case 'gate_resolved': s.gates[ev.gate] = { ...(s.gates[ev.gate] || {}), status: ev.decision }; s.status = 'running'; $('gateFeedback').value = ''; break;
+      case 'checks': s.checks = ev.results; break;
+      case 'run_finished': s.status = ev.status; s.result = ev; break;
+    }
+    if (['log', 'handoff', 'llm_call', 'gate_opened', 'gate_resolved', 'run_finished'].includes(ev.type)) addLog(ev);
+  }
+
+  function connect(id) {
+    if (es) es.close();
+    runId = id; state = freshState(); $('log').textContent = ''; artSel = 'spec.md';
+    try { history.replaceState(null, '', '#token=' + encodeURIComponent(token) + '&run=' + id); } catch (_) {}
+    es = new EventSource(`/api/runs/${encodeURIComponent(id)}/events?token=${encodeURIComponent(token)}`);
+    let pending = false;
+    es.onopen = () => $('conn').classList.add('on');
+    es.onerror = () => $('conn').classList.remove('on');
+    es.onmessage = (e) => {
+      apply(JSON.parse(e.data));
+      if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; render(); }); }
+    };
+    es.addEventListener('end', () => { es.close(); $('conn').classList.remove('on'); render(); refreshRuns(); });
+    render();
+  }
+
+  // ------------------------------------------------------------ actions
+  async function refreshRuns() {
+    try {
+      const runs = await api('/api/runs');
+      const sel = $('runSelect'); const cur = runId;
+      sel.textContent = '';
+      sel.appendChild(new Option('— Run mới —', ''));
+      for (const r of runs) sel.appendChild(new Option(`${r.demo ? '[demo] ' : ''}${r.request.slice(0, 40)} · ${r.status}`, r.id));
+      sel.value = cur;
+    } catch (_) {}
+  }
+  $('runSelect').onchange = (e) => {
+    if (e.target.value) { connect(e.target.value); return; }
+    if (es) es.close();
+    runId = ''; state = freshState(); $('log').textContent = ''; $('conn').classList.remove('on');
+    render(); $('reqInput').focus();
+  };
+  $('startBtn').onclick = async () => {
+    const req = $('reqInput').value.trim();
+    $('startErr').classList.add('hidden');
+    if (req.length < 3) { $('startErr').textContent = 'Nhập mô tả tính năng.'; $('startErr').classList.remove('hidden'); return; }
+    $('startBtn').disabled = true;
+    try {
+      const { id } = await api('/api/runs', { method: 'POST', body: JSON.stringify({
+        request: req, budget_usd: parseFloat($('budgetInput').value) || null, demo: $('demoInput').checked }) });
+      await refreshRuns(); $('runSelect').value = id; connect(id);
+    } catch (e) { $('startErr').textContent = e.message; $('startErr').classList.remove('hidden'); }
+    finally { $('startBtn').disabled = false; }
+  };
+  $('cancelBtn').onclick = async () => {
+    if (!runId || !confirm('Huỷ run này? Worktree vẫn giữ lại để bạn xem.')) return;
+    try { await api(`/api/runs/${runId}/cancel`, { method: 'POST' }); } catch (e) { alert(e.message); }
+  };
+  for (const btn of document.querySelectorAll('#gatePanel [data-decision]')) {
+    btn.onclick = async () => {
+      const gate = $('gatePanel').dataset.gate, decision = btn.dataset.decision;
+      const feedback = $('gateFeedback').value.trim();
+      $('gateErr').textContent = '';
+      if (decision === 'revise' && !feedback) { $('gateErr').textContent = 'Ghi góp ý trước khi yêu cầu sửa.'; $('gateFeedback').focus(); return; }
+      if (decision === 'stop' && !confirm('Dừng run tại đây?')) return;
+      try { await api(`/api/runs/${runId}/gates/${gate}`, { method: 'POST', body: JSON.stringify({ decision, feedback }) }); }
+      catch (e) { $('gateErr').textContent = e.message; }
+    };
+  }
+
+  // ------------------------------------------------------------ boot
+  (async () => {
+    if (!token) { $('authErr').classList.remove('hidden'); return; }
+    try {
+      cfg = await api('/api/config');
+      $('budgetInput').value = cfg.budget_usd;
+      const missing = new Set();
+      for (const r of Object.values(cfg.roles)) for (const mm of r.models) if (!mm.has_key && mm.provider !== 'ollama') missing.add(mm.provider);
+      $('keyInfo').textContent = missing.size ? 'Thiếu key: ' + [...missing].map((p) => PROVIDERS[p] || p).join(', ') : 'Đủ API key ✓';
+    } catch (_) { return; }
+    await refreshRuns();
+    const rm = location.hash.match(/run=([\w-]+)/);
+    if (rm) { $('runSelect').value = rm[1]; connect(rm[1]); }
+    else { state = freshState(); render(); }
+  })();
+})();
+</script>
+</body>
+</html>
