@@ -9,6 +9,7 @@ Hiến pháp Spec Kit: `.specify/memory/constitution.md`.
 - `src/index.js`: Cloudflare Worker ESM (D1 = `env.DB`, R2 = `env.CHAPTERS`).
 - Python 3.11 ở gốc và `tools/`: crawl + dịch truyện Trung → Việt.
 - `specs/<feature>/`: đặc tả theo GitHub Spec Kit (`spec.md`, `plan.md`, `tasks.md`).
+- `tools/swarm/`: Multi-Provider Agent Swarm (`/speckit-auto`) + Live Dashboard — xem `docs/RUNBOOK_SWARM.md`.
 
 ## Cấm tuyệt đối (agent tự động)
 - Deploy hoặc ghi production: `npm run deploy`, `wrangler deploy`, `deploy.bat`,
