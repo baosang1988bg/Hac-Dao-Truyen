@@ -16,6 +16,7 @@ import { normalizeChapterCatalog, getChapNum, chapterUrl } from '../utils/chapte
 import { useCachedGet } from '../utils/apiCache'
 import { runWhenIdle } from '../utils/idle'
 import useDocumentTitle from '../hooks/useDocumentTitle'
+import ScrollToTopButton from '../components/ui/ScrollToTopButton'
 import '../styles/reading.css'
 
 const PAGE_SIZE = 100
@@ -201,6 +202,9 @@ function NovelPageContent({ slug }) {
           </Link>
         </div>
       )}
+
+      {/* Nút cuộn lên đầu trang */}
+      <ScrollToTopButton />
     </div>
   )
 }
