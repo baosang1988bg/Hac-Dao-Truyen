@@ -1,0 +1,103 @@
+# Cấu hình Multi-Provider Agent Swarm (/speckit-auto).
+# Tên model + bảng giá (USD / 1 triệu token) lấy từ nguồn thứ ba ngày 2026-10-18.
+# PHẢI xác minh lại trên trang giá chính thức trước khi dùng thật — ngân sách
+# của mỗi run được tính từ các con số này. Khi không chắc, để giá CAO hơn thực tế.
+
+[run]
+budget_usd = 2.0                          # dừng + hỏi khi sắp vượt
+worktree_root = "../HacDaoTruyen-swarm"   # tương đối so với gốc repo
+branch_prefix = "feature/"
+max_coder_steps = 40                      # số lượt tool-calling tối đa mỗi lần Coder chạy
+max_qa_rounds = 2
+max_fix_rounds = 2
+max_revisions = 3                         # số lần "Yêu cầu sửa" ở mỗi gate
+http_timeout_s = 300
+
+[providers.anthropic]
+kind = "anthropic"
+base_url = "https://api.anthropic.com"
+api_key_env = "ANTHROPIC_API_KEY"
+
+[providers.google]
+kind = "openai_compat"
+base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+api_key_env = "GEMINI_API_KEY"
+
+[providers.xai]
+kind = "openai_compat"
+base_url = "https://api.x.ai/v1"
+api_key_env = "XAI_API_KEY"
+
+[providers.openai]
+kind = "openai_compat"
+base_url = "https://api.openai.com/v1"
+api_key_env = "OPENAI_API_KEY"
+max_tokens_field = "max_completion_tokens"  # model mới của OpenAI không nhận max_tokens
+send_temperature = false                    # model reasoning chỉ nhận temperature mặc định
+
+[providers.ollama]
+kind = "openai_compat"
+base_url = "http://localhost:11434/v1"
+api_key_env = ""                          # Ollama local không cần key
+
+# ---- Bảng giá (USD / 1M token). Giá trị thận trọng (lấy mức cao khi nguồn mâu thuẫn).
+[models."anthropic/claude-sonnet-5-5"]
+input_per_mtok = 3.0
+output_per_mtok = 15.0
+context_tokens = 1000000
+
+[models."google/gemini-3.1-pro-preview"]
+input_per_mtok = 2.0
+output_per_mtok = 12.0
+context_tokens = 1000000     # >200k token prompt bị tính giá cao hơn → role spec giới hạn 80k
+
+[models."xai/grok-4.5"]
+input_per_mtok = 2.0
+output_per_mtok = 6.0
+context_tokens = 500000
+
+[models."openai/gpt-5.6-terra"]
+input_per_mtok = 2.5
+output_per_mtok = 15.0
+context_tokens = 400000
+
+[models."ollama/qwen2.5-coder:7b"]
+input_per_mtok = 0.0
+output_per_mtok = 0.0
+context_tokens = 32000
+
+# ---- Vai trò. `models` = chuỗi dự phòng theo thứ tự ưu tiên.
+[roles.spec]
+title = "Spec Lead"
+models = ["google/gemini-3.1-pro-preview", "anthropic/claude-sonnet-5-5"]
+temperature = 0.2
+max_output_tokens = 8000
+context_budget_tokens = 80000
+
+[roles.architect]
+title = "Architect"
+models = ["anthropic/claude-sonnet-5-5", "openai/gpt-5.6-terra"]
+temperature = 0.1
+max_output_tokens = 12000
+context_budget_tokens = 40000
+
+[roles.coder]
+title = "Coder"
+models = ["anthropic/claude-sonnet-5-5", "openai/gpt-5.6-terra"]
+temperature = 0.1
+max_output_tokens = 8000
+context_budget_tokens = 0
+
+[roles.qa]
+title = "Adversarial QA"
+models = ["xai/grok-4.5", "openai/gpt-5.6-terra"]
+temperature = 0.3
+max_output_tokens = 6000
+context_budget_tokens = 0
+
+[roles.healer]
+title = "Local Healer"
+models = ["ollama/qwen2.5-coder:7b", "anthropic/claude-sonnet-5-5"]
+temperature = 0.0
+max_output_tokens = 4000
+context_budget_tokens = 0

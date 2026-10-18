@@ -24,4 +24,9 @@ Sửa skill thì sửa CẢ HAI bản (hoặc chạy lại `specify integration 
 Thứ tự lệnh: `/speckit-constitution` → `/speckit-specify <mô tả>` → (`/speckit-clarify`) →
 `/speckit-plan` → `/speckit-tasks` → (`/speckit-analyze`) → `/speckit-implement` → `/speckit-converge`.
 Hiến pháp: `.specify/memory/constitution.md`. Đặc tả lưu ở `specs/<feature>/`.
+
+**Tự động cả quy trình:** `/speckit-auto <mô tả>` (hoặc `python -m tools.swarm auto "<mô tả>"`) chạy đội
+đa tác tử (Gemini → Claude → Grok → Ollama) với Live Dashboard, dừng chờ duyệt sau spec và sau plan;
+kết quả là commit trên nhánh `feature/NNN-…` trong worktree riêng, không push. Xem `docs/RUNBOOK_SWARM.md`.
+Không sửa `tools/swarm/` qua chính swarm (bị chặn có chủ đích).
 Spec Kit chỉ là quy trình — mọi quy tắc an toàn ở `.agents/AGENTS.md` vẫn áp dụng (không deploy, không đụng D1/R2 khi chưa được duyệt).

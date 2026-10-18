@@ -81,6 +81,10 @@ Trong phiên làm việc này, Antigravity Agent đã hoàn thành 5 nhóm nhi�
 
 ## 3. THIẾT KẾ KIẾN TRÚC GIAI ĐOẠN TIẾP THEO: MULTI-PROVIDER AGENT SWARM
 
+> **Trạng thái (2026-10-18, tối):** đã triển khai v1 tại `tools/swarm/` (nhánh `feature/speckit-swarm`) —
+> xem `specs/001-speckit-swarm/` và `docs/RUNBOOK_SWARM.md`. Khác thiết kế dưới đây: không dùng LiteLLM
+> (tự viết adapter bằng `httpx`), cấu hình là `tools/swarm/agents.toml` thay cho `agents.yml`.
+
 Người dùng đã định hướng rõ giai đoạn kế tiếp: **Chỉ cần 1 lệnh duy nhất (`/speckit-auto`), hệ thống tự kích hoạt một đội ngũ Đa tác tử (Multi-Agent Swarm) với giao diện Dashboard trực quan theo dõi Live Status từng Agent, phân chia cho nhiều Provider khác nhau**.
 
 ### 3.1. Phân bổ chuyên biệt theo sở trường của từng Provider

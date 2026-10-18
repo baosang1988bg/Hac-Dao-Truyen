@@ -1,0 +1,8 @@
+# Dependency của Multi-Provider Agent Swarm — đều đã có trong requirements.txt gốc
+# (cùng phiên bản), trừ tomli chỉ cần cho Python < 3.11. KHÔNG dùng LiteLLM (xem
+# specs/001-speckit-swarm/plan.md). Cài: pip install -r tools/swarm/requirements.txt
+fastapi==0.141.1
+uvicorn==0.52.4
+httpx==0.28.1
+pydantic==2.13.5
+tomli==2.2.1; python_version < "3.11"
