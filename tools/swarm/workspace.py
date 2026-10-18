@@ -17,7 +17,7 @@ def git(cwd: Path, *args: str, check: bool = True) -> str:
     exe = shutil.which("git")
     if not exe:
         raise GitError("Không tìm thấy git trong PATH")
-    p = subprocess.run([exe, "-c", "core.quotepath=off", *args], cwd=cwd, capture_output=True,
+    p = subprocess.run([exe, "-c", "core.quotepath=off", "-c", "core.longpaths=true", *args], cwd=cwd, capture_output=True,
                        text=True, encoding="utf-8", errors="replace")
     if check and p.returncode != 0:
         raise GitError(f"git {' '.join(args)}: {p.stderr.strip() or p.stdout.strip()}")

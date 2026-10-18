@@ -13,6 +13,7 @@ $env:PYTHONIOENCODING = "utf-8"
 
 $root = (git rev-parse --show-toplevel).Trim()
 Set-Location $root
+git config --global core.longpaths true 2>$null
 
 # Chọn Python 3.11+ (py launcher trước, rồi python trong PATH)
 $exe = $null; $pre = @()

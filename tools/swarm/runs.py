@@ -93,6 +93,7 @@ def _demo_clone(repo: Path) -> Path:
     tmp = Path(tempfile.mkdtemp(prefix="swarm-demo-"))
     dst = tmp / "repo"
     git(repo, "clone", "-q", "--local", "--no-hardlinks", str(git(repo, "rev-parse", "--show-toplevel").strip()), str(dst))
+    git(dst, "config", "core.longpaths", "true")
     return dst
 
 
