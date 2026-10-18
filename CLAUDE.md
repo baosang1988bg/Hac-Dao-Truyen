@@ -16,11 +16,12 @@ việc chạm production: thêm 1 dòng vào `.agents/WORKLOG.md`.
 
 # Quy trình phát triển tính năng mới (GitHub Spec Kit)
 
-Dự án sử dụng quy trình Spec-Driven Development (Spec Kit) tại thư mục `.specify/`:
-- `/speckit-constitution`: Kiểm tra hiến pháp và quy ước dự án (`.specify/memory/constitution.md`).
-- `/speckit-specify <mô tả>`: Phân tích yêu cầu và tạo đặc tả tính năng trong `specs/<feature>/spec.md`.
-- `/speckit-plan`: Nghiên cứu kỹ thuật và lập kế hoạch triển khai.
-- `/speckit-tasks`: Chia nhỏ danh sách công việc có thể kiểm thử.
-- `/speckit-implement`: Triển khai code theo từng task.
-- `/speckit-converge`: Chạy test (`npm test`), tự sửa lỗi và đối chiếu kết quả với spec.
+Spec Kit (v1.2.2.dev0) cài cho 2 runtime, dùng chung `.specify/` (template, hiến pháp):
+- **Claude Code (Mac/Linux):** skill ở `.claude/skills/speckit-*`, gọi script bash `.specify/scripts/bash/`.
+- **Antigravity (Windows):** skill ở `.agents/skills/speckit-*`, gọi script PowerShell `.specify/scripts/powershell/`.
+Sửa skill thì sửa CẢ HAI bản (hoặc chạy lại `specify integration upgrade`), không để lệch nhau.
 
+Thứ tự lệnh: `/speckit-constitution` → `/speckit-specify <mô tả>` → (`/speckit-clarify`) →
+`/speckit-plan` → `/speckit-tasks` → (`/speckit-analyze`) → `/speckit-implement` → `/speckit-converge`.
+Hiến pháp: `.specify/memory/constitution.md`. Đặc tả lưu ở `specs/<feature>/`.
+Spec Kit chỉ là quy trình — mọi quy tắc an toàn ở `.agents/AGENTS.md` vẫn áp dụng (không deploy, không đụng D1/R2 khi chưa được duyệt).
