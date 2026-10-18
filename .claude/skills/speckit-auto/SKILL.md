@@ -26,4 +26,4 @@ $ARGUMENTS
    - Kết quả là commit trên nhánh `feature/NNN-…` trong worktree `../HacDaoTruyen-swarm/NNN-…`; **không tự push**.
 5. KHÔNG tự duyệt gate thay người dùng, KHÔNG push, KHÔNG deploy.
 
-Chạy thử không tốn tiền: `python -m tools.swarm demo`. Hướng dẫn đầy đủ: `docs/RUNBOOK_SWARM.md`.
+Chạy thử không tốn tiền: `python -m tools.swarm demo`. Hướng dẫn đầy đủ: `docs/RUNBOOK_SWARM.md`; chạy thử lần đầu trên Windows: `docs/HUONG_DAN_CHAY_THU_SWARM_WINDOWS.md`.
