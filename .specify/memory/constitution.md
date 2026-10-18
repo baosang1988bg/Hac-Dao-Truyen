@@ -10,6 +10,7 @@
 ### II. Production Safety First (NON-NEGOTIABLE)
 - **Tuyệt đối không rò rỉ Secret:** Không commit hoặc in các giá trị từ `.env`, `credentials.json`, `key_status.json`, API tokens.
 - **Cấm tự động Deploy:** Sandbox / Agent Loop **TUYỆT ĐỐI KHÔNG** được chạy lệnh `wrangler deploy` hoặc `npm run deploy`. Mọi thay đổi production phải qua review con người và pipeline GitHub Actions.
+- **Rào chắn phải là kỹ thuật, không chỉ là lời dặn:** agent tự động (OpenHands) chạy trên bản clone không có secret/token ghi production; lệnh nguy hiểm bị chặn bởi `.openhands/hooks/block_dangerous.sh` (xem `docs/RUNBOOK_OPENHANDS.md`).
 - **Bảo vệ R2 & D1:** Không bao giờ đẩy catalog nguồn (`novels/<slug>/catalog.json` có link crawl) lên Cloudflare R2. Mọi thay đổi schema D1 phải qua file migration.
 
 ### III. Strict Quality Gates (Definition of Done)
@@ -32,4 +33,4 @@ Mọi tính năng/sửa lỗi hoàn thành bắt buộc phải vượt qua toàn
 - Bản Hiến pháp này là kim chỉ nam tối cao cho mọi agent (Antigravity, Claude Code, OpenHands) khi làm việc trên repo `HacDaoTruyen`.
 - Mọi đề xuất thêm dependency mới (npm hoặc pip) phải được lý giải rõ ràng trong tài liệu `research.md` / `plan.md`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-18 | **Last Amended**: 2026-10-18
+**Version**: 1.1.0 | **Ratified**: 2026-10-18 | **Last Amended**: 2026-10-18
