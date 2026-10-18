@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as _dt
+import json
 import secrets
 import shutil
 import tempfile
@@ -25,8 +26,8 @@ class Run:
     bus: EventBus
     gates: GateController
     budget: Budget
-    pipeline: Pipeline
-    thread: threading.Thread
+    pipeline: Pipeline | None = None
+    thread: threading.Thread | None = None
     demo: bool = False
     created: str = field(default_factory=lambda: _dt.datetime.now().isoformat(timespec="seconds"))
 
@@ -75,10 +76,44 @@ class RunManager:
         return run
 
     def get(self, run_id: str) -> Run | None:
-        return self.runs.get(run_id)
+        with self._lock:
+            if run_id in self.runs:
+                return self.runs[run_id]
+        log_file = self.runs_dir / run_id / "events.jsonl"
+        if not log_file.is_file():
+            return None
+        bus = EventBus(run_id, log_file)
+        with log_file.open("r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                if line.strip():
+                    try:
+                        ev = json.loads(line)
+                        bus._events.append(ev)
+                        bus._reduce(ev)
+                    except Exception:
+                        pass
+        s = bus.state
+        spent = s.get("budget", {}).get("spent", 0.0)
+        budget = Budget(s.get("budget", {}).get("limit", self.cfg.run.budget_usd))
+        budget.spent = spent
+        gates = GateController(bus)
+        dummy_th = threading.Thread(target=lambda: None)
+        run = Run(run_id, s.get("request", ""), bus, gates, budget, None, dummy_th,
+                  demo=bool("[demo]" in s.get("request", "") or "demo" in run_id or not s.get("branch")))
+        with self._lock:
+            self.runs[run_id] = run
+        return run
 
     def list(self) -> list[dict]:
-        return [r.summary() for r in sorted(self.runs.values(), key=lambda r: r.id, reverse=True)]
+        with self._lock:
+            active_ids = set(self.runs.keys())
+        if self.runs_dir.is_dir():
+            for p in self.runs_dir.iterdir():
+                if p.is_dir() and p.name not in active_ids:
+                    if (p / "events.jsonl").is_file():
+                        self.get(p.name)
+        with self._lock:
+            return [r.summary() for r in sorted(self.runs.values(), key=lambda r: r.id, reverse=True)]
 
     def cancel(self, run_id: str) -> bool:
         run = self.runs.get(run_id)
