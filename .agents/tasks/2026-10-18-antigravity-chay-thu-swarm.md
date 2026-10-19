@@ -1,5 +1,10 @@
 # Việc cho Antigravity (máy Windows DESKTOP-BDSL142) — chạy thử /speckit-auto trước khi merge
 
+> **Cập nhật 2026-10-19 (claude-cowork):** swarm ĐÃ vào `main` (`14fb9ae`) trước khi có kết quả bước 1–4
+> — trái mục "Không làm" bên dưới. Việc còn lại: làm bước 1–4 **trên `main`** (thay `feature/speckit-swarm`
+> bằng `main` ở mọi lệnh), ghi WORKLOG kết quả, push WORKLOG lên `main`. Lỗi trong `tools\swarm\` →
+> ghi nguyên văn vào WORKLOG, không tự sửa. Checklist từng ô: `docs\CHECKLIST_WINDOWS_SWARM.md`.
+
 > Nhánh `feature/speckit-swarm` (Claude Cowork viết trên Mac, chưa từng chạy trên Windows
 > và chưa gọi API thật). Việc này **KHÔNG chạm production**. Làm đủ bước 1–5, ghi WORKLOG,
 > rồi **dừng chờ người dùng** quyết định merge. Hướng dẫn chi tiết:
@@ -9,7 +14,7 @@
 
 ```powershell
 git fetch origin
-git checkout feature/speckit-swarm
+git checkout main
 git pull --rebase
 git config core.longpaths true
 py -3.12 -m pip install -r tools\swarm\requirements.txt
@@ -53,8 +58,8 @@ trang models của hãng), không tự sửa `agents.toml` khi người dùng ch
 ## Bước 5 — Ghi WORKLOG
 
 1 dòng: kết quả bước 1–4 (pass/fail, lỗi nếu có), ví dụ
-`… | antigravity@DESKTOP-BDSL142 | Chạy thử swarm: pytest 40/40, demo OK qua ps1, ping 5/5 | không chạm production; sẵn sàng merge`.
-Commit + push lên `feature/speckit-swarm` (chỉ file WORKLOG).
+`… | antigravity@DESKTOP-BDSL142 | Chạy thử swarm: pytest 51/51, demo OK qua ps1, ping 5/5 | không chạm production; sẵn sàng merge`.
+Commit + `git pull --rebase` + push lên `main` (chỉ file WORKLOG).
 
 ## Không làm
 
