@@ -93,6 +93,7 @@ class Pipeline:
         self.checks: dict[str, bool] = {}
         self.qa_report: dict = {}
         self.demo = False
+        self.meta: dict = {}  # RunManager gắn thêm (created, demo) vào run_started để nạp lại từ log
 
     # ------------------------------------------------------------ helpers
     def emit(self, type_: str, **kw) -> None:
@@ -186,7 +187,8 @@ class Pipeline:
             agents[role] = {"title": rc.title, "models": rc.models,
                             "model": rc.models[0], "provider": rc.models[0].split("/", 1)[0]}
         self.emit("run_started", request=self.request, branch=self.ws.branch, worktree=str(self.ws.path),
-                  feature=self.ws.feature, budget=self.budget.snapshot(), agents=agents)
+                  feature=self.ws.feature, budget=self.budget.snapshot(), agents=agents,
+                  demo=self.demo, **self.meta)
         self.status("lead", "running")
         self.log("lead", f"Tạo nhánh {self.ws.branch} tại {self.ws.path}")
 

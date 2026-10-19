@@ -48,6 +48,9 @@ class EventBus:
         if t == "run_started":
             s.update(status="running", request=ev.get("request", ""), budget=ev.get("budget", {}),
                      branch=ev.get("branch"), worktree=ev.get("worktree"), feature=ev.get("feature"))
+            for k in ("demo", "created"):
+                if k in ev:
+                    s[k] = ev[k]
             for role, info in (ev.get("agents") or {}).items():
                 s["agents"][role] = {"status": "idle", **info}
         elif t == "agent_status":
@@ -74,7 +77,38 @@ class EventBus:
             s["budget"] = ev.get("budget", s["budget"])
         elif t == "run_finished":
             s["status"] = ev.get("status", "finished")
+            for g in s["gates"].values():  # run đã kết thúc → không còn gate nào chờ duyệt
+                if g.get("status") == "open":
+                    g["status"] = s["status"]
             s["result"] = {k: v for k, v in ev.items() if k not in ("seq", "ts", "type")}
+
+    # ------------------------------------------------------------ load
+    @classmethod
+    def load(cls, run_id: str, log_path: Path) -> "EventBus":
+        """Dựng lại bus từ nhật ký JSONL (chỉ đọc: emit sau đó KHÔNG ghi vào file).
+
+        Bỏ qua dòng hỏng và đánh lại ``seq`` liên tục 1..n để ``since()``/SSE khớp
+        với vị trí trong danh sách.
+        """
+        bus = cls(run_id, None)
+        with log_path.open("r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    ev = json.loads(line)
+                except ValueError:
+                    continue
+                if not isinstance(ev, dict) or not isinstance(ev.get("type"), str):
+                    continue
+                ev["seq"] = len(bus._events) + 1
+                bus._events.append(ev)
+                try:
+                    bus._reduce(ev)
+                except (KeyError, TypeError, AttributeError):
+                    pass  # event thiếu trường — giữ trong log, bỏ qua khi tính state
+        return bus
 
     # ------------------------------------------------------------ read
     def since(self, seq: int) -> list[dict]:

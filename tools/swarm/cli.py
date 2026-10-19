@@ -126,7 +126,7 @@ def cmd_run(args) -> int:
                 for s in ev.get("next_steps") or []:
                     print("   " + s)
                 return 0 if ev["status"] == "completed" else 1
-        if not run.thread.is_alive() and seq >= run.bus.last_seq:
+        if not run.alive and seq >= run.bus.last_seq:
             return 1
 
 
