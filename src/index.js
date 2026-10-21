@@ -198,6 +198,7 @@ async function sitemapXml(url, env) {
   `).bind(SITEMAP_MAX_NOVELS).all();
   const entries = [
     { loc: `${origin}/`, changefreq: 'daily' },
+    { loc: `${origin}/cap-nhat`, changefreq: 'daily' },
     { loc: `${origin}/epub`, changefreq: 'weekly' },
     { loc: `${origin}/library`, changefreq: 'weekly' },
   ];
@@ -365,6 +366,13 @@ async function handleApi(request, url, env, ctx) {
   // ở server thay vì client tự tải toàn bộ catalog rồi cộng dồn (HomePage cũ).
   if (path === '/api/stats' && method === 'GET') {
     return cachedJsonResponse(request, ctx, 300, () => getStats(env, ctx));
+  }
+
+  // GET /api/updates — "Nhật ký cập nhật" công khai: chương mới đăng trong
+  // UPDATES_WINDOW_DAYS ngày, gom theo (truyện, ngày giờ VN). Không có query
+  // (cache key bỏ query) → mọi khách dùng chung 1 bản edge cache 5 phút.
+  if (path === '/api/updates' && method === 'GET') {
+    return cachedJsonResponse(request, ctx, 300, () => getUpdatesFeed(env));
   }
 
   // GET /api/server-info
@@ -1154,6 +1162,68 @@ async function getStats(env, ctx) {
     translated_chapters: translated ?? 0,
   }, 200, {
     'Cache-Control': 'public, max-age=300, s-maxage=300'
+  });
+}
+
+// ── Nhật ký cập nhật (GET /api/updates) ─────────────────────────────────────
+// Nguồn sự thật: chapters.created_at — đóng dấu MỘT lần khi chương được chèn
+// vào D1 (upsert không ghi đè cột này) = thời điểm chương lên site. Không thêm
+// bảng log riêng → 0 lượt ghi D1 phát sinh, chỉ thêm index created_at
+// (migrations/013) để truy vấn đọc đúng các dòng trong cửa sổ thời gian.
+// Nhóm theo ngày giờ Việt Nam (UTC+7) để "hôm nay" khớp cảm nhận độc giả.
+const UPDATES_WINDOW_DAYS = 7;
+const UPDATES_MAX_GROUPS = 80;
+
+async function getUpdatesFeed(env) {
+  const { results } = await env.DB.prepare(`
+    SELECT g.novel_slug AS slug, n.title, n.author, n.cover_url, n.genre, n.status,
+           g.day, g.count, g.from_chapter, g.to_chapter, g.last_at,
+           (SELECT c2.title FROM chapters c2
+             WHERE c2.novel_slug = g.novel_slug AND c2.chapter_number = g.to_chapter
+             LIMIT 1) AS latest_title
+    FROM (
+      SELECT c.novel_slug,
+             date(c.created_at, '+7 hours') AS day,
+             COUNT(*) AS count,
+             MIN(c.chapter_number) AS from_chapter,
+             MAX(c.chapter_number) AS to_chapter,
+             MAX(c.created_at) AS last_at
+      FROM chapters c
+      WHERE c.created_at >= datetime('now', ?)
+      GROUP BY c.novel_slug, day
+    ) g
+    JOIN novels n ON n.slug = g.novel_slug AND n.published = 1
+    ORDER BY g.last_at DESC
+    LIMIT ?
+  `).bind(`-${UPDATES_WINDOW_DAYS} days`, UPDATES_MAX_GROUPS).all();
+
+  const items = (results || []).map(r => ({
+    slug: r.slug,
+    title: r.title,
+    author: r.author || '',
+    cover_url: r.cover_url || '',
+    genre: r.genre || '',
+    status: r.status || 'ongoing',
+    day: r.day,
+    count: Number(r.count) || 0,
+    from_chapter: Number(r.from_chapter) || 0,
+    to_chapter: Number(r.to_chapter) || 0,
+    latest_title: r.latest_title || '',
+    // created_at là UTC dạng "YYYY-MM-DD HH:MM:SS" → ISO có hậu tố Z.
+    last_at: typeof r.last_at === 'string' ? `${r.last_at.replace(' ', 'T')}Z` : null,
+    // Lô bắt đầu từ chương 1 = truyện vừa lên site (không suy diễn gì thêm).
+    is_new_novel: (Number(r.from_chapter) || 0) <= 1,
+  }));
+
+  const novelsUpdated = new Set(items.map(i => i.slug)).size;
+  const totalChapters = items.reduce((sum, i) => sum + i.count, 0);
+  return jsonResponse({
+    generated_at: new Date().toISOString(),
+    window_days: UPDATES_WINDOW_DAYS,
+    summary: { novels_updated: novelsUpdated, new_chapters: totalChapters },
+    // true = chạm trần UPDATES_MAX_GROUPS, số tổng ở summary có thể thiếu.
+    truncated: items.length >= UPDATES_MAX_GROUPS,
+    items,
   });
 }
 

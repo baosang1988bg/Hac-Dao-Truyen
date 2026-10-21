@@ -1,0 +1,15 @@
+-- HacDaoTruyen — Migration 013: index cho "Nhật ký cập nhật" (GET /api/updates)
+-- Truy vấn feed: `WHERE created_at >= datetime('now','-7 days') GROUP BY novel_slug, day`.
+-- Không có index, SQLite phải quét toàn bảng chapters (hàng chục nghìn dòng)
+-- mỗi lần edge cache hết hạn → tốn rows_read D1. Có index → chỉ đọc các chương
+-- trong cửa sổ 7 ngày.
+--
+-- Chi phí ghi: +1 index write cho mỗi chương MỚI chèn vào D1 (upsert chương đã
+-- có không đổi created_at nên không ghi index). Sau migration, 1 chương mới ≈
+-- 1 dòng + 3 index (UNIQUE, idx_chapters_novel, idx_chapters_created) = 4 lượt,
+-- khớp đúng ước tính `4 × số chương + 5` trong tools/sync_transport.py (hết
+-- phần dư). Cầu chì thật vẫn là số liệu Cloudflare (tools/cloudflare_usage.py).
+--
+-- Chạy (người dùng tự chạy, KHÔNG chạy tự động):
+--   npx wrangler d1 execute hacdao-db --file=migrations/013_idx_chapters_created.sql --remote
+CREATE INDEX IF NOT EXISTS idx_chapters_created ON chapters(created_at);

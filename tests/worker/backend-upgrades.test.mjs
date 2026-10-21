@@ -347,6 +347,7 @@ test('robots.txt + sitemap.xml', async t => {
   assert.match(xml, /<loc>https:\/\/hacdaotruyen\.com\/<\/loc>/);
   assert.match(xml, /<loc>https:\/\/hacdaotruyen\.com\/epub<\/loc>/);
   assert.match(xml, /<loc>https:\/\/hacdaotruyen\.com\/library<\/loc>/);
+  assert.match(xml, /<loc>https:\/\/hacdaotruyen\.com\/cap-nhat<\/loc>/);
   assert.match(xml, /<loc>https:\/\/hacdaotruyen\.com\/novel\/tu-c<\/loc><lastmod>2026-10-03<\/lastmod>/);
   assert.doesNotMatch(xml, /an-f/, 'truyện bị gỡ không vào sitemap');
   // updated_at DESC: tu-c (10-03) trước tien-b (10-02) trước tu-a (10-01)
