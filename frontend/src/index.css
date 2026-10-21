@@ -43,6 +43,18 @@
 
   /* Touch target tối thiểu (WCAG 2.2 AA / thực tế mobile) */
   --tap-target-min: 44px;
+
+  /* Biến cũ được vài component (EpubCatalogPage, EpubCard, RequestNovelModal,
+     SearchSection) dùng nhưng trước đây CHƯA định nghĩa → nền/viền bị mất. */
+  --glass-bg: var(--bg-panel);
+  --border: var(--border-panel);
+  --border-color: rgba(255, 255, 255, 0.12);
+
+  /* Khoảng cách đáy cho nút nổi (FAB): mobile phải nằm TRÊN bottom tab bar. */
+  --hd-fab-bottom: 1.5rem;
+}
+@media (max-width: 768px) {
+  :root { --hd-fab-bottom: calc(56px + 1rem); }
 }
 
 * {
@@ -56,6 +68,7 @@ body {
   background-color: var(--bg-dark);
   color: var(--text-main);
   min-height: 100vh;
+  min-height: 100dvh;
   background: radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
@@ -332,6 +345,7 @@ a:hover {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .app-container {
@@ -625,15 +639,32 @@ a:hover {
   z-index: 2;
 }
 
-/* ── SiteHeader (guest) ── */
+/* ── SiteHeader (guest) ──
+   Sticky ở mọi khổ màn hình. Mobile: tự ẩn khi cuộn xuống (.is-hidden do
+   hooks/useHideOnScroll gắn), hiện lại khi cuộn lên. --hd-header-h cho các
+   khối sticky khác (toolbar EPUB, tab feed) biết chừa chỗ bên dưới header. */
+:root { --hd-header-h: calc(52px + env(safe-area-inset-top, 0px)); }
+html.hd-header-hidden { --hd-header-h: 0px; }
+@media (min-width: 769px) {
+  :root, html.hd-header-hidden { --hd-header-h: 60px; }
+}
 .site-header {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 100;
   background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border-panel);
   padding-top: env(safe-area-inset-top, 0px);
+  transition: transform var(--dur-3, 380ms) var(--ease-out, ease), box-shadow var(--dur-2, 220ms) ease;
+  will-change: transform;
+}
+@media (max-width: 768px) {
+  .site-header.is-hidden {
+    transform: translateY(-100%);
+    box-shadow: none;
+  }
 }
 .site-header__inner {
   max-width: 1200px;
@@ -641,7 +672,7 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 1rem;
+  padding: 0 0.5rem 0 1rem;
   height: 52px;
 }
 .site-header__logo {
@@ -656,13 +687,26 @@ a:hover {
   min-height: 44px;
 }
 .site-header__logo:hover { color: var(--text-main); }
+.site-header__logo-mark {
+  background: var(--accent-gradient);
+  padding: 6px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--dur-2, 220ms) var(--ease-spring, ease);
+}
+@media (hover: hover) {
+  .site-header__logo:hover .site-header__logo-mark { transform: rotate(-8deg) scale(1.08); }
+}
 .site-header__nav {
-  display: none; /* mobile: chỉ có logo, điều hướng nằm ở bottom tab bar */
+  display: none; /* mobile: điều hướng chính nằm ở bottom tab bar */
   align-items: center;
   gap: 4px;
   flex: 1;
 }
 .site-header__navlink {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -682,10 +726,30 @@ a:hover {
 @media (hover: hover) {
   .site-header__navlink:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.06); }
 }
+.site-header__mobile-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+.site-header__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-target-min, 44px);
+  height: var(--tap-target-min, 44px);
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+}
+.site-header__icon-btn:active { background: rgba(255, 255, 255, 0.08); }
 .site-header__right { display: none; margin-left: auto; }
 @media (min-width: 769px) {
   .site-header__inner { height: 60px; padding: 0 1.5rem; }
   .site-header__nav { display: flex; }
+  .site-header__mobile-actions { display: none; }
   .site-header__right { display: flex; align-items: center; gap: 8px; }
 }
 
@@ -697,9 +761,9 @@ a:hover {
   bottom: 0;
   z-index: 110;
   display: flex;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
   border-top: 1px solid var(--border-panel);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -709,6 +773,7 @@ a:hover {
 .tab-item {
   position: relative;
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -717,35 +782,56 @@ a:hover {
   min-height: 56px;
   color: var(--text-muted);
   text-decoration: none;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 500;
   -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-2, 220ms) var(--ease-out, ease);
+}
+.tab-item span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.tab-item__icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 28px;
+  border-radius: 999px;
+  transition: background var(--dur-2, 220ms) var(--ease-out, ease);
 }
 .tab-item.active { color: var(--accent); font-weight: 700; }
-/* Vạch chỉ báo 3px phía trên tab đang active */
-.tab-item.active::before {
+/* Chỉ báo dạng "viên thuốc" sau icon (kiểu Material 3) — nở ra khi active */
+.tab-item__icon::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 22%;
-  right: 22%;
-  height: 3px;
-  border-radius: 0 0 3px 3px;
-  background: var(--accent);
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(201, 147, 46, 0.16);
+  transform: scaleX(0.3);
+  opacity: 0;
+  transition: transform var(--dur-3, 380ms) var(--ease-spring, ease), opacity var(--dur-2, 220ms) ease;
 }
-.tab-item:active { background: rgba(255, 255, 255, 0.05); }
+.tab-item.active .tab-item__icon::before { transform: scaleX(1); opacity: 1; }
+.tab-item.active .tab-item__icon svg { animation: hd-pop var(--dur-3, 380ms) var(--ease-out, ease); }
+.tab-item__icon svg { position: relative; }
+/* Chấm báo có nội dung mới (tab Mới cập nhật) */
+.tab-item__badge {
+  position: absolute;
+  top: 2px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.95);
+}
+.tab-item:active .tab-item__icon { background: rgba(255, 255, 255, 0.06); }
 
-/* ── GuestLayout ── */
+/* ── GuestLayout ──
+   Chỗ trống cho bottom tab bar nằm ở .app-footer (phần tử cuối trang) — trước
+   đây cả main lẫn footer đều cộng 64px nên đáy trang mobile bị trống gấp đôi. */
 .guest-main {
-  min-height: calc(100dvh - 52px);
+  min-height: calc(100dvh - var(--hd-header-h, 52px));
 }
-@media (max-width: 768px) {
-  /* chừa chỗ cho bottom tab bar */
-  .guest-main.has-tab-bar {
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-  }
-}
-
 /* ── HomePage ── */
 .home-section { margin-bottom: 2.25rem; }
 .home-section__title {
@@ -1526,7 +1612,8 @@ a:hover {
 /* ── EpubCatalogPage ── */
 .epub-catalog__toolbar {
   position: sticky;
-  top: 0;
+  top: var(--hd-header-h, 0px);
+  transition: top var(--dur-3, 380ms) var(--ease-out, ease);
   z-index: 20;
   margin-bottom: var(--space-1, 4px);
   padding: var(--space-2, 8px) 0 var(--space-3, 12px);

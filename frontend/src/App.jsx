@@ -20,6 +20,7 @@ import './styles/reading.css'
 const NovelPage = lazyWithReload(() => import('./pages/NovelPage'))
 const Reader = lazyWithReload(() => import('./pages/Reader'))
 const LibraryPage = lazyWithReload(() => import('./pages/LibraryPage'))
+const UpdatesPage = lazyWithReload(() => import('./pages/UpdatesPage'))
 
 // Trang phụ / ít dùng (admin, epub, tài khoản, đăng nhập, logs) → tách chunk riêng, tải khi cần
 const AccountPage = lazyWithReload(() => import('./pages/AccountPage'))
@@ -85,6 +86,7 @@ function lazyPage(element) {
  * - /logs                      → redirect /admin/logs (tương thích link cũ)
  * - Guest (public, GuestLayout):
  *     /                        → HomePage
+ *     /cap-nhat                → UpdatesPage (nhật ký chương mới, GET /api/updates)
  *     /library                 → LibraryPage
  *     /account                 → AccountPage (đăng nhập/đăng ký USER + theo dõi)
  *     /novel/:slug             → NovelPage
@@ -146,6 +148,7 @@ function App() {
 
       <Route element={<GuestLayout />}>
         <Route path="/" element={<HomePage />} />
+        <Route path="/cap-nhat" element={lazyPage(<UpdatesPage />)} />
         <Route path="/library" element={lazyPage(<LibraryPage />)} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/novel/:slug" element={lazyPage(<NovelPage />)} />

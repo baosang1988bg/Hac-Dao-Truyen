@@ -12,7 +12,7 @@ import UpdatesSection from './homepage/UpdatesSection'
 import ExternalRankingsSection from './homepage/ExternalRankingsSection'
 import TruyenTrungRankings from './homepage/TruyenTrungRankings'
 import TruyenTrungChatboxWidget from './homepage/TruyenTrungChatboxWidget'
-import AnnouncementsSection from './homepage/AnnouncementsSection'
+import LatestChaptersWidget from './homepage/LatestChaptersWidget'
 import AllNovelsSection from './homepage/AllNovelsSection'
 import RecentCommentsSection from './homepage/RecentCommentsSection'
 import StatsSection from './homepage/StatsSection'
@@ -117,8 +117,9 @@ export default function HomePage() {
               {/* Multi-Ranking Widgets: 5 BXH Tổng Hợp/Nhiều Chương/Lượt Đọc/Sách Mới/Đánh Giá */}
               <TruyenTrungRankings />
 
-              {/* Thông báo "vừa cập nhật chương mới" (tĩnh, từ announcements.json) */}
-              <AnnouncementsSection />
+              {/* Chương mới lên — dữ liệu sống từ /api/updates (thay thông báo tĩnh
+                  announcements.json cũ chỉ đổi sau mỗi lần deploy) */}
+              <LatestChaptersWidget />
 
               {/* Khung thông báo tĩnh (KHÔNG phải chat realtime) */}
               <TruyenTrungChatboxWidget />

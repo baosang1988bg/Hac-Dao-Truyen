@@ -1,4 +1,3 @@
-
 import { Outlet, useLocation } from 'react-router-dom'
 import SiteHeader from '../components/SiteHeader'
 import BottomTabBar from '../components/BottomTabBar'
@@ -35,7 +34,12 @@ export default function GuestLayout() {
       </a>
       <SiteHeader />
       <main id="main-content" tabIndex={-1} className="guest-main has-tab-bar">
-        <Outlet />
+        {/* key theo pathname → mỗi lần đổi trang chạy lại hiệu ứng mờ-dần.
+            Chỉ animate opacity (không transform) để modal/FAB position:fixed
+            bên trong trang không bị "nhốt" trong wrapper này. */}
+        <div key={location.pathname} className="hd-page-enter">
+          <Outlet />
+        </div>
       </main>
       <footer className="app-footer">
         <div className="app-footer__text">

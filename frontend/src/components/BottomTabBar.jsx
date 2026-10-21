@@ -1,42 +1,47 @@
-
-import { NavLink, Link } from 'react-router-dom'
-import { Home, Library, User, Shield, BookMarked } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
+import { Home, Library, User, BookMarked, Sparkles } from 'lucide-react'
+import { useUnseenUpdates } from '../hooks/useUpdatesFeed'
 
 /**
  * Tab bar dưới cùng — chỉ hiện trên mobile (<769px, ẩn bằng CSS).
- * Tab: Trang chủ / Tủ truyện / Tôi (/account — tài khoản người dùng).
- * Admin có thêm tab Quản trị. GuestLayout không render component này
- * trên route đọc truyện.
+ * Tab: Trang chủ / Mới (nhật ký cập nhật, có chấm đỏ khi có chương mới chưa xem)
+ * / Tủ truyện / EPUB / Tôi. Lối vào Quản trị cho admin nằm ở SiteHeader (icon
+ * khiên) để tab bar không bị chật 6 mục trên màn hình 360px.
+ * GuestLayout không render component này trên route đọc truyện.
  */
+const TABS = [
+  { to: '/', end: true, icon: Home, label: 'Trang chủ' },
+  { to: '/cap-nhat', icon: Sparkles, label: 'Mới', badgeKey: 'updates' },
+  { to: '/library', icon: Library, label: 'Tủ truyện' },
+  { to: '/epub', icon: BookMarked, label: 'EPUB' },
+  { to: '/account', icon: User, label: 'Tôi' },
+]
+
 export default function BottomTabBar() {
-  const isAdmin = localStorage.getItem('userRole') === 'admin'
+  const { hasUnseen } = useUnseenUpdates()
 
   const cls = ({ isActive }) => `tab-item${isActive ? ' active' : ''}`
 
   return (
     <nav className="bottom-tab-bar" aria-label="Điều hướng chính">
-      <NavLink to="/" end className={cls}>
-        <Home size={21} />
-        <span>Trang chủ</span>
-      </NavLink>
-      <NavLink to="/library" className={cls}>
-        <Library size={21} />
-        <span>Tủ truyện</span>
-      </NavLink>
-      <NavLink to="/epub" className={cls}>
-        <BookMarked size={21} />
-        <span>EPUB</span>
-      </NavLink>
-      <NavLink to="/account" className={cls}>
-        <User size={21} />
-        <span>Tôi</span>
-      </NavLink>
-      {isAdmin && (
-        <Link to="/admin" className="tab-item">
-          <Shield size={21} />
-          <span>Quản trị</span>
-        </Link>
-      )}
+      {TABS.map(({ to, end, icon: Icon, label, badgeKey }) => {
+        const showBadge = badgeKey === 'updates' && hasUnseen
+        return (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            className={cls}
+            aria-label={showBadge ? `${label} (có chương mới)` : undefined}
+          >
+            <span className="tab-item__icon">
+              <Icon size={21} aria-hidden="true" />
+              {showBadge && <span className="tab-item__badge" aria-hidden="true" />}
+            </span>
+            <span>{label}</span>
+          </NavLink>
+        )
+      })}
     </nav>
   )
 }
