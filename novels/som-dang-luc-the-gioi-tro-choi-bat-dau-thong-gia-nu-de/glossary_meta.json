@@ -1,5 +1,5 @@
 {
-  "revision": 184,
+  "revision": 202,
   "conflicts": [
     {
       "term": "坤鼎",
@@ -14,6 +14,13 @@
       "suggested_value": "Quân Chiến Thiên",
       "revision_seen": 72,
       "ts": "2026-10-09T08:29:26"
+    },
+    {
+      "term": "蒼瀾帝朝",
+      "current_value": "Thương Lan Đế Triều",
+      "suggested_value": "Thương Lan Đế triều",
+      "revision_seen": 198,
+      "ts": "2026-10-25T09:32:09"
     }
   ]
 }
