@@ -410,7 +410,7 @@ async function handleApi(request, url, env, ctx) {
   if (novelMatch && method === 'GET') {
     // Chi tiết truyện đếm lại toàn bộ chương của truyện mỗi lần MISS → edge 15
     // phút; sync/takedown vẫn purge key này (colo hiện tại) nên chương mới hiện sớm.
-    return cachedJsonResponse(request, ctx, 300, () => getNovel(env, novelMatch[1], request), { sMaxAge: 900 });
+    return cachedJsonResponse(request, ctx, 300, () => getNovel(env, novelMatch[1], request, ctx), { sMaxAge: 900 });
   }
 
   // GET /api/novels/:slug/epub — tải EPUB đã build (upload lên R2 bởi migrate)
@@ -773,13 +773,16 @@ async function proxyCover(request, url, env, ctx) {
 // subquery này dùng index, không quét toàn bảng.
 // TTL edge cho GET /api/novels theo CHI PHÍ của truy vấn (rows_read D1 mỗi lần MISS):
 // - slugs=...           : tra theo khoá chính, rẻ → 2 phút.
-// - sort chapter_count / rating / title: không có index → quét + sắp cả bảng
-//   novels (chapter_count còn chạy subquery cho từng truyện) → edge 30 phút.
+// - sort chapter_count: quét cả bảng novels + subquery đếm chương cho TỪNG
+//   truyện (truy vấn đắt nhất của site; thứ hạng theo số chương đổi rất chậm)
+//   → edge 1 giờ.
+// - sort rating / title: không có index → quét + sắp cả bảng novels → edge 30 phút.
 // - có q/genre/status/has_epub: lọc LIKE/không index → edge 10 phút.
 // - mặc định (updated_at/views, có index): edge 5 phút.
-const NOVELS_EXPENSIVE_SORTS = new Set(['chapter_count', 'rating', 'title']);
+const NOVELS_EXPENSIVE_SORTS = new Set(['rating', 'title']);
 function novelsCacheTtl(params) {
   if (params.has('slugs')) return { ttl: 120, sMaxAge: 120 };
+  if (params.get('sort') === 'chapter_count') return { ttl: 300, sMaxAge: 3600 };
   if (NOVELS_EXPENSIVE_SORTS.has(params.get('sort') || '')) return { ttl: 300, sMaxAge: 1800 };
   if (['q', 'genre', 'status', 'has_epub'].some(name => (params.get(name) || '').trim())) return { ttl: 120, sMaxAge: 600 };
   return { ttl: 120, sMaxAge: 300 };
@@ -830,6 +833,114 @@ async function countNovels(env, ctx, whereStr, binds) {
     if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(put); else await put;
   }
   return remember(value);
+}
+
+// Subquery đếm chương/tên chương mới nhất của truyện `n` — chạy trên bảng
+// chapters lớn. Dùng chung cho getNovels() và getNovel() để 2 nơi luôn cùng công thức.
+const CHAPTER_COUNT_SQL = `(SELECT COUNT(DISTINCT CASE WHEN c.chapter_number > 0 THEN c.chapter_number END)
+            FROM chapters c WHERE c.novel_slug = n.slug)`;
+const LATEST_TITLE_SQL = `COALESCE((
+           SELECT c.title FROM chapters c
+           WHERE c.novel_slug = n.slug AND c.chapter_number > 0
+           ORDER BY c.chapter_number DESC,
+             CASE
+               WHEN LOWER(COALESCE(c.title, '')) LIKE 'chương ' || c.chapter_number || '%'
+                 OR LOWER(COALESCE(c.title, '')) LIKE 'chapter ' || c.chapter_number || '%'
+                 OR COALESCE(c.title, '') LIKE '第' || c.chapter_number || '章%'
+                 THEN 0
+               WHEN c.filename GLOB '[0-9]*' THEN 1
+               ELSE 2
+             END,
+             c.filename ASC
+           LIMIT 1
+         ), '')`;
+
+// ── Thống kê chương theo truyện (chapter_count + latest_chapter_title) ───────
+// Subquery đếm chương đọc MỌI dòng index của từng truyện trong trang (truyện
+// 1.500 chương = 1.500 rows_read). Danh sách "Mới cập nhật" toàn truyện dài,
+// nên mỗi lần edge cache hết hạn (5 phút) tốn hàng chục nghìn rows_read cho
+// những con số KHÔNG đổi. Thống kê của một truyện chỉ đổi khi có sync, mà mọi
+// đường sync đều ghi lại novels.updated_at → nhớ kết quả theo cặp (slug,
+// updated_at): khớp thì dùng lại, lệch (truyện vừa sync) thì tính lại đúng
+// truyện đó. Lưu 1 blob JSON trong Cache API (key nội bộ) + biến module.
+// - Truyện có updated_at trong 2 phút gần đây KHÔNG được nhớ: updated_at chỉ
+//   chính xác tới giây, nhiều chunk sync có thể rơi cùng một giây.
+// - Giới hạn đã biết: công cụ sửa/xoá dòng chapters trực tiếp mà không ghi lại
+//   novels.updated_at (vd dedupe thủ công) sẽ thấy số cũ tối đa 24 giờ.
+const CHAPTER_STATS_KEY = 'https://stats-cache.hacdao.internal/chapter_stats_v1';
+const CHAPTER_STATS_TTL_S = 24 * 3600;
+const CHAPTER_STATS_MAX = 3000;
+const CHAPTER_STATS_SETTLE_MS = 2 * 60 * 1000;
+const CHAPTER_STATS_RELOAD_MS = 60 * 1000;
+const _chapterStats = new Map(); // slug -> { u: updated_at, c: chapter_count, t: latest_chapter_title }
+let _chapterStatsLoadedAt = 0;
+
+async function loadChapterStats() {
+  const cache = globalThis.caches?.default;
+  const now = Date.now();
+  if (!cache || now - _chapterStatsLoadedAt < CHAPTER_STATS_RELOAD_MS) return;
+  _chapterStatsLoadedAt = now;
+  try {
+    const hit = await cache.match(new Request(CHAPTER_STATS_KEY, { method: 'GET' }));
+    if (!hit) return;
+    const body = await hit.json();
+    for (const entry of Array.isArray(body?.entries) ? body.entries : []) {
+      if (!Array.isArray(entry) || typeof entry[0] !== 'string') continue;
+      _chapterStats.set(entry[0], { u: entry[1], c: Number(entry[2]) || 0, t: String(entry[3] || '') });
+    }
+  } catch { /* blob hỏng/cache lỗi → tính lại từ D1 */ }
+}
+
+function isSettledTimestamp(updatedAt, now) {
+  if (typeof updatedAt !== 'string' || !updatedAt) return false;
+  const ms = Date.parse(/Z$|[+-]\d{2}:\d{2}$/.test(updatedAt) ? updatedAt : updatedAt.replace(' ', 'T') + 'Z');
+  return Number.isFinite(ms) && now - ms > CHAPTER_STATS_SETTLE_MS;
+}
+
+// rows: [{ slug, updated_at }] → Map slug -> { chapter_count, latest_chapter_title }
+async function chapterStatsForRows(env, ctx, rows) {
+  await loadChapterStats();
+  const out = new Map();
+  const missing = [];
+  for (const r of rows) {
+    const known = _chapterStats.get(r.slug);
+    if (known && known.u === r.updated_at) out.set(r.slug, { chapter_count: known.c, latest_chapter_title: known.t });
+    else missing.push(r);
+  }
+  if (!missing.length) return out;
+
+  const now = Date.now();
+  let changed = false;
+  // D1 giới hạn ~100 tham số bind/câu → chia lô 90 slug.
+  for (let i = 0; i < missing.length; i += 90) {
+    const chunk = missing.slice(i, i + 90);
+    const { results: statRows } = await env.DB.prepare(`
+      SELECT n.slug, ${CHAPTER_COUNT_SQL} AS chapter_count, ${LATEST_TITLE_SQL} AS latest_chapter_title
+      FROM novels n WHERE n.slug IN (${chunk.map(() => '?').join(',')})
+    `).bind(...chunk.map(r => r.slug)).all();
+    const bySlug = new Map((statRows || []).map(r => [r.slug, r]));
+    for (const r of chunk) {
+      const stat = bySlug.get(r.slug);
+      const value = { chapter_count: Number(stat?.chapter_count) || 0, latest_chapter_title: stat?.latest_chapter_title || '' };
+      out.set(r.slug, value);
+      if (stat && isSettledTimestamp(r.updated_at, now)) {
+        _chapterStats.delete(r.slug); // chèn lại ở cuối → mục cũ nhất nằm đầu Map
+        _chapterStats.set(r.slug, { u: r.updated_at, c: value.chapter_count, t: value.latest_chapter_title });
+        changed = true;
+      }
+    }
+  }
+  if (!changed) return out;
+  while (_chapterStats.size > CHAPTER_STATS_MAX) _chapterStats.delete(_chapterStats.keys().next().value);
+  const cache = globalThis.caches?.default;
+  if (cache) {
+    const entries = [..._chapterStats].map(([slug, v]) => [slug, v.u, v.c, v.t]);
+    const put = cache.put(new Request(CHAPTER_STATS_KEY, { method: 'GET' }), new Response(JSON.stringify({ entries }), {
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${CHAPTER_STATS_TTL_S}` },
+    })).catch(() => {});
+    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(put); else await put;
+  }
+  return out;
 }
 
 async function getNovels(env, params = new URLSearchParams(), ctx) {
@@ -913,25 +1024,6 @@ async function getNovels(env, params = new URLSearchParams(), ctx) {
   // (có nhớ kết quả) — tính SAU khi đã lấy trang dữ liệu.
   const slugsFitOnePage = Boolean(slugs) && page === 1 && limit >= slugs.length;
 
-  // Subquery đếm chương/tên chương mới nhất — chạy trên bảng chapters lớn.
-  const chapterCountSql = `(SELECT COUNT(DISTINCT CASE WHEN c.chapter_number > 0 THEN c.chapter_number END)
-              FROM chapters c WHERE c.novel_slug = n.slug)`;
-  const latestTitleSql = `COALESCE((
-             SELECT c.title FROM chapters c
-             WHERE c.novel_slug = n.slug AND c.chapter_number > 0
-             ORDER BY c.chapter_number DESC,
-               CASE
-                 WHEN LOWER(COALESCE(c.title, '')) LIKE 'chương ' || c.chapter_number || '%'
-                   OR LOWER(COALESCE(c.title, '')) LIKE 'chapter ' || c.chapter_number || '%'
-                   OR COALESCE(c.title, '') LIKE '第' || c.chapter_number || '章%'
-                   THEN 0
-                 WHEN c.filename GLOB '[0-9]*' THEN 1
-                 ELSE 2
-               END,
-               c.filename ASC
-             LIMIT 1
-           ), '')`;
-
   // HIỆU NĂNG: khi sort KHÁC chapter_count, KHÔNG tính subquery cho mọi dòng
   // khớp WHERE (SQLite phải đưa cả cột subquery vào sorter → chạy cho toàn bộ
   // ~28k truyện). Bước 1 chỉ lấy trang cần trả (cột rẻ của novels), bước 2
@@ -949,8 +1041,8 @@ async function getNovels(env, params = new URLSearchParams(), ctx) {
   if (sortByChapterCount) {
     const { results } = await env.DB.prepare(`
       SELECT ${baseCols},
-             ${chapterCountSql} AS chapter_count,
-             ${latestTitleSql} AS latest_chapter_title
+             ${CHAPTER_COUNT_SQL} AS chapter_count,
+             ${LATEST_TITLE_SQL} AS latest_chapter_title
       FROM novels n
       WHERE ${whereStr}
       ORDER BY ${orderStr}
@@ -966,16 +1058,7 @@ async function getNovels(env, params = new URLSearchParams(), ctx) {
       LIMIT ? OFFSET ?
     `).bind(...binds, ...orderBinds, limit, offset).all();
     rows = results || [];
-    const stats = new Map();
-    // D1 giới hạn ~100 tham số bind/câu → chia lô 90 slug.
-    for (let i = 0; i < rows.length; i += 90) {
-      const chunk = rows.slice(i, i + 90).map(r => r.slug);
-      const { results: statRows } = await env.DB.prepare(`
-        SELECT n.slug, ${chapterCountSql} AS chapter_count, ${latestTitleSql} AS latest_chapter_title
-        FROM novels n WHERE n.slug IN (${chunk.map(() => '?').join(',')})
-      `).bind(...chunk).all();
-      for (const r of statRows || []) stats.set(r.slug, r);
-    }
+    const stats = await chapterStatsForRows(env, ctx, rows);
     rows = rows.map(r => ({
       ...r,
       chapter_count: stats.get(r.slug)?.chapter_count || 0,
@@ -1482,7 +1565,7 @@ const NOVEL_PUBLIC_FIELDS = [
   'total_chapters', 'cover_url', 'translation_style', 'status', 'updated_at', 'synopsis',
 ];
 
-async function getNovel(env, slug, request) {
+async function getNovel(env, slug, request, ctx) {
   const novel = await env.DB.prepare(`
     SELECT * FROM novels WHERE slug = ?
   `).bind(slug).first();
@@ -1501,25 +1584,11 @@ async function getNovel(env, slug, request) {
   // dương KHÁC NHAU, không đếm số dòng thô vì một lần đồng bộ lỗi có thể tạo
   // nhiều filename cho cùng chapter_number. Author note không có số không
   // được tính vào tiến độ dịch.
-  const chapStatsRow = await env.DB.prepare(
-    `SELECT COUNT(DISTINCT CASE WHEN chapter_number > 0 THEN chapter_number END) AS cnt,
-            (SELECT c2.title FROM chapters c2
-             WHERE c2.novel_slug = ? AND c2.chapter_number > 0
-             ORDER BY c2.chapter_number DESC,
-               CASE
-                 WHEN LOWER(COALESCE(c2.title, '')) LIKE 'chương ' || c2.chapter_number || '%'
-                   OR LOWER(COALESCE(c2.title, '')) LIKE 'chapter ' || c2.chapter_number || '%'
-                   OR COALESCE(c2.title, '') LIKE '第' || c2.chapter_number || '章%'
-                   THEN 0
-                 WHEN c2.filename GLOB '[0-9]*' THEN 1
-                 ELSE 2
-               END,
-               c2.filename ASC
-             LIMIT 1) AS latest_title
-     FROM chapters WHERE novel_slug = ?`
-  ).bind(slug, slug).first();
-  const chapter_count = chapStatsRow?.cnt || 0;
-  const latest_chapter_title = chapStatsRow?.latest_title || null;
+  // Dùng chung bộ nhớ (slug, updated_at) với danh sách: truyện không có sync
+  // mới thì không phải đếm lại toàn bộ chương của nó mỗi lần cache hết hạn.
+  const chapStats = (await chapterStatsForRows(env, ctx, [{ slug: novel.slug, updated_at: novel.updated_at }])).get(novel.slug);
+  const chapter_count = chapStats?.chapter_count || 0;
+  const latest_chapter_title = chapStats?.latest_chapter_title || null;
 
   const common = {
     chapter_count,

@@ -146,6 +146,61 @@ test('novels: tổng số được nhớ qua Cache API giữa các isolate', asy
   assert.equal(calls.count, 1);
 });
 
+test('novels: thống kê chương nhớ theo (slug, updated_at) — chỉ tính lại truyện vừa sync', async t => {
+  const store = installFakeCache(t);
+  const { ctx, flush } = ctxWithPending();
+  const recent = new Date(Date.now() - 10_000).toISOString().slice(0, 19).replace('T', ' ');
+  let rows = [
+    { slug: 'old-a', title: 'A', updated_at: '2026-10-01 00:00:00' },
+    { slug: 'old-b', title: 'B', updated_at: '2026-10-02 00:00:00' },
+    { slug: 'hot-c', title: 'C', updated_at: recent },
+  ];
+  let counts = { 'old-a': 10, 'old-b': 20, 'hot-c': 30 };
+  const statQueries = [];
+  const DB = { prepare: sql => ({ bind: (...b) => ({
+    first: async () => ({ cnt: rows.length }),
+    all: async () => {
+      if (/AS chapter_count/.test(sql) && /IN \(/.test(sql)) {
+        statQueries.push(b);
+        return { results: b.map(slug => ({ slug, chapter_count: counts[slug], latest_chapter_title: `Chương ${counts[slug]}` })) };
+      }
+      return { results: rows };
+    },
+  }) }) };
+  const list = async (worker, qs) => (await (await worker.fetch(new Request(`https://test.invalid/api/novels?${qs}`), { DB }, ctx)).json()).novels;
+
+  const a = await loadWorker();
+  const first = await list(a, 'limit=30');
+  await flush();
+  assert.deepEqual(first.map(n => [n.slug, n.chapter_count, n.latest_chapter_title]),
+    [['old-a', 10, 'Chương 10'], ['old-b', 20, 'Chương 20'], ['hot-c', 30, 'Chương 30']]);
+  assert.deepEqual(statQueries, [['old-a', 'old-b', 'hot-c']]);
+  assert.ok(store.has('https://stats-cache.hacdao.internal/chapter_stats_v1'));
+
+  // URL khác (response chưa cache) nhưng cùng truyện: chỉ truyện vừa sync
+  // (updated_at trong 2 phút gần đây) bị tính lại, 2 truyện cũ dùng số đã nhớ.
+  const second = await list(a, 'limit=30&sort=views');
+  await flush();
+  assert.deepEqual(statQueries[1], ['hot-c']);
+  assert.equal(second.find(n => n.slug === 'old-a').chapter_count, 10);
+
+  // Isolate mới đọc blob từ Cache API → vẫn không tính lại truyện cũ.
+  const b = await loadWorker();
+  await list(b, 'limit=30&status=ongoing');
+  await flush();
+  assert.deepEqual(statQueries[2], ['hot-c']);
+
+  // old-a được sync thêm chương → updated_at đổi → tính lại ĐÚNG truyện đó, thấy số mới.
+  rows = rows.map(r => (r.slug === 'old-a' ? { ...r, updated_at: '2026-10-05 00:00:00' } : r));
+  counts = { ...counts, 'old-a': 11 };
+  const third = await list(b, 'limit=30&has_epub=1');
+  await flush();
+  assert.deepEqual(statQueries[3], ['old-a', 'hot-c']);
+  assert.equal(third.find(n => n.slug === 'old-a').chapter_count, 11);
+  assert.equal(third.find(n => n.slug === 'old-a').latest_chapter_title, 'Chương 11');
+  assert.equal(third.find(n => n.slug === 'old-b').chapter_count, 20);
+});
+
 test('novels: TTL edge theo chi phí truy vấn', async t => {
   installFakeCache(t);
   const worker = await loadWorker();
@@ -154,7 +209,7 @@ test('novels: TTL edge theo chi phí truy vấn', async t => {
   const cc = async qs => (await worker.fetch(new Request(`https://test.invalid/api/novels?${qs}`), { DB }, ctx)).headers.get('Cache-Control');
   assert.equal(await cc('sort=updated_at&limit=30'), 'public, max-age=120, s-maxage=300');
   assert.equal(await cc('sort=views&order=desc&limit=30'), 'public, max-age=120, s-maxage=300');
-  assert.equal(await cc('sort=chapter_count'), 'public, max-age=300, s-maxage=1800');
+  assert.equal(await cc('sort=chapter_count'), 'public, max-age=300, s-maxage=3600');
   assert.equal(await cc('sort=rating'), 'public, max-age=300, s-maxage=1800');
   assert.equal(await cc('sort=title&order=asc'), 'public, max-age=300, s-maxage=1800');
   assert.equal(await cc('genre=Tu%20Ti%C3%AAn'), 'public, max-age=120, s-maxage=600');
