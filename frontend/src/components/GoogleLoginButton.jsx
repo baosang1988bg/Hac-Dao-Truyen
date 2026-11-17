@@ -1,6 +1,8 @@
 import PropTypes from 'prop-types'
 import { useEffect, useRef, useState } from 'react'
 import userApi, { saveUserSession } from '../userApi'
+import { trackAuth, trackEvent } from '../utils/analytics'
+import '../styles/library-epub.css'
 
 const GIS_SCRIPT_SRC = 'https://accounts.google.com/gsi/client'
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -41,8 +43,11 @@ export default function GoogleLoginButton({ onSuccess, onError }) {
       try {
         const res = await userApi.post('/user/google-login', { credential: response.credential })
         saveUserSession(res.data.token, res.data.user)
+        // API không báo "tài khoản mới tạo" → ghi chung là login (method google).
+        trackAuth('login', 'google', res.data.user)
         onSuccess(res.data.user)
       } catch (err) {
+        trackEvent('auth_error', { auth_mode: 'login', method: 'google', status: err.response?.status || 0 })
         onError?.(err)
       }
     }
@@ -54,8 +59,12 @@ export default function GoogleLoginButton({ onSuccess, onError }) {
           client_id: CLIENT_ID,
           callback: handleCredentialResponse,
         })
+        // GSI nhận width cố định (px, 200–400): lấy theo bề rộng khung chứa để
+        // nút không tràn ngang trên điện thoại hẹp (320–360px).
+        const boxWidth = Math.floor(containerRef.current.getBoundingClientRect().width) || 320
         window.google.accounts.id.renderButton(containerRef.current, {
-          theme: 'outline', size: 'large', width: 320, text: 'continue_with', locale: 'vi',
+          theme: 'outline', size: 'large', width: Math.max(200, Math.min(400, boxWidth)),
+          text: 'continue_with', locale: 'vi',
         })
         setReady(true)
       })
@@ -68,9 +77,9 @@ export default function GoogleLoginButton({ onSuccess, onError }) {
   if (!CLIENT_ID) return null
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', width: '100%' }}>
+    <div className="google-login">
       <div className="auth-divider"><span>hoặc</span></div>
-      <div ref={containerRef} style={{ minHeight: ready ? 'auto' : '40px' }} />
+      <div ref={containerRef} className="google-login__btn" aria-busy={!ready} />
     </div>
   )
 }

@@ -32,7 +32,10 @@ CREATE TABLE IF NOT EXISTS novels (
   published         INTEGER DEFAULT 1,
   takedown_reason   TEXT DEFAULT '',
   takedown_at       TEXT,
-  license_note      TEXT DEFAULT ''
+  license_note      TEXT DEFAULT '',
+  -- Migration 014: số chương (chapter_number > 0, khác nhau) lưu sẵn — chỉ dùng
+  -- để sắp xếp sort=chapter_count; Worker sync + migrate_to_cloudflare.py ghi.
+  chapter_count     INTEGER DEFAULT 0
 );
 
 -- F03: nhật ký thao tác admin (takedown/restore...) — audit trail, không cho sửa/xóa qua API thường.
@@ -57,6 +60,9 @@ CREATE TABLE IF NOT EXISTS chapters (
 );
 
 CREATE INDEX IF NOT EXISTS idx_chapters_novel ON chapters(novel_slug, chapter_number);
+-- Migration 013: phục vụ GET /api/updates (nhật ký cập nhật) —
+-- `WHERE created_at >= datetime('now','-7 days')` chỉ đọc các dòng trong cửa sổ.
+CREATE INDEX IF NOT EXISTS idx_chapters_created ON chapters(created_at);
 
 -- Current bootstrap snapshot. Upgrade existing DBs with tools/migrate_schema.py.
 -- HacDaoTruyen — Migration 002: Hệ thống tài khoản người dùng (roadmap 3.1–3.4)
@@ -154,6 +160,8 @@ CREATE INDEX IF NOT EXISTS idx_novels_chapter_count ON novels(updated_at);
 -- KHÔNG đổi tên để tránh drift với production). Migration 012: index ghép cho
 -- `WHERE published = 1 ORDER BY updated_at DESC` (danh sách công khai, sitemap).
 CREATE INDEX IF NOT EXISTS idx_novels_published_updated ON novels(published, updated_at DESC);
+-- Migration 014: `WHERE published = 1 ORDER BY chapter_count DESC` (BXH Nhiều Chương).
+CREATE INDEX IF NOT EXISTS idx_novels_published_chapters ON novels(published, chapter_count DESC);
 
 -- HacDaoTruyen — Migration 005: phiếu đánh giá có định danh (F02).
 -- Thay cho việc cộng dồn vô hạn vào novels.rating_sum/rating_count mỗi lần

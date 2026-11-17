@@ -84,6 +84,9 @@ Trong phiên làm việc này, Antigravity Agent đã hoàn thành 5 nhóm nhi�
 > **Trạng thái (2026-10-18, tối):** đã triển khai v1 tại `tools/swarm/` (nhánh `feature/speckit-swarm`) —
 > xem `specs/001-speckit-swarm/` và `docs/RUNBOOK_SWARM.md`. Khác thiết kế dưới đây: không dùng LiteLLM
 > (tự viết adapter bằng `httpx`), cấu hình là `tools/swarm/agents.toml` thay cho `agents.yml`.
+>
+> **Cập nhật 2026-10-19:** nhánh swarm đã vào `main` (kèm `1ec38a6` longpaths, `14fb9ae` nạp lịch sử run).
+> Review và sửa sau đó: `plans/KE_HOACH_SUA_SWARM_2026-10-19.md`.
 
 Người dùng đã định hướng rõ giai đoạn kế tiếp: **Chỉ cần 1 lệnh duy nhất (`/speckit-auto`), hệ thống tự kích hoạt một đội ngũ Đa tác tử (Multi-Agent Swarm) với giao diện Dashboard trực quan theo dõi Live Status từng Agent, phân chia cho nhiều Provider khác nhau**.
 

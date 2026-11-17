@@ -13,13 +13,17 @@
  *   invalidateCache(prefix?)                      (xoá theo tiền tố URL)
  *   useCachedGet(url, { params, ttl, enabled })   -> { data, error, loading, reload }
  *
- * Lưu ý: chỉ dùng cho dữ liệu công khai. Không cache request admin/đăng nhập.
+ * Lưu ý: chỉ dùng cho dữ liệu công khai. Request đi qua `publicApi` (KHÔNG gắn
+ * Authorization) nên luôn nhận bản dành cho khách và tận dụng được edge cache
+ * của Worker, kể cả khi trình duyệt đang có phiên admin.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 // Ghi rõ đuôi .js để test node (frontend/tests) import được module này.
-import api from '../api.js'
+import { publicApi } from '../api.js'
 
-const DEFAULT_TTL = 60_000
+// Worker giữ edge cache ≥ 5 phút cho mọi route công khai → client hỏi lại sớm
+// hơn cũng chỉ nhận đúng bản cũ, tốn thêm 1 request vào Worker.
+const DEFAULT_TTL = 5 * 60_000
 const MAX_ENTRIES = 200
 const store = new Map() // key -> { data, expires }
 const inflight = new Map() // key -> Promise
@@ -60,33 +64,17 @@ export function invalidateCache(prefix = '') {
   }
 }
 
-/**
- * Phiên admin (localStorage.authToken) → interceptor của `api` gắn header
- * Authorization, Worker có thể trả dữ liệu riêng của admin (vd truyện ẩn).
- * Không được lưu kết quả đó vào cache dùng chung → chỉ gộp request đang bay.
- */
-export function hasAdminSession() {
-  try {
-    return Boolean(globalThis.localStorage?.getItem('authToken'))
-  } catch {
-    return false
-  }
-}
-
 export function cachedGet(url, { params, ttl = DEFAULT_TTL, signal, force = false } = {}) {
   const key = cacheKey(url, params)
-  // Admin: TTL = 0 → không lưu store, không đọc hit cũ (có thể là dữ liệu guest).
-  const admin = hasAdminSession()
-  if (admin) ttl = 0
   if (!force) {
     const hit = store.get(key)
-    if (!admin && hit && hit.expires >= Date.now()) return Promise.resolve(hit.data)
+    if (hit && hit.expires >= Date.now()) return Promise.resolve(hit.data)
     const pending = inflight.get(key)
     if (pending) return pending
   }
   // Không truyền signal của một component vào request dùng chung: component
   // khác có thể đang chờ cùng promise. Huỷ chỉ áp dụng cho phía người gọi.
-  const p = api.get(url, { params })
+  const p = publicApi.get(url, { params })
     .then(res => {
       if (ttl > 0) setEntry(key, res.data, ttl)
       return res.data

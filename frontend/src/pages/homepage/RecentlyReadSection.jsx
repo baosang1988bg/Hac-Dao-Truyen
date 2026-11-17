@@ -91,21 +91,21 @@ export default function RecentlyReadSection() {
     return (
       <section className="home-section" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
         <SectionHeader icon={<History size={16} style={{ color: 'var(--accent)' }} />} title="Vừa Đọc Gần Đây" />
-        <div className="glass-panel" style={{ height: '140px', borderRadius: '14px' }} />
+        <div className="hd-skel" style={{ height: '140px', borderRadius: '14px' }} role="status" aria-label="Đang tải truyện vừa đọc" />
       </section>
     )
   }
   if (items.length === 0) return null
 
   return (
-    <section className="home-section animate-fade-in" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
+    <section className="home-section hp-enter" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
       <SectionHeader
         icon={<History size={16} style={{ color: 'var(--accent)' }} />}
         title="Vừa Đọc Gần Đây"
         count={items.length}
       />
 
-      <div className="section-row-scroll" style={{ paddingBottom: 'var(--space-2, 8px)' }}>
+      <div className="section-row-scroll hp-stagger" style={{ paddingBottom: 'var(--space-2, 8px)' }}>
         {items.map(item => {
           const isEpub = item.chapter === 'EPUB' || !item.chapter || item.chapter === 'null'
           const readUrl = isEpub
@@ -153,6 +153,7 @@ export default function RecentlyReadSection() {
               <Link
                 to={readUrl}
                 className="btn btn-primary"
+                data-track-action="continue_reading"
                 style={{
                   width: '100%',
                   padding: 'var(--space-2, 8px) var(--space-3, 12px)',

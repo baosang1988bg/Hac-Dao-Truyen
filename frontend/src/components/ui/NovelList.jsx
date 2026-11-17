@@ -23,7 +23,7 @@ export default function NovelList({ novels = [], showRank = false, showViews = f
   }
 
   return (
-    <div className="novel-list">
+    <div className="novel-list hp-stagger">
       {novels.map((novel, index) => {
         const titleFormatted = novelDisplayTitle(novel)
         const genre = primaryGenre(novel.genre)

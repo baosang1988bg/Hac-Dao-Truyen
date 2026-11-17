@@ -21,6 +21,13 @@ Hiến pháp Spec Kit: `.specify/memory/constitution.md`.
 
 Khi chạy trong OpenHands, các lệnh trên còn bị chặn cứng bởi `.openhands/hooks/block_dangerous.sh`.
 
+## Công cụ dịch ngược REA (MCP)
+- MCP server `rea` khai báo ở `.mcp.json` (`npx -y rea-agents@6.7.0 mcp`, cần Node >=22.19);
+  skill đi kèm ở `.claude/skills/reverse-engineer-anything/` và `.agents/skills/reverse-engineer-anything/` (giữ 2 bản giống nhau).
+- Chỉ dùng để phân tích artifact đã phát hành mà mình có quyền (web/app đối thủ, APK, HAR capture…),
+  KHÔNG dùng để phân tích source của chính repo này. Antigravity (Windows) không đọc `.mcp.json`:
+  chạy `npx rea-agents@6.7.0 setup --client antigravity` trên máy đó.
+
 ## Cổng chất lượng (giống CI `.github/workflows/ci.yml`)
 1. `npm run lint` — ESLint frontend `--max-warnings 0` + `node --check src/index.js`.
 2. `npm run test:frontend`, `npm run test:worker`, `npm run test:python` (hoặc `npm test`).

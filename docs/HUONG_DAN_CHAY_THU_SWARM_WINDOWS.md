@@ -9,13 +9,15 @@
 
 ## Bước 0 — Lấy code về máy Windows
 
+> **Cập nhật 2026-10-19:** swarm đã nằm trên `main` (từ `14fb9ae`) — không cần checkout nhánh `feature/speckit-swarm` nữa.
+
 Mở **PowerShell** tại thư mục repo (vd `E:\AOO\HacDaoTruyen`):
 
 ```powershell
 git status                       # phải sạch; nếu đang dở việc thì commit/stash trước
 git fetch origin
-git checkout feature/speckit-swarm
-git pull --rebase
+git checkout main
+git pull --rebase                # swarm đã ở main từ 2026-10-19
 git config core.longpaths true   # tránh lỗi đường dẫn dài của worktree trên Windows
 ```
 

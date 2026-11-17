@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types'
 import { chapterType } from '../utils/propTypes'
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Play, BookOpen, Search, ArrowUpDown,
@@ -17,7 +18,10 @@ import { useCachedGet } from '../utils/apiCache'
 import { runWhenIdle } from '../utils/idle'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import ScrollToTopButton from '../components/ui/ScrollToTopButton'
+import { withViewTransition } from '../utils/motion'
+import { trackEvent } from '../utils/analytics'
 import '../styles/reading.css'
+import '../styles/novel-reader.css'
 
 const PAGE_SIZE = 100
 
@@ -70,6 +74,21 @@ function NovelPageContent({ slug }) {
   // Người đọc thường bấm "Đọc" ngay sau đó → tải sẵn chunk Reader khi rảnh.
   useEffect(() => runWhenIdle(() => { import('./Reader').catch(() => {}) }, { timeout: 3000 }), [])
 
+  // Thanh CTA dính đáy (mobile): hiện khi thanh hành động đã cuộn KHUẤT phía
+  // trên (không hiện khi thanh hành động vẫn đang nằm dưới màn hình).
+  const actionBarRef = useRef(null)
+  const [actionBarPassed, setActionBarPassed] = useState(false)
+  const hasNovel = Boolean(novel)
+  useEffect(() => {
+    const el = actionBarRef.current
+    if (!hasNovel || !el || typeof IntersectionObserver !== 'function') return undefined
+    const io = new IntersectionObserver(([entry]) => {
+      setActionBarPassed(!entry.isIntersecting && entry.boundingClientRect.top < 0)
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [hasNovel])
+
   if (!novel && novelReq.error) {
     const notFound = novelReq.error?.response?.status === 404
     return (
@@ -104,9 +123,18 @@ function NovelPageContent({ slug }) {
   const lastRead = getLastReadForSlug(slug)
   const firstChapter = chapters[0]
   const epubOnly = isEpubOnly(novel)
+  // Nút chính: có lịch sử → "Đọc tiếp", chưa có → "Đọc từ đầu".
+  const mainCta = lastRead
+    ? { to: `/novel/${slug}/read/${lastRead}`, label: `Đọc tiếp Ch. ${fmtChapterLabel(lastRead)}`, icon: BookOpen }
+    : firstChapter
+      ? { to: chapterUrl(slug, firstChapter), label: 'Đọc từ đầu', icon: Play }
+      : null
+  const showStickyCta = Boolean(mainCta) && actionBarPassed
+  const MainIcon = mainCta?.icon
 
   return (
-    <div className="container animate-fade-in">
+    // hd-page-enter: chỉ opacity (trang chứa nút nổi position:fixed)
+    <div className={`container hd-page-enter novel-page${showStickyCta ? ' has-sticky-cta' : ''}`}>
       <Link to="/" style={{
         display: 'inline-flex', alignItems: 'center', gap: '6px',
         color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1rem', minHeight: '44px',
@@ -134,7 +162,7 @@ function NovelPageContent({ slug }) {
             </span>
           </div>
           {novel.last_translated_at && (
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+            <div className="novel-hero__meta">
               Cập nhật {fmtTimeAgo(novel.last_translated_at)}
             </div>
           )}
@@ -152,27 +180,33 @@ function NovelPageContent({ slug }) {
         />
       )}
 
-      {/* ── Thanh hành động ── */}
-      <div className="novel-action-bar">
-        {firstChapter && (
-          <Link to={chapterUrl(slug, firstChapter)} className="btn btn-primary">
-            <Play size={16} /> Đọc từ đầu
+      {/* ── Thanh hành động ──
+          Mobile: nút chính full-width, các nút phụ chia đều 1 hàng (novel-reader.css). */}
+      <div className="novel-action-bar hd-reveal" ref={actionBarRef} style={{ '--i': 2 }} data-track-section="novel_action_bar">
+        {mainCta && (
+          <Link
+            to={mainCta.to}
+            className="btn btn-primary hd-press novel-action-bar__main"
+            data-track-action={lastRead ? 'continue_reading' : 'start_reading'}
+          >
+            <MainIcon size={18} aria-hidden="true" /> <span>{mainCta.label}</span>
           </Link>
         )}
-        {lastRead && (
-          <Link to={`/novel/${slug}/read/${lastRead}`} className="btn btn-secondary">
-            <BookOpen size={16} /> Đọc tiếp Ch. {fmtChapterLabel(lastRead)}
+        <div className="novel-action-bar__secondary">
+          {lastRead && firstChapter && (
+            <Link to={chapterUrl(slug, firstChapter)} className="btn btn-secondary hd-press">
+              <Play size={16} aria-hidden="true" /> <span>Đọc từ đầu</span>
+            </Link>
+          )}
+          <Link
+            to={`/novel/${slug}/epub-reader`}
+            className={`btn hd-press ${epubOnly && !firstChapter ? 'btn-primary' : 'btn-secondary'}`}
+            title="Đọc EPUB trực tiếp trên trình duyệt"
+          >
+            <BookMarked size={16} aria-hidden="true" /> <span>Đọc EPUB</span>
           </Link>
-        )}
-        <Link
-          to={`/novel/${slug}/epub-reader`}
-          className={`btn ${epubOnly && !firstChapter ? 'btn-primary' : 'btn-secondary'}`}
-          title="Đọc EPUB trực tiếp trên trình duyệt"
-          style={{ gap: '6px' }}
-        >
-          <BookMarked size={16} /> Đọc EPUB
-        </Link>
-        <FollowButton slug={slug} />
+          <FollowButton slug={slug} />
+        </div>
       </div>
 
       {/* ── Danh sách chương (skeleton/lỗi riêng, không chặn hero) ── */}
@@ -191,6 +225,16 @@ function NovelPageContent({ slug }) {
         <ChapterList slug={slug} chapters={chapters} epubOnly={epubOnly} />
       )}
 
+      {/* Thanh "Đọc tiếp" dính đáy — chỉ hiện trên mobile (CSS) khi thanh hành
+          động đã cuộn khuất; nằm ngay trên bottom tab bar. */}
+      {mainCta && (
+        <div className={`novel-sticky-cta${showStickyCta ? ' is-visible' : ''}`} aria-hidden={!showStickyCta} data-track-section="novel_sticky_cta">
+          <Link to={mainCta.to} className="btn btn-primary hd-press" tabIndex={showStickyCta ? undefined : -1}>
+            <MainIcon size={18} aria-hidden="true" /> <span>{mainCta.label}</span>
+          </Link>
+        </div>
+      )}
+
       {/* Link nhỏ cho admin */}
       {isAdmin && (
         <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
@@ -203,8 +247,8 @@ function NovelPageContent({ slug }) {
         </div>
       )}
 
-      {/* Nút cuộn lên đầu trang */}
-      <ScrollToTopButton />
+      {/* Nút cuộn lên đầu trang — mobile: đẩy lên trên thanh CTA dính đáy (--novel-cta-h) */}
+      <ScrollToTopButton bottomOffset="calc(var(--hd-fab-bottom, 1.5rem) + var(--novel-cta-h, 0px) + env(safe-area-inset-bottom, 0px))" />
     </div>
   )
 }
@@ -266,6 +310,8 @@ function FollowButton({ slug }) {
 
   const toggle = async () => {
     if (!isLoggedIn()) {
+      // Phễu "muốn theo dõi nhưng chưa có tài khoản" → đo tỉ lệ chuyển sang đăng ký.
+      trackEvent('login_prompt', { feature: 'follow', novel_slug: slug })
       navigate('/account')
       return
     }
@@ -276,6 +322,7 @@ function FollowButton({ slug }) {
     try {
       if (next) await userApi.put(`/user/bookmarks/${slug}`)
       else await userApi.delete(`/user/bookmarks/${slug}`)
+      trackEvent(next ? 'novel_follow' : 'novel_unfollow', { novel_slug: slug, source: 'novel_page' })
     } catch (err) {
       setFollowing(!next) // hoàn tác
       if (err.response?.status === 401) navigate('/account')
@@ -287,13 +334,13 @@ function FollowButton({ slug }) {
   return (
     <button
       type="button"
-      className={`btn btn-follow${following ? ' is-following' : ''}`}
+      className={`btn btn-follow hd-press${following ? ' is-following' : ''}`}
       onClick={toggle}
       disabled={busy}
       aria-pressed={following}
     >
-      <Heart size={16} fill={following ? 'currentColor' : 'none'} />
-      {following ? 'Đang theo dõi' : 'Theo dõi'}
+      <Heart size={16} fill={following ? 'currentColor' : 'none'} aria-hidden="true" />
+      <span>{following ? 'Đang theo dõi' : 'Theo dõi'}</span>
     </button>
   )
 }
@@ -307,13 +354,7 @@ function CollapsibleNotes({ notes }) {
   const [expanded, setExpanded] = useState(false)
   return (
     <div>
-      <p style={{
-        fontSize: '0.83rem', color: 'var(--text-muted)', lineHeight: 1.6,
-        ...(expanded ? {} : {
-          display: '-webkit-box', WebkitLineClamp: 3,
-          WebkitBoxOrient: 'vertical', overflow: 'hidden',
-        }),
-      }}>
+      <p className={`novel-notes__text${expanded ? '' : ' is-clamped'}`}>
         {notes}
       </p>
       <button
@@ -322,7 +363,9 @@ function CollapsibleNotes({ notes }) {
         onClick={() => setExpanded(v => !v)}
         aria-expanded={expanded}
       >
-        {expanded ? <>Thu gọn <ChevronUp size={13} /></> : <>Xem thêm <ChevronDown size={13} /></>}
+        {expanded
+          ? <>Thu gọn <ChevronUp size={16} aria-hidden="true" /></>
+          : <>Xem thêm <ChevronDown size={16} aria-hidden="true" /></>}
       </button>
     </div>
   )
@@ -368,15 +411,21 @@ function ChapterList({ slug, chapters, epubOnly }) {
     )
   }
 
+  // Đảo thứ tự qua View Transitions (crossfade danh sách). flushSync để DOM
+  // cập nhật NGAY trong callback — trình duyệt chụp ảnh "sau" đúng trạng thái mới.
+  const toggleSort = () => {
+    withViewTransition(() => { flushSync(() => setSortDesc(v => !v)) })
+  }
+
   const shown = filtered.slice(0, visibleCount)
   const remaining = filtered.length - shown.length
 
   return (
-    <div className="glass-panel chapter-list-panel">
+    <div className="glass-panel chapter-list-panel hd-reveal" style={{ '--i': 3 }} data-track-section="novel_chapter_list">
       {/* Toolbar */}
       <div className="chapter-list-toolbar">
         <div className="chapter-list-search">
-          <Search size={14} style={{
+          <Search size={16} aria-hidden="true" style={{
             position: 'absolute', left: '10px', top: '50%',
             transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none',
           }} />
@@ -389,7 +438,7 @@ function ChapterList({ slug, chapters, epubOnly }) {
             aria-label="Tìm chương theo tên hoặc số"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            style={{ paddingLeft: '32px', fontSize: '0.875rem' }}
+            style={{ paddingLeft: '34px', fontSize: '1rem' }}
           />
         </div>
         <span className="chapter-list-count">
@@ -399,11 +448,11 @@ function ChapterList({ slug, chapters, epubOnly }) {
         </span>
         <button
           type="button"
-          className="chapter-sort-button"
-          onClick={() => setSortDesc(v => !v)}
+          className={`chapter-sort-button${sortDesc ? ' is-desc' : ''}`}
+          onClick={toggleSort}
           aria-label={sortDesc ? 'Đang xếp mới đến cũ — đổi thành cũ đến mới' : 'Đang xếp cũ đến mới — đổi thành mới đến cũ'}
         >
-          <ArrowUpDown size={13} />
+          <ArrowUpDown size={18} aria-hidden="true" />
           {sortDesc ? 'Mới → Cũ' : 'Cũ → Mới'}
         </button>
       </div>
@@ -431,19 +480,11 @@ function ChapterList({ slug, chapters, epubOnly }) {
                 to={chapterUrl(slug, chap)}
                 aria-current={isCurrent ? 'page' : undefined}
               >
-                <span style={{
-                  flexShrink: 0, minWidth: '42px', textAlign: 'right',
-                  fontSize: 'var(--font-xs, 0.75rem)', fontWeight: 600,
-                  color: num ? 'var(--accent)' : '#fbbf24',
-                  fontVariantNumeric: 'tabular-nums',
-                }}>
+                <span className={`chapter-list-row__num${num ? '' : ' is-special'}`}>
                   {num ? `#${num}` : '✦'}
                 </span>
-                <span style={{ width: '1px', height: '14px', background: 'var(--border-panel)', flexShrink: 0 }} />
-                <span style={{
-                  flex: 1, minWidth: 0, fontSize: '0.875rem',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
+                <span className="chapter-list-row__sep" aria-hidden="true" />
+                <span className="chapter-list-row__title">
                   {cleanTitle(chap.title)}
                 </span>
                 {isNew && (
@@ -457,7 +498,7 @@ function ChapterList({ slug, chapters, epubOnly }) {
                     {isCurrent ? 'Đang đọc' : '✓'}
                   </span>
                 )}
-                <span style={{ color: 'var(--text-muted)', opacity: 0.4, flexShrink: 0, fontSize: '0.75rem' }}>›</span>
+                <span className="chapter-list-row__chevron" aria-hidden="true">›</span>
               </Link>
             )
           })}

@@ -9,7 +9,21 @@
 	"assets": {
 		"directory": "frontend/dist",
 		"binding": "ASSETS",
-		"run_worker_first": true
+		// Chỉ các đường dẫn dưới đây LUÔN chạy Worker trước. Mọi đường dẫn khác
+		// được Cloudflare thử phục vụ thẳng từ Static Assets (JS/CSS trong
+		// /assets/*, sw.js, manifest, icon, trang "/") — những lượt đó KHÔNG tính
+		// vào hạn mức request của Worker (trước đây "run_worker_first": true khiến
+		// mỗi file tĩnh là 1 lần gọi Worker). Không có file khớp (vd /library,
+		// /novel/:slug, /assets/<hash cũ>.js) thì Worker vẫn được gọi như cũ:
+		// SPA fallback + chèn SEO + 404 thật cho asset thiếu.
+		// KHÔNG dùng pattern phủ định ("!/assets/*"): khi đó asset thiếu trả 404
+		// thẳng từ Static Assets kèm header immutable của _headers → trình duyệt
+		// nhớ 404 suốt 1 năm. Cache-Control cho file tĩnh: frontend/public/_headers.
+		"run_worker_first": [
+			"/api/*",
+			"/sitemap.xml",
+			"/robots.txt"
+		]
 	},
 	"compatibility_flags": [
 		"nodejs_compat"

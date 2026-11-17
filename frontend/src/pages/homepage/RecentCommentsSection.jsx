@@ -3,7 +3,11 @@ import { Link } from 'react-router-dom'
 import { MessageSquare } from 'lucide-react'
 import SectionHeader from '../../components/ui/SectionHeader'
 import { fmtTimeAgo, fmtNovelTitle } from '../../utils/format'
-import api from '../../api'
+import { cachedGet } from '../../utils/apiCache'
+
+// Worker cache edge 5 phút cho khách → client giữ 2 phút, quay lại trang chủ
+// trong phiên không gọi lại.
+const COMMENTS_TTL = 2 * 60_000
 
 // created_at từ API là 'YYYY-MM-DD HH:MM:SS' (UTC) → epoch giây, giống ChapterComments.jsx
 function toEpochSeconds(s) {
@@ -22,8 +26,8 @@ export default function RecentCommentsSection() {
 
   useEffect(() => {
     let alive = true
-    api.get('/comments/recent?limit=5')
-      .then(res => { if (alive) setComments(Array.isArray(res.data) ? res.data : []) })
+    cachedGet('/comments/recent', { params: { limit: 5 }, ttl: COMMENTS_TTL })
+      .then(data => { if (alive) setComments(Array.isArray(data) ? data : []) })
       .catch(() => { if (alive) setComments([]) })
     return () => { alive = false }
   }, [])
@@ -31,9 +35,9 @@ export default function RecentCommentsSection() {
   if (!comments || comments.length === 0) return null
 
   return (
-    <section className="home-section" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
+    <section className="home-section hp-enter" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
       <SectionHeader icon={<MessageSquare size={15} />} title="Đang Thảo Luận" />
-      <div className="hp-toplist">
+      <div className="hp-toplist hp-stagger">
         {comments.map(c => (
           <Link
             key={c.id}

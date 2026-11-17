@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types'
 import { useState, useCallback, useRef, useEffect } from 'react';
 import api from '../api'
+import { trackEvent } from '../utils/analytics'
 
 /**
  * SynopsisPanel — Hiển thị phần giới thiệu truyện (synopsis).
@@ -32,6 +33,9 @@ export default function SynopsisPanel({ slug, synopsis, hasMore = false, maxLine
       return
     }
 
+    // GA4: người đọc muốn đọc giới thiệu đầy đủ — tín hiệu "đang cân nhắc" truyện.
+    trackEvent('synopsis_expand', { novel_slug: slug })
+
     // Đã fetch đầy đủ rồi
     if (fetched) {
       setExpanded(true)
@@ -56,7 +60,8 @@ export default function SynopsisPanel({ slug, synopsis, hasMore = false, maxLine
   if (!fullText && !synopsis) return null
 
   return (
-    <div style={styles.container}>
+    // hd-reveal: trượt nhẹ lên khi cuộn tới (motion.css; khối lá, không chứa fixed)
+    <div className="synopsis-panel hd-reveal" style={{ ...styles.container, '--i': 1 }}>
       <div style={styles.header}>
         <span style={styles.title}>📖 Giới Thiệu</span>
       </div>
@@ -140,7 +145,6 @@ const styles = {
     color: 'var(--text, #e2e8f0)',
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
-    transition: 'all 0.3s ease',
   },
   fadeGradient: {
     position: 'absolute',
@@ -162,7 +166,7 @@ const styles = {
     border: '1px solid var(--border, rgba(255,255,255,0.12))',
     borderRadius: '6px',
     color: 'var(--accent)',
-    fontSize: '0.82rem',
+    fontSize: '0.875rem',
     fontWeight: 600,
     cursor: 'pointer',
     transition: 'background 0.15s, border-color 0.15s',

@@ -101,8 +101,10 @@ def create_app(manager: RunManager, token: str | None = None, port: int = 8765) 
 
     @app.post("/api/runs/{run_id}/cancel")
     def cancel(run_id: str):
-        _run(run_id)
-        manager.cancel(run_id)
+        run = _run(run_id)
+        if not manager.cancel(run_id):
+            raise HTTPException(409, "Run đã kết thúc hoặc chỉ xem được (nạp từ lịch sử) — không huỷ được"
+                                if run.readonly or run.bus.state.get("result") is not None else "Không huỷ được")
         return {"ok": True}
 
     @app.get("/api/runs/{run_id}/events")
@@ -124,7 +126,7 @@ def create_app(manager: RunManager, token: str | None = None, port: int = 8765) 
                 for ev in evs:
                     seq = ev["seq"]
                     yield f"id: {seq}\ndata: {json.dumps(ev, ensure_ascii=False)}\n\n"
-                if run.bus.state.get("result") and not run.thread.is_alive() and seq >= run.bus.last_seq:
+                if run.bus.state.get("result") and not run.alive and seq >= run.bus.last_seq:
                     yield "event: end\ndata: {}\n\n"
                     return
 

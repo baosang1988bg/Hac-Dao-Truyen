@@ -1,13 +1,16 @@
 import PropTypes from 'prop-types'
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom'
-import { User, LogOut, BookOpen, HeartOff, Loader2 } from 'lucide-react'
+import { User, LogOut, BookOpen, Heart, HeartOff, Loader2 } from 'lucide-react'
 import userApi, {
   saveUserSession, clearUserSession, getUserInfo, isLoggedIn,
 } from '../userApi'
 import { fetchNovelsBySlugsBatch } from '../utils/novelsApi'
 import { novelDisplayTitle } from '../utils/format'
 import GoogleLoginButton from '../components/GoogleLoginButton'
+import { staggerIndex } from '../utils/motion'
+import { trackAuth, trackEvent } from '../utils/analytics'
+import '../styles/library-epub.css'
 
 /**
  * Trang tài khoản NGƯỜI DÙNG (guest đã đăng ký — không liên quan admin /login).
@@ -59,8 +62,10 @@ function AuthForm({ onSuccess }) {
         : { email: email.trim(), password }
       const res = await userApi.post(`/user/${mode}`, payload)
       saveUserSession(res.data.token, res.data.user)
+      trackAuth(mode === 'register' ? 'sign_up' : 'login', 'password', res.data.user)
       onSuccess(res.data.user)
     } catch (err) {
+      trackEvent('auth_error', { auth_mode: mode, method: 'password', status: err.response?.status || 0 })
       setError(friendlyAuthError(err, mode))
     } finally {
       setBusy(false)
@@ -69,7 +74,8 @@ function AuthForm({ onSuccess }) {
 
   return (
     <div className="container animate-fade-in account-page">
-      <div className="glass-panel auth-panel">
+      {/* hd-stagger: các khối trong form hiện so le nhẹ khi mở trang */}
+      <div className="glass-panel auth-panel hd-stagger">
         <div className="auth-panel__icon"><User size={22} /></div>
         <h1 className="auth-panel__title">Tài khoản</h1>
         <p className="auth-panel__sub">
@@ -96,7 +102,7 @@ function AuthForm({ onSuccess }) {
         <form onSubmit={handleSubmit} className="auth-form">
           {mode === 'register' && (
             <input
-              type="text" className="input-field" placeholder="Tên hiển thị (không bắt buộc)"
+              type="text" className="input-field auth-form__field" placeholder="Tên hiển thị (không bắt buộc)"
               value={name} onChange={e => setName(e.target.value)}
               autoComplete="nickname" maxLength={60}
             />
@@ -104,13 +110,13 @@ function AuthForm({ onSuccess }) {
           <input
             type="email" className="input-field" placeholder="Email"
             value={email} onChange={e => setEmail(e.target.value)}
-            required inputMode="email" autoComplete="email"
+            required inputMode="email" autoComplete="email" autoCapitalize="none" enterKeyHint="next"
           />
           <input
             type="password" className="input-field"
             placeholder={mode === 'register' ? 'Mật khẩu (tối thiểu 8 ký tự)' : 'Mật khẩu'}
             value={password} onChange={e => setPassword(e.target.value)}
-            required minLength={8}
+            required minLength={8} enterKeyHint="go"
             autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
           />
 
@@ -195,6 +201,7 @@ function AccountDashboard({ user, onLogout }) {
     setItems(list => list.filter(it => it.slug !== slug)) // optimistic
     try {
       await userApi.delete(`/user/bookmarks/${slug}`)
+      trackEvent('novel_unfollow', { novel_slug: slug, source: 'account' })
     } catch {
       setItems(prev) // hoàn tác nếu lỗi
     }
@@ -202,6 +209,7 @@ function AccountDashboard({ user, onLogout }) {
 
   const logout = async () => {
     try { await userApi.post('/user/logout') } catch { /* token có thể đã hết hạn */ }
+    trackEvent('logout') // gửi TRƯỚC khi xoá user_id → event còn gắn đúng người
     clearUserSession()
     onLogout()
   }
@@ -226,28 +234,32 @@ function AccountDashboard({ user, onLogout }) {
       <h2 className="account-section-title">Đang theo dõi</h2>
 
       {items === null && (
-        <div className="glass-panel p-6 text-muted">Đang tải danh sách theo dõi...</div>
+        <div role="status" aria-label="Đang tải danh sách theo dõi">
+          {[0, 1, 2].map(i => <span key={i} className="hd-skel account-skel__row" />)}
+        </div>
       )}
 
       {error && <div className="glass-panel p-6 auth-error">{error}</div>}
 
       {items !== null && !error && items.length === 0 && (
-        <div className="glass-panel p-6 text-center">
-          <div style={{ fontSize: '2rem', marginBottom: '0.6rem' }}>♥</div>
-          <div style={{ fontWeight: 600, marginBottom: '0.35rem' }}>Chưa theo dõi truyện nào</div>
-          <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '1.1rem' }}>
+        <div className="glass-panel hd-empty">
+          <div className="hd-empty__icon"><Heart size={28} aria-hidden="true" /></div>
+          <div className="hd-empty__title">Chưa theo dõi truyện nào</div>
+          <p className="hd-empty__text">
             Bấm “Theo dõi” trong trang truyện để nhận thông báo chương mới tại đây.
           </p>
-          <Link to="/" className="btn btn-primary" style={{ minHeight: '48px' }}>
-            <BookOpen size={16} /> Khám phá truyện
-          </Link>
+          <div className="hd-empty__actions">
+            <Link to="/" className="btn btn-primary">
+              <BookOpen size={16} aria-hidden="true" /> Khám phá truyện
+            </Link>
+          </div>
         </div>
       )}
 
       {items !== null && items.length > 0 && (
-        <div className="bookmark-list">
-          {items.map(({ slug, novel, prog, chapterCount, newCount }) => (
-            <div key={slug} className="glass-panel bookmark-row">
+        <div className="bookmark-list" data-track-section="account_following">
+          {items.map(({ slug, novel, prog, chapterCount, newCount }, i) => (
+            <div key={slug} className="glass-panel bookmark-row hd-reveal" style={{ '--i': staggerIndex(i) }}>
               <div className="bookmark-row__body">
                 <Link to={`/novel/${slug}`} className="bookmark-row__title">
                   {novelDisplayTitle(novel)}
@@ -264,6 +276,7 @@ function AccountDashboard({ user, onLogout }) {
                 <Link
                   to={`/novel/${slug}/read/${prog.chapter}`}
                   className="btn btn-primary bookmark-row__action"
+                  data-track-action="continue_reading"
                 >
                   <BookOpen size={14} /> Đọc tiếp
                 </Link>

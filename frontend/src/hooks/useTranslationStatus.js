@@ -47,10 +47,14 @@ export default function useTranslationStatus(slug, { onFinished } = {}) {
     return () => { aliveRef.current = false }
   }, [fetchStatus])
 
-  // Poll 2s + đếm thời gian khi đang chạy
+  // Poll 5s (bỏ qua khi tab ẩn) + đếm thời gian khi đang chạy. Chu kỳ 2s cũ là
+  // 30 request/phút cho MỘT tab — một phiên dịch dài vài giờ tốn hàng chục
+  // nghìn request vào Worker và ăn 1/4 hạn mức rate limit theo IP.
   useEffect(() => {
     if (taskStatus?.status === 'running') {
-      pollRef.current = setInterval(fetchStatus, 2000)
+      pollRef.current = setInterval(() => {
+        if (typeof document === 'undefined' || document.visibilityState !== 'hidden') fetchStatus()
+      }, 5000)
       if (!startTimeRef.current) startTimeRef.current = Date.now()
       timerRef.current = setInterval(() => {
         if (aliveRef.current) {

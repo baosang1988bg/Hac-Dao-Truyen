@@ -1,9 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { Trophy, Flame, Eye, Star, Sparkles } from 'lucide-react';
+import { Trophy, Flame, Eye, Star, Sparkles, ChevronDown } from 'lucide-react';
 import { extractNovels, TOP_VIEWS_PARAMS } from '../../utils/novelsApi'
 import { cachedGet, peekCache } from '../../utils/apiCache'
 import { novelDisplayTitle, fmtNumber, cleanAuthor } from '../../utils/format'
+import { withViewTransition } from '../../utils/motion'
+
+// Mobile chỉ hiện 5 hạng đầu, bấm "Xem đủ top 10" để mở (home.css ẩn phần còn lại).
+const MOBILE_VISIBLE = 5
 
 // Mỗi tab tương ứng 1 cột sort mà backend hỗ trợ (xem SORT_COLS trong
 // src/index.js getNovels) — server trả sẵn top 10, không cần tải cả catalog
@@ -59,6 +64,23 @@ export default function TruyenTrungRankings() {
     return cached !== undefined ? rankList('tonghop', cached) : []
   })
   const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState(false)
+  const tabRefs = useRef({})
+
+  // Đổi bảng trong View Transition: nếu cache đã có dữ liệu bảng mới thì đổi
+  // luôn danh sách trong cùng lần cập nhật (flushSync) để hiệu ứng chuyển cảnh
+  // chụp đúng trạng thái mới; chưa có thì effect bên dưới tự tải.
+  function selectCategory(key) {
+    if (key === activeCategory) return
+    const cached = peekCache('/novels', paramsFor(key))
+    withViewTransition(() => {
+      flushSync(() => {
+        setActiveCategory(key)
+        if (cached !== undefined) setCurrentList(rankList(key, cached))
+      })
+    })
+    tabRefs.current[key]?.scrollIntoView?.({ inline: 'nearest', block: 'nearest' })
+  }
 
   const categories = [
     { key: 'tonghop',   label: 'BXH Tổng Hợp',      icon: <Flame size={13} aria-hidden="true" /> },
@@ -82,7 +104,7 @@ export default function TruyenTrungRankings() {
 
   if (loading && currentList.length === 0) {
     return (
-      <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '16px', marginBottom: '1.5rem', height: '420px' }} />
+      <div className="hd-skel" style={{ borderRadius: '16px', marginBottom: '1.5rem', height: '420px' }} role="status" aria-label="Đang tải bảng xếp hạng" />
     )
   }
   if (currentList.length === 0) return null
@@ -108,7 +130,8 @@ export default function TruyenTrungRankings() {
             key={cat.key}
             type="button"
             aria-pressed={activeCategory === cat.key}
-            onClick={() => setActiveCategory(cat.key)}
+            ref={el => { tabRefs.current[cat.key] = el }}
+            onClick={() => selectCategory(cat.key)}
             className={`qidian-rank-tab ${activeCategory === cat.key ? 'active' : ''}`}
             style={{ scrollSnapAlign: 'start' }}
           >
@@ -118,7 +141,7 @@ export default function TruyenTrungRankings() {
       </div>
 
       {/* 10 Vị trí Top chuẩn Truyentrung */}
-      <div className="qidian-rank-list">
+      <div className={`qidian-rank-list${expanded ? ' is-expanded' : ''}`} aria-busy={loading}>
         {currentList.map((novel, idx) => {
           const formattedTitle = novelDisplayTitle(novel)
           const author = cleanAuthor(novel.author)
@@ -153,6 +176,17 @@ export default function TruyenTrungRankings() {
           )
         })}
       </div>
+      {currentList.length > MOBILE_VISIBLE && (
+        <button
+          type="button"
+          className="hp-rank-more hd-press"
+          aria-expanded={expanded}
+          onClick={() => setExpanded(v => !v)}
+        >
+          {expanded ? 'Thu gọn' : `Xem đủ top ${currentList.length}`}
+          <ChevronDown size={14} aria-hidden="true" className="hp-rank-more__icon" />
+        </button>
+      )}
     </div>
   )
 }

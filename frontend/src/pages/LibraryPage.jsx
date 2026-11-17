@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom'
-import { BookOpen, Home } from 'lucide-react'
+import { BookOpen, BookHeart, BookMarked, Home, LibraryBig } from 'lucide-react'
 import NovelCover from '../components/NovelCover'
 import { getAllHistory, fmtChapterLabel } from '../utils/readingHistory'
 import api from '../api'
@@ -8,6 +8,8 @@ import { fetchNovelsBySlugsBatch } from '../utils/novelsApi'
 import { fmtNovelTitle } from '../utils/format'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import '../styles/reading.css'
+import '../styles/library-epub.css'
+import { staggerIndex } from '../utils/motion'
 
 /**
  * Tủ truyện: các truyện đang đọc dở (từ lịch sử cookie/localStorage),
@@ -38,10 +40,10 @@ export default function LibraryPage() {
   const allHaveMeta = history.every(h => h.title)
   if (novelsBySlug === null && !allHaveMeta) {
     return (
-      <div className="container" role="status" aria-label="Đang tải tủ truyện" style={{ paddingTop: '1.5rem' }}>
-        <span className="hd-skel" style={{ height: '32px', width: '40%', marginBottom: '1.5rem' }} />
+      <div className="container library-page" role="status" aria-label="Đang tải tủ truyện" style={{ paddingTop: '1.5rem' }}>
+        <span className="hd-skel library-skel__title" />
         {[0, 1, 2].map(i => (
-          <span key={i} className="hd-skel" style={{ height: '96px', marginBottom: '0.75rem' }} />
+          <span key={i} className="hd-skel library-skel__row" />
         ))}
       </div>
     )
@@ -58,61 +60,104 @@ export default function LibraryPage() {
       return { ...h, novel }
     })
     .filter(h => h.novel)
-    .map(h => ({ ...h, displayTitle: fmtNovelTitle(h.novel.title_is_slug ? '' : h.novel.title, h.slug) }))
+    .map(h => ({
+      ...h,
+      displayTitle: fmtNovelTitle(h.novel.title_is_slug ? '' : h.novel.title, h.slug),
+      percent: readPercent(h.chapter, h.novel.chapter_count),
+    }))
 
   return (
-    <div className="container animate-fade-in">
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 className="page-title" style={{ fontSize: '1.6rem' }}>Tủ truyện</h1>
-        <p className="page-subtitle" style={{ fontSize: '0.9rem' }}>
-          Những truyện bạn đang đọc dở trên thiết bị này.
+    <div className="container animate-fade-in library-page" data-track-section="library">
+      <div className="hd-page-head">
+        <h1 className="page-title">
+          <LibraryBig size={24} style={{ color: 'var(--accent)' }} aria-hidden="true" /> Tủ truyện
+        </h1>
+        <p className="page-subtitle">
+          {items.length > 0
+            ? `${items.length} truyện đang đọc dở trên thiết bị này.`
+            : 'Những truyện bạn đang đọc dở trên thiết bị này.'}
         </p>
       </div>
 
       {items.length === 0 ? (
-        <div className="glass-panel p-6 text-center library-empty-state">
-          <div style={{ fontSize: '2.2rem', marginBottom: '0.75rem' }}>📚</div>
-          <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Tủ truyện đang trống</div>
-          <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '1.25rem' }}>
-            Bắt đầu đọc một truyện — tiến trình sẽ tự lưu vào đây.
+        <div className="glass-panel hd-empty">
+          <div className="hd-empty__icon"><BookHeart size={30} aria-hidden="true" /></div>
+          <div className="hd-empty__title">Tủ truyện đang trống</div>
+          <p className="hd-empty__text">
+            Bắt đầu đọc một truyện — tiến trình sẽ tự lưu vào đây để bạn đọc tiếp bất cứ lúc nào.
           </p>
-          <Link to="/" className="btn btn-primary" style={{ minHeight: '48px' }}>
-            <Home size={16} /> Về Trang chủ
-          </Link>
+          <div className="hd-empty__actions">
+            <Link to="/" className="btn btn-primary">
+              <Home size={16} aria-hidden="true" /> Về Trang chủ
+            </Link>
+            <Link to="/epub" className="btn btn-secondary">
+              <BookMarked size={16} aria-hidden="true" /> Kho EPUB
+            </Link>
+          </div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {items.map(({ slug, chapter, novel, isCurrent, displayTitle }) => (
-            <div key={slug} className="glass-panel library-card">
-              <Link to={`/novel/${slug}`} className="library-card__cover-link" aria-label={`Xem ${displayTitle}`}>
-                <NovelCover novel={{ ...novel, title: displayTitle }} size="sm" />
-              </Link>
-              <div className="library-card__body">
-                {isCurrent && (
-                  <span className="library-card__recent">
-                    GẦN NHẤT
-                  </span>
-                )}
-                <Link to={`/novel/${slug}`} className="library-card__title-link">
-                  <div className="library-card__title">
-                    {displayTitle}
-                  </div>
+        <div className="library-list">
+          {items.map(({ slug, chapter, novel, isCurrent, displayTitle, percent }, i) => (
+            // .hd-reveal ở lớp bọc để hover/nhấn của thẻ không bị trễ theo delay so le.
+            <div key={slug} className="hd-reveal" style={{ '--i': staggerIndex(i) }}>
+              <div className={`glass-panel library-card${isCurrent ? ' is-current' : ''}`}>
+                <Link to={`/novel/${slug}`} className="library-card__cover-link" aria-label={`Xem ${displayTitle}`}>
+                  <NovelCover novel={{ ...novel, title: displayTitle }} size="sm" />
                 </Link>
-                <div className="library-card__progress">
-                  Đang đọc: {fmtChapterLabel(chapter)}
+                <div className="library-card__body">
+                  {isCurrent && (
+                    <span className="library-card__recent">
+                      <span className="hd-live-dot" aria-hidden="true" /> GẦN NHẤT
+                    </span>
+                  )}
+                  <Link to={`/novel/${slug}`} className="library-card__title-link">
+                    <div className="library-card__title">
+                      {displayTitle}
+                    </div>
+                  </Link>
+                  <div className="library-card__progress">
+                    Đang đọc: {fmtChapterLabel(chapter)}
+                    {percent !== null && ` / ${novel.chapter_count} · ${percent}%`}
+                  </div>
+                  {percent !== null && (
+                    <div
+                      className="library-card__bar"
+                      role="progressbar"
+                      aria-label={`Tiến độ đọc ${displayTitle}`}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={percent}
+                    >
+                      <span className="library-card__bar-fill" style={{ '--p': `${Math.max(percent, 2)}%` }} />
+                    </div>
+                  )}
                 </div>
+                <Link
+                  to={`/novel/${slug}/read/${chapter}`}
+                  className="btn btn-primary library-card__action"
+                  aria-label={`Đọc tiếp ${displayTitle}`}
+                >
+                  <BookOpen size={16} aria-hidden="true" /> Đọc tiếp
+                </Link>
               </div>
-              <Link
-                to={`/novel/${slug}/read/${chapter}`}
-                className="btn btn-primary library-card__action"
-                aria-label={`Đọc tiếp ${displayTitle}`}
-              >
-                <BookOpen size={15} /> Đọc tiếp
-              </Link>
             </div>
           ))}
         </div>
       )}
     </div>
   )
+}
+
+/**
+ * % tiến độ đọc từ tham số chương (vd "123", "chuong-123", "0123_VI.md") và
+ * tổng số chương của truyện. Không xác định được → null (ẩn thanh tiến độ).
+ */
+function readPercent(chapter, chapterCount) {
+  const total = Number(chapterCount)
+  if (!Number.isFinite(total) || total <= 0) return null
+  const m = String(chapter ?? '').match(/\d+/)
+  if (!m) return null
+  const n = Number(m[0])
+  if (!Number.isFinite(n) || n <= 0) return null
+  return Math.min(100, Math.round((n / total) * 100))
 }

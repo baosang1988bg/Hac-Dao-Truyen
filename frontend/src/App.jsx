@@ -6,7 +6,8 @@ import RequireAdmin from './components/admin/RequireAdmin'
 import { SpinnerIcon } from './components/shared/ui'
 import AppErrorBoundary from './components/AppErrorBoundary'
 import { lazyWithReload } from './utils/lazyWithReload'
-import { initAnalytics, trackPageView } from './utils/analytics'
+import { initAnalytics, trackPageView, installClickTracking, syncAnalyticsUser } from './utils/analytics'
+import { getUserInfo } from './userApi'
 import { runWhenIdle } from './utils/idle'
 // Trang chủ là điểm vào phổ biến nhất → giữ eager để không nháy loading.
 import HomePage from './pages/HomePage'
@@ -20,6 +21,7 @@ import './styles/reading.css'
 const NovelPage = lazyWithReload(() => import('./pages/NovelPage'))
 const Reader = lazyWithReload(() => import('./pages/Reader'))
 const LibraryPage = lazyWithReload(() => import('./pages/LibraryPage'))
+const UpdatesPage = lazyWithReload(() => import('./pages/UpdatesPage'))
 
 // Trang phụ / ít dùng (admin, epub, tài khoản, đăng nhập, logs) → tách chunk riêng, tải khi cần
 const AccountPage = lazyWithReload(() => import('./pages/AccountPage'))
@@ -85,6 +87,7 @@ function lazyPage(element) {
  * - /logs                      → redirect /admin/logs (tương thích link cũ)
  * - Guest (public, GuestLayout):
  *     /                        → HomePage
+ *     /cap-nhat                → UpdatesPage (nhật ký chương mới, GET /api/updates)
  *     /library                 → LibraryPage
  *     /account                 → AccountPage (đăng nhập/đăng ký USER + theo dõi)
  *     /novel/:slug             → NovelPage
@@ -101,7 +104,13 @@ function AnalyticsTracker() {
 
 function App() {
   const { pathname } = useLocation()
-  useEffect(() => { initAnalytics() }, [])
+  // initAnalytics idempotent: trackPageView (effect của component con, chạy
+  // TRƯỚC effect này) cũng tự khởi tạo → page_view trang đích không bị mất.
+  useEffect(() => {
+    if (!initAnalytics()) return
+    installClickTracking()
+    syncAnalyticsUser(getUserInfo())
+  }, [])
 
   // Prefetch chunk NovelPage khi trang đã tải xong + trình duyệt rảnh: click
   // vào một truyện từ trang chủ sẽ không phải chờ tải JS.
@@ -146,6 +155,7 @@ function App() {
 
       <Route element={<GuestLayout />}>
         <Route path="/" element={<HomePage />} />
+        <Route path="/cap-nhat" element={lazyPage(<UpdatesPage />)} />
         <Route path="/library" element={lazyPage(<LibraryPage />)} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/novel/:slug" element={lazyPage(<NovelPage />)} />

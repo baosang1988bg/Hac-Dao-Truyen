@@ -23,14 +23,14 @@ export default function UpdatesSection() {
     return (
       <section className="home-section" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
         <SectionHeader icon={<Sparkles size={16} style={{ color: 'var(--accent)' }} />} title="Truyện Mới Cập Nhật" />
-        <div className="glass-panel" style={{ height: '260px', borderRadius: '14px' }} />
+        <div className="hd-skel" style={{ height: '260px', borderRadius: '14px' }} role="status" aria-label="Đang tải truyện mới cập nhật" />
       </section>
     )
   }
   if (novels.length === 0) return null
 
   return (
-    <section className="home-section" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
+    <section className="home-section hp-enter" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
       <div className="hp-updates-heading">
         <SectionHeader
           icon={<Sparkles size={16} style={{ color: 'var(--accent)' }} />}
@@ -45,7 +45,9 @@ export default function UpdatesSection() {
         </Link>
       </div>
 
-      <div className="glass-panel" style={{ borderRadius: '14px', overflow: 'hidden' }}>
+      {/* hp-updates-table: mobile chỉ hiện 10 dòng đầu (home.css) — còn lại
+          xem ở link "Xem tất cả truyện" phía trên. */}
+      <div className="glass-panel hp-updates-table" style={{ borderRadius: '14px', overflow: 'hidden' }}>
         <NovelTable
           novels={novels}
           limit={LIMIT}

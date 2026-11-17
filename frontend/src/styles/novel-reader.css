@@ -1,0 +1,495 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   novel-reader.css — Giao diện mobile + chuyển động cho NovelPage và Reader.
+   ───────────────────────────────────────────────────────────────────────────
+   - Import SAU index.css (trong NovelPage.jsx / Reader.jsx) → cùng specificity
+     thì rule ở đây thắng; không cần !important.
+   - Dùng token của motion.css (--ease-out, --dur-*, keyframes hd-*). Khối
+     prefers-reduced-motion ở motion.css tự tắt mọi animation/transition.
+   - Phần tử có thể chứa con position:fixed (trang, .reader-root, modal) CHỈ
+     animate opacity; transform chỉ dùng trên khối lá (hero, thanh CTA, sheet).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════ NOVEL PAGE ═══════════════════════════════════ */
+
+/* Chiều cao thanh CTA dính đáy (mobile) — ScrollToTopButton cộng thêm để
+   không đè lên thanh. 0 khi thanh ẩn / desktop. */
+.novel-page { --novel-cta-h: 0px; }
+
+/* ── Hero: bìa phóng nhẹ + thông tin trượt lên khi vào trang ─────────────
+   fill-mode "backwards" (không phải both/forwards) → xong là trả transform về
+   none, không để lại containing block. */
+.novel-hero > .novel-cover {
+  animation: hd-scale-in var(--dur-4) var(--ease-out) backwards;
+}
+.novel-hero__info {
+  animation: hd-fade-up var(--dur-4) var(--ease-out) 80ms backwards;
+}
+.novel-hero__meta {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2, 8px);
+}
+.novel-notes__text {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.novel-notes__text.is-clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.novel-notes-toggle { font-size: 0.875rem; font-weight: 600; }
+
+@media (max-width: 600px) {
+  .novel-hero { gap: var(--space-3, 12px); margin-bottom: var(--space-4, 16px); }
+  .novel-hero__title { font-size: 1.3rem; }
+  /* Tên gốc + tác giả có thể rất dài → tối đa 2 dòng trên mobile */
+  .novel-hero__sub {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .novel-hero__badges { gap: 6px; }
+  .novel-hero__badge { padding: 3px 10px; }
+}
+
+/* ── Thanh hành động ─────────────────────────────────────────────────────
+   Desktop: giữ dạng hàng flex cũ (nhóm phụ "display: contents").
+   Mobile: nút chính full-width ≥52px, các nút phụ chia đều 1 hàng, không tràn. */
+.novel-action-bar__secondary { display: contents; }
+.novel-action-bar .btn { gap: 8px; }
+
+@media (max-width: 600px) {
+  .novel-action-bar {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: var(--space-2, 8px);
+    margin-bottom: var(--space-4, 16px);
+  }
+  .novel-action-bar__main.btn {
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 52px;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .novel-action-bar__secondary {
+    display: flex;
+    gap: var(--space-2, 8px);
+  }
+  .novel-action-bar__secondary .btn {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 48px;
+    padding: 8px 6px;
+    gap: 6px;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+  .novel-action-bar__secondary .btn > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* ── Thanh "Đọc tiếp" dính đáy (chỉ mobile, chỉ khi thanh hành động đã cuộn
+   khuất) — nằm ngay trên bottom tab bar (56px + safe-area). ──────────── */
+.novel-sticky-cta { display: none; }
+@media (max-width: 768px) {
+  .novel-page.has-sticky-cta {
+    --novel-cta-h: 68px;
+    /* chừa chỗ để thanh không che nút "Tải thêm" cuối danh sách */
+    padding-bottom: 72px;
+  }
+  .novel-sticky-cta {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    z-index: 100; /* dưới bottom tab bar (110), trên FAB (90) */
+    padding: 8px max(12px, env(safe-area-inset-left, 0px)) 8px max(12px, env(safe-area-inset-right, 0px));
+    background: color-mix(in srgb, var(--bg-dark, #0f172a) 82%, transparent);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border-top: 1px solid var(--border-panel);
+    transform: translateY(calc(100% + 56px));
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      transform var(--dur-3) var(--ease-out),
+      opacity var(--dur-2) var(--ease-out),
+      visibility 0s linear var(--dur-3);
+  }
+  .novel-sticky-cta.is-visible {
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      transform var(--dur-3) var(--ease-out),
+      opacity var(--dur-2) var(--ease-out),
+      visibility 0s;
+  }
+  .novel-sticky-cta .btn {
+    width: 100%;
+    min-height: 52px;
+    font-weight: 700;
+    gap: 8px;
+  }
+  .novel-sticky-cta .btn > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Hover chỉ cho thiết bị có chuột: trên màn cảm ứng, hover "dính" sau khi chạm
+   làm nút nhảy lên -2px (rule .btn-primary:hover ở index.css chưa bọc media). */
+@media (hover: none) {
+  .novel-page .btn-primary:hover:not(:disabled) { transform: none; }
+  .novel-page .btn-secondary:hover:not(:disabled) { background: rgba(255, 255, 255, 0.05); }
+}
+
+/* ── Danh sách chương ────────────────────────────────────────────────── */
+.chapter-list-count { font-size: 0.875rem; }
+.chapter-sort-button {
+  gap: 6px;
+  font-size: 0.875rem;
+  transition:
+    color var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out),
+    transform var(--dur-1) var(--ease-out);
+}
+.chapter-sort-button svg { transition: transform var(--dur-3) var(--ease-spring); }
+.chapter-sort-button.is-desc svg { transform: rotate(180deg); }
+.chapter-sort-button:active { transform: scale(0.96); }
+@media (hover: hover) {
+  .chapter-sort-button:hover { color: var(--text-main); border-color: var(--accent); }
+}
+
+.chapter-list-row {
+  min-height: 52px;
+  transition:
+    background var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out),
+    opacity var(--dur-1) var(--ease-out);
+}
+.chapter-list-row__num {
+  flex-shrink: 0;
+  min-width: 42px;
+  text-align: right;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.chapter-list-row__num.is-special { color: #fbbf24; }
+.chapter-list-row__sep {
+  width: 1px;
+  height: 14px;
+  background: var(--border-panel);
+  flex-shrink: 0;
+}
+.chapter-list-row__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9375rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chapter-list-row__chevron {
+  color: var(--text-muted);
+  opacity: 0.4;
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+@media (hover: hover) {
+  .chapter-list-row .chapter-list-row__chevron {
+    transition: transform var(--dur-2) var(--ease-out), opacity var(--dur-2) var(--ease-out);
+  }
+  .chapter-list-row:hover .chapter-list-row__chevron { transform: translateX(3px); opacity: 0.8; }
+}
+
+/* Badge "Mới": chấm đỏ nhịp nhẹ + bật lên 1 lần khi xuất hiện */
+.chapter-list-row__badge-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  animation: hd-pop var(--dur-4) var(--ease-spring) 200ms backwards;
+}
+.chapter-list-row__badge-new::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: novel-new-dot 2s var(--ease-out) infinite;
+}
+@keyframes novel-new-dot {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+  70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+@media (max-width: 480px) {
+  .chapter-list-panel { padding: var(--space-3, 12px); }
+  .chapter-list-row { padding: var(--space-2, 8px); gap: 6px; }
+  .chapter-list-row__num { min-width: 36px; }
+  .chapter-list-row__date { font-size: 0.75rem; }
+}
+
+/* ═══════════════════════════ READER ═══════════════════════════════════════
+   (Chuyển từ thẻ <style> trong Reader.jsx — style inline cũ đã đưa vào class
+   nên không cần !important để ghi đè nữa.) */
+
+.reader-root {
+  cursor: default;
+  min-height: 100vh;
+  min-height: 100dvh; /* thanh địa chỉ mobile co/giãn không làm nhảy layout */
+  background: var(--reader-bg);
+  color: var(--reader-text);
+  transition: background var(--dur-3) var(--ease-out), color var(--dur-3) var(--ease-out);
+}
+
+/* Thanh tiến độ đọc (3px, trên cùng) — Reader cập nhật transform qua ref */
+.reader-progress {
+  position: fixed;
+  top: env(safe-area-inset-top, 0px);
+  left: 0;
+  width: 100%;
+  height: 3px;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  background: var(--reader-text);
+  opacity: 0.85;
+  z-index: 200;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.reader-root .reader-container {
+  max-width: var(--reader-max-w, 760px);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+/* Top nav: sticky + tự ẩn khi cuộn xuống (trượt transform, không reflow) */
+.reader-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 70;
+  background: var(--reader-bg);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 3px);
+  transition:
+    transform var(--dur-3) var(--ease-out),
+    background var(--dur-3) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out);
+}
+.reader-topbar.is-hidden { transform: translateY(-115%); }
+
+/* Thanh điều hướng chương (trên/dưới) */
+.reader-nav--top { padding: 1rem 0; }
+.reader-nav--bottom { padding: 2rem 0 calc(4rem + env(safe-area-inset-bottom, 0px)); }
+.reader-nav__error {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #f87171;
+  opacity: 0.9;
+  padding: 0 1rem 0.5rem;
+}
+.reader-nav__error--bottom { padding: 0.5rem 1rem 0; }
+
+.reader-root .reader-nav__icon-button,
+.reader-root .reader-nav__chapter-button--prev,
+.reader-root .reader-nav__chapter-index {
+  background: var(--reader-panel);
+  color: var(--reader-text);
+  border: 2px solid var(--reader-border);
+  border-radius: 18px;
+}
+.reader-root .reader-nav__icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform var(--dur-1) var(--ease-out), background var(--dur-2) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+.reader-root .reader-nav__chapter-button {
+  font-weight: 700;
+  -webkit-tap-highlight-color: transparent;
+}
+.reader-root .reader-nav__chapter-button--next {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 18px;
+  font-weight: 800;
+  box-shadow: 0 8px 25px rgba(201, 147, 46, 0.4);
+}
+.reader-nav--bottom .reader-nav__chapter-button--next { flex: 1; }
+.reader-root .reader-nav__chapter-index {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  opacity: 0.9;
+}
+.reader-root .reader-nav__icon-button:active,
+.reader-root .reader-nav__chapter-button:active:not(:disabled) { transform: scale(0.95); }
+
+/* Nội dung chương */
+.reader-content {
+  padding: 1rem 0 3rem;
+  word-break: normal;
+  overflow-wrap: break-word;
+  transition: font-size 0.2s;
+}
+/* Chuyển chương: nội dung mới (hoặc skeleton) mờ dần vào — CHỈ opacity */
+.reader-fade { animation: hd-fade var(--dur-3) var(--ease-out); }
+
+.reader-p {
+  margin-bottom: 1.6em;
+  text-indent: 1.2em;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+.reader-h1 {
+  font-size: 1.6em;
+  font-weight: 800;
+  color: inherit;
+  line-height: 1.3;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 3px solid var(--reader-border);
+}
+.reader-h1.has-date { margin-bottom: 0.5rem; padding-bottom: 0; border-bottom: none; }
+.reader-chapter-date {
+  font-size: 0.85rem;
+  color: var(--reader-muted);
+  border-bottom: 3px solid var(--reader-border);
+  padding-bottom: 1rem;
+  margin-bottom: 2.5rem;
+}
+.reader-hr {
+  border: none;
+  border-top: 2px solid var(--reader-border);
+  margin: 3.5rem 0;
+}
+
+.reader-root .hide-mobile { display: inline; }
+
+/* FAB cuộn lên đầu — góc dưới TRÁI (góc phải là vùng chạm "chương tiếp") */
+.reader-fab {
+  position: fixed;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  left: calc(1rem + env(safe-area-inset-left, 0px));
+  z-index: 90;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(30, 41, 59, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  opacity: 0.75;
+  animation: hd-scale-in var(--dur-2) var(--ease-out);
+  transition: transform var(--dur-1) var(--ease-out), opacity var(--dur-2) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+.reader-fab:active { transform: scale(0.92); opacity: 1; }
+.reader-fab:focus-visible { opacity: 1; }
+@media (hover: hover) {
+  .reader-fab:hover { opacity: 1; }
+}
+
+/* Trạng thái đồng bộ tiến trình — chỉ là thông báo, không nhận chạm */
+.reader-sync-status {
+  position: fixed;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  right: calc(1rem + env(safe-area-inset-right, 0px));
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--reader-panel);
+  color: var(--reader-text);
+  border: 1px solid var(--reader-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0.9;
+  pointer-events: none;
+  animation: hd-fade var(--dur-2) var(--ease-out);
+}
+
+/* Settings bottom sheet: sheet trượt lên ở MỌI khổ màn hình. Overlay mờ dần
+   vào/ra do .hd-modal-overlay (Modal.jsx) lo — không đặt animation overlay ở
+   đây vì selector cụ thể hơn sẽ đè mất hiệu ứng đóng (.is-closing).
+   Phạm vi .reader-root (Modal render bên trong) → không ảnh hưởng sheet EPUB. */
+.reader-root .reader-settings-sheet {
+  animation: hd-sheet-up var(--dur-3) var(--ease-out);
+}
+.reader-offline__label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--reader-muted);
+  margin-bottom: 0.8rem;
+  letter-spacing: 0.05em;
+}
+.reader-offline__btn {
+  width: 100%;
+  min-height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--dur-2) var(--ease-out), opacity var(--dur-2) var(--ease-out), transform var(--dur-1) var(--ease-out);
+}
+.reader-offline__btn:active:not(:disabled) { transform: scale(0.98); }
+.reader-offline__btn[aria-busy="true"] { background: var(--reader-border); }
+.reader-offline__btn:disabled { cursor: not-allowed; }
+.reader-offline__btn:disabled:not([aria-busy="true"]) { opacity: 0.5; }
+.reader-offline__hint {
+  font-size: 0.8rem;
+  color: var(--reader-muted);
+  margin-top: 0.6rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .reader-root .reader-container { max-width: 100%; padding: 0 0.85rem; }
+}
+@media (max-width: 600px) {
+  .reader-root .hide-mobile { display: none; }
+  .reader-content { padding: 0.75rem 0 2.5rem; }
+  .reader-p { text-align: left; text-indent: 0.6em; }
+}

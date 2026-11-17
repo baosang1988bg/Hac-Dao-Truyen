@@ -18,7 +18,9 @@ import {
 import { fmtChapterDate, fmtNovelTitle } from '../utils/format'
 import { cachedGet, peekCache } from '../utils/apiCache'
 import { runWhenIdle } from '../utils/idle'
+import { trackEvent, trackEventDebounced, createChapterTracker, bumpCompletedCount } from '../utils/analytics'
 import '../styles/reading.css'
+import '../styles/novel-reader.css'
 
 const OFFLINE_BATCH_SIZE = 10
 // Nội dung chương gần như bất biến → giữ trong apiCache lâu hơn mặc định
@@ -28,15 +30,21 @@ const CHAPTER_TTL = 10 * 60_000
 const SCROLL_KEY_PREFIX = 'readerPos_'
 // Đánh dấu đã tính lượt xem trong phiên này (sessionStorage).
 const VIEW_KEY_PREFIX = 'viewed_'
+// Vùng chạm lật chương (mobile cảm ứng): mép trái/phải, tối đa 12% bề rộng
+// nhưng không quá 56px để không lấn vào phần chữ trên máy màn rộng.
+const TAP_ZONE_MEDIA = '(hover: none) and (pointer: coarse) and (max-width: 768px)'
+const TAP_ZONE_RATIO = 0.12
+const TAP_ZONE_MAX_PX = 56
+const TAP_SCROLL_GUARD_MS = 300
+const TAP_IGNORE_SELECTOR = [
+  'a', 'button', 'input', 'textarea', 'select', 'label', 'summary',
+  '[role="button"]', '[role="dialog"]', '[contenteditable="true"]',
+  '.reader-topbar', '.reader-nav', '.chapter-comments', '.reader-fab',
+].join(',')
 
 // Theme áp dụng bằng CSS class `reader--<id>` (biến định nghĩa trong index.css,
-// chỉ ảnh hưởng trang đọc) → các màu là hằng CSS var, ổn định giữa các render.
-const THEME_VARS = {
-  bg: 'var(--reader-bg)',
-  text: 'var(--reader-text)',
-  border: 'var(--reader-border)',
-  panel: 'var(--reader-panel)',
-}
+// chỉ ảnh hưởng trang đọc). Màu/viền các khối của Reader dùng thẳng
+// var(--reader-*) trong styles/novel-reader.css (không còn style inline).
 
 function readSavedScroll(slug, chapter) {
   try {
@@ -165,14 +173,6 @@ function scrollAllTo(top, smooth = false) {
   if (mc) mc.scrollTo(opts)
 }
 
-const navIconStyle = {
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  borderRadius: '18px',
-  background: THEME_VARS.panel, color: THEME_VARS.text,
-  border: `2px solid ${THEME_VARS.border}`, textDecoration: 'none', cursor: 'pointer',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-}
-
 /**
  * Thanh điều hướng chương (trên/dưới). Tách khỏi Reader + memo: trước đây khai
  * báo NavBar BÊN TRONG render nên mỗi lần Reader render (vd mỗi sự kiện cuộn)
@@ -188,22 +188,16 @@ const ReaderNavBar = memo(function ReaderNavBar({
   return (
     <>
       {chaptersLoadError && (
-        <div style={{
-          textAlign: 'center', fontSize: '0.75rem', color: '#f87171',
-          padding: isBottom ? '0.5rem 1rem 0' : '0 1rem 0.5rem', opacity: 0.9
-        }}>
+        <div className={`reader-nav__error${isBottom ? ' reader-nav__error--bottom' : ''}`}>
           Không tải được danh sách chương, nút điều hướng có thể không chính xác
         </div>
       )}
-      <div className={`reader-nav reader-nav--${position}`} style={{
-        padding: isBottom ? '2rem 0 calc(4rem + env(safe-area-inset-bottom, 0px))' : '1rem 0',
-      }}>
+      <div className={`reader-nav reader-nav--${position}`}>
         <Link
           to={`/novel/${slug}`}
           title="Về trang chi tiết"
           aria-label="Về trang chi tiết truyện"
           className="reader-nav__icon-button"
-          style={navIconStyle}
         >
           <Home size={24} aria-hidden="true" />
         </Link>
@@ -215,23 +209,12 @@ const ReaderNavBar = memo(function ReaderNavBar({
             onClick={onPrev}
             disabled={!hasPrev}
             aria-label="Chương trước"
-            style={{
-              background: THEME_VARS.panel, color: THEME_VARS.text,
-              border: `2px solid ${THEME_VARS.border}`,
-              borderRadius: '18px'
-            }}
           >
             <ArrowLeft size={22} aria-hidden="true" />
-            <span className="hide-mobile" style={{ fontWeight: 700 }}>Trước</span>
+            <span className="hide-mobile">Trước</span>
           </button>
 
-          <div className="reader-nav__chapter-index" aria-label="Vị trí chương" style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: THEME_VARS.panel, color: THEME_VARS.text,
-            border: `2px solid ${THEME_VARS.border}`,
-            borderRadius: '18px', fontWeight: 800,
-            opacity: 0.9
-          }}>
+          <div className="reader-nav__chapter-index" aria-label="Vị trí chương">
             {indexLabel}
           </div>
 
@@ -241,14 +224,8 @@ const ReaderNavBar = memo(function ReaderNavBar({
             onClick={onNext}
             disabled={!hasNext}
             aria-label="Chương tiếp"
-            style={{
-              background: 'var(--accent)', color: 'white',
-              border: 'none',
-              borderRadius: '18px', boxShadow: '0 8px 25px rgba(201,147,46,0.4)',
-              flex: isBottom ? 1 : 'unset', // Nút to hơn ở thanh dưới
-            }}
           >
-            <span style={{ fontWeight: 800 }}>{isBottom ? 'CHƯƠNG TIẾP' : 'Tiếp'}</span>
+            <span>{isBottom ? 'CHƯƠNG TIẾP' : 'Tiếp'}</span>
             <ArrowRight size={22} aria-hidden="true" />
           </button>
         </div>
@@ -260,7 +237,6 @@ const ReaderNavBar = memo(function ReaderNavBar({
             title={ttsActive ? 'Tạm dừng đọc' : 'Nghe chương này'}
             aria-label={ttsActive ? 'Tạm dừng đọc' : 'Nghe chương này'}
             className="reader-nav__icon-button"
-            style={navIconStyle}
           >
             {ttsActive ? <Pause size={24} aria-hidden="true" /> : <Volume2 size={24} aria-hidden="true" />}
           </button>
@@ -273,7 +249,6 @@ const ReaderNavBar = memo(function ReaderNavBar({
             title="Dừng đọc"
             aria-label="Dừng đọc"
             className="reader-nav__icon-button"
-            style={navIconStyle}
           >
             <Square size={20} aria-hidden="true" />
           </button>
@@ -285,7 +260,6 @@ const ReaderNavBar = memo(function ReaderNavBar({
           title="Cài đặt giao diện"
           aria-label="Cài đặt giao diện đọc"
           className="reader-nav__icon-button"
-          style={navIconStyle}
         >
           <Settings size={24} aria-hidden="true" />
         </button>
@@ -316,38 +290,19 @@ ReaderNavBar.propTypes = {
  */
 function makeMarkdownComponents(chapterDate) {
   return {
+    // Style ở novel-reader.css (.reader-h1 / .reader-p / .reader-hr).
     h1: ({ node: _node, ...props }) => (
       <div>
-        <h1 style={{
-          fontSize: '1.6em', fontWeight: 800,
-          marginBottom: chapterDate ? '0.5rem' : '2.5rem', color: 'inherit',
-          borderBottom: chapterDate ? 'none' : `3px solid ${THEME_VARS.border}`,
-          paddingBottom: chapterDate ? '0' : '1.25rem', lineHeight: 1.3,
-        }} {...props} />
+        <h1 className={`reader-h1${chapterDate ? ' has-date' : ''}`} {...props} />
         {chapterDate && (
-          <div style={{
-            fontSize: '0.8rem', color: 'var(--text-muted)',
-            borderBottom: `3px solid ${THEME_VARS.border}`,
-            paddingBottom: '1rem', marginBottom: '2.5rem',
-            opacity: 0.8,
-          }}>
+          <div className="reader-chapter-date">
             Đăng lúc: {chapterDate}
           </div>
         )}
       </div>
     ),
-    p: ({ node: _node, ...props }) => (
-      <p className="reader-p" style={{
-        marginBottom: '1.6em', textIndent: '1.2em',
-        wordBreak: 'break-word', overflowWrap: 'break-word'
-      }} {...props} />
-    ),
-    hr: ({ node: _node, ...props }) => (
-      <hr style={{
-        border: 'none', borderTop: `2px solid ${THEME_VARS.border}`,
-        margin: '3.5rem 0',
-      }} {...props} />
-    ),
+    p: ({ node: _node, ...props }) => <p className="reader-p" {...props} />,
+    hr: ({ node: _node, ...props }) => <hr className="reader-hr" {...props} />,
   }
 }
 
@@ -398,6 +353,7 @@ export default function Reader() {
   const lastScrollRef = useRef(0)
   const saveScrollTimerRef = useRef(null)
   const touchRef = useRef(null)
+  const lastScrollTimeRef = useRef(0) // mốc cuộn gần nhất — chặn "chạm dừng quán tính" bị hiểu là lật chương
   const lastAttemptedSyncKeyRef = useRef(null) // debounce: chỉ THỬ sync 1 lần khi đổi chương (không phải "đã synced")
   const contentEpochRef = useRef(0) // C01: chỉ áp dụng response của lần fetch MỚI NHẤT
   const progressEpochRef = useRef(0) // C02: hủy retry cũ khi chuyển chương tiếp trước khi retry xong
@@ -407,13 +363,23 @@ export default function Reader() {
   // vị trí của skeleton / chương cũ vào key của chương mới).
   const readyRef = useRef(ready)
   readyRef.current = ready
+  // GA4: bộ đo của lượt đọc chương hiện tại (null khi chưa hiển thị nội dung).
+  const readTrackerRef = useRef(null)
 
   // ── Tải trước chương để đọc offline (service worker cache lại) ────────────
   const [downloading, setDownloading] = useState(false)
   const [dlProgress, setDlProgress] = useState(null) // { done, total } | null
 
   // ── Reader Settings (Persistent) ──────────────────────────────────────────
-  const { settings, onChange } = useReaderSettings()
+  const { settings, onChange: applySetting } = useReaderSettings()
+  // GA4: theme/font/cỡ chữ người đọc chọn nhiều nhất → chọn mặc định tốt hơn.
+  // Debounce theo từng khoá: kéo slider chỉ gửi giá trị cuối.
+  const onChange = useCallback((key, value) => {
+    applySetting(key, value)
+    if (key !== 'ttsVoice') { // tên giọng đọc có thể lộ thông tin thiết bị — bỏ
+      trackEventDebounced(`reader_setting:${key}`, 'reader_setting_change', { setting: key, setting_value: String(value) })
+    }
+  }, [applySetting])
   const [showSettings, setShowSettings] = useState(false)
 
   // ── Text-to-Speech ─────────────────────────────────────────────────────────
@@ -503,6 +469,7 @@ export default function Reader() {
       .catch(err => {
         if (controller.signal.aborted || contentEpochRef.current !== myEpoch) return // đã hủy do đổi chương — bỏ qua
         console.error(err)
+        trackEvent('reader_error', { novel_slug: slug, status: err?.response?.status || 0 })
         setDoc({ url: contentUrl, content: '', error: err })
       })
     return () => { controller.abort() }
@@ -576,6 +543,8 @@ export default function Reader() {
       if (progressBarRef.current) progressBarRef.current.style.transform = `scaleX(${ratio})`
       // Boolean → React tự bỏ qua re-render khi giá trị không đổi.
       setShowScrollTop(top > 400)
+      // GA4: độ sâu đọc (chỉ do người dùng cuộn — không tính lần khôi phục vị trí).
+      if (byUser) readTrackerRef.current?.progress(ratio)
 
       // Auto-hide top nav: cuộn xuống thì ẩn, cuộn lên thì hiện
       const last = lastScrollRef.current
@@ -596,6 +565,7 @@ export default function Reader() {
 
     const handleScroll = () => {
       fromEvent = true
+      lastScrollTimeRef.current = Date.now()
       if (!rafId) rafId = requestAnimationFrame(update)
     }
 
@@ -627,19 +597,65 @@ export default function Reader() {
   const chapterLabel = currentChapterObj?.title || (isNumberParam ? `Chương ${chapter}` : fmtChapterLabel(chapter))
   useDocumentTitle([chapterLabel, novelTitle].filter(Boolean).join(' – '))
 
-  const goNext = useCallback(() => {
-    if (nextChapter) navigate(chapterUrl(slug, nextChapter))
+  // method: 'button' | 'key' | 'tap' — biết người đọc lật chương bằng cách nào
+  // (onClick truyền event object → coi là 'button').
+  const goNext = useCallback((method) => {
+    if (!nextChapter) return
+    trackEvent('chapter_navigate', { novel_slug: slug, direction: 'next', method: typeof method === 'string' ? method : 'button' })
+    navigate(chapterUrl(slug, nextChapter))
   }, [nextChapter, slug, navigate])
 
-  const goPrev = useCallback(() => {
-    if (prevChapter) navigate(chapterUrl(slug, prevChapter))
+  const goPrev = useCallback((method) => {
+    if (!prevChapter) return
+    trackEvent('chapter_navigate', { novel_slug: slug, direction: 'prev', method: typeof method === 'string' ? method : 'button' })
+    navigate(chapterUrl(slug, prevChapter))
   }, [prevChapter, slug, navigate])
+
+  // ── GA4: vòng đời 1 lượt đọc chương ───────────────────────────────────────
+  // chapter_start khi nội dung hiển thị; chapter_progress 25/50/75; chapter_complete
+  // khi cuộn ≥ 90% và đọc thực ≥ 15s (chỉ tính lúc tab hiển thị). Mốc tổng số
+  // chương đã đọc xong → reading_milestone; đọc xong chương MỚI NHẤT → novel_caught_up.
+  const hasNextRef = useRef(false)
+  hasNextRef.current = Boolean(nextChapter)
+  useEffect(() => {
+    if (!ready) return undefined
+    const n = novelRef.current
+    const base = {
+      novel_slug: slug,
+      novel_title: n ? fmtNovelTitle(n.title_is_slug ? '' : n.title, n.slug || slug) : undefined,
+      chapter_number: /^\d+$/.test(chapter) ? Number(chapter) : undefined,
+      content_type: /^\d+$/.test(chapter) ? 'chapter' : 'note',
+    }
+    const tracker = createChapterTracker({
+      base,
+      onComplete: () => {
+        const { count, milestone } = bumpCompletedCount()
+        if (milestone) trackEvent('reading_milestone', { chapters_completed: count })
+        if (!hasNextRef.current) trackEvent('novel_caught_up', { novel_slug: slug, chapter_number: base.chapter_number })
+      },
+    })
+    readTrackerRef.current = tracker
+    tracker.start()
+    if (document.visibilityState === 'hidden') tracker.setVisible(false)
+    const onVisibility = () => tracker.setVisible(document.visibilityState === 'visible')
+    document.addEventListener('visibilitychange', onVisibility)
+    // Chương ngắn (vừa 1 màn hình) không có sự kiện cuộn → kiểm tra định kỳ.
+    const { max } = readScroll()
+    if (max <= 1) tracker.progress(1)
+    const tickId = setInterval(() => tracker.tick(), 5000)
+    return () => {
+      clearInterval(tickId)
+      document.removeEventListener('visibilitychange', onVisibility)
+      tracker.end()
+      if (readTrackerRef.current === tracker) readTrackerRef.current = null
+    }
+  }, [ready, slug, chapter])
 
   useEffect(() => {
     const handleKey = (e) => {
       if (shouldIgnoreKey(e)) return
-      if (e.key === 'ArrowRight') goNext()
-      if (e.key === 'ArrowLeft') goPrev()
+      if (e.key === 'ArrowRight') goNext('key')
+      if (e.key === 'ArrowLeft') goPrev('key')
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
@@ -662,30 +678,71 @@ export default function Reader() {
   const toggleTts = useCallback(() => {
     if (tts.isPlaying && !tts.isPaused) ttsPause()
     else if (tts.isPaused) ttsResume()
-    else ttsPlay(stripMarkdown(content), { voiceName: settings.ttsVoice, rate: settings.ttsRate })
-  }, [tts.isPlaying, tts.isPaused, ttsPause, ttsResume, ttsPlay, content, settings.ttsVoice, settings.ttsRate])
+    else {
+      trackEvent('tts_start', { novel_slug: slug, tts_rate: settings.ttsRate, has_custom_voice: Boolean(settings.ttsVoice) })
+      ttsPlay(stripMarkdown(content), { voiceName: settings.ttsVoice, rate: settings.ttsRate })
+    }
+  }, [slug, tts.isPlaying, tts.isPaused, ttsPause, ttsResume, ttsPlay, content, settings.ttsVoice, settings.ttsRate])
 
   // ── Tap zones (mobile): chạm mép trái/phải để chuyển chương ────────────────
-  const handleZoneTouchStart = (e) => {
-    const t = e.touches[0]
-    touchRef.current = { x: t.clientX, y: t.clientY, time: Date.now() }
-  }
+  // Trước đây là 2 div position:fixed (12% bề rộng, z-index 30) phủ LÊN nội
+  // dung → nuốt thao tác bôi đen chữ sát mép, chạm nhầm ô bình luận cũng lật
+  // chương. Nay lắng nghe chạm ở cấp document (passive, không chặn cuộn/chọn
+  // chữ) và CHỈ coi là "lật chương" khi: chạm ngắn, gần như không di chuyển,
+  // 1 ngón, không có vùng chọn, không trúng phần tử tương tác, và không phải
+  // cú chạm để dừng quán tính cuộn.
+  const goPrevRef = useRef(goPrev)
+  const goNextRef = useRef(goNext)
+  goPrevRef.current = goPrev
+  goNextRef.current = goNext
+  const tapEnabled = ready && !showSettings && Boolean(prevChapter || nextChapter)
 
-  const makeZoneTouchEnd = (dir) => (e) => {
-    const start = touchRef.current
-    touchRef.current = null
-    if (!start) return
-    const t = e.changedTouches[0]
-    const dx = Math.abs(t.clientX - start.x)
-    const dy = Math.abs(t.clientY - start.y)
-    const dt = Date.now() - start.time
-    // Bỏ qua nếu người dùng đang cuộn / giữ lâu (chọn văn bản)
-    if (dx > 10 || dy > 10 || dt > 400) return
-    if (window.getSelection && String(window.getSelection())) return
-    e.preventDefault()
-    if (dir === 'prev') goPrev()
-    else goNext()
-  }
+  useEffect(() => {
+    if (!tapEnabled || typeof window === 'undefined' || !window.matchMedia) return undefined
+    const mq = window.matchMedia(TAP_ZONE_MEDIA)
+    const hasSelection = () => Boolean(window.getSelection && String(window.getSelection()))
+
+    const onStart = (e) => {
+      touchRef.current = null
+      if (!mq.matches || e.touches.length !== 1) return
+      if (Date.now() - lastScrollTimeRef.current < TAP_SCROLL_GUARD_MS) return // chạm để dừng cuộn quán tính
+      if (hasSelection()) return // chạm để bỏ vùng chọn
+      if (e.target?.closest?.(TAP_IGNORE_SELECTOR)) return
+      const t = e.touches[0]
+      const zoneW = Math.min(window.innerWidth * TAP_ZONE_RATIO, TAP_ZONE_MAX_PX)
+      const dir = t.clientX <= zoneW ? 'prev' : t.clientX >= window.innerWidth - zoneW ? 'next' : null
+      if (!dir) return
+      touchRef.current = { x: t.clientX, y: t.clientY, time: Date.now(), dir }
+    }
+
+    const onEnd = (e) => {
+      const start = touchRef.current
+      touchRef.current = null
+      if (!start) return
+      const t = e.changedTouches[0]
+      if (!t) return
+      const dx = Math.abs(t.clientX - start.x)
+      const dy = Math.abs(t.clientY - start.y)
+      const dt = Date.now() - start.time
+      // Bỏ qua nếu người dùng đang cuộn / giữ lâu (chọn văn bản)
+      if (dx > 10 || dy > 10 || dt > 350) return
+      if (hasSelection()) return
+      if (start.dir === 'prev') goPrevRef.current('tap')
+      else goNextRef.current('tap')
+    }
+
+    const onCancel = () => { touchRef.current = null }
+
+    document.addEventListener('touchstart', onStart, { passive: true })
+    document.addEventListener('touchend', onEnd, { passive: true })
+    document.addEventListener('touchcancel', onCancel, { passive: true })
+    return () => {
+      document.removeEventListener('touchstart', onStart)
+      document.removeEventListener('touchend', onEnd)
+      document.removeEventListener('touchcancel', onCancel)
+      touchRef.current = null
+    }
+  }, [tapEnabled])
 
   // ── Tải N chương kế tiếp: fetch tuần tự để service worker cache lại ───────
   const downloadNextChapters = async () => {
@@ -711,6 +768,7 @@ export default function Reader() {
       setDlProgress({ done, total: next.length })
     }
     setDownloading(false)
+    trackEvent('offline_download', { novel_slug: slug, download_type: 'chapters', chapter_count: next.length })
   }
 
   const themeId = THEMES[settings.theme] ? settings.theme : 'sepia'
@@ -744,52 +802,31 @@ export default function Reader() {
   }
 
   return (
-    <div className={`reader-root reader--${themeId}`} style={{
-      background: THEME_VARS.bg, color: THEME_VARS.text,
-      minHeight: '100vh', transition: 'background 0.3s, color 0.3s'
-    }}>
+    <div
+      className={`reader-root reader--${themeId}`}
+      style={{ '--reader-max-w': `${settings.contentWidth}px` }}
+    >
       {/* Thanh tiến độ đọc (3px, trên cùng) — cập nhật qua ref + rAF */}
-      <div
-        ref={progressBarRef}
-        aria-hidden="true"
-        style={{
-          position: 'fixed', top: 'env(safe-area-inset-top, 0px)', left: 0,
-          height: '3px', width: '100%',
-          transform: 'scaleX(0)', transformOrigin: '0 50%',
-          background: THEME_VARS.text, opacity: 0.85,
-          zIndex: 200, pointerEvents: 'none',
-          willChange: 'transform',
-        }}
-      />
+      <div ref={progressBarRef} className="reader-progress" aria-hidden="true" />
 
-      <div className="container reader-container" style={{
-        maxWidth: `${settings.contentWidth}px`, width: '100%',
-        margin: '0 auto', padding: '0 1.25rem'
-      }}>
+      <div className="container reader-container">
         {/* Top nav: sticky + tự ẩn khi cuộn xuống, hiện lại khi cuộn lên */}
-        <div style={{
-          position: 'sticky', top: 0, zIndex: 70,
-          background: THEME_VARS.bg,
-          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 3px)',
-          transform: hideTopNav ? 'translateY(-115%)' : 'translateY(0)',
-          transition: 'transform 0.3s ease, background 0.3s'
-        }}>
+        <div className={`reader-topbar${hideTopNav ? ' is-hidden' : ''}`}>
           <ReaderNavBar position="top" {...navProps} />
         </div>
 
         <div
           className="reader-content"
           style={{
-            padding: '1rem 0 3rem',
             fontSize: `${settings.fontSize}px`,
             fontFamily: settings.fontFamily,
             lineHeight: readerLineHeight,
-            transition: 'font-size 0.2s',
-            wordBreak: 'normal', overflowWrap: 'break-word'
           }}
         >
+          {/* key theo chương → mỗi lần đổi chương (hoặc skeleton → nội dung)
+              khối mới được mount lại và mờ dần vào (.reader-fade, chỉ opacity). */}
           {loadError ? (
-            <div className="hd-error-block" role="alert">
+            <div key={`err:${contentUrl}`} className="hd-error-block reader-fade" role="alert">
               <AlertTriangle size={32} aria-hidden="true" style={{ opacity: 0.7 }} />
               <div className="hd-error-block__title">Không tải được chương</div>
               <div className="hd-error-block__desc">
@@ -805,9 +842,13 @@ export default function Reader() {
               </div>
             </div>
           ) : loading ? (
-            <ChapterSkeleton />
+            <div key={`skel:${contentUrl}`} className="reader-fade">
+              <ChapterSkeleton />
+            </div>
           ) : (
-            renderedContent
+            <div key={`doc:${contentUrl}`} className="reader-fade">
+              {renderedContent}
+            </div>
           )}
         </div>
 
@@ -817,29 +858,8 @@ export default function Reader() {
         <ReaderNavBar position="bottom" {...navProps} />
       </div>
 
-      {/* Tap zones (chỉ hiện trên thiết bị cảm ứng): chạm mép = chuyển chương */}
-      {!showSettings && ready && (
-        <>
-          {prevChapter && (
-            <div
-              className="tap-zone tap-zone-left"
-              aria-hidden="true"
-              onTouchStart={handleZoneTouchStart}
-              onTouchEnd={makeZoneTouchEnd('prev')}
-            />
-          )}
-          {nextChapter && (
-            <div
-              className="tap-zone tap-zone-right"
-              aria-hidden="true"
-              onTouchStart={handleZoneTouchStart}
-              onTouchEnd={makeZoneTouchEnd('next')}
-            />
-          )}
-        </>
-      )}
-
-      {/* Settings Panel (Mobile Drawer Style) */}
+      {/* Settings Panel (Mobile Drawer Style) — overlay mờ dần + sheet trượt lên
+          (animation ở novel-reader.css, tự tắt khi giảm chuyển động) */}
       {showSettings && (
         <Modal
           onClose={() => setShowSettings(false)}
@@ -851,14 +871,15 @@ export default function Reader() {
             borderTopLeftRadius: '24px', borderTopRightRadius: '24px',
             maxHeight: '85dvh',
             boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
-            animation: 'slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
         >
+          {({ requestClose }) => (<>
           <div className="reader-settings-sheet__handle" aria-hidden="true" />
 
           <div className="reader-settings-sheet__header">
             <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Tuỳ chỉnh</h3>
-            <button type="button" className="reader-settings-sheet__close" onClick={() => setShowSettings(false)} aria-label="Đóng tuỳ chỉnh">✕</button>
+            {/* requestClose: đóng có animation (trượt xuống + overlay mờ dần) như Escape/bấm nền */}
+            <button type="button" className="reader-settings-sheet__close" onClick={requestClose} aria-label="Đóng tuỳ chỉnh">✕</button>
           </div>
 
           <div className="reader-settings-sheet__body">
@@ -866,20 +887,13 @@ export default function Reader() {
 
             {/* Đọc offline: tải trước N chương kế tiếp để service worker cache */}
             <div style={{ marginTop: 'var(--space-5, 24px)', marginBottom: '0.5rem' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--reader-muted)', marginBottom: '0.8rem', letterSpacing: '0.05em' }}>ĐỌC OFFLINE</div>
+              <div className="reader-offline__label">ĐỌC OFFLINE</div>
               <button
                 type="button"
+                className="reader-offline__btn"
                 onClick={downloadNextChapters}
                 aria-busy={downloading}
                 disabled={downloading || !nextChapter}
-                style={{
-                  width: '100%', minHeight: '52px', borderRadius: '16px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                  background: downloading ? 'var(--reader-border)' : 'var(--accent)',
-                  color: 'white', border: 'none', fontSize: '1rem', fontWeight: 700,
-                  cursor: downloading || !nextChapter ? 'not-allowed' : 'pointer',
-                  opacity: !nextChapter ? 0.5 : 1, transition: 'all 0.2s',
-                }}
               >
                 <Download size={18} aria-hidden="true" />
                 {downloading
@@ -888,97 +902,41 @@ export default function Reader() {
                     ? `Đã tải ${dlProgress.done}/${dlProgress.total} chương`
                     : `Tải ${OFFLINE_BATCH_SIZE} chương tiếp`}
               </button>
-              <div style={{ fontSize: 'var(--font-xs, 0.75rem)', color: 'var(--reader-muted)', marginTop: '0.6rem', lineHeight: 1.5 }}>
+              <div className="reader-offline__hint">
                 {nextChapter
                   ? 'Chương đã tải sẽ đọc được cả khi mất mạng.'
                   : 'Đây là chương cuối — không còn chương kế tiếp để tải.'}
               </div>
             </div>
           </div>
+          </>)}
         </Modal>
       )}
 
-      {/* FAB cuộn lên đầu — góc dưới TRÁI, nhỏ gọn, không che tap-zone phải.
-          (Nút Cài đặt đã có sẵn ở cả 2 thanh điều hướng nên không cần FAB riêng.) */}
+      {/* FAB cuộn lên đầu — góc dưới TRÁI (48px, tránh safe-area), không đè
+          vùng chạm "chương tiếp" bên phải. (Nút Cài đặt đã có ở cả 2 thanh
+          điều hướng nên không cần FAB riêng.) */}
       {showScrollTop && (
         <button
           type="button"
           onClick={scrollToTop}
-          className="fab"
+          className="reader-fab"
           aria-label="Cuộn lên đầu trang"
-          style={{
-            position: 'fixed',
-            bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))',
-            left: 'calc(1rem + env(safe-area-inset-left, 0px))',
-            zIndex: 90,
-          }}
         >
-          <ChevronUp size={20} aria-hidden="true" />
+          <ChevronUp size={22} aria-hidden="true" />
         </button>
       )}
 
       {/* C02: trạng thái đồng bộ tiến trình đọc — chỉ hiện khi có gì để báo,
-          không hiện liên tục gây rối mắt (ẩn ở trạng thái 'saved' sau vài giây). */}
+          không hiện liên tục gây rối mắt (ẩn ở trạng thái 'saved' sau vài giây).
+          pointer-events: none → không chặn chạm vào nội dung bên dưới. */}
       {syncStatus && (
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            position: 'fixed',
-            bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))',
-            right: 'calc(1rem + env(safe-area-inset-right, 0px))',
-            zIndex: 90,
-            display: 'flex', alignItems: 'center', gap: '5px',
-            padding: '5px 11px', borderRadius: '999px',
-            fontSize: 'var(--font-xs, 0.75rem)', fontWeight: 600,
-            background: THEME_VARS.panel, color: THEME_VARS.text,
-            border: `1px solid ${THEME_VARS.border}`,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)', opacity: 0.9,
-          }}
-        >
+        <div role="status" aria-live="polite" className="reader-sync-status">
           {syncStatus === 'saving' && (<><Loader2 size={12} className="spin" /> Đang lưu tiến trình...</>)}
           {syncStatus === 'saved' && (<><Check size={12} color="#4ade80" /> Đã lưu tiến trình</>)}
           {syncStatus === 'error' && (<><AlertTriangle size={12} color="#f87171" /> Chưa lưu được, sẽ thử lại</>)}
         </div>
       )}
-
-      <style>{`
-        @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .reader-root { cursor: default; }
-        .fab {
-          width: 44px; height: 44px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);
-          background: rgba(30,41,59,0.85); backdrop-filter: blur(12px); color: rgba(255,255,255,0.8);
-          cursor: pointer; display: flex; align-items: center; justify-content: center;
-          transition: all 0.2s; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-          opacity: 0.7;
-        }
-        .fab:active { transform: scale(0.92); opacity: 1; }
-        .fab:focus-visible { opacity: 1; }
-        .hide-mobile { display: inline; }
-
-        /* Tap zones: mặc định ẩn, chỉ bật trên thiết bị cảm ứng màn hình nhỏ */
-        .tap-zone { display: none; }
-        @media (hover: none) and (pointer: coarse) and (max-width: 768px) {
-          .tap-zone {
-            display: block;
-            position: fixed; top: 0; bottom: 0; width: 12%;
-            z-index: 30; background: transparent;
-            -webkit-tap-highlight-color: transparent;
-          }
-          .tap-zone-left { left: 0; }
-          .tap-zone-right { right: 0; }
-        }
-
-        @media (max-width: 768px) {
-          .reader-container { max-width: 100% !important; padding: 0 0.85rem !important; }
-        }
-        @media (max-width: 600px) {
-          .hide-mobile { display: none !important; }
-          .reader-content { padding: 0.75rem 0 2.5rem !important; }
-          .reader-p { text-align: left !important; text-indent: 0.6em !important; }
-        }
-      `}</style>
-
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { syncAnalyticsUser } from './utils/analytics';
 
 /**
  * Axios instance dành riêng cho NGƯỜI DÙNG (guest đã đăng ký).
@@ -45,6 +46,8 @@ export function saveUserSession(token, user) {
 export function clearUserSession() {
   localStorage.removeItem('userToken');
   localStorage.removeItem('userInfo');
+  // GA4: bỏ user_id để các event sau đăng xuất không gắn vào tài khoản cũ.
+  syncAnalyticsUser(null);
 }
 
 /** Thông tin user đã đăng nhập ({id,email,name}) hoặc null. */

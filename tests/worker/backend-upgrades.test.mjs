@@ -260,7 +260,10 @@ test('novel detail: title_is_slug + synopsis bỏ dòng ghi công; /synopsis cũ
   assert.equal((await (await call('novels/tu-a/synopsis')).json()).synopsis, 'Nội dung thật');
   // Khối thông tin đầu sách (nhãn đứng riêng / nhãn: giá trị ngắn) bị bỏ, câu văn thường giữ nguyên.
   await bucket.put('tu-a/synopsis.md', 'Tác giả\nTác giả: Kỳ Khai\nThể loại: Huyền Huyễn\nTác giả của bộ truyện này viết rất hay.\nNội dung thật');
-  assert.equal((await (await call('novels/tu-a/synopsis')).json()).synopsis, 'Tác giả của bộ truyện này viết rất hay.\nNội dung thật');
+  // /synopsis giờ có edge cache cho khách → gọi lại với Authorization để BYPASS, đọc bản R2 mới.
+  const fresh = await call('novels/tu-a/synopsis', { headers: { Authorization: 'Bearer reader' } });
+  assert.equal(fresh.headers.get('X-Worker-Cache'), 'BYPASS');
+  assert.equal((await fresh.json()).synopsis, 'Tác giả của bộ truyện này viết rất hay.\nNội dung thật');
 });
 
 test('stats: giữ khoá cũ + translated_chapters đếm chương thật (chapter_number > 0)', async t => {
@@ -269,6 +272,8 @@ test('stats: giữ khoá cũ + translated_chapters đếm chương thật (chapt
   const stats = await (await call('stats')).json();
   assert.equal(stats.total_novels, 5);
   assert.equal(stats.translated_chapters, 3);
+  // Số truyện có ít nhất 1 chương đã dịch (tu-a, tien-b) — cho trang tổng quan quản trị.
+  assert.equal(stats.translated_novels, 2);
   for (const k of ['total_chapters', 'total_glossary']) assert.ok(k in stats);
 });
 
@@ -347,6 +352,7 @@ test('robots.txt + sitemap.xml', async t => {
   assert.match(xml, /<loc>https:\/\/hacdaotruyen\.com\/<\/loc>/);
   assert.match(xml, /<loc>https:\/\/hacdaotruyen\.com\/epub<\/loc>/);
   assert.match(xml, /<loc>https:\/\/hacdaotruyen\.com\/library<\/loc>/);
+  assert.match(xml, /<loc>https:\/\/hacdaotruyen\.com\/cap-nhat<\/loc>/);
   assert.match(xml, /<loc>https:\/\/hacdaotruyen\.com\/novel\/tu-c<\/loc><lastmod>2026-10-03<\/lastmod>/);
   assert.doesNotMatch(xml, /an-f/, 'truyện bị gỡ không vào sitemap');
   // updated_at DESC: tu-c (10-03) trước tien-b (10-02) trước tu-a (10-01)

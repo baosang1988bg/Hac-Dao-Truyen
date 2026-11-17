@@ -1,46 +1,66 @@
 import PropTypes from 'prop-types'
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom'
 import {
   BookOpen, Layers, Book, Activity, Square, ScrollText, ChevronRight,
 } from 'lucide-react'
-import api, { fetchAdminNovels } from '../../api'
+import api from '../../api'
+import { fetchNovelsBySlugsBatch } from '../../utils/novelsApi'
+import usePolling from '../../hooks/usePolling'
 import { fmtNumber, fmtDuration, fmtDate, fmtTokens } from '../../utils/format'
 
 /**
  * Tổng quan quản trị:
- * - 3 StatCard thật từ /api/novels (Σ truyện / Σ chương dịch / Σ thuật ngữ).
- * - "Đang dịch": poll /api/translate/active mỗi 5s, progress bar + nút dừng.
+ * - 3 StatCard thật từ GET /api/stats (1 request, server tự aggregate). Trước
+ *   đây trang này gọi fetchAdminNovels() tải HẾT catalog (hàng trăm trang ×
+ *   200 truyện, mỗi trang bỏ qua cache vì có token admin) chỉ để cộng 3 con
+ *   số — một lần mở trang có thể đốt gần hết hạn mức đọc D1 của cả ngày.
+ * - "Đang dịch": poll /api/translate/active mỗi 15s (tạm dừng khi tab ẩn),
+ *   progress bar + nút dừng; tên truyện tra theo đúng slug đang dịch.
  * - "Phiên gần nhất": /api/logs?limit=8.
  */
 export default function AdminDashboard() {
-  const [novels, setNovels] = useState([])
+  const [stats, setStats] = useState(null)
+  const [titles, setTitles] = useState({}) // slug -> tên truyện của các phiên đang dịch
   const [active, setActive] = useState({})
   const [sessions, setSessions] = useState(null)
 
   useEffect(() => {
     let alive = true
-    fetchAdminNovels()
-      .then(data => { if (alive) setNovels(data) })
-      .catch(() => {})
+    api.get('/stats')
+      .then(res => { if (alive) setStats(res.data || {}) })
+      .catch(() => { if (alive) setStats({}) })
     api.get('/logs?limit=8')
       .then(res => { if (alive) setSessions(res.data || []) })
       .catch(() => { if (alive) setSessions([]) })
     return () => { alive = false }
   }, [])
 
-  // Poll phiên dịch đang chạy mỗi 5s
+  // Poll phiên dịch đang chạy (15s, chỉ khi tab đang hiển thị)
+  usePolling(alive => {
+    api.get('/translate/active')
+      .then(res => { if (alive()) setActive(res.data || {}) })
+      .catch(() => {})
+  }, 15000)
+
+  // Tên truyện cho các phiên đang dịch: 1 request GET /novels?slugs=... mỗi khi
+  // tập slug đổi (thường 0–2 truyện), không cần cả catalog.
+  const activeSlugsKey = useMemo(() => Object.keys(active).sort().join(','), [active])
   useEffect(() => {
+    if (!activeSlugsKey) return undefined
     let alive = true
-    const fetchActive = () => {
-      api.get('/translate/active')
-        .then(res => { if (alive) setActive(res.data || {}) })
-        .catch(() => {})
-    }
-    fetchActive()
-    const t = setInterval(fetchActive, 5000)
-    return () => { alive = false; clearInterval(t) }
-  }, [])
+    fetchNovelsBySlugsBatch(api, activeSlugsKey.split(','))
+      .then(map => {
+        if (!alive) return
+        setTitles(prev => {
+          const next = { ...prev }
+          for (const [slug, novel] of map) next[slug] = novel?.title || slug
+          return next
+        })
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [activeSlugsKey])
 
   const handleStop = async (slug) => {
     if (!window.confirm(`Dừng phiên dịch của "${slug}"?`)) return
@@ -51,9 +71,11 @@ export default function AdminDashboard() {
     }
   }
 
-  const totalNovels = novels.filter(n => (n.chapter_count || 0) > 0).length
-  const totalChapters = novels.reduce((a, n) => a + (n.chapter_count || 0), 0)
-  const totalGlossary = novels.reduce((a, n) => a + (n.glossary_count || 0), 0)
+  // translated_novels = số truyện có ít nhất 1 chương đã dịch (Worker mới);
+  // Worker cũ chưa có khoá này → rơi về tổng số truyện công khai.
+  const totalNovels = stats?.translated_novels ?? stats?.total_novels ?? 0
+  const totalChapters = stats?.translated_chapters ?? 0
+  const totalGlossary = stats?.total_glossary ?? 0
   const activeEntries = Object.entries(active)
 
   return (
@@ -89,7 +111,6 @@ export default function AdminDashboard() {
               const total = s.total || 0
               const current = s.current || 0
               const pct = total > 0 ? Math.min(100, Math.round((current / total) * 100)) : 0
-              const novel = novels.find(n => n.slug === slug)
               return (
                 <div key={slug} className="glass-panel" style={{ padding: '1rem 1.25rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
@@ -98,7 +119,7 @@ export default function AdminDashboard() {
                       background: 'var(--accent)', animation: 'pulse-dot 1.5s infinite', flexShrink: 0,
                     }} />
                     <Link to={`/admin/novels/${slug}`} style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.95rem' }}>
-                      {novel?.title || slug}
+                      {titles[slug] || slug}
                     </Link>
                     {s.current_model && (
                       <span style={{

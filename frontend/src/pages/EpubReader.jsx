@@ -5,7 +5,9 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Settings, BookOpen, List, X } fro
 import api from '../api'
 import userApi, { isLoggedIn } from '../userApi'
 import ReaderSettingsPanel from '../components/ReaderSettingsPanel'
+import { trackEvent } from '../utils/analytics'
 import useReaderSettings, { THEMES } from '../hooks/useReaderSettings'
+import '../styles/library-epub.css'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
@@ -28,6 +30,22 @@ export default function EpubReader() {
   const [showToc, setShowToc]     = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [progress, setProgress]   = useState(0) // 0-100%
+
+  // GA4: mốc tiến độ EPUB (25/50/75/100%) — chỉ mốc vượt qua TRONG phiên này
+  // (mở lại ở 60% không bắn lại 25/50), mỗi mốc 1 lần.
+  const epubMilestonesRef = useRef({ slug: null, baseline: null, sent: new Set() })
+  useEffect(() => {
+    const st = epubMilestonesRef.current
+    if (st.slug !== slug) Object.assign(st, { slug, baseline: null, sent: new Set() })
+    if (!progress) return
+    if (st.baseline === null) { st.baseline = progress; return }
+    for (const m of [25, 50, 75, 100]) {
+      if (progress >= m && st.baseline < m && !st.sent.has(m)) {
+        st.sent.add(m)
+        trackEvent('epub_progress', { novel_slug: slug, percent: m })
+      }
+    }
+  }, [progress, slug])
   const touchStartX = useRef(null)
   const lastSyncedCfiRef = useRef(null) // debounce: chỉ sync progress khi CFI thực sự đổi
 
@@ -174,6 +192,8 @@ export default function EpubReader() {
           if (!destroyed) await rendition.display()
         }
 
+        trackEvent('epub_open', { novel_slug: slug, resumed: Boolean(savedCfi) })
+
         // Build TOC
         await book.loaded.navigation
         if (destroyed) return
@@ -190,6 +210,7 @@ export default function EpubReader() {
         removeKeyboard = () => document.removeEventListener('keydown', onKey)
       } catch (err) {
         if (!destroyed) {
+          trackEvent('epub_load_error', { novel_slug: slug, description: String(err.message || err) })
           setError(err.message || 'Không thể tải EPUB')
           setLoading(false)
         }
@@ -228,24 +249,24 @@ export default function EpubReader() {
   return (
     <div className={`reader-root reader--${theme}`} style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: bgColor, color: textColor, transition: 'background 0.3s, color 0.3s' }}>
 
-      {/* ── Top bar ── */}
-      <div style={{
+      {/* ── Top bar (chừa vùng an toàn tai thỏ qua .epub-reader__topbar) ── */}
+      <div className="epub-reader__topbar" style={{
         display: 'flex', alignItems: 'center', gap: '12px',
         padding: '10px 16px', borderBottom: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}`,
         background: panelBg, backdropFilter: 'blur(12px)', flexShrink: 0, zIndex: 10,
       }}>
-        <Link to={`/novel/${slug}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: 'var(--tap-target-min, 44px)', color: textColor, opacity: 0.7, textDecoration: 'none', fontSize: '0.85rem' }}>
-          <ArrowLeft size={16} /> Quay lại
+        <Link to={`/novel/${slug}`} aria-label="Quay lại trang truyện" className="epub-reader__icon-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', minWidth: 'var(--tap-target-min, 44px)', minHeight: 'var(--tap-target-min, 44px)', borderRadius: '8px', color: textColor, opacity: 0.7, textDecoration: 'none', fontSize: '0.875rem' }}>
+          <ArrowLeft size={18} /> <span className="epub-reader__back-label">Quay lại</span>
         </Link>
 
         <div style={{ flex: 1, textAlign: 'center', fontWeight: 600, fontSize: '0.9rem', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
           {novel?.title || slug}
         </div>
 
-        <button onClick={() => { setShowToc(t => !t); setShowSettings(false) }} style={iconBtnStyle(textColor)}>
+        <button type="button" aria-label="Mục lục" aria-expanded={showToc} className="epub-reader__icon-btn" onClick={() => { setShowToc(t => !t); setShowSettings(false) }} style={iconBtnStyle(textColor)}>
           <List size={18} />
         </button>
-        <button aria-label="Cài đặt giao diện" onClick={() => { setShowSettings(s => !s); setShowToc(false) }} style={iconBtnStyle(textColor)}>
+        <button type="button" aria-label="Cài đặt giao diện" aria-expanded={showSettings} className="epub-reader__icon-btn" onClick={() => { setShowSettings(s => !s); setShowToc(false) }} style={iconBtnStyle(textColor)}>
           <Settings size={18} />
         </button>
       </div>
@@ -254,15 +275,15 @@ export default function EpubReader() {
       <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
 
         {/* Prev button */}
-        <button onClick={prev} style={navBtnStyle('left', textColor)}>
+        <button type="button" aria-label="Trang trước" className="epub-reader__nav" onClick={prev} style={navBtnStyle('left', textColor)}>
           <ChevronLeft size={24} />
         </button>
 
         {/* EPUB Viewer */}
         <div style={{ flex: 1, position: 'relative' }}>
           {loading && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', opacity: 0.7 }}>
-              <div style={{ width: 40, height: 40, border: '3px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <div className="epub-reader__loading" role="status" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', opacity: 0.7 }}>
+              <div className="spin" style={{ width: 40, height: 40, border: '3px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%' }} />
               <span style={{ fontSize: '0.9rem' }}>Đang tải EPUB...</span>
             </div>
           )}
@@ -291,16 +312,16 @@ export default function EpubReader() {
         </div>
 
         {/* Next button */}
-        <button onClick={next} style={navBtnStyle('right', textColor)}>
+        <button type="button" aria-label="Trang sau" className="epub-reader__nav" onClick={next} style={navBtnStyle('right', textColor)}>
           <ChevronRight size={24} />
         </button>
 
         {/* ── TOC Panel ── */}
         {showToc && (
-          <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(300px, 85vw)', background: panelBg, backdropFilter: 'blur(16px)', borderLeft: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}`, overflowY: 'auto', zIndex: 20, boxShadow: '-8px 0 24px rgba(0,0,0,0.3)' }}>
+          <div className="epub-reader__panel" role="dialog" aria-label="Mục lục" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(300px, 85vw)', background: panelBg, backdropFilter: 'blur(16px)', borderLeft: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}`, overflowY: 'auto', zIndex: 20, boxShadow: '-8px 0 24px rgba(0,0,0,0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}` }}>
               <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Mục lục</span>
-              <button onClick={() => setShowToc(false)} style={iconBtnStyle(textColor)}><X size={16} /></button>
+              <button type="button" aria-label="Đóng mục lục" className="epub-reader__icon-btn" onClick={() => setShowToc(false)} style={iconBtnStyle(textColor)}><X size={18} /></button>
             </div>
             {toc.map((item, i) => (
               <TocItem key={i} item={item} currentHref={currentHref} onGoTo={goTo} textColor={textColor} theme={theme} />
@@ -310,24 +331,22 @@ export default function EpubReader() {
 
         {/* ── Settings Panel ── */}
         {showSettings && (
-          <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(280px, 85vw)', background: panelBg, backdropFilter: 'blur(16px)', borderLeft: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}`, overflowY: 'auto', zIndex: 20, boxShadow: '-8px 0 24px rgba(0,0,0,0.3)' }}>
+          <div className="epub-reader__panel" role="dialog" aria-label="Tùy chỉnh" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(280px, 85vw)', background: panelBg, backdropFilter: 'blur(16px)', borderLeft: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}`, overflowY: 'auto', zIndex: 20, boxShadow: '-8px 0 24px rgba(0,0,0,0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}` }}>
               <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Tùy chỉnh</span>
-              <button onClick={() => setShowSettings(false)} style={iconBtnStyle(textColor)}><X size={16} /></button>
+              <button type="button" aria-label="Đóng tùy chỉnh" className="epub-reader__icon-btn" onClick={() => setShowSettings(false)} style={iconBtnStyle(textColor)}><X size={18} /></button>
             </div>
             <ReaderSettingsPanel settings={settings} onChange={onChange} />
           </div>
         )}
       </div>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-
       {/* ── Progress bar ── */}
       {!loading && !error && (
-        <div style={{ flexShrink: 0, padding: '6px 16px 8px', background: panelBg, borderTop: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'}` }}>
+        <div className="epub-reader__footer" style={{ flexShrink: 0, padding: '6px 16px 8px', background: panelBg, borderTop: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ flex: 1, height: '3px', background: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${progress}%`, background: 'var(--accent-gradient)', borderRadius: '2px', transition: 'width 0.4s ease' }} />
+              <div className="epub-reader__bar-fill" style={{ height: '100%', width: `${progress}%`, background: 'var(--accent-gradient)', borderRadius: '2px' }} />
             </div>
             <span style={{ fontSize: 'var(--font-xs, 0.75rem)', color: textColor, opacity: 0.5, minWidth: '36px', textAlign: 'right' }}>{progress}%</span>
           </div>
@@ -342,6 +361,8 @@ function TocItem({ item, currentHref, onGoTo, textColor, theme, depth = 0 }) {
   return (
     <>
       <button
+        type="button"
+        aria-current={isActive ? 'location' : undefined}
         onClick={() => onGoTo(item.href)}
         style={{
           display: 'block', width: '100%', textAlign: 'left',
@@ -381,7 +402,8 @@ function iconBtnStyle(textColor, size = '44px') {
 
 function navBtnStyle(side, textColor) {
   return {
-    position: 'absolute', [side]: 0, top: '50%', transform: 'translateY(-50%)',
+    // transform: translateY(-50%) nằm ở .epub-reader__nav (CSS) để :active co lại được
+    position: 'absolute', [side]: 0, top: '50%',
     zIndex: 5, background: 'transparent', border: 'none', cursor: 'pointer',
     color: textColor, opacity: 0.3, padding: '16px 8px',
     minWidth: 'var(--tap-target-min, 44px)', minHeight: 'var(--tap-target-min, 44px)',
