@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types'
 import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { BookOpen, LayoutGrid, List, AlignJustify, Loader2 } from 'lucide-react'
 import api from '../../api'
 import { extractNovels, LATEST_UPDATED_PARAMS } from '../../utils/novelsApi'
@@ -9,6 +10,7 @@ import NovelGrid from '../../components/ui/NovelGrid'
 import NovelTable from '../../components/ui/NovelTable'
 import NovelList from '../../components/ui/NovelList'
 import { isNovelCompleted } from '../../utils/novelStatus'
+import { withViewTransition } from '../../utils/motion'
 
 const TABS = [
   { key: 'all',       label: 'Tất cả' },
@@ -84,6 +86,27 @@ export default function AllNovelsSection({ activeGenre = '' }) {
       .finally(() => setLoadingMore(false))
   }
 
+  // Đổi tab/chế độ xem trong View Transition (crossfade). Cache đã có trang 1
+  // của tab mới → thay luôn danh sách trong cùng lần cập nhật (flushSync) để
+  // hiệu ứng chụp đúng nội dung mới; chưa có thì effect phía trên tự tải.
+  function selectTab(key) {
+    if (key === activeTab) return
+    const cached = peekCache('/novels', { ...paramsForTab(key, activeGenre), page: 1 })
+    withViewTransition(() => {
+      flushSync(() => {
+        setActiveTab(key)
+        if (cached !== undefined) {
+          setNovels(extractNovels(cached))
+          setTotal(cached?.total || 0)
+        }
+      })
+    })
+  }
+  function selectView(mode) {
+    if (mode === viewMode) return
+    withViewTransition(() => { flushSync(() => setViewMode(mode)) })
+  }
+
   // Bàn phím cho tablist (WAI-ARIA Tabs): ←/→/Home/End chuyển tab.
   function onTabKeyDown(e, idx) {
     let next = null
@@ -94,7 +117,7 @@ export default function AllNovelsSection({ activeGenre = '' }) {
     if (next === null) return
     e.preventDefault()
     const key = TABS[next].key
-    setActiveTab(key)
+    selectTab(key)
     tabRefs.current[key]?.focus()
   }
 
@@ -102,7 +125,7 @@ export default function AllNovelsSection({ activeGenre = '' }) {
     return (
       <section style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
         <SectionHeader icon={<BookOpen size={15} style={{ color: 'var(--accent)' }} />} title="Tất Cả Truyện" />
-        <div className="glass-panel" style={{ height: '400px', borderRadius: '14px' }} />
+        <div className="hd-skel" style={{ height: '400px', borderRadius: '14px' }} role="status" aria-label="Đang tải danh sách truyện" />
       </section>
     )
   }
@@ -129,7 +152,7 @@ export default function AllNovelsSection({ activeGenre = '' }) {
               tabIndex={activeTab === tab.key ? 0 : -1}
               ref={el => { tabRefs.current[tab.key] = el }}
               className={`hp-tab${activeTab === tab.key ? ' active' : ''}`}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => selectTab(tab.key)}
               onKeyDown={e => onTabKeyDown(e, idx)}
             >
               {tab.label}
@@ -142,7 +165,7 @@ export default function AllNovelsSection({ activeGenre = '' }) {
             type="button"
             aria-pressed={viewMode === 'list'}
             className={viewMode === 'list' ? 'active' : ''}
-            onClick={() => setViewMode('list')}
+            onClick={() => selectView('list')}
             title="Dạng danh sách gọn"
             aria-label="Dạng danh sách gọn"
           >
@@ -152,7 +175,7 @@ export default function AllNovelsSection({ activeGenre = '' }) {
             type="button"
             aria-pressed={viewMode === 'grid'}
             className={viewMode === 'grid' ? 'active' : ''}
-            onClick={() => setViewMode('grid')}
+            onClick={() => selectView('grid')}
             title="Dạng lưới"
             aria-label="Dạng lưới"
           >
@@ -162,7 +185,7 @@ export default function AllNovelsSection({ activeGenre = '' }) {
             type="button"
             aria-pressed={viewMode === 'table'}
             className={viewMode === 'table' ? 'active' : ''}
-            onClick={() => setViewMode('table')}
+            onClick={() => selectView('table')}
             title="Dạng bảng"
             aria-label="Dạng bảng"
           >
@@ -173,7 +196,7 @@ export default function AllNovelsSection({ activeGenre = '' }) {
       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '1rem', marginTop: '0.5rem' }} />
 
       {/* Render View theo ViewMode */}
-      <div id="all-novels-panel" role="tabpanel" aria-labelledby={`all-novels-tab-${activeTab}`} aria-busy={loading}>
+      <div id="all-novels-panel" className={`hp-all-panel${loading ? ' is-loading' : ''}`} role="tabpanel" aria-labelledby={`all-novels-tab-${activeTab}`} aria-busy={loading}>
       {novels.length > 0 ? (
         <>
           {viewMode === 'list' ? (

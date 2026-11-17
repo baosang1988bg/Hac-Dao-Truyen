@@ -10,7 +10,8 @@ import { shouldShowScrollToTop, scrollToTop } from '../../utils/scroll'
 export default function ScrollToTopButton({
   threshold = 400,
   ariaLabel = 'Cuộn lên đầu trang',
-  bottomOffset = 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
+  // --hd-fab-bottom (index.css): mobile tự đẩy nút lên trên bottom tab bar.
+  bottomOffset = 'calc(var(--hd-fab-bottom, 1.5rem) + env(safe-area-inset-bottom, 0px))',
   rightOffset = 'calc(1.5rem + env(safe-area-inset-right, 0px))',
   className = '',
   style = {},

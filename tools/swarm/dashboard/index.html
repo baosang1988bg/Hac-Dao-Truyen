@@ -456,7 +456,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
       case 'gate_opened': s.gates[ev.gate] = { status: 'open', title: ev.title, artifacts: ev.artifacts, message: ev.message }; s.status = 'waiting'; gateSel = ''; break;
       case 'gate_resolved': s.gates[ev.gate] = { ...(s.gates[ev.gate] || {}), status: ev.decision }; s.status = 'running'; $('gateFeedback').value = ''; break;
       case 'checks': s.checks = ev.results; break;
-      case 'run_finished': s.status = ev.status; s.result = ev; break;
+      case 'run_finished':
+        s.status = ev.status; s.result = ev;
+        for (const g of Object.values(s.gates)) if (g.status === 'open') g.status = ev.status;
+        break;
     }
     if (['log', 'handoff', 'llm_call', 'gate_opened', 'gate_resolved', 'run_finished'].includes(ev.type)) addLog(ev);
   }

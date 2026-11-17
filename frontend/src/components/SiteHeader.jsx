@@ -1,25 +1,50 @@
-
-import { Link, NavLink } from 'react-router-dom'
-import { BookOpen, Home, Library, Shield, LogIn, User, BookMarked } from 'lucide-react'
+import { useEffect } from 'react'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { BookOpen, Home, Library, Shield, LogIn, User, BookMarked, Search, Sparkles } from 'lucide-react'
+import useHideOnScroll from '../hooks/useHideOnScroll'
 
 /**
  * Header trang guest.
- * - Desktop: logo + nav (Trang chủ / Tủ truyện) + góc phải Quản trị (admin) hoặc Đăng nhập.
- * - Mobile (<769px): thanh mỏng chỉ có logo (điều hướng nằm ở BottomTabBar).
+ * - Desktop: logo + nav (Trang chủ / Mới cập nhật / Tủ truyện / Kho EPUB) + góc phải
+ *   Tài khoản + Quản trị (admin) hoặc Đăng nhập.
+ * - Mobile (<769px): thanh mỏng dính đỉnh (sticky), tự ẩn khi cuộn xuống và
+ *   hiện lại khi cuộn lên; có nút Tìm kiếm (+ Quản trị nếu là admin). Điều hướng
+ *   chính nằm ở BottomTabBar.
  */
 export default function SiteHeader() {
   const isAdmin = localStorage.getItem('userRole') === 'admin'
+  const hidden = useHideOnScroll()
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+
+  // Báo cho các khối sticky khác (qua biến --hd-header-h) biết header đang ẩn.
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.toggle('hd-header-hidden', hidden)
+    return () => root.classList.remove('hd-header-hidden')
+  }, [hidden])
 
   const navCls = ({ isActive }) => `site-header__navlink${isActive ? ' active' : ''}`
 
+  // Nút tìm kiếm: về trang chủ và focus ô tìm kiếm (HomePage đọc state.focusSearch).
+  // Đang ở trang chủ thì focus ngay, không cần điều hướng.
+  const openSearch = () => {
+    if (pathname === '/') {
+      const input = document.querySelector('.hp-search-input')
+      if (input) {
+        input.focus()
+        input.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        return
+      }
+    }
+    navigate('/', { state: { focusSearch: true } })
+  }
+
   return (
-    <header className="site-header">
+    <header className={`site-header${hidden ? ' is-hidden' : ''}`}>
       <div className="site-header__inner">
         <Link to="/" className="site-header__logo">
-          <span style={{
-            background: 'var(--accent-gradient)', padding: '6px', borderRadius: '8px',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+          <span className="site-header__logo-mark">
             <BookOpen size={17} color="white" />
           </span>
           {/* Khoảng trắng tách "Hắc Đạo" và "Truyện" (trước đây dính thành "Hắc ĐạoTruyện"). */}
@@ -30,6 +55,9 @@ export default function SiteHeader() {
           <NavLink to="/" end className={navCls}>
             <Home size={16} /> Trang chủ
           </NavLink>
+          <NavLink to="/cap-nhat" className={navCls}>
+            <Sparkles size={16} /> Mới cập nhật
+          </NavLink>
           <NavLink to="/library" className={navCls}>
             <Library size={16} /> Tủ truyện
           </NavLink>
@@ -37,6 +65,18 @@ export default function SiteHeader() {
             <BookMarked size={16} /> Kho EPUB
           </NavLink>
         </nav>
+
+        {/* Mobile: nút hành động gọn bên phải */}
+        <div className="site-header__mobile-actions">
+          <button type="button" className="site-header__icon-btn hd-press" onClick={openSearch} aria-label="Tìm kiếm truyện">
+            <Search size={20} aria-hidden="true" />
+          </button>
+          {isAdmin && (
+            <Link to="/admin" className="site-header__icon-btn hd-press" aria-label="Quản trị" style={{ color: 'var(--accent)' }}>
+              <Shield size={19} aria-hidden="true" />
+            </Link>
+          )}
+        </div>
 
         <div className="site-header__right">
           <NavLink to="/account" className={navCls} title="Tài khoản">

@@ -9,13 +9,15 @@ import { fmtNumber, novelDisplayTitle } from '../../utils/format'
 /**
  * NovelGrid – Grid truyện responsive dùng chung.
  * Default cols: 3 mobile, 5 tablet, 6 desktop (gọn nhỏ).
+ * Card xuất hiện so le (.hp-stagger, home.css); hover nhấc nhẹ chỉ trên thiết
+ * bị có chuột, chạm thì co nhẹ (index.css .novel-grid__card).
  */
 export default function NovelGrid({ novels, cols, getBadge }) {
   const { mobile = 3, tablet = 5, desktop = 6 } = cols ?? {}
 
   return (
     <div
-      className="novel-grid"
+      className="novel-grid hp-stagger"
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${mobile}, 1fr)`,

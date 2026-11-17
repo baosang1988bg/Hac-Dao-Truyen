@@ -13,7 +13,7 @@ $env:PYTHONIOENCODING = "utf-8"
 
 $root = (git rev-parse --show-toplevel).Trim()
 Set-Location $root
-git config --global core.longpaths true 2>$null
+git config core.longpaths true 2>$null   # chỉ repo này; không đổi cấu hình git toàn máy
 
 # Chọn Python 3.11+ (py launcher trước, rồi python trong PATH)
 $exe = $null; $pre = @()

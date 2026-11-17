@@ -57,6 +57,9 @@ CREATE TABLE IF NOT EXISTS chapters (
 );
 
 CREATE INDEX IF NOT EXISTS idx_chapters_novel ON chapters(novel_slug, chapter_number);
+-- Migration 013: phục vụ GET /api/updates (nhật ký cập nhật) —
+-- `WHERE created_at >= datetime('now','-7 days')` chỉ đọc các dòng trong cửa sổ.
+CREATE INDEX IF NOT EXISTS idx_chapters_created ON chapters(created_at);
 
 -- Current bootstrap snapshot. Upgrade existing DBs with tools/migrate_schema.py.
 -- HacDaoTruyen — Migration 002: Hệ thống tài khoản người dùng (roadmap 3.1–3.4)
