@@ -297,6 +297,14 @@ async function handleApi(request, url, env, ctx) {
   const path = url.pathname;
   const method = request.method;
 
+  // GET /api/proxy-cover?url=... — đặt TRƯỚC rate limit: ảnh bìa đã có trong
+  // edge cache được trả ngay, không tính vào hạn mức 120 request/phút/IP (một
+  // trang danh sách có thể kéo vài chục bìa cùng lúc). Chỉ khi MISS (phải tải
+  // từ host nguồn) proxyCover mới tự kiểm tra rate limit lớp 'public'.
+  if (path === '/api/proxy-cover' && method === 'GET') {
+    return proxyCover(request, url, env, ctx);
+  }
+
   const isSync = ['/api/admin/sync-novel', '/api/admin/sync-rankings'].includes(path) && method === 'POST';
   // Chỉ phân loại sync sau khi xác minh key; header giả không được bypass.
   const verifiedSync = isSync && env.SYNC_KEY && timingSafeEqualStr(request.headers.get('x-sync-key') || '', env.SYNC_KEY);
@@ -347,32 +355,30 @@ async function handleApi(request, url, env, ctx) {
     return cachedJsonResponse(request, ctx, 3600, () => getRankings(env));
   }
 
-  // GET /api/proxy-cover?url=...
-  if (path === '/api/proxy-cover' && method === 'GET') {
-    return proxyCover(url);
-  }
-
   // GET /api/novels?q=&sort=&order=&genre=&status=&has_epub=&page=&limit=
   if (path === '/api/novels' && method === 'GET') {
-    return cachedJsonResponse(request, ctx, 120, () => getNovels(env, url.searchParams));
+    const { ttl, sMaxAge } = novelsCacheTtl(url.searchParams);
+    return cachedJsonResponse(request, ctx, ttl, () => getNovels(env, url.searchParams, ctx), { sMaxAge });
   }
 
   // GET /api/novels/genres — danh sách thể loại distinct
   if (path === '/api/novels/genres' && method === 'GET') {
-    return cachedJsonResponse(request, ctx, 3600, () => getGenres(env));
+    // DISTINCT genre quét toàn bảng novels → giữ ở edge 6 giờ (trình duyệt 1 giờ).
+    return cachedJsonResponse(request, ctx, 3600, () => getGenres(env), { sMaxAge: 21600 });
   }
 
   // GET /api/stats — tổng số truyện/chương/thuật ngữ, tính bằng SQL aggregate
   // ở server thay vì client tự tải toàn bộ catalog rồi cộng dồn (HomePage cũ).
   if (path === '/api/stats' && method === 'GET') {
-    return cachedJsonResponse(request, ctx, 300, () => getStats(env, ctx));
+    // Aggregate quét toàn bảng novels → edge giữ 1 giờ (trình duyệt 5 phút).
+    return cachedJsonResponse(request, ctx, 300, () => getStats(env, ctx), { sMaxAge: 3600 });
   }
 
   // GET /api/updates — "Nhật ký cập nhật" công khai: chương mới đăng trong
   // UPDATES_WINDOW_DAYS ngày, gom theo (truyện, ngày giờ VN). Không có query
   // (cache key bỏ query) → mọi khách dùng chung 1 bản edge cache 5 phút.
   if (path === '/api/updates' && method === 'GET') {
-    return cachedJsonResponse(request, ctx, 300, () => getUpdatesFeed(env));
+    return cachedJsonResponse(request, ctx, 300, () => getUpdatesFeed(env), { sMaxAge: 600 });
   }
 
   // GET /api/server-info
@@ -402,7 +408,9 @@ async function handleApi(request, url, env, ctx) {
   // GET /api/novels/:slug
   const novelMatch = path.match(/^\/api\/novels\/([^/]+)$/);
   if (novelMatch && method === 'GET') {
-    return cachedJsonResponse(request, ctx, 300, () => getNovel(env, novelMatch[1], request));
+    // Chi tiết truyện đếm lại toàn bộ chương của truyện mỗi lần MISS → edge 15
+    // phút; sync/takedown vẫn purge key này (colo hiện tại) nên chương mới hiện sớm.
+    return cachedJsonResponse(request, ctx, 300, () => getNovel(env, novelMatch[1], request), { sMaxAge: 900 });
   }
 
   // GET /api/novels/:slug/epub — tải EPUB đã build (upload lên R2 bởi migrate)
@@ -426,13 +434,16 @@ async function handleApi(request, url, env, ctx) {
   // GET /api/novels/:slug/synopsis — lazy load full synopsis
   const synopsisMatch = path.match(/^\/api\/novels\/([^/]+)\/synopsis$/);
   if (synopsisMatch && method === 'GET') {
-    return getSynopsis(env, synopsisMatch[1]);
+    // 1 dòng D1 + 1 object R2 mỗi lượt → cache (takedown đã purge key này).
+    return cachedJsonResponse(request, ctx, 600, () => getSynopsis(env, synopsisMatch[1]), { sMaxAge: 3600 });
   }
 
   // GET /api/novels/:slug/chapters
   const chaptersMatch = path.match(/^\/api\/novels\/([^/]+)\/chapters$/);
   if (chaptersMatch && method === 'GET') {
-    return cachedJsonResponse(request, ctx, 600, () => getChapters(env, chaptersMatch[1], ctx));
+    // Mục lục đọc MỌI dòng chương của truyện (truyện dài = hàng nghìn dòng D1)
+    // + 1 object R2 mỗi lần MISS → edge 30 phút. Sync chương mới purge key này.
+    return cachedJsonResponse(request, ctx, 600, () => getChapters(env, chaptersMatch[1], ctx), { sMaxAge: 1800 });
   }
 
   // GET /api/novels/:slug/chapters/:filename
@@ -519,7 +530,9 @@ async function handleApi(request, url, env, ctx) {
   // GET/POST /api/novels/:slug/comments
   const commentsMatch = path.match(/^\/api\/novels\/([^/]+)\/comments$/);
   if (commentsMatch && method === 'GET') {
-    return commentsList(env, commentsMatch[1], url);
+    // Khách (không Authorization) dùng chung bản cache 60 giây theo ?chapter=;
+    // người đã đăng nhập luôn BYPASS nên thấy ngay bình luận mình vừa gửi.
+    return cachedJsonResponse(request, ctx, 60, () => commentsList(env, commentsMatch[1], url), { cacheParams: ['chapter'] });
   }
   if (commentsMatch && method === 'POST') {
     return commentCreate(request, env, commentsMatch[1]);
@@ -527,7 +540,7 @@ async function handleApi(request, url, env, ctx) {
 
   // GET /api/comments/recent?limit=5 — bình luận mới nhất toàn site (trang chủ)
   if (path === '/api/comments/recent' && method === 'GET') {
-    return recentComments(env, url);
+    return cachedJsonResponse(request, ctx, 120, () => recentComments(env, url), { sMaxAge: 300, cacheParams: ['limit'] });
   }
 
   // DELETE /api/comments/:id
@@ -652,10 +665,36 @@ function sniffImageMime(bytes) {
   return null;
 }
 
-async function proxyCover(url) {
+// Ảnh bìa hầu như không đổi → giữ 30 ngày ở trình duyệt lẫn edge. Trước đây
+// response chỉ có header s-maxage nhưng KHÔNG ghi vào Cache API, nên edge không
+// hề cache: mỗi lượt xem bìa là 1 lần Worker tải lại ảnh từ host nguồn.
+const COVER_TTL_S = 30 * 24 * 3600;
+
+async function proxyCover(request, url, env, ctx) {
   const targetUrl = url.searchParams.get('url');
   if (!targetUrl) return new Response('Missing url', { status: 400 });
   if (!isSafeCoverUrl(targetUrl)) return new Response('URL không hợp lệ', { status: 400 });
+
+  // Cache key chỉ gồm tham số `url` (bỏ tham số rác) → không tạo được vô hạn key.
+  const cache = globalThis.caches?.default;
+  const cacheKey = new Request(`${url.origin}/api/proxy-cover?url=${encodeURIComponent(targetUrl)}`, { method: 'GET' });
+  if (cache) {
+    try {
+      const hit = await cache.match(cacheKey);
+      if (hit) {
+        const out = new Response(hit.body, hit);
+        out.headers.set('X-Worker-Cache', 'HIT');
+        return out;
+      }
+    } catch { /* cache lỗi → tải mới */ }
+  }
+  // MISS mới tốn subrequest ra host nguồn → mới phải qua rate limit.
+  if (!(await allowPublicRequest(request, env))) {
+    return new Response('Too many requests', {
+      status: 429,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '60', 'Cache-Control': 'no-store' },
+    });
+  }
   try {
     const imgRes = await fetch(targetUrl, {
       headers: {
@@ -701,10 +740,18 @@ async function proxyCover(url) {
     headers.set('Content-Type', sniffed);
     headers.set('Content-Length', String(bytes.byteLength));
     headers.set('Access-Control-Allow-Origin', '*');
-    headers.set('Cache-Control', 'public, max-age=604800, s-maxage=604800');
+    headers.set('Cache-Control', `public, max-age=${COVER_TTL_S}, s-maxage=${COVER_TTL_S}`);
     headers.set('X-Content-Type-Options', 'nosniff');
     headers.set('Content-Disposition', 'inline');
-    return new Response(bytes, { status: 200, headers });
+    const response = new Response(bytes, { status: 200, headers });
+    if (cache) {
+      const put = cache.put(cacheKey, response.clone()).catch(err => {
+        console.warn('Cover cache put failed:', err && err.message ? err.message : err);
+      });
+      if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(put); else await put;
+    }
+    response.headers.set('X-Worker-Cache', cache ? 'MISS' : 'UNAVAILABLE');
+    return response;
   } catch { /* fallback */ }
   return new Response('Cover fetch failed', { status: 502 });
 }
@@ -724,7 +771,68 @@ async function proxyCover(url) {
 // dữ liệu chính mà getChapters() đọc), khớp với getNovel() (trang chi tiết)
 // vốn đã tính đúng qua catalog.json. idx_chapters_novel (schema.sql) đảm bảo
 // subquery này dùng index, không quét toàn bảng.
-async function getNovels(env, params = new URLSearchParams()) {
+// TTL edge cho GET /api/novels theo CHI PHÍ của truy vấn (rows_read D1 mỗi lần MISS):
+// - slugs=...           : tra theo khoá chính, rẻ → 2 phút.
+// - sort chapter_count / rating / title: không có index → quét + sắp cả bảng
+//   novels (chapter_count còn chạy subquery cho từng truyện) → edge 30 phút.
+// - có q/genre/status/has_epub: lọc LIKE/không index → edge 10 phút.
+// - mặc định (updated_at/views, có index): edge 5 phút.
+const NOVELS_EXPENSIVE_SORTS = new Set(['chapter_count', 'rating', 'title']);
+function novelsCacheTtl(params) {
+  if (params.has('slugs')) return { ttl: 120, sMaxAge: 120 };
+  if (NOVELS_EXPENSIVE_SORTS.has(params.get('sort') || '')) return { ttl: 300, sMaxAge: 1800 };
+  if (['q', 'genre', 'status', 'has_epub'].some(name => (params.get(name) || '').trim())) return { ttl: 120, sMaxAge: 600 };
+  return { ttl: 120, sMaxAge: 300 };
+}
+
+// COUNT(*) của danh sách truyện đọc toàn bộ dòng khớp WHERE (~cả bảng novels)
+// mỗi lần gọi, trong khi mỗi trang/kiểu sắp xếp là một cache key riêng → cùng
+// một bộ lọc bị đếm lại nhiều lần. Nhớ kết quả theo (WHERE, tham số): biến
+// module theo isolate + Cache API (key nội bộ) 15 phút. Tổng số chỉ dùng cho
+// nhãn "N truyện" và số trang nên trễ 15 phút là chấp nhận được; sync/takedown
+// xoá phần nhớ trong isolate hiện tại.
+const NOVELS_COUNT_TTL_S = 15 * 60;
+const _novelsCountMemo = new Map(); // key -> { value, expiresAt }
+
+function forgetNovelCounts() {
+  _novelsCountMemo.clear();
+}
+
+async function countNovels(env, ctx, whereStr, binds) {
+  const rawKey = JSON.stringify([whereStr, binds]);
+  const now = Date.now();
+  const memo = _novelsCountMemo.get(rawKey);
+  if (memo && memo.expiresAt > now) return memo.value;
+  const remember = value => {
+    if (_novelsCountMemo.size >= 500) _novelsCountMemo.clear();
+    _novelsCountMemo.set(rawKey, { value, expiresAt: now + NOVELS_COUNT_TTL_S * 1000 });
+    return value;
+  };
+  const cache = globalThis.caches?.default;
+  let cacheKey = null;
+  if (cache) {
+    try {
+      const digest = toHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawKey)));
+      cacheKey = new Request(`https://stats-cache.hacdao.internal/novels_count/${digest}`, { method: 'GET' });
+      const hit = await cache.match(cacheKey);
+      if (hit) {
+        const value = Number((await hit.json()).value);
+        if (Number.isFinite(value)) return remember(value);
+      }
+    } catch { cacheKey = null; }
+  }
+  const countRes = await env.DB.prepare(`SELECT COUNT(*) as cnt FROM novels n WHERE ${whereStr}`).bind(...binds).first();
+  const value = countRes ? Number(countRes.cnt) || 0 : 0;
+  if (cache && cacheKey) {
+    const put = cache.put(cacheKey, new Response(JSON.stringify({ value }), {
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${NOVELS_COUNT_TTL_S}` },
+    })).catch(() => {});
+    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(put); else await put;
+  }
+  return remember(value);
+}
+
+async function getNovels(env, params = new URLSearchParams(), ctx) {
   const q       = (params.get('q') || '').trim().toLowerCase();
   const sort    = params.get('sort') || 'updated_at';   // updated_at | chapter_count | views | rating | title
   const order   = params.get('order') === 'asc' ? 'ASC' : 'DESC';
@@ -800,9 +908,10 @@ async function getNovels(env, params = new URLSearchParams()) {
     : `${sortCol} ${order}`;
   const orderBinds = slugs && !params.has('sort') ? slugs : [];
 
-  // Count total matching records using index
-  const countRes = await env.DB.prepare(`SELECT COUNT(*) as cnt FROM novels n WHERE ${whereStr}`).bind(...binds).first();
-  const total = countRes ? countRes.cnt : 0;
+  // Tổng số bản ghi khớp: tra theo slugs (≤ 24 khoá chính, gói trong 1 trang)
+  // thì chính số dòng trả về là tổng → khỏi COUNT; còn lại dùng countNovels()
+  // (có nhớ kết quả) — tính SAU khi đã lấy trang dữ liệu.
+  const slugsFitOnePage = Boolean(slugs) && page === 1 && limit >= slugs.length;
 
   // Subquery đếm chương/tên chương mới nhất — chạy trên bảng chapters lớn.
   const chapterCountSql = `(SELECT COUNT(DISTINCT CASE WHEN c.chapter_number > 0 THEN c.chapter_number END)
@@ -873,6 +982,8 @@ async function getNovels(env, params = new URLSearchParams()) {
       latest_chapter_title: stats.get(r.slug)?.latest_chapter_title || '',
     }));
   }
+
+  const total = slugsFitOnePage ? rows.length : await countNovels(env, ctx, whereStr, binds);
 
   const novels = rows.map(({ last_created_at, synopsis_head, ...n }) => ({
     ...n,
@@ -1122,18 +1233,25 @@ async function getTranslatedChapterCount(env, ctx) {
     if (cache) {
       const hit = await cache.match(cacheKey);
       if (hit) {
-        const value = Number((await hit.json()).value);
-        if (Number.isFinite(value)) {
+        const body = await hit.json();
+        // Bản cache cũ (trước khi có `novels`) coi như MISS để tính lại đủ 2 số.
+        if (Number.isFinite(Number(body.value)) && Number.isFinite(Number(body.novels))) {
+          const value = { chapters: Number(body.value), novels: Number(body.novels) };
           _translatedChaptersMemo = { value, expiresAt: now + 10 * 60 * 1000 };
           return value;
         }
       }
     }
-    const row = await env.DB.prepare(`SELECT COUNT(*) AS n FROM chapters WHERE chapter_number > 0`).first();
-    const value = Number(row?.n) || 0;
+    // Cùng MỘT lượt quét index chapters: tổng chương đã dịch + số truyện có
+    // ít nhất 1 chương (dùng cho trang tổng quan quản trị, thay cho việc tải
+    // toàn bộ catalog về client để đếm).
+    const row = await env.DB.prepare(
+      `SELECT COUNT(*) AS n, COUNT(DISTINCT novel_slug) AS novels FROM chapters WHERE chapter_number > 0`
+    ).first();
+    const value = { chapters: Number(row?.n) || 0, novels: Number(row?.novels) || 0 };
     _translatedChaptersMemo = { value, expiresAt: now + TRANSLATED_CHAPTERS_TTL_S * 1000 };
     if (cache) {
-      const put = cache.put(cacheKey, new Response(JSON.stringify({ value }), {
+      const put = cache.put(cacheKey, new Response(JSON.stringify({ value: value.chapters, novels: value.novels }), {
         headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${TRANSLATED_CHAPTERS_TTL_S}` },
       })).catch(() => {});
       if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(put); else await put;
@@ -1159,7 +1277,8 @@ async function getStats(env, ctx) {
     total_novels: row?.total_novels || 0,
     total_chapters: row?.total_chapters || 0,
     total_glossary: row?.total_glossary || 0,
-    translated_chapters: translated ?? 0,
+    translated_chapters: translated?.chapters ?? 0,
+    translated_novels: translated?.novels ?? 0,
   }, 200, {
     'Cache-Control': 'public, max-age=300, s-maxage=300'
   });
@@ -2092,6 +2211,7 @@ async function syncNovelBatch(env, request, ctx) {
   const {results: committed} = await readRows();
   const keys = new Map(committed.map(c => [c.filename,c.r2_key]));
   if (prepared.some(c => keys.get(c.filename) !== c.key)) return jsonResponse({error:'Concurrent chapter change; reconcile and retry'},409);
+  forgetNovelCounts();
   // Catalog remains a legacy read source. Never overwrite it from a chunk.
   // getChapters merges D1 entries over legacy entries by filename.
   // Purge edge cache (colo hiện tại) của mục lục/chi tiết/nội dung chương vừa
@@ -2756,6 +2876,7 @@ async function adminTakedownRestore(request, env, slug, action) {
     slug,
   ).run();
   if (!meta.changes) return jsonResponse({ error: 'Novel not found' }, 404);
+  forgetNovelCounts();
 
   await env.DB.prepare(`
     INSERT INTO admin_actions (action, slug, note) VALUES (?, ?, ?)
@@ -2828,6 +2949,14 @@ async function cachedJsonResponse(request, ctx, ttlSeconds, loadResponse, option
     const allowed = ['genre', 'has_epub', 'limit', 'order', 'page', 'q', 'slugs', 'sort', 'status'];
     const normalized = new URLSearchParams();
     for (const name of allowed) {
+      if (cacheUrl.searchParams.has(name)) normalized.set(name, cacheUrl.searchParams.get(name));
+    }
+    cacheUrl.search = normalized.toString();
+  } else if (Array.isArray(options.cacheParams) && options.cacheParams.length) {
+    // Route khác có query ảnh hưởng response phải khai báo rõ tham số nào được
+    // đưa vào cache key (vd ?chapter= của bình luận); tham số lạ vẫn bị bỏ.
+    const normalized = new URLSearchParams();
+    for (const name of [...options.cacheParams].sort()) {
       if (cacheUrl.searchParams.has(name)) normalized.set(name, cacheUrl.searchParams.get(name));
     }
     cacheUrl.search = normalized.toString();

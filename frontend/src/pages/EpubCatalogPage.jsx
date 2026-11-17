@@ -2,7 +2,6 @@ import PropTypes from 'prop-types'
 import { useEffect, useState, useCallback, useRef } from 'react';
 
 import { Search, SearchX, BookMarked, Star, Eye, BookOpen, SlidersHorizontal, X, Clock, AlignLeft } from 'lucide-react';
-import api from '../api'
 import { EpubCard } from '../components/EpubCard'
 import { fmtNumber } from '../utils/format';
 import { extractNovels } from '../utils/novelsApi'
@@ -11,7 +10,13 @@ import { normalizeGenreList, GENRES_URL, GENRES_TTL } from '../utils/genreLabels
 import { withViewTransition } from '../utils/motion'
 import '../styles/library-epub.css'
 
-const LIMIT = 24
+// 12 truyện mỗi lần tải: mỗi thẻ kéo thêm 1 ảnh bìa (đa số đi qua Worker
+// /api/proxy-cover) nên 24 thẻ/lần là ~25 request cho một lượt xem. Người dùng
+// bấm "Tải thêm" mới lấy lô kế tiếp.
+const LIMIT = 12
+// Tìm kiếm quét LIKE trên cả bảng truyện → chỉ gửi khi đủ 2 ký tự, chờ gõ xong.
+const SEARCH_MIN_CHARS = 2
+const SEARCH_DEBOUNCE_MS = 450
 
 const SORT_OPTIONS = [
   { value: 'updated_at', label: 'Mới cập nhật', icon: Clock },
@@ -53,35 +58,43 @@ export default function EpubCatalogPage() {
     return () => { alive = false }
   }, [])
 
+  // Từ khoá thực sự gửi lên server: bỏ khoảng trắng thừa, dưới 2 ký tự coi như
+  // không tìm (đang gõ dở) → không bắn request cho từng phím đầu tiên.
+  const qTrim = q.trim()
+  const qEffective = qTrim.length >= SEARCH_MIN_CHARS ? qTrim : ''
+  // Bỏ qua response của lượt tải cũ đến muộn (đổi bộ lọc nhanh liên tiếp).
+  const reqIdRef = useRef(0)
+
   const fetchNovels = useCallback(async (pg = 1, reset = false) => {
+    const myReq = ++reqIdRef.current
     setLoading(true)
     try {
-      const params = new URLSearchParams({
-        sort, order: sort === 'title' ? 'asc' : 'desc',
-        page: pg, limit: LIMIT,
+      // cachedGet: gộp request trùng + nhớ kết quả trong phiên (đổi qua lại
+      // giữa các bộ lọc/sắp xếp đã xem không gọi lại mạng), và KHÔNG gửi token
+      // nên luôn dùng được edge cache của Worker.
+      const data = await cachedGet('/novels', {
+        params: {
+          sort, order: sort === 'title' ? 'asc' : 'desc',
+          page: pg, limit: LIMIT,
+          q: qEffective, genre, status, has_epub: hasEpub ? '1' : '',
+        },
       })
-      if (q) params.set('q', q)
-      if (genre) params.set('genre', genre)
-      if (status) params.set('status', status)
-      if (hasEpub) params.set('has_epub', '1')
-
-      const res = await api.get(`/novels?${params}`)
-      const data = res.data
+      if (reqIdRef.current !== myReq) return
       const list = extractNovels(data) // chịu được cả {novels} lẫn mảng thẳng
       setTotal(data?.total ?? list.length)
       setPages(data?.pages ?? 1)
       setNovels(prev => (reset || pg === 1) ? list : [...prev, ...list])
       setPage(pg)
     } catch { /* silent */ }
-    finally { setLoading(false) }
-  }, [q, sort, genre, status, hasEpub])
+    finally { if (reqIdRef.current === myReq) setLoading(false) }
+  }, [qEffective, sort, genre, status, hasEpub])
 
   // Fetch khi filter thay đổi
   useEffect(() => {
     clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => fetchNovels(1, true), q ? 300 : 0)
+    debounceRef.current = setTimeout(() => fetchNovels(1, true), qEffective ? SEARCH_DEBOUNCE_MS : 0)
     return () => clearTimeout(debounceRef.current)
-  }, [q, sort, genre, status, hasEpub, fetchNovels])
+  }, [qEffective, sort, genre, status, hasEpub, fetchNovels])
 
   const loadMore = () => { if (page < pages && !loading) fetchNovels(page + 1) }
 

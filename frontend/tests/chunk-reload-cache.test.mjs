@@ -16,7 +16,7 @@ globalThis.localStorage = memoryStorage()
 
 const { isChunkLoadError, withChunkReload, CHUNK_RELOAD_KEY } = await import('../src/utils/lazyWithReload.js')
 const { cachedGet, peekCache, invalidateCache } = await import('../src/utils/apiCache.js')
-const { default: api } = await import('../src/api.js')
+const { default: api, publicApi } = await import('../src/api.js')
 
 // ── isChunkLoadError ─────────────────────────────────────────────────────────
 
@@ -83,12 +83,17 @@ test('withChunkReload: storage bị chặn → không reload (tránh vòng lặp
 
 function mockApiGet() {
   const calls = []
-  const original = api.get
-  api.get = (url, cfg) => {
+  // cachedGet đi qua publicApi (không gắn Authorization). `api` (có token
+  // admin) KHÔNG được dùng cho dữ liệu công khai → đếm riêng để phát hiện.
+  const original = publicApi.get
+  const originalAdmin = api.get
+  let adminCalls = 0
+  publicApi.get = (url, cfg) => {
     calls.push({ url, cfg })
     return new Promise(resolve => setTimeout(() => resolve({ data: { url, n: calls.length } }), 5))
   }
-  return { calls, restore: () => { api.get = original } }
+  api.get = () => { adminCalls++; return Promise.reject(new Error('cachedGet không được dùng api có token')) }
+  return { calls, adminCalls: () => adminCalls, restore: () => { publicApi.get = original; api.get = originalAdmin } }
 }
 
 test('cachedGet (guest): gộp inflight và lưu cache theo TTL', async () => {
@@ -107,26 +112,38 @@ test('cachedGet (guest): gộp inflight và lưu cache theo TTL', async () => {
   }
 })
 
-test('cachedGet (admin có authToken): vẫn gộp inflight nhưng KHÔNG lưu/đọc cache', async () => {
+test('cachedGet (có authToken admin): vẫn dùng publicApi không token + cache như khách', async () => {
   invalidateCache()
   localStorage.clear()
-  // Dữ liệu guest đã cache trước đó không được trả cho admin.
   const m = mockApiGet()
   try {
-    await cachedGet('/novels/abc')
-    assert.equal(m.calls.length, 1)
     localStorage.setItem('authToken', 'tok')
     const [a, b] = await Promise.all([cachedGet('/novels/abc'), cachedGet('/novels/abc')])
-    assert.equal(m.calls.length, 2, 'admin bỏ qua hit guest, 2 lời gọi đồng thời gộp 1 request')
+    assert.equal(m.calls.length, 1, '2 lời gọi đồng thời gộp 1 request')
     assert.deepEqual(a, b)
-    await cachedGet('/novels/xyz')
-    assert.equal(peekCache('/novels/xyz'), undefined, 'admin không lưu vào store')
-    await cachedGet('/novels/xyz')
-    assert.equal(m.calls.length, 4)
+    assert.deepEqual(peekCache('/novels/abc'), a, 'kết quả công khai được lưu cache kể cả khi có phiên admin')
+    await cachedGet('/novels/abc')
+    assert.equal(m.calls.length, 1, 'hit cache, không gọi mạng')
+    assert.equal(m.adminCalls(), 0, 'không request nào đi qua api có Authorization')
   } finally {
     m.restore()
     localStorage.clear()
     invalidateCache()
+  }
+})
+
+test('publicApi không gắn Authorization dù localStorage có authToken', async () => {
+  localStorage.clear()
+  localStorage.setItem('authToken', 'tok')
+  try {
+    let seen = null
+    await publicApi.get('/stats', { adapter: async config => { seen = config; return { data: {}, status: 200, statusText: 'OK', headers: {}, config } } })
+    assert.equal(seen.headers?.Authorization, undefined)
+    let seenAdmin = null
+    await api.get('/stats', { adapter: async config => { seenAdmin = config; return { data: {}, status: 200, statusText: 'OK', headers: {}, config } } })
+    assert.equal(seenAdmin.headers.Authorization, 'Bearer tok')
+  } finally {
+    localStorage.clear()
   }
 })
 

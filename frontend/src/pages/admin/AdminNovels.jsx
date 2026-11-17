@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom'
 import { Layers, Book, AlertCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import api from '../../api'
+import usePolling from '../../hooks/usePolling'
 import NovelCover from '../../components/NovelCover'
 import { fmtTimeAgo } from '../../utils/format'
 
@@ -23,7 +24,7 @@ const PAGE_SIZE = 30
  *   ở GET /api/novels (q/sort/order/status/page/limit) — trước đây trang này
  *   gọi fetchAdminNovels() tải HẾT mọi trang về rồi hiển thị phẳng, không có
  *   cách nào tìm truyện khi danh sách lớn lên.
- * - Poll GET /api/translate/active mỗi 5s → badge "Đang dịch x/y".
+ * - Poll GET /api/translate/active mỗi 15s (tạm dừng khi tab ẩn) → badge "Đang dịch x/y".
  * - Bấm hàng → /admin/novels/:slug
  */
 export default function AdminNovels() {
@@ -65,17 +66,11 @@ export default function AdminNovels() {
   }, [q, sort, status, page])
 
   // Poll phiên dịch đang chạy
-  useEffect(() => {
-    let alive = true
-    const fetchActive = () => {
-      api.get('/translate/active')
-        .then(res => { if (alive) setActive(res.data || {}) })
-        .catch(() => {})
-    }
-    fetchActive()
-    const t = setInterval(fetchActive, 5000)
-    return () => { alive = false; clearInterval(t) }
-  }, [])
+  usePolling(alive => {
+    api.get('/translate/active')
+      .then(res => { if (alive()) setActive(res.data || {}) })
+      .catch(() => {})
+  }, 15000)
 
   if (novels === null) {
     return <div style={{ paddingTop: '2rem', color: 'var(--text-muted)' }}>Đang tải danh sách truyện...</div>

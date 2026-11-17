@@ -63,7 +63,8 @@ export default function SearchSection({
       </div>
 
       {/* Kết quả tìm kiếm */}
-      {searchQuery.trim() && (
+      {/* Dưới 2 ký tự HomePage chưa gửi tìm kiếm → chưa hiện khung kết quả. */}
+      {searchQuery.trim().length >= 2 && (
         <section className="home-section hp-enter" style={{ marginBottom: '2rem' }}>
           <h2 className="home-section__title">
             <Search size={18} style={{ color: 'var(--accent)' }} />

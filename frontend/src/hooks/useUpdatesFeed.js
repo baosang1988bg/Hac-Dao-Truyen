@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { useCachedGet } from '../utils/apiCache'
 import { UPDATES_URL, hasUnseenUpdates, latestUpdateMs, markSeen, readLastSeen } from '../utils/updatesFeed'
 
-// Worker cache edge 5 phút → client giữ 2 phút là đủ, dùng chung giữa
-// BottomTabBar (chấm đỏ), widget trang chủ và trang /cap-nhat (1 request).
-const FEED_TTL = 120_000
+// Worker cache edge 10 phút → client giữ 5 phút, dùng chung giữa BottomTabBar
+// (chấm đỏ, có mặt ở MỌI trang khách), widget trang chủ và trang /cap-nhat.
+// Nút "Làm mới" ở /cap-nhat vẫn ép tải lại (reload → force).
+const FEED_TTL = 5 * 60_000
 const SEEN_EVENT = 'hd:updates-seen'
 
 /** Dữ liệu feed + reload. */

@@ -23,8 +23,13 @@ const chapter = number => ({filename:`Chương ${number}.md`,title:`Chương ${n
 
 test('D1 bootstrap supports public list and EPUB, sync is concurrent and repeatable', async t => {
   const {db,bucket,call,sync} = await setup(t);
-  const replies = await Promise.all([sync([chapter(1)]),sync([chapter(2)])]);
-  for (const reply of replies) assert.equal(reply.status,200,await reply.text());
+  // Đọc body NGAY trong từng promise: Miniflare yêu cầu body của dispatchFetch
+  // được tiêu thụ liền (xem MINIFLARE_ASSERT_BODIES_CONSUMED); để response
+  // "treo" chờ Promise.all rồi mới đọc thỉnh thoảng ném "Body has already been
+  // read" dù Worker trả 200 (quan sát khi chạy cả bộ test dưới tải, 2026-11-17).
+  const replies = await Promise.all([sync([chapter(1)]),sync([chapter(2)])]
+    .map(p => p.then(async r => ({status:r.status,text:await r.text()}))));
+  for (const reply of replies) assert.equal(reply.status,200,reply.text);
   assert.equal((await sync([chapter(1)])).status,200);
   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM chapters').first()).n,2);
   await bucket.put('demo/catalog.json',JSON.stringify([chapter(3)].map(c=>({...c,chapter_number:c.number}))));

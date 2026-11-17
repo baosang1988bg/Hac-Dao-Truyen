@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import api from '../api'
 import { extractNovels } from '../utils/novelsApi'
+import { cachedGet } from '../utils/apiCache'
+import LazyMount from '../components/LazyMount'
 import { prefersReducedMotion } from '../utils/motion'
 import '../styles/home.css'
 
@@ -22,6 +23,12 @@ import StatsSection from './homepage/StatsSection'
 
 // Breakpoint 2 cột (khớp .hp-portal-layout trong index.css).
 const DESKTOP_MQ = '(min-width: 1024px)'
+
+// Tìm kiếm quét LIKE trên cả bảng truyện (không có index) → chỉ gửi khi đủ 2
+// ký tự và người dùng ngừng gõ; lấy 24 kết quả đầu (đủ cho lưới gợi ý).
+const SEARCH_MIN_CHARS = 2
+const SEARCH_DEBOUNCE_MS = 400
+const SEARCH_LIMIT = 24
 
 function getDesktopMql() {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -74,7 +81,7 @@ export default function HomePage() {
   const searchReqId = useRef(0)
   useEffect(() => {
     const q = searchQuery.trim()
-    if (!q) {
+    if (q.length < SEARCH_MIN_CHARS) {
       searchReqId.current += 1
       setSearchResults(null)
       setSearchLoading(false)
@@ -84,21 +91,22 @@ export default function HomePage() {
     const myReqId = ++searchReqId.current
     const controller = new AbortController()
     const handle = setTimeout(() => {
-      api.get('/novels', { params: { q, limit: 50 }, signal: controller.signal })
-        .then(res => {
+      // cachedGet: gõ lại đúng từ khoá cũ (xoá bớt rồi gõ lại) không gọi mạng lần 2.
+      cachedGet('/novels', { params: { q, limit: SEARCH_LIMIT }, signal: controller.signal })
+        .then(data => {
           if (searchReqId.current !== myReqId) return // response cũ đến muộn — bỏ qua
-          setSearchResults(extractNovels(res.data))
+          setSearchResults(extractNovels(data))
           setSearchLoading(false)
         })
         .catch(() => {
           if (searchReqId.current !== myReqId) return
           setSearchLoading(false)
         })
-    }, 250)
+    }, SEARCH_DEBOUNCE_MS)
     return () => { clearTimeout(handle); controller.abort() }
   }, [searchQuery])
 
-  const isSearching = searchQuery.trim().length > 0
+  const isSearching = searchQuery.trim().length >= SEARCH_MIN_CHARS
 
   // Nút Tìm kiếm ở header mobile điều hướng về '/' kèm state.focusSearch →
   // focus + cuộn tới ô tìm kiếm, rồi xoá state (replace) để bấm Back quay lại
@@ -128,24 +136,29 @@ export default function HomePage() {
       {node}
     </div>
   )
+  // Khối nằm dưới màn hình đầu bọc trong <LazyMount>: chỉ mount (và gọi API
+  // của nó) khi người dùng cuộn tới gần. Khách xem lướt rồi rời đi không còn
+  // tốn request cho thể loại, BXH nguồn ngoài, bình luận, thống kê.
+  const lazy = (node, minHeight) => <LazyMount minHeight={minHeight}>{node}</LazyMount>
   const recent = slot('recent', <RecentlyReadSection />, 1)
   const latest = slot('latest', <LatestChaptersWidget />, 2)
   const notice = slot('notice', <TruyThuNoticeSection />, 1)
   const updates = slot('updates', <UpdatesSection />)
-  const external = slot('external', <ExternalRankingsSection />)
-  const genresAndAll = slot('all', (
+  const external = slot('external', lazy(<ExternalRankingsSection />, 320))
+  const genresAndAll = slot('all', lazy(
     <>
       {/* Chip lọc thể loại — đặt sát trên All Novels vì đây là nơi nó
           thực sự lọc, thay vì đứng tách biệt ở đầu trang. */}
       <GenreChips activeGenre={activeGenre} onSelect={setActiveGenre} />
       {/* All Novels Tabbed List: Tất cả truyện dạng Tab */}
       <AllNovelsSection activeGenre={activeGenre} />
-    </>
+    </>,
+    480,
   ))
   const rankings = slot('rankings', <TruyenTrungRankings />)
   const board = slot('board', <TruyenTrungChatboxWidget defaultOpen={isDesktop} />)
-  const comments = slot('comments', <RecentCommentsSection />)
-  const stats = slot('stats', <StatsSection />)
+  const comments = slot('comments', lazy(<RecentCommentsSection />, 120))
+  const stats = slot('stats', lazy(<StatsSection />, 76))
 
   return (
     <div className="container animate-fade-in hp-home" style={{ paddingTop: '1rem' }}>

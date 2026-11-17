@@ -35,7 +35,21 @@ api.interceptors.response.use(
 
 export default api;
 
-// Admin cần toàn bộ danh sách để thống kê, kể cả Worker trả nhiều trang.
+// Instance KHÔNG gắn Authorization, dành cho dữ liệu công khai của phía khách
+// (danh sách truyện, mục lục, nội dung chương, thống kê...). Worker bỏ qua
+// edge cache với MỌI request có header Authorization (đọc thẳng D1/R2), nên
+// trước đây admin đã đăng nhập lướt trang khách là mỗi request đều tốn D1.
+// Dữ liệu các route này không phụ thuộc người gọi → không cần gửi token.
+// Trang quản trị vẫn dùng `api` (có token) để luôn thấy dữ liệu mới nhất.
+export const publicApi = axios.create({
+  baseURL: '/api',
+});
+
+// CẢNH BÁO CHI PHÍ: hàm này tải HẾT catalog (mỗi trang 200 truyện, có token
+// admin nên Worker bỏ qua edge cache). Với hàng chục nghìn truyện là hàng trăm
+// request liên tiếp, mỗi request đọc D1 trực tiếp → dễ chạm rate limit và hạn
+// mức đọc D1. KHÔNG gọi khi mở trang; trang tổng quan đã chuyển sang
+// GET /api/stats. Chỉ giữ lại cho công cụ xuất dữ liệu chạy theo yêu cầu.
 export async function fetchAdminNovels() {
   const novels = new Map();
   let page = 1;

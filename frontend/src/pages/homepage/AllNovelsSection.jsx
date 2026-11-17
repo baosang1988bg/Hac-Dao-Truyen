@@ -2,7 +2,6 @@ import PropTypes from 'prop-types'
 import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { BookOpen, LayoutGrid, List, AlignJustify, Loader2 } from 'lucide-react'
-import api from '../../api'
 import { extractNovels, LATEST_UPDATED_PARAMS } from '../../utils/novelsApi'
 import { cachedGet, peekCache } from '../../utils/apiCache'
 import SectionHeader from '../../components/ui/SectionHeader'
@@ -77,9 +76,9 @@ export default function AllNovelsSection({ activeGenre = '' }) {
   function loadMore() {
     const nextPage = page + 1
     setLoadingMore(true)
-    api.get('/novels', { params: { ...paramsForTab(activeTab, activeGenre), page: nextPage } })
-      .then(res => {
-        setNovels(prev => [...prev, ...extractNovels(res.data)])
+    cachedGet('/novels', { params: { ...paramsForTab(activeTab, activeGenre), page: nextPage } })
+      .then(data => {
+        setNovels(prev => [...prev, ...extractNovels(data)])
         setPage(nextPage)
       })
       .catch(() => { /* giữ nguyên danh sách hiện có nếu tải thêm lỗi */ })

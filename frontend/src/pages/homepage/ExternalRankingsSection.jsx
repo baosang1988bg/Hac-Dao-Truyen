@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { Globe, ChevronDown } from 'lucide-react'
-import api from '../../api'
+import { cachedGet } from '../../utils/apiCache'
 import SectionHeader from '../../components/ui/SectionHeader'
 import { fmtStatLabel } from '../../utils/format'
 import { withViewTransition } from '../../utils/motion'
@@ -10,6 +10,8 @@ import './ExternalRankingsSection.css'
 const SOURCES = { qidian: 'Qidian', '69shuba': '69shuba', novel543: 'Novel543', fanqie: 'Fanqie', faloo: 'Faloo' }
 const CATEGORIES = { views: 'Lượt đọc', follows: 'Theo dõi', recommend: 'Đề cử', general: 'Tổng quát' }
 const WINDOWS = { daily: 'Ngày', weekly: 'Tuần', monthly: 'Tháng', quarterly: 'Quý', all_time: 'Toàn thời gian' }
+// BXH nguồn ngoài chỉ đổi theo lượt sync (Worker cache 1 giờ).
+const RANKINGS_TTL = 30 * 60_000
 const safeUrl = value => /^https?:\/\//i.test(value || '')
 // Mobile chỉ hiện ngần này mục đầu (CSS ẩn phần còn lại) — trước đây danh sách
 // cuộn lồng trong khung 620px, khó cuộn trên điện thoại.
@@ -24,9 +26,9 @@ export default function ExternalRankingsSection() {
   useEffect(() => {
     let alive = true
     const controller = new AbortController()
-    api.get('/rankings', { signal: controller.signal })
-      .then(({ data }) => {
-        if (alive && Array.isArray(data.groups)) setGroups(data.groups.filter(g => g.items?.length))
+    cachedGet('/rankings', { ttl: RANKINGS_TTL, signal: controller.signal })
+      .then(data => {
+        if (alive && Array.isArray(data?.groups)) setGroups(data.groups.filter(g => g.items?.length))
       })
       .catch(() => {})
       .finally(() => { if (alive) setLoading(false) })
