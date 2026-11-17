@@ -157,6 +157,33 @@ def build_chapter_upsert_sql(slug: str, fname: str, ctitle: str, num: int, r2key
         f"WHERE chapters.r2_key = {old_sql} OR chapters.r2_key = excluded.r2_key;"
     )
 
+def build_chapter_stats_sql(slug: str, with_count: bool = True) -> str:
+    """Câu UPDATE chạy SAU khi đã ghi chapters (cùng công thức với Worker
+    CHAPTER_COUNT_SQL). Ghi lại updated_at để Worker tính lại số chương/tên
+    chương mới nhất đang nhớ theo (slug, updated_at) — lệnh INSERT novels ở
+    đầu migrate_novel() chạy TRƯỚC khi có chương mới nên không đủ."""
+    count_sql = (
+        ",chapter_count=(SELECT COUNT(DISTINCT CASE WHEN c.chapter_number > 0 "
+        "THEN c.chapter_number END) FROM chapters c WHERE c.novel_slug=novels.slug)"
+        if with_count else ""
+    )
+    # Giữ đúng định dạng updated_at mà lệnh INSERT novels của script này dùng
+    # (isoformat giờ máy) để không làm lệch thứ tự "Mới cập nhật".
+    return (f"UPDATE novels SET updated_at={q(datetime.now().isoformat())}{count_sql} "
+            f"WHERE slug={q(slug)};")
+
+
+def refresh_novel_chapter_stats(slug: str) -> bool:
+    """Cập nhật novels.chapter_count (migration 014) + updated_at. Production
+    chưa chạy migration 014 → lệnh có chapter_count lỗi "no such column": lùi về
+    chỉ ghi updated_at, KHÔNG coi là lỗi sync (chương đã ghi xong)."""
+    if d1_file(build_chapter_stats_sql(slug)):
+        print("  ✅ chapter_count → D1")
+        return True
+    print("  ⚠️  Không ghi được chapter_count (chưa chạy migration 014?) — chỉ cập nhật updated_at")
+    return d1_file(build_chapter_stats_sql(slug, with_count=False))
+
+
 def update_novel_sync(slug: str, last_chapter: int, last_filename: str, total_synced: int):
     """Cập nhật trạng thái sync sau khi hoàn tất. Merge vào entry cũ (không
     ghi đè toàn bộ) để không làm mất `glossary_snapshot` (xem [E05]) hay các
@@ -965,6 +992,9 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
             if fail_n:  parts.append(f"❌ {fail_n} lỗi")
             else:       parts.append("✅")
             print(f"    → {' '.join(parts)}")
+
+    if ok_n > 0 and not dry_run and not skip_d1:
+        refresh_novel_chapter_stats(slug)
 
     summary = f"{ok_n} uploaded"
     if skip_n:  summary += f", {skip_n} skipped (already existed)"

@@ -416,7 +416,7 @@ async function handleApi(request, url, env, ctx) {
   // GET /api/novels/:slug/epub — tải EPUB đã build (upload lên R2 bởi migrate)
   const epubMatch = path.match(/^\/api\/novels\/([^/]+)\/epub$/);
   if (epubMatch && method === 'GET') {
-    return getEpub(env, epubMatch[1]);
+    return getEpub(env, epubMatch[1], ctx);
   }
 
   // POST /api/novels/:slug/view — tăng lượt xem
@@ -773,9 +773,9 @@ async function proxyCover(request, url, env, ctx) {
 // subquery này dùng index, không quét toàn bảng.
 // TTL edge cho GET /api/novels theo CHI PHÍ của truy vấn (rows_read D1 mỗi lần MISS):
 // - slugs=...           : tra theo khoá chính, rẻ → 2 phút.
-// - sort chapter_count: quét cả bảng novels + subquery đếm chương cho TỪNG
-//   truyện (truy vấn đắt nhất của site; thứ hạng theo số chương đổi rất chậm)
-//   → edge 1 giờ.
+// - sort chapter_count: trước migration 014 là quét cả bảng novels + subquery
+//   đếm chương cho TỪNG truyện (truy vấn đắt nhất); sau migration dùng index
+//   idx_novels_published_chapters. Thứ hạng đổi rất chậm → giữ edge 1 giờ.
 // - sort rating / title: không có index → quét + sắp cả bảng novels → edge 30 phút.
 // - có q/genre/status/has_epub: lọc LIKE/không index → edge 10 phút.
 // - mặc định (updated_at/views, có index): edge 5 phút.
@@ -867,6 +867,32 @@ const LATEST_TITLE_SQL = `COALESCE((
 //   chính xác tới giây, nhiều chunk sync có thể rơi cùng một giây.
 // - Giới hạn đã biết: công cụ sửa/xoá dòng chapters trực tiếp mà không ghi lại
 //   novels.updated_at (vd dedupe thủ công) sẽ thấy số cũ tối đa 24 giờ.
+// ── Cột novels.chapter_count (migration 014) ─────────────────────────────────
+// Số chương lưu sẵn, được Worker sync ghi trong CÙNG lệnh UPDATE novels vốn đã
+// có ở mỗi chunk (không thêm dòng ghi), và migrate_to_cloudflare.py ghi sau mỗi
+// lượt. Chỉ dùng để SẮP XẾP (sort=chapter_count, có index) — con số hiển thị
+// vẫn lấy từ chapterStatsForRows() để khớp trang chi tiết.
+// Code phải chạy được cả TRƯỚC khi migration 014 lên production (deploy và
+// migration có thể lệch thứ tự): dò cột 1 lần/isolate bằng `LIMIT 0` (0 rows_read);
+// thiếu cột → giữ đường cũ (subquery), dò lại sau 10 phút.
+const CHAPTER_COUNT_COL_RECHECK_MS = 10 * 60 * 1000;
+let _hasChapterCountCol = null;
+let _chapterCountColCheckedAt = 0;
+
+async function hasChapterCountColumn(env) {
+  if (_hasChapterCountCol === true) return true;
+  const now = Date.now();
+  if (_hasChapterCountCol === false && now - _chapterCountColCheckedAt < CHAPTER_COUNT_COL_RECHECK_MS) return false;
+  _chapterCountColCheckedAt = now;
+  try {
+    await env.DB.prepare('SELECT chapter_count FROM novels LIMIT 0').all();
+    _hasChapterCountCol = true;
+  } catch {
+    _hasChapterCountCol = false;
+  }
+  return _hasChapterCountCol;
+}
+
 const CHAPTER_STATS_KEY = 'https://stats-cache.hacdao.internal/chapter_stats_v1';
 const CHAPTER_STATS_TTL_S = 24 * 3600;
 const CHAPTER_STATS_MAX = 3000;
@@ -973,7 +999,10 @@ async function getNovels(env, params = new URLSearchParams(), ctx) {
     rating:        'rating',
     title:         'n.title',
   };
-  const sortCol = SORT_COLS[sort] || 'n.updated_at';
+  let sortCol = SORT_COLS[sort] || 'n.updated_at';
+  // Có cột lưu sẵn (migration 014) → sắp theo cột có index, khỏi subquery cho
+  // từng truyện; chưa có → giữ đường cũ.
+  if (sortCol === 'chapter_count' && await hasChapterCountColumn(env)) sortCol = 'n.chapter_count';
   const sortByChapterCount = sortCol === 'chapter_count';
 
   // Build WHERE clauses
@@ -1640,25 +1669,69 @@ async function getNovel(env, slug, request, ctx) {
   return jsonResponse({ ...novel, ...common });
 }
 
-async function getEpub(env, slug) {
+// ── Cache EPUB (Google Drive) ở edge ─────────────────────────────────────────
+// Response do Worker tạo KHÔNG tự vào edge cache dù có Cache-Control, nên mỗi
+// lượt mở EPUB là một lần tải cả file từ Drive (chậm, dễ bị Drive giới hạn).
+// Ghi vào Cache API theo key (slug, drive_file_id): đổi file trên Drive → key mới.
+// Vẫn đọc D1 trước (1 dòng) để truyện bị gỡ không bao giờ trả bản đã cache.
+// Bộ nhớ: tee() giữ phần chênh giữa nhánh ghi cache và nhánh trả client trong RAM
+// isolate (128 MB) — tệ nhất bằng cả file nếu client chậm. Chỉ cache khi Drive
+// báo Content-Length ≤ 20 MB; lớn hơn hoặc không rõ kích thước → stream như cũ.
+const EPUB_EDGE_CACHE_MAX_BYTES = 20 * 1024 * 1024;
+const EPUB_EDGE_CACHE_TTL_S = 7 * 24 * 3600;
+
+function epubResponse(body, slug, extraHeaders = {}) {
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/epub+zip',
+      'Content-Disposition': `inline; filename="${slug}.epub"`,
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=86400',
+      ...extraHeaders,
+    },
+  });
+}
+
+async function getEpub(env, slug, ctx) {
   // 1. Kiểm tra drive_file_id từ Google Drive Library trong D1
   const novel = await env.DB.prepare(`SELECT drive_file_id, published FROM novels WHERE slug = ?`).bind(slug).first();
   // F03: truyện bị gỡ không được tiếp tục trả EPUB qua Drive/R2 fallback nào.
   if (novel && !novel.published) return jsonResponse({ error: 'Novel not found' }, 404);
   if (novel?.drive_file_id) {
+    const cache = globalThis.caches?.default;
+    const cacheKey = new Request(
+      `https://epub-cache.hacdao.internal/${slug}/${encodeURIComponent(novel.drive_file_id)}`, { method: 'GET' });
+    if (cache) {
+      try {
+        const hit = await cache.match(cacheKey);
+        if (hit?.body) {
+          const len = hit.headers.get('Content-Length');
+          return epubResponse(hit.body, slug, { 'X-Worker-Cache': 'HIT', ...(len ? { 'Content-Length': len } : {}) });
+        }
+      } catch { /* cache lỗi → tải từ Drive */ }
+    }
     const driveUrl = `https://drive.usercontent.google.com/download?id=${novel.drive_file_id}&export=download&confirm=t`;
     try {
       const driveRes = await fetch(driveUrl, { redirect: 'follow' });
-      if (driveRes.ok) {
-        return new Response(driveRes.body, {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/epub+zip',
-            'Content-Disposition': `inline; filename="${slug}.epub"`,
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'public, max-age=86400',
-          },
-        });
+      if (driveRes.ok && driveRes.body) {
+        const len = Number(driveRes.headers.get('Content-Length'));
+        const sizeHeader = Number.isSafeInteger(len) && len > 0 ? { 'Content-Length': String(len) } : {};
+        // Drive trả trang HTML (cảnh báo virus/quá hạn mức) với status 200 → không cache.
+        const isHtml = /text\/html/i.test(driveRes.headers.get('Content-Type') || '');
+        if (cache && !isHtml && sizeHeader['Content-Length'] && len <= EPUB_EDGE_CACHE_MAX_BYTES) {
+          const [toClient, toCache] = driveRes.body.tee();
+          const put = cache.put(cacheKey, new Response(toCache, {
+            headers: {
+              'Content-Type': 'application/epub+zip',
+              'Content-Length': String(len),
+              'Cache-Control': `public, max-age=${EPUB_EDGE_CACHE_TTL_S}`,
+            },
+          })).catch(() => {});
+          if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(put);
+          return epubResponse(toClient, slug, { 'X-Worker-Cache': 'MISS', ...sizeHeader });
+        }
+        return epubResponse(driveRes.body, slug, sizeHeader);
       }
     } catch { /* fallback to R2 */ }
   }
@@ -1927,6 +2000,9 @@ async function getChapterContentFromDrive(env, slug, num, identifier, ctx) {
 
   const body = ch.content.startsWith('#') ? ch.content : `# ${ch.title || ch.filename}\n\n${ch.content}`;
 
+  // Mặc định TẮT (wrangler.jsonc không đặt biến này). Lưu ý nếu bật: đường ghi
+  // này KHÔNG cập nhật novels.chapter_count/updated_at (cố ý — mỗi lượt đọc mà
+  // ghi thêm dòng novels thì tốn ghi D1), nên sắp xếp "Nhiều chương" sẽ trễ tới lần sync kế.
   if (env.ENABLE_DRIVE_CACHE_WRITES !== 'true') return body;
 
   const encoded = btoa(unescape(encodeURIComponent(ch.filename))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -2262,12 +2338,20 @@ async function syncNovelBatch(env, request, ctx) {
   if (data.is_first_chunk !== false && data.synopsis) {
     await env.CHAPTERS.put(`${slug}/synopsis.md`, data.synopsis);
   }
+  const totalChapters = data.total_chapter_count || chapters.length;
+  const withChapterCount = await hasChapterCountColumn(env);
+  // Có cột chapter_count: novels phải tồn tại TRƯỚC khi chèn chapters (FOREIGN
+  // KEY) nhưng chapter_count chỉ đếm được SAU → INSERT … DO NOTHING ở đầu (truyện
+  // đã có: 0 dòng ghi) và dồn total_chapters/updated_at/chapter_count vào MỘT
+  // lệnh UPDATE ở cuối batch. Truyện đã có vẫn chỉ 1 lần ghi dòng novels/chunk như
+  // cũ; thêm đúng 1 mục index idx_novels_published_chapters khi số chương đổi —
+  // vẫn nằm trong phần "+5" của ước tính 4 × số chương + 5 (tools/sync_transport.py).
   const operations = [env.DB.prepare(`
     INSERT INTO novels (slug,title,original_title,author,genre,total_chapters,drive_file_id,synopsis)
-    VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(slug) DO UPDATE SET
-      total_chapters=MAX(novels.total_chapters,excluded.total_chapters), updated_at=datetime('now')
+    VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(slug) DO ${withChapterCount ? 'NOTHING' : `UPDATE SET
+      total_chapters=MAX(novels.total_chapters,excluded.total_chapters), updated_at=datetime('now')`}
   `).bind(slug, data.title || slug, data.original_title || '', data.author || '', data.genre || '',
-    data.total_chapter_count || chapters.length, data.drive_file_id || '', (data.synopsis || '').slice(0,2000))];
+    totalChapters, data.drive_file_id || '', (data.synopsis || '').slice(0,2000))];
   for (const c of prepared) {
     operations.push(env.DB.prepare(`
       INSERT INTO chapters (novel_slug,filename,title,chapter_number,r2_key) VALUES (?,?,?,?,?)
@@ -2275,6 +2359,18 @@ async function syncNovelBatch(env, request, ctx) {
         title=excluded.title,chapter_number=excluded.chapter_number,r2_key=excluded.r2_key
       WHERE chapters.r2_key = ? OR chapters.r2_key = excluded.r2_key
     `).bind(slug,c.filename,c.title,c.number,c.key,c.old));
+  }
+  if (withChapterCount) {
+    // Cùng công thức với CHAPTER_COUNT_SQL; đọc index idx_chapters_novel của
+    // riêng truyện này (truyện N chương ≈ N rows_read mỗi chunk).
+    operations.push(env.DB.prepare(`
+      UPDATE novels SET
+        total_chapters = MAX(total_chapters, ?),
+        updated_at = datetime('now'),
+        chapter_count = (SELECT COUNT(DISTINCT CASE WHEN c.chapter_number > 0 THEN c.chapter_number END)
+                         FROM chapters c WHERE c.novel_slug = novels.slug)
+      WHERE slug = ?
+    `).bind(totalChapters, slug));
   }
   await env.DB.batch(operations);
   const {results: committed} = await readRows();
