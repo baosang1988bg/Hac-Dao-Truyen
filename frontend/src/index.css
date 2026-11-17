@@ -122,9 +122,11 @@ a:hover {
   box-shadow: 0 4px 15px rgba(201, 147, 46, 0.3);
 }
 
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(201, 147, 46, 0.4);
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(201, 147, 46, 0.4);
+  }
 }
 
 .btn-secondary {
@@ -133,8 +135,10 @@ a:hover {
   border: 1px solid var(--border-panel);
 }
 
-.btn-secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
+@media (hover: hover) {
+  .btn-secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+  }
 }
 
 .btn-danger {
@@ -238,7 +242,9 @@ a:hover {
 }
 
 /* Reader navigation: co giãn từ tap target 44px đến kích thước desktop 58px. */
-.reader-root { overflow-x: hidden; }
+/* clip (không phải hidden): hidden biến .reader-root thành scroll container
+   làm thanh nav sticky bên trong không dính; trình duyệt cũ fallback hidden. */
+.reader-root { overflow-x: hidden; overflow-x: clip; }
 .reader-nav {
   display: flex;
   align-items: center;
@@ -830,7 +836,9 @@ html.hd-header-hidden { --hd-header-h: 0px; }
    Chỗ trống cho bottom tab bar nằm ở .app-footer (phần tử cuối trang) — trước
    đây cả main lẫn footer đều cộng 64px nên đáy trang mobile bị trống gấp đôi. */
 .guest-main {
-  min-height: calc(100dvh - var(--hd-header-h, 52px));
+  /* Giá trị cố định (không dùng --hd-header-h): biến đó đổi mỗi lần header
+     ẩn/hiện → min-height đổi theo gây reflow/giật trên trang ngắn. */
+  min-height: calc(100dvh - 52px);
 }
 /* ── HomePage ── */
 .home-section { margin-bottom: 2.25rem; }
@@ -1062,78 +1070,7 @@ html.hd-header-hidden { --hd-header-h: 0px; }
 }
 .chapter-list-row:active { background: rgba(255, 255, 255, 0.09); }
 
-/* ── LibraryPage ── */
-.library-card {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-4, 16px);
-  padding: var(--space-3, 12px) var(--space-4, 16px);
-}
-.library-card__body { flex: 1; min-width: 0; }
-.library-card__cover-link {
-  display: block;
-  width: 72px;
-  min-height: 108px;
-  border-radius: 10px;
-  flex-shrink: 0;
-}
-.library-card__recent {
-  display: inline-block;
-  margin-bottom: var(--space-1, 4px);
-  padding: 2px var(--space-2, 8px);
-  border-radius: 4px;
-  background: rgba(201,147,46,0.18);
-  color: var(--accent);
-  font-size: var(--font-xs, 0.75rem);
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-.library-card__title-link {
-  display: flex;
-  align-items: center;
-  min-height: 24px;
-  color: var(--text-main);
-  text-decoration: none;
-}
-.library-card__title {
-  min-width: 0;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  font-size: 0.95rem;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-.library-card__progress {
-  margin-top: var(--space-1, 4px);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-}
-.library-card__action {
-  min-height: var(--tap-target-min, 44px);
-  padding: var(--space-2, 8px) var(--space-4, 16px);
-  flex-shrink: 0;
-  font-size: 0.85rem;
-}
-.library-empty-state { padding: var(--space-8, 48px) var(--space-5, 24px); }
-@media (max-width: 600px) {
-  .library-card {
-    grid-template-columns: 72px minmax(0, 1fr);
-    gap: var(--space-3, 12px);
-    padding: var(--space-3, 12px);
-  }
-  .library-card__action {
-    grid-column: 1 / -1;
-    width: 100%;
-    justify-content: center;
-  }
-  .library-empty-state { padding: var(--space-6, 32px) var(--space-4, 16px); }
-}
+/* ── LibraryPage: xem styles/library-epub.css ── */
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ADMIN LAYOUT — sidebar trái (desktop) / drawer (mobile), topbar sticky
@@ -1575,123 +1512,7 @@ html.hd-header-hidden { --hd-header-h: 0px; }
 }
 .comment-item__delete:active { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
 
-/* ── RequestNovelModal ── */
-.request-novel-modal__close {
-  position: absolute;
-  top: var(--space-2, 8px);
-  right: var(--space-2, 8px);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--tap-target-min, 44px);
-  height: var(--tap-target-min, 44px);
-  padding: 0;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-.request-novel-modal__close:active { background: rgba(255,255,255,0.08); }
-.request-novel-modal__header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3, 12px);
-  min-height: var(--tap-target-min, 44px);
-  padding-right: var(--space-8, 48px);
-  margin-bottom: var(--space-4, 16px);
-}
-.request-novel-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4, 16px);
-}
-.request-novel-form .input-field { min-height: 48px; font-size: var(--font-base, 1rem); }
-.request-novel-form textarea.input-field { min-height: 112px; }
-
-/* ── EpubCatalogPage ── */
-.epub-catalog__toolbar {
-  position: sticky;
-  top: var(--hd-header-h, 0px);
-  transition: top var(--dur-3, 380ms) var(--ease-out, ease);
-  z-index: 20;
-  margin-bottom: var(--space-1, 4px);
-  padding: var(--space-2, 8px) 0 var(--space-3, 12px);
-  background: var(--bg-main);
-}
-.epub-catalog__search-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2, 8px);
-}
-.epub-catalog__search-wrap { position: relative; flex: 1; min-width: 0; }
-.epub-catalog__search-input {
-  min-height: var(--tap-target-min, 44px);
-  font-size: var(--font-base, 1rem);
-}
-.epub-catalog__clear {
-  position: absolute;
-  top: 50%;
-  right: 0;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--tap-target-min, 44px);
-  height: var(--tap-target-min, 44px);
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-.epub-catalog__filter-toggle,
-.epub-filter-chip,
-.epub-catalog__load-more {
-  min-height: var(--tap-target-min, 44px);
-}
-.epub-catalog__filter-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4, 16px);
-  margin-top: var(--space-2, 8px);
-  padding: var(--space-4, 16px);
-}
-.epub-catalog__filter-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2, 8px);
-}
-.epub-filter-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1, 4px);
-  scroll-snap-align: start;
-}
-.epub-catalog__checkbox {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2, 8px);
-  min-height: var(--tap-target-min, 44px);
-  cursor: pointer;
-}
-.epub-catalog__quick-sort {
-  display: flex;
-  gap: var(--space-2, 8px);
-  margin-bottom: var(--space-4, 16px);
-  padding: 0 var(--space-1, 4px) var(--space-2, 8px);
-  overflow-x: auto;
-  scrollbar-width: none;
-  scroll-snap-type: x proximity;
-  scroll-padding-inline: var(--space-1, 4px);
-}
-.epub-catalog__quick-sort::-webkit-scrollbar { display: none; }
-.epub-catalog__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: var(--space-4, 16px);
-}
+/* ── RequestNovelModal + EpubCatalogPage: xem styles/library-epub.css ── */
 
 /* Spinner dùng chung (Loader2 của lucide) */
 .spin { animation: spin-rotate 0.9s linear infinite; }
@@ -2409,22 +2230,7 @@ html.hd-header-hidden { --hd-header-h: 0px; }
   flex: 0 1 auto;
 }
 
-@media (max-width: 768px) {
-  /* UpdatesSection: giữ bảng nhưng chỉ hiện hai cột hữu ích trên mobile. */
-  .hp-novel-table { table-layout: fixed; }
-  .hp-novel-table th:nth-child(1),
-  .hp-novel-table td:nth-child(1),
-  .hp-novel-table th:nth-child(3),
-  .hp-novel-table td:nth-child(3),
-  .hp-novel-table th:nth-child(4),
-  .hp-novel-table td:nth-child(4) { display: none; }
-  .hp-novel-table th:nth-child(2),
-  .hp-novel-table td:nth-child(2) { width: 68% !important; }
-  .hp-novel-table th:nth-child(5),
-  .hp-novel-table td:nth-child(5) { width: 32% !important; }
-  .hp-novel-table th,
-  .hp-novel-table td { padding: var(--space-3, 12px) var(--space-2, 8px); }
-}
+/* UpdatesSection mobile: dạng thẻ 2 dòng — xem styles/home.css */
 /* Settings dùng chung cho Reader và EPUB, không đổi bảng màu đọc. */
 .reader-settings-sheet {
   display: flex;

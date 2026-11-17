@@ -1,0 +1,864 @@
+/* ════════════════════════════════════════════════════════════════════
+   library-epub.css — Modal dùng chung, thẻ EPUB, Kho EPUB (/epub),
+   Tủ truyện (/library), Tài khoản/Đăng nhập, EPUB Reader.
+   ────────────────────────────────────────────────────────────────────
+   - Được import SAU index.css (main.jsx nạp index.css trước) → cùng độ ưu
+     tiên selector thì file này thắng. Các khối .library-card*, .epub-catalog*,
+     .request-novel-* ở đây là bản ĐẦY ĐỦ, thay thế bản cũ trong index.css.
+   - Dùng token chuyển động của styles/motion.css (--ease-out, --dur-*).
+   - Chỉ dùng 3 mốc breakpoint chuẩn: 600px / 768px / 1024px.
+   - Phần tử có thể chứa con position:fixed chỉ animate opacity; animation
+     transform không dùng fill-mode giữ lại transform sau khi chạy xong.
+   ════════════════════════════════════════════════════════════════════ */
+
+@keyframes hd-bar-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes hd-slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* ── Modal dùng chung (components/ui/Modal.jsx) ───────────────────── */
+/* Style mặc định của overlay (trước đây viết inline) — nơi gọi vẫn ghi đè
+   được qua prop overlayStyle như cũ. Animation vào nằm ở motion.css. */
+.hd-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(8, 10, 20, 0.65);
+  overscroll-behavior: contain;
+}
+@media (max-width: 768px) {
+  /* variant="sheet": panel dính đáy màn hình, trượt lên */
+  .hd-modal-overlay--sheet {
+    align-items: flex-end;
+    padding: 0;
+  }
+}
+/* Animation đóng: Modal giữ mount ~200ms với class .is-closing rồi mới gọi
+   onClose. "both" ở đây vô hại vì ngay sau đó phần tử bị unmount. */
+.hd-modal-overlay.is-closing {
+  animation: hd-fade 200ms var(--ease-out) reverse both;
+  pointer-events: none;
+}
+.hd-modal-overlay.is-closing > .hd-modal-panel {
+  animation: hd-scale-in 200ms var(--ease-out) reverse both;
+}
+@media (max-width: 768px) {
+  .hd-modal-overlay.is-closing > .hd-modal-panel--sheet {
+    animation: hd-sheet-up 200ms var(--ease-in-out) reverse both;
+  }
+}
+
+/* ── Trạng thái trống dùng chung (tủ truyện, kho EPUB, theo dõi) ──── */
+.hd-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-8, 48px) var(--space-5, 24px);
+  animation: hd-fade var(--dur-3) var(--ease-out);
+}
+.hd-empty__icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--space-4, 16px);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  background: rgba(201, 147, 46, 0.12);
+  border: 1px solid rgba(201, 147, 46, 0.25);
+  animation: hd-scale-in var(--dur-4) var(--ease-spring);
+}
+.hd-empty__title { font-weight: 700; font-size: 1.05rem; margin-bottom: var(--space-2, 8px); }
+.hd-empty__text {
+  max-width: 34ch;
+  margin: 0 0 var(--space-5, 24px);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+.hd-empty__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3, 12px);
+}
+.hd-empty__actions .btn { min-height: 48px; }
+@media (max-width: 600px) {
+  .hd-empty { padding: var(--space-6, 32px) var(--space-4, 16px); }
+  .hd-empty__actions { width: 100%; flex-direction: column; }
+  .hd-empty__actions .btn { width: 100%; }
+}
+
+/* Tiêu đề trang dùng chung cho /library, /epub */
+.hd-page-head { margin-bottom: var(--space-5, 24px); }
+.hd-page-head .page-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.6rem;
+}
+.hd-page-head .page-subtitle { font-size: 0.9rem; }
+@media (max-width: 600px) {
+  .hd-page-head { margin-bottom: var(--space-4, 16px); }
+  .hd-page-head .page-title { font-size: 1.35rem; }
+  .hd-page-head .page-subtitle { font-size: 0.8125rem; }
+}
+
+/* ── EpubCard (components/EpubCard.jsx) ───────────────────────────── */
+.epub-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--glass-bg);
+  border: 1px solid var(--border);
+  transition:
+    transform var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+.epub-card__cover {
+  position: relative;
+  display: block;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+}
+.epub-card__cover > :first-child {
+  width: 100%;
+  height: 100%;
+  transition: transform var(--dur-4) var(--ease-out);
+}
+.epub-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-3, 12px);
+}
+.epub-card__title-link {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-target-min, 44px);
+  color: var(--text-main);
+  text-decoration: none;
+}
+.epub-card__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.epub-card__genres {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.epub-card__stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1, 4px) var(--space-2, 8px);
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.epub-card__stat { display: inline-flex; align-items: center; gap: 3px; }
+.epub-card__stat--rating { color: #fbbf24; }
+.epub-card__actions {
+  display: flex;
+  gap: var(--space-2, 8px);
+  min-width: 0;
+  margin-top: auto;
+}
+.epub-card__read {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap-target-min, 44px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: var(--space-2, 8px) var(--space-1, 4px);
+  border-radius: 10px;
+  background: var(--accent-gradient);
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: opacity var(--dur-1) var(--ease-out), transform var(--dur-1) var(--ease-out);
+}
+.epub-card__read:active { transform: scale(0.97); }
+.epub-card__download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: var(--tap-target-min, 44px);
+  min-height: var(--tap-target-min, 44px);
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background var(--dur-2) var(--ease-out),
+    color var(--dur-2) var(--ease-out),
+    transform var(--dur-1) var(--ease-out);
+}
+.epub-card__download:active:not(:disabled) { transform: scale(0.94); }
+.epub-card__download:disabled { cursor: default; }
+.epub-card__download.is-done {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #10b981;
+}
+.epub-card__download.is-done svg { animation: hd-pop var(--dur-3) var(--ease-spring); }
+.epub-card__download.is-busy svg { animation: spin-rotate 0.9s linear infinite; }
+@media (hover: hover) {
+  .epub-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(201, 147, 46, 0.35);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  }
+  .epub-card:hover .epub-card__cover > :first-child { transform: scale(1.04); }
+  .epub-card__read:hover { opacity: 0.88; }
+  .epub-card__download:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+}
+/* Mobile 2 cột: thu gọn đệm, giữ chữ ≥ 13px */
+@media (max-width: 600px) {
+  .epub-card { border-radius: 12px; }
+  .epub-card__info { padding: 10px; gap: 6px; }
+  .epub-card__title-link { min-height: 40px; }
+}
+
+/* ── Kho EPUB (pages/EpubCatalogPage.jsx) ─────────────────────────── */
+.epub-catalog { padding-bottom: 3rem; }
+.epub-catalog__toolbar {
+  position: sticky;
+  top: var(--hd-header-h, 0px);
+  z-index: 20;
+  margin-bottom: var(--space-1, 4px);
+  padding: var(--space-2, 8px) 0 var(--space-3, 12px);
+  background: var(--bg-main);
+  transition: top var(--dur-3, 380ms) var(--ease-out, ease);
+}
+.epub-catalog__search-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+}
+.epub-catalog__search-wrap { position: relative; flex: 1; min-width: 0; }
+.epub-catalog__search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.epub-catalog__search-input {
+  width: 100%;
+  min-height: var(--tap-target-min, 44px);
+  padding: 10px 48px 10px 38px;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--glass-bg);
+  color: var(--text-main);
+  /* ≥ 16px: iOS không tự zoom khi focus ô nhập */
+  font-size: max(16px, var(--font-base, 1rem));
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
+}
+.epub-catalog__search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(201, 147, 46, 0.18);
+}
+.epub-catalog__search-input::-webkit-search-cancel-button { display: none; }
+.epub-catalog__clear {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-target-min, 44px);
+  height: var(--tap-target-min, 44px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  animation: hd-fade var(--dur-2) var(--ease-out);
+}
+.epub-catalog__filter-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap-target-min, 44px);
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  color: var(--text-main);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out),
+    transform var(--dur-1) var(--ease-out);
+}
+.epub-catalog__filter-toggle[aria-expanded="true"] {
+  background: rgba(201, 147, 46, 0.2);
+  border-color: var(--accent);
+}
+.epub-catalog__filter-toggle:active { transform: scale(0.96); }
+.epub-catalog__filter-toggle svg { transition: transform var(--dur-2) var(--ease-out); }
+.epub-catalog__filter-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
+.epub-catalog__filter-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: hd-pop var(--dur-3) var(--ease-spring);
+}
+.epub-catalog__filter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+  margin-top: var(--space-2, 8px);
+  padding: var(--space-4, 16px);
+  /* Panel nằm trong toolbar sticky: giới hạn chiều cao để không che hết màn hình */
+  max-height: min(65dvh, 520px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: hd-fade-up var(--dur-2) var(--ease-out);
+}
+.epub-catalog__filter-label {
+  margin-bottom: var(--space-2, 8px);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.epub-catalog__filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+}
+.epub-catalog__filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3, 12px);
+}
+.epub-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-shrink: 0;
+  min-height: var(--tap-target-min, 44px);
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  cursor: pointer;
+  scroll-snap-align: start;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out),
+    color var(--dur-2) var(--ease-out),
+    transform var(--dur-1) var(--ease-out);
+}
+.epub-filter-chip:active { transform: scale(0.95); }
+.epub-filter-chip[aria-pressed="true"] {
+  background: rgba(201, 147, 46, 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.epub-filter-chip--ghost {
+  align-self: flex-start;
+  background: transparent;
+}
+@media (hover: hover) {
+  .epub-filter-chip:hover { border-color: rgba(201, 147, 46, 0.55); color: var(--text-main); }
+  .epub-filter-chip[aria-pressed="true"]:hover { color: var(--accent); }
+}
+.epub-catalog__checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  min-height: var(--tap-target-min, 44px);
+  color: var(--text-main);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.epub-catalog__checkbox input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+/* Chip sắp xếp nhanh: luôn hiện, cuộn ngang trên mobile */
+.epub-catalog__quick-sort {
+  display: flex;
+  gap: var(--space-2, 8px);
+  margin-bottom: var(--space-4, 16px);
+  padding: 0 var(--space-1, 4px) var(--space-2, 8px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--space-1, 4px);
+  -webkit-overflow-scrolling: touch;
+}
+.epub-catalog__quick-sort::-webkit-scrollbar { display: none; }
+.epub-catalog__quick-sort .epub-filter-chip[aria-pressed="true"] {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: #fff;
+}
+.epub-catalog__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-4, 16px);
+}
+.epub-catalog__cell { min-width: 0; }
+.epub-catalog__more { margin-top: 2rem; text-align: center; }
+.epub-catalog__load-more { min-width: 200px; min-height: 48px; }
+/* Skeleton thẻ (dùng .hd-skel của styles/reading.css) */
+.epub-skel-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--glass-bg);
+}
+.epub-skel-card__cover { aspect-ratio: 2 / 3; border-radius: 0; }
+.epub-skel-card__body { display: flex; flex-direction: column; gap: 8px; padding: 10px; }
+.epub-skel-card__line { height: 12px; border-radius: 6px; }
+.epub-skel-card__line--short { width: 60%; }
+.epub-skel-card__btn { height: 44px; border-radius: 10px; }
+@media (min-width: 1024px) {
+  .epub-catalog__grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 20px; }
+}
+@media (max-width: 600px) {
+  .epub-catalog__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3, 12px);
+  }
+  /* Danh sách thể loại dài → 1 hàng cuộn ngang, tràn sát mép panel */
+  .epub-catalog__filter-options--scroll {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-inline: calc(-1 * var(--space-4, 16px));
+    padding: 0 var(--space-4, 16px) 2px;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--space-4, 16px);
+    -webkit-overflow-scrolling: touch;
+  }
+  .epub-catalog__filter-options--scroll::-webkit-scrollbar { display: none; }
+  .epub-catalog__load-more { width: 100%; }
+}
+
+/* ── Tủ truyện (pages/LibraryPage.jsx) ────────────────────────────── */
+.library-page { padding-bottom: 3rem; }
+.library-list { display: flex; flex-direction: column; gap: var(--space-3, 12px); }
+.library-card {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4, 16px);
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  transition:
+    transform var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out);
+}
+.library-card.is-current { border-color: rgba(201, 147, 46, 0.35); }
+.library-card__body { min-width: 0; }
+.library-card__cover-link {
+  display: block;
+  width: 72px;
+  min-height: 108px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.library-card__recent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--space-1, 4px);
+  padding: 2px var(--space-2, 8px);
+  border-radius: 999px;
+  background: rgba(201, 147, 46, 0.18);
+  color: var(--accent);
+  font-size: var(--font-xs, 0.75rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.library-card__recent .hd-live-dot { width: 6px; height: 6px; }
+.library-card__title-link {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  color: var(--text-main);
+  text-decoration: none;
+}
+.library-card__title {
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.library-card__progress {
+  margin-top: var(--space-1, 4px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.library-card__bar {
+  position: relative;
+  height: 6px;
+  margin-top: var(--space-2, 8px);
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  overflow: hidden;
+}
+.library-card__bar-fill {
+  display: block;
+  height: 100%;
+  width: var(--p, 0%);
+  border-radius: inherit;
+  background: var(--accent-gradient);
+  transform-origin: left center;
+  animation: hd-bar-fill var(--dur-4) var(--ease-out) 120ms backwards;
+}
+.library-card__action {
+  min-height: 48px;
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .library-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(201, 147, 46, 0.3);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  }
+}
+.library-skel__title { height: 32px; width: 40%; margin-bottom: 1.5rem; }
+.library-skel__row { height: 132px; margin-bottom: var(--space-3, 12px); border-radius: 16px; }
+@media (max-width: 600px) {
+  .library-card {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: var(--space-3, 12px);
+    padding: var(--space-3, 12px);
+  }
+  .library-card__cover-link { width: 64px; min-height: 96px; }
+  .library-card__title { font-size: 0.9375rem; }
+  .library-card__action {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ── Tài khoản (pages/AccountPage.jsx) + nút Google ───────────────── */
+.auth-form .input-field,
+.request-novel-form .input-field {
+  min-height: 48px;
+  /* ≥ 16px: tránh iOS zoom khi focus */
+  font-size: max(16px, var(--font-base, 1rem));
+}
+.auth-submit,
+.auth-panel .auth-tab { min-height: 48px; }
+.auth-submit { width: 100%; }
+.auth-tab { transition: background var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out); }
+.auth-tab.active { animation: hd-fade var(--dur-2) var(--ease-out); }
+.auth-form__field { animation: hd-fade-up var(--dur-3) var(--ease-out); }
+@media (max-width: 600px) {
+  .auth-panel {
+    margin-top: var(--space-2, 8px);
+    padding: var(--space-6, 32px) var(--space-4, 16px);
+  }
+}
+
+.google-login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: var(--space-2, 8px);
+}
+.google-login__btn {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  animation: hd-fade var(--dur-3) var(--ease-out);
+}
+
+.bookmark-row {
+  transition:
+    transform var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out);
+}
+.bookmark-row__action { min-height: 48px; }
+.bookmark-row__remove { width: 48px; height: 48px; }
+.bookmark-row__remove:active { transform: scale(0.92); }
+.badge-new { animation: hd-pop var(--dur-3) var(--ease-spring) 200ms backwards; }
+@media (hover: hover) {
+  .bookmark-row:hover { border-color: rgba(201, 147, 46, 0.3); }
+}
+.account-skel__row { height: 76px; margin-bottom: 0.7rem; border-radius: 16px; }
+.account-logout { min-height: 48px; }
+
+/* ── Yêu cầu truyện (components/RequestNovelModal.jsx) ────────────── */
+.request-novel-modal {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(100dvh - var(--space-6, 32px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-5, 24px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--glass-bg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+.request-novel-modal__close {
+  position: absolute;
+  top: var(--space-2, 8px);
+  right: var(--space-2, 8px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-target-min, 44px);
+  height: var(--tap-target-min, 44px);
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease-out), transform var(--dur-1) var(--ease-out);
+}
+.request-novel-modal__close:active { background: rgba(255, 255, 255, 0.08); transform: scale(0.92); }
+.request-novel-modal__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  min-height: var(--tap-target-min, 44px);
+  padding-right: var(--space-8, 48px);
+  margin-bottom: var(--space-4, 16px);
+}
+.request-novel-modal__badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--accent-gradient);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.request-novel-modal__title { margin: 0; font-size: 1.15rem; font-weight: 700; }
+.request-novel-modal__text { margin: 0 0 1rem; color: var(--text-muted); font-size: 0.875rem; line-height: 1.5; }
+.request-novel-modal__btn { width: 100%; min-height: 48px; justify-content: center; }
+.request-novel-modal__done { text-align: center; padding: 0.5rem 0 0.25rem; animation: hd-fade-up var(--dur-3) var(--ease-out); }
+.request-novel-modal__done-icon { margin-bottom: 0.6rem; animation: hd-pop var(--dur-4) var(--ease-spring); }
+.request-novel-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+.request-novel-form textarea.input-field { min-height: 112px; resize: vertical; font-family: inherit; }
+@media (max-width: 768px) {
+  /* Bottom sheet trên mobile: bo 2 góc trên, chừa vùng an toàn đáy (iPhone) */
+  .request-novel-modal.hd-modal-panel--sheet {
+    max-width: none;
+    max-height: calc(100dvh - var(--space-8, 48px));
+    border-radius: 20px 20px 0 0;
+    border-bottom: 0;
+    padding-bottom: calc(var(--space-5, 24px) + env(safe-area-inset-bottom, 0px));
+  }
+  .request-novel-modal.hd-modal-panel--sheet::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: calc(-1 * var(--space-2, 8px)) auto var(--space-3, 12px);
+    border-radius: 2px;
+    background: rgba(148, 163, 184, 0.4);
+  }
+}
+
+/* ── Đăng nhập quản trị (pages/LoginPage.jsx) ─────────────────────── */
+.admin-login {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4, 16px);
+  padding-top: max(var(--space-4, 16px), env(safe-area-inset-top, 0px));
+  padding-bottom: max(var(--space-4, 16px), env(safe-area-inset-bottom, 0px));
+  background: radial-gradient(circle at top right, #1e293b, #0f172a);
+}
+.admin-login__panel {
+  width: 100%;
+  max-width: 400px;
+  padding: clamp(1.5rem, 8vw, 2.5rem);
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: hd-scale-in var(--dur-4) var(--ease-out);
+}
+.admin-login__logo {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 1.5rem;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-gradient);
+  box-shadow: 0 0 20px rgba(201, 147, 46, 0.4);
+  animation: hd-pop var(--dur-4) var(--ease-spring) 150ms backwards;
+}
+.admin-login__title { margin-bottom: 0.5rem; font-size: 1.75rem; font-weight: 800; color: #fff; }
+.admin-login__title span { color: var(--accent); }
+.admin-login__sub { margin-bottom: 2rem; color: var(--text-muted); font-size: 0.9rem; }
+.admin-login__form { display: flex; flex-direction: column; gap: 1rem; }
+.admin-login__field { position: relative; }
+.admin-login__field svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.admin-login__input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.8rem 1rem 0.8rem 2.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+  outline: none;
+  font-size: max(16px, 1rem);
+  transition: border-color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
+}
+.admin-login__input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(201, 147, 46, 0.18); }
+.admin-login__input.has-error { border-color: rgba(239, 68, 68, 0.5); }
+.admin-login__error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-align: left;
+  animation: hd-fade-up var(--dur-2) var(--ease-out);
+}
+.admin-login__error svg { flex-shrink: 0; }
+.admin-login__submit { width: 100%; min-height: 48px; justify-content: center; }
+.admin-login__submit:disabled { opacity: 0.7; }
+.admin-login__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+.admin-login__foot { margin-top: 2rem; font-size: 0.75rem; color: rgba(255, 255, 255, 0.2); }
+
+/* ── EPUB Reader (pages/EpubReader.jsx) ───────────────────────────── */
+.epub-reader__topbar {
+  /* Tai thỏ / Dynamic Island: đẩy thanh trên xuống dưới vùng an toàn */
+  padding-top: max(10px, env(safe-area-inset-top, 0px)) !important;
+  padding-left: max(12px, env(safe-area-inset-left, 0px)) !important;
+  padding-right: max(12px, env(safe-area-inset-right, 0px)) !important;
+}
+.epub-reader__footer {
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
+}
+.epub-reader__icon-btn:active { transform: scale(0.92); }
+/* transform của nút lật trang để ở CSS (không inline) để :active ghi đè được */
+.epub-reader__nav {
+  transform: translateY(-50%);
+  -webkit-tap-highlight-color: transparent;
+}
+.epub-reader__nav:active { transform: translateY(-50%) scale(0.92); }
+@media (hover: hover) {
+  .epub-reader__icon-btn:hover { opacity: 1 !important; background: color-mix(in srgb, var(--reader-text, #888) 10%, transparent) !important; }
+  .epub-reader__nav:hover { opacity: 0.8 !important; }
+}
+/* Panel Mục lục / Tùy chỉnh: trượt vào từ phải, chừa vùng an toàn đáy */
+.epub-reader__panel {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  animation: hd-slide-in-right var(--dur-3) var(--ease-out);
+}
+.epub-reader__loading { animation: hd-fade var(--dur-3) var(--ease-out); }
+.epub-reader__bar-fill { transition: width 0.4s var(--ease-out); }
+@media (max-width: 600px) {
+  .epub-reader__back-label { display: none; }
+}

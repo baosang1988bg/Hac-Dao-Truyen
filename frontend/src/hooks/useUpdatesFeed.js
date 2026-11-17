@@ -32,8 +32,10 @@ export function useUnseenUpdates() {
     }
   }, [])
 
-  const markAllSeen = useCallback(() => {
-    const latest = latestUpdateMs(items)
+  // Nhận danh sách tuỳ chọn: trang /cap-nhat truyền bản nó vừa "Làm mới" để
+  // mốc đã xem không bị tính theo bản cũ của instance hook này.
+  const markAllSeen = useCallback((fresh) => {
+    const latest = latestUpdateMs(Array.isArray(fresh) ? fresh : items)
     if (latest === null) return
     markSeen(latest)
     window.dispatchEvent(new Event(SEEN_EVENT))

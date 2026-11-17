@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types'
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cachedGet, peekCache } from '../../utils/apiCache'
 import { normalizeGenreList, GENRES_URL, GENRES_TTL } from '../../utils/genreLabels'
 
@@ -23,10 +23,26 @@ export default function GenreChips({ activeGenre, onSelect }) {
     return () => { alive = false }
   }, [])
 
+  // Chip vừa chọn bị khuất một phần ở mép dải cuộn → cuộn ngang cho lộ hẳn
+  // (chỉ cuộn trong dải chip, không kéo trang theo chiều dọc).
+  const rowRef = useRef(null)
+  useEffect(() => {
+    const row = rowRef.current
+    const chip = row?.querySelector('.hp-genre-chip.active')
+    if (!row || !chip) return
+    const pad = 24
+    const r = row.getBoundingClientRect()
+    const c = chip.getBoundingClientRect()
+    let delta = 0
+    if (c.left < r.left + pad) delta = c.left - r.left - pad
+    else if (c.right > r.right - pad) delta = c.right - r.right + pad
+    if (delta) row.scrollBy?.({ left: delta, behavior: 'smooth' })
+  }, [activeGenre])
+
   if (genres.length === 0) return null
 
   return (
-    <div className="hp-genre-chips" role="group" aria-label="Lọc theo thể loại" style={{ marginBottom: 'var(--space-5, 24px)' }}>
+    <div ref={rowRef} className="hp-genre-chips hp-stagger" role="group" aria-label="Lọc theo thể loại" style={{ marginBottom: 'var(--space-5, 24px)' }}>
       <button
         type="button"
         className={`hp-genre-chip${!activeGenre ? ' active' : ''}`}

@@ -80,11 +80,20 @@ export function initReveal({ doc = globalThis.document, win = globalThis.window 
     root.querySelectorAll?.(REVEAL_SELECTOR).forEach((el) => io.observe(el))
   }
 
+  // Phần tử bị tháo khỏi DOM trước khi kịp cuộn tới → unobserve để
+  // IntersectionObserver không giữ cây DOM đã tách (rò bộ nhớ nhẹ).
+  const drop = (root) => {
+    if (!root || root.nodeType !== 1 || root.isConnected) return
+    if (root.matches?.('.hd-reveal')) io.unobserve(root)
+    root.querySelectorAll?.('.hd-reveal').forEach((el) => io.unobserve(el))
+  }
+
   scan(doc.body)
   const mo = new MO((mutations) => {
-    for (const m of mutations) {
-      m.addedNodes.forEach(scan)
-    }
+    // Xử lý gỡ trước, thêm sau: node bị React di chuyển (gỡ + chèn lại) vẫn
+    // được theo dõi vì isConnected = true lúc callback chạy.
+    for (const m of mutations) m.removedNodes.forEach(drop)
+    for (const m of mutations) m.addedNodes.forEach(scan)
   })
   mo.observe(doc.body, { childList: true, subtree: true })
 

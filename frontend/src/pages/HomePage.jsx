@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import api from '../api'
 import { extractNovels } from '../utils/novelsApi'
+import { prefersReducedMotion } from '../utils/motion'
+import '../styles/home.css'
 
 // ── Truyentrung.com UI Components ──
 import SearchSection from './homepage/SearchSection'
@@ -17,6 +20,28 @@ import AllNovelsSection from './homepage/AllNovelsSection'
 import RecentCommentsSection from './homepage/RecentCommentsSection'
 import StatsSection from './homepage/StatsSection'
 
+// Breakpoint 2 cột (khớp .hp-portal-layout trong index.css).
+const DESKTOP_MQ = '(min-width: 1024px)'
+
+function getDesktopMql() {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia(DESKTOP_MQ)
+    : null
+}
+function subscribeDesktop(onChange) {
+  const mql = getDesktopMql()
+  if (!mql) return () => {}
+  if (mql.addEventListener) {
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
+  }
+  mql.addListener?.(onChange) // Safari < 14
+  return () => mql.removeListener?.(onChange)
+}
+function getIsDesktop() {
+  return getDesktopMql()?.matches ?? true
+}
+
 /**
  * HomePage – Orchestrator trang chủ HacDaoTruyen.
  * Thứ tự ưu tiên thị giác (anchor chính lên đầu, phần cá nhân/phụ xuống
@@ -26,6 +51,10 @@ import StatsSection from './homepage/StatsSection'
  *   3. [Cột chính] Recently Updated Table → GenreChips → All Novels Tabbed List
  *   4. [Sidebar] Recently Read → Multi-Ranking Widgets → Khung thông báo tĩnh
  *      → Bình luận mới nhất → Thống kê hệ thống
+ * Mobile/tablet (<1024px, 1 cột): Hero → Vừa đọc → Chương mới lên → Truy Thư
+ *   → Mới cập nhật → BXH → Thể loại + Tất cả truyện → BXH nguồn → Bình luận
+ *   → Thông báo (thu gọn) → Thống kê. Chọn bố cục bằng matchMedia để thứ tự
+ *   DOM khớp thứ tự hiển thị (CSS order làm lệch thứ tự Tab/đọc màn hình).
  *
  * KHÔNG còn tải cả catalog ở đây (trước đây fetchAllNovels kéo tới hàng chục
  * nghìn truyện chỉ để các section con tự lọc/sort trong RAM — nguyên nhân
@@ -71,14 +100,63 @@ export default function HomePage() {
 
   const isSearching = searchQuery.trim().length > 0
 
+  // Nút Tìm kiếm ở header mobile điều hướng về '/' kèm state.focusSearch →
+  // focus + cuộn tới ô tìm kiếm, rồi xoá state (replace) để bấm Back quay lại
+  // trang chủ không tự focus lần nữa.
+  const location = useLocation()
+  const navigate = useNavigate()
+  const searchInputRef = useRef(null)
+  useEffect(() => {
+    if (!location.state?.focusSearch) return
+    const input = searchInputRef.current
+    if (input) {
+      input.focus({ preventScroll: true })
+      // Cuộn khối .hp-search-wrap (có scroll-margin-top = chiều cao header sticky).
+      const target = input.closest('.hp-search-wrap') || input
+      target.scrollIntoView({ block: 'start', behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
+    }
+    navigate(`${location.pathname}${location.search}${location.hash}`, { replace: true, state: null })
+  }, [location, navigate])
+
+  const isDesktop = useSyncExternalStore(subscribeDesktop, getIsDesktop, () => true)
+
+  // Mỗi khối bọc trong .hp-slot.hd-reveal: hiện dần khi cuộn tới. --i chỉ dùng
+  // cho vài khối đầu (cùng lúc trong màn hình đầu) để so le nhẹ.
+  // .hp-slot:empty bị ẩn (home.css) → section trả null không để lại khoảng trống.
+  const slot = (key, node, i = 0) => (
+    <div key={key} className={`hp-slot hp-slot--${key} hd-reveal`} style={i ? { '--i': i } : undefined}>
+      {node}
+    </div>
+  )
+  const recent = slot('recent', <RecentlyReadSection />, 1)
+  const latest = slot('latest', <LatestChaptersWidget />, 2)
+  const notice = slot('notice', <TruyThuNoticeSection />, 1)
+  const updates = slot('updates', <UpdatesSection />)
+  const external = slot('external', <ExternalRankingsSection />)
+  const genresAndAll = slot('all', (
+    <>
+      {/* Chip lọc thể loại — đặt sát trên All Novels vì đây là nơi nó
+          thực sự lọc, thay vì đứng tách biệt ở đầu trang. */}
+      <GenreChips activeGenre={activeGenre} onSelect={setActiveGenre} />
+      {/* All Novels Tabbed List: Tất cả truyện dạng Tab */}
+      <AllNovelsSection activeGenre={activeGenre} />
+    </>
+  ))
+  const rankings = slot('rankings', <TruyenTrungRankings />)
+  const board = slot('board', <TruyenTrungChatboxWidget defaultOpen={isDesktop} />)
+  const comments = slot('comments', <RecentCommentsSection />)
+  const stats = slot('stats', <StatsSection />)
+
   return (
-    <div className="container animate-fade-in" style={{ paddingTop: '1rem' }}>
+    <div className="container animate-fade-in hp-home" style={{ paddingTop: '1rem' }}>
       {/* 🔍 Search Bar – luôn hiển thị ở trên cùng */}
       <SearchSection
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         searchResults={searchResults}
         searchLoading={searchLoading}
+        inputRef={searchInputRef}
+        placeholder={isDesktop ? undefined : 'Tìm truyện, tác giả, EPUB…'}
       />
 
       {/* Các section chính – ẩn khi đang tìm kiếm */}
@@ -87,50 +165,59 @@ export default function HomePage() {
           {/* 1. Anchor chính above-the-fold: hero "Xem Nhiều Nhất" ngay sau
               thanh tìm kiếm — trước đây bị Thông báo/GenreChips/Recently Read
               che mất phía trên, không có điểm nhấn thị giác rõ ràng khi vào trang. */}
-          <MonthlyPopularSection />
+          {slot('hero', <MonthlyPopularSection />)}
 
-          {/* Top Notice Bar: Khung Truy Thư Lệnh & Thông Báo Tìm Truyện */}
-          <TruyThuNoticeSection />
+          {isDesktop ? (
+            <>
+              {/* Top Notice Bar: Khung Truy Thư Lệnh & Thông Báo Tìm Truyện */}
+              {notice}
 
-          {/* Bố cục 2 Cột Portal chuẩn Truyentrung.com */}
-          <div className="hp-portal-layout" style={{ marginTop: 'var(--space-5, 24px)' }}>
-            {/* ── Cột Trái: Main Content (68%) ── */}
-            <div className="hp-main-col">
-              {/* Recently Updated Table: Bảng Mới Cập Nhật dạng Table chuẩn 5 cột */}
-              <UpdatesSection />
-              <ExternalRankingsSection />
+              {/* Bố cục 2 Cột Portal chuẩn Truyentrung.com */}
+              <div className="hp-portal-layout" style={{ marginTop: 'var(--space-5, 24px)' }}>
+                {/* ── Cột Trái: Main Content ── */}
+                <div className="hp-main-col">
+                  {/* Recently Updated Table: Bảng Mới Cập Nhật */}
+                  {updates}
+                  {external}
+                  {genresAndAll}
+                </div>
 
-              {/* Chip lọc thể loại — đặt sát trên All Novels vì đây là nơi nó
-                  thực sự lọc, thay vì đứng tách biệt ở đầu trang. */}
-              <GenreChips activeGenre={activeGenre} onSelect={setActiveGenre} />
-
-              {/* All Novels Tabbed List: Tất cả truyện dạng Tab */}
-              <AllNovelsSection activeGenre={activeGenre} />
+                {/* ── Cột Phải: Sidebar Widgets ── */}
+                <div className="hp-sidebar-col">
+                  {/* Vừa đọc gần đây — nội dung cá nhân, hợp với sidebar hơn là
+                      chiếm full-width ngay đầu trang cho mọi khách vãng lai. */}
+                  {recent}
+                  {/* Multi-Ranking Widgets: 5 BXH */}
+                  {rankings}
+                  {/* Chương mới lên — dữ liệu sống từ /api/updates */}
+                  {latest}
+                  {/* Khung thông báo tĩnh (KHÔNG phải chat realtime) */}
+                  {board}
+                  {/* Thảo luận / Bình luận mới nhất */}
+                  {comments}
+                  {/* Thống kê hệ thống */}
+                  {stats}
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Mobile/tablet (<1024px): 1 cột, render theo đúng thứ tự hiển thị
+               (không dùng CSS order → thứ tự Tab/đọc màn hình khớp thị giác).
+               Nội dung "của tôi" + chương mới lên ngay sau hero; widget phụ
+               (thông báo tĩnh, thống kê) xuống cuối và thu gọn. */
+            <div className="hp-mobile-stack">
+              {recent}
+              {latest}
+              {notice}
+              {updates}
+              {rankings}
+              {genresAndAll}
+              {external}
+              {comments}
+              {board}
+              {stats}
             </div>
-
-            {/* ── Cột Phải: Sidebar Widgets (32%) ── */}
-            <div className="hp-sidebar-col">
-              {/* Vừa đọc gần đây — nội dung cá nhân, hợp với sidebar hơn là
-                  chiếm full-width ngay đầu trang cho mọi khách vãng lai. */}
-              <RecentlyReadSection />
-
-              {/* Multi-Ranking Widgets: 5 BXH Tổng Hợp/Nhiều Chương/Lượt Đọc/Sách Mới/Đánh Giá */}
-              <TruyenTrungRankings />
-
-              {/* Chương mới lên — dữ liệu sống từ /api/updates (thay thông báo tĩnh
-                  announcements.json cũ chỉ đổi sau mỗi lần deploy) */}
-              <LatestChaptersWidget />
-
-              {/* Khung thông báo tĩnh (KHÔNG phải chat realtime) */}
-              <TruyenTrungChatboxWidget />
-
-              {/* Thảo luận / Bình luận mới nhất */}
-              <RecentCommentsSection />
-
-              {/* Thống kê hệ thống */}
-              <StatsSection />
-            </div>
-          </div>
+          )}
         </>
       )}
     </div>

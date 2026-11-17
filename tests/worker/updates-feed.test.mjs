@@ -82,6 +82,16 @@ test('updates: cùng truyện khác ngày (giờ VN) tách thành 2 nhóm', asyn
   assert.deepEqual(body.summary, { novels_updated: 1, new_chapters: 2 });
 });
 
+test('updates: chương số 0 (lời tác giả) không làm truyện cũ bị gắn nhãn "Truyện mới"', async t => {
+  const { mf, db, ch } = await setup(t);
+  await db.batch([ch('alpha', 0, '-2 hours'), ch('alpha', 41, '-1 hours')]);
+  const body = await (await get(mf)).json();
+  assert.equal(body.items.length, 1);
+  assert.equal(body.items[0].from_chapter, 41);
+  assert.equal(body.items[0].is_new_novel, false);
+  assert.equal(body.items[0].count, 2);
+});
+
 test('updates: route chỉ nhận GET, có header cache công khai', async t => {
   const { mf } = await setup(t);
   const res = await get(mf);

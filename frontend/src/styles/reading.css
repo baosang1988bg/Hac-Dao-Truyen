@@ -57,12 +57,14 @@
 .hd-error-block__desc { opacity: 0.75; font-size: 0.9rem; max-width: 34rem; line-height: 1.6; }
 .hd-error-block__actions { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
 
-/* ── Trạng thái disabled / focus cho nút điều hướng Reader ──────────────── */
+/* ── Trạng thái disabled / focus cho nút điều hướng Reader ──────────────────
+   Style nút đã chuyển từ inline sang class (novel-reader.css) → specificity
+   (0,2,1) ở đây đủ thắng, không cần !important. */
 .reader-nav button:disabled,
-.reader-nav__chapter-button:disabled {
-  opacity: 0.45 !important;
+.reader-nav .reader-nav__chapter-button:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .reader-root a:focus-visible,
 .reader-root button:focus-visible,

@@ -27,7 +27,7 @@ export default function MonthlyPopularSection() {
     return (
       <section className="home-section" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
         <SectionHeader icon={<Flame size={16} style={{ color: '#f59e0b' }} />} title={SECTION_TITLE} />
-        <div className="glass-panel" style={{ height: '212px', borderRadius: '16px' }} role="status" aria-label="Đang tải" />
+        <div className="hd-skel hp-hero-skel" role="status" aria-label="Đang tải" />
       </section>
     )
   }
@@ -46,63 +46,43 @@ export default function MonthlyPopularSection() {
         title={SECTION_TITLE}
       />
 
-      <div className="glass-panel" style={{
-        padding: 'var(--space-4, 16px)',
-        borderRadius: '16px',
-        display: 'flex',
-        gap: 'var(--space-4, 16px)',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        border: '1px solid rgba(245, 158, 11, 0.25)',
-        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%)'
-      }}>
-        <div style={{ width: '120px', aspectRatio: '2 / 3', flexShrink: 0, borderRadius: '10px', overflow: 'hidden', boxShadow: '0 8px 20px rgba(0,0,0,0.4)' }}>
+      {/* Style hero chuyển sang home.css (.hp-hero*) để chỉnh bố cục riêng cho
+          mobile (bìa nhỏ bên trái, mô tả + nút xuống dưới) và có hover/press. */}
+      <div className="glass-panel hp-hero hp-enter">
+        <Link to={`/novel/${novel.slug}`} className="hp-hero__cover" tabIndex={-1} aria-hidden="true">
           <NovelCover novel={novel} size="lg" priority />
-        </div>
+        </Link>
 
-        <div style={{ flex: '1 1 240px', minWidth: 0 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1, 4px)', fontSize: 'var(--font-xs, 0.75rem)', color: '#f59e0b', fontWeight: 700, textTransform: 'uppercase', marginBottom: 'var(--space-1, 4px)' }}>
+        <div className="hp-hero__body">
+          <div className="hp-hero__kicker">
             <Flame size={12} aria-hidden="true" /> Hạng 1 · Tổng lượt xem
           </div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 'var(--space-2, 8px)', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            <Link to={`/novel/${novel.slug}`} style={{ color: 'inherit', textDecoration: 'none', overflowWrap: 'anywhere' }}>
+          <h2 className="hp-hero__title">
+            <Link to={`/novel/${novel.slug}`}>
               {formattedTitle}
             </Link>
           </h2>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3, 12px)', flexWrap: 'wrap', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 'var(--space-3, 12px)' }}>
-            {author && <span>Tác giả: <strong style={{ color: 'var(--text-main)' }}>{author}</strong></span>}
-            {genre && <span style={{ padding: '2px 8px', borderRadius: '6px', background: 'rgba(201,147,46,0.15)', color: 'var(--accent)' }}>{genre}</span>}
+          <div className="hp-hero__meta">
+            {author && <span>Tác giả: <strong>{author}</strong></span>}
+            {genre && <span className="hp-hero__genre">{genre}</span>}
           </div>
+        </div>
 
-          {synopsis && (
-          <p style={{
-            fontSize: '0.84rem',
-            color: 'var(--text-muted)',
-            lineHeight: 1.5,
-            marginBottom: '1rem',
-            display: '-webkit-box',
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden'
-          }}>
-            {synopsis}
-          </p>
-          )}
+        {synopsis && <p className="hp-hero__synopsis">{synopsis}</p>}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2, 8px)', flexWrap: 'wrap' }}>
-            <Link to={`/novel/${novel.slug}`} className="btn btn-primary hp-touch-target" style={{ padding: 'var(--space-2, 8px) var(--space-4, 16px)', fontSize: '0.85rem' }}>
-              <Play size={15} /> Đọc Ngay
-            </Link>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <BookOpen size={13} /> {fmtNumber(chapCount)} chương
+        <div className="hp-hero__actions">
+          <Link to={`/novel/${novel.slug}`} className="btn btn-primary hp-touch-target hp-hero__cta">
+            <Play size={15} aria-hidden="true" /> Đọc Ngay
+          </Link>
+          <span className="hp-hero__stat">
+            <BookOpen size={13} aria-hidden="true" /> {fmtNumber(chapCount)} chương
+          </span>
+          {(novel.views || 0) > 0 && (
+            <span className="hp-hero__stat">
+              <Eye size={13} aria-hidden="true" /> {fmtNumber(novel.views)} lượt xem
             </span>
-            {(novel.views || 0) > 0 && (
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <Eye size={13} /> {fmtNumber(novel.views)} lượt xem
-              </span>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </section>

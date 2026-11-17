@@ -1,13 +1,15 @@
 import PropTypes from 'prop-types'
 import { useEffect, useState, useCallback, useRef } from 'react';
 
-import { Search, BookMarked, Star, Eye, BookOpen, SlidersHorizontal, X, Clock, AlignLeft } from 'lucide-react';
+import { Search, SearchX, BookMarked, Star, Eye, BookOpen, SlidersHorizontal, X, Clock, AlignLeft } from 'lucide-react';
 import api from '../api'
 import { EpubCard } from '../components/EpubCard'
 import { fmtNumber } from '../utils/format';
 import { extractNovels } from '../utils/novelsApi'
 import { cachedGet, peekCache } from '../utils/apiCache'
 import { normalizeGenreList, GENRES_URL, GENRES_TTL } from '../utils/genreLabels'
+import { withViewTransition } from '../utils/motion'
+import '../styles/library-epub.css'
 
 const LIMIT = 24
 
@@ -83,50 +85,49 @@ export default function EpubCatalogPage() {
 
   const loadMore = () => { if (page < pages && !loading) fetchNovels(page + 1) }
 
-  const resetFilters = () => {
+  // Đổi bộ lọc/sắp xếp bọc trong View Transition (chip đổi trạng thái mượt);
+  // trình duyệt không hỗ trợ hoặc giảm chuyển động → cập nhật ngay.
+  const applyFilter = (update) => { withViewTransition(update) }
+
+  const resetFilters = () => applyFilter(() => {
     setQ(''); setSort('updated_at'); setGenre(''); setStatus(''); setHasEpub(false)
-  }
+  })
   const hasActiveFilters = q || genre || status || hasEpub || sort !== 'updated_at'
 
   return (
-    <div className="container animate-fade-in epub-catalog" style={{ paddingBottom: '3rem' }}>
+    <div className="container animate-fade-in epub-catalog">
 
       {/* ── Header ── */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 className="page-title" style={{ fontSize: '1.6rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <BookMarked size={24} style={{ color: 'var(--accent)' }} /> Kho EPUB
+      <div className="hd-page-head">
+        <h1 className="page-title">
+          <BookMarked size={24} style={{ color: 'var(--accent)' }} aria-hidden="true" /> Kho EPUB
         </h1>
-        <p className="page-subtitle" style={{ fontSize: '0.9rem' }}>
+        <p className="page-subtitle" aria-live="polite">
           {total > 0 ? `${fmtNumber(total)} truyện` : 'Đang tải...'} — đọc trực tiếp trên trình duyệt, không cần tải về.
         </p>
       </div>
 
-      {/* ── Search + Filter bar ── */}
+      {/* ── Search + Filter bar (sticky dưới header guest) ── */}
       <div className="epub-catalog__toolbar">
-        <div className="epub-catalog__search-row">
+        <div className="epub-catalog__search-row" role="search">
           {/* Search */}
           <div className="epub-catalog__search-wrap">
-            <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+            <Search size={16} className="epub-catalog__search-icon" aria-hidden="true" />
             <input
               id="epub-search"
               type="text"
               inputMode="search"
               enterKeyHint="search"
+              autoComplete="off"
               aria-label="Tìm tên truyện hoặc tác giả"
               className="epub-catalog__search-input"
               placeholder="Tìm tên truyện, tác giả..."
               value={q}
               onChange={e => setQ(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 48px 10px 36px',
-                background: 'var(--glass-bg)', border: '1px solid var(--border)',
-                borderRadius: '10px', color: 'var(--text-main)',
-                boxSizing: 'border-box',
-              }}
             />
             {q && (
               <button type="button" className="epub-catalog__clear" onClick={() => setQ('')} aria-label="Xóa tìm kiếm">
-                <X size={14} />
+                <X size={16} />
               </button>
             )}
           </div>
@@ -136,32 +137,23 @@ export default function EpubCatalogPage() {
             id="epub-filter-toggle"
             type="button"
             className="epub-catalog__filter-toggle"
-            onClick={() => setShowFilter(s => !s)}
+            onClick={() => applyFilter(() => setShowFilter(s => !s))}
             aria-expanded={showFilter}
+            aria-controls="epub-filter-panel"
             aria-label={hasActiveFilters ? 'Lọc (đang áp dụng bộ lọc)' : 'Lọc'}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px',
-              background: showFilter ? 'rgba(201,147,46,0.2)' : 'var(--glass-bg)',
-              border: `1px solid ${showFilter ? 'var(--accent)' : 'var(--border)'}`,
-              borderRadius: '10px', color: 'var(--text-main)', cursor: 'pointer',
-              fontSize: '0.85rem', whiteSpace: 'nowrap', transition: 'all 0.15s',
-              position: 'relative',
-            }}
           >
-            <SlidersHorizontal size={15} aria-hidden="true" /> Lọc
-            {hasActiveFilters && (
-              <span aria-hidden="true" style={{ position: 'absolute', top: '4px', right: '4px', width: '7px', height: '7px', background: 'var(--accent)', borderRadius: '50%' }} />
-            )}
+            <SlidersHorizontal size={16} aria-hidden="true" /> Lọc
+            {hasActiveFilters && <span aria-hidden="true" className="epub-catalog__filter-dot" />}
           </button>
         </div>
 
         {/* Expanded filter panel */}
         {showFilter && (
-          <div className="glass-panel epub-catalog__filter-panel">
+          <div id="epub-filter-panel" className="glass-panel epub-catalog__filter-panel">
             {/* Sort */}
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sắp xếp</div>
-              <div className="epub-catalog__filter-options">
+              <div className="epub-catalog__filter-label">Sắp xếp</div>
+              <div className="epub-catalog__filter-options epub-catalog__filter-options--scroll">
                 {SORT_OPTIONS.map(opt => {
                   const Icon = opt.icon
                   return (
@@ -170,17 +162,9 @@ export default function EpubCatalogPage() {
                       key={opt.value}
                       className="epub-filter-chip"
                       aria-pressed={sort === opt.value}
-                      onClick={() => setSort(opt.value)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '5px',
-                        padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
-                        background: sort === opt.value ? 'rgba(201,147,46,0.2)' : 'var(--glass-bg)',
-                        border: `1px solid ${sort === opt.value ? 'var(--accent)' : 'var(--border)'}`,
-                        color: sort === opt.value ? 'var(--accent)' : 'var(--text-main)',
-                        fontSize: '0.82rem', transition: 'all 0.15s',
-                      }}
+                      onClick={() => applyFilter(() => setSort(opt.value))}
                     >
-                      <Icon size={13} /> {opt.label}
+                      <Icon size={14} aria-hidden="true" /> {opt.label}
                     </button>
                   )
                 })}
@@ -190,48 +174,47 @@ export default function EpubCatalogPage() {
             {/* Genre */}
             {genres.length > 0 && (
               <div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thể loại</div>
-                <div className="epub-catalog__filter-options">
-                  <FilterChip label="Tất cả" active={!genre} onClick={() => setGenre('')} />
+                <div className="epub-catalog__filter-label">Thể loại</div>
+                <div className="epub-catalog__filter-options epub-catalog__filter-options--scroll">
+                  <FilterChip label="Tất cả" active={!genre} onClick={() => applyFilter(() => setGenre(''))} />
                   {genres.map(g => (
-                    <FilterChip key={g} label={g} active={genre === g} onClick={() => setGenre(g === genre ? '' : g)} />
+                    <FilterChip key={g} label={g} active={genre === g} onClick={() => applyFilter(() => setGenre(g === genre ? '' : g))} />
                   ))}
                 </div>
               </div>
             )}
 
             {/* Status + Has EPUB */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+            <div className="epub-catalog__filter-row">
               <div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Trạng thái</div>
+                <div className="epub-catalog__filter-label">Trạng thái</div>
                 <div className="epub-catalog__filter-options">
-                  <FilterChip label="Tất cả" active={!status} onClick={() => setStatus('')} />
-                  <FilterChip label="Đang dịch" active={status === 'ongoing'} onClick={() => setStatus(status === 'ongoing' ? '' : 'ongoing')} />
-                  <FilterChip label="Hoàn thành" active={status === 'completed'} onClick={() => setStatus(status === 'completed' ? '' : 'completed')} />
+                  <FilterChip label="Tất cả" active={!status} onClick={() => applyFilter(() => setStatus(''))} />
+                  <FilterChip label="Đang dịch" active={status === 'ongoing'} onClick={() => applyFilter(() => setStatus(status === 'ongoing' ? '' : 'ongoing'))} />
+                  <FilterChip label="Hoàn thành" active={status === 'completed'} onClick={() => applyFilter(() => setStatus(status === 'completed' ? '' : 'completed'))} />
                 </div>
               </div>
-              <label className="epub-catalog__checkbox" style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginTop: '12px' }}>
+              <label className="epub-catalog__checkbox">
                 <input
                   type="checkbox"
                   checked={hasEpub}
-                  onChange={e => setHasEpub(e.target.checked)}
-                  style={{ width: '16px', height: '16px', accentColor: 'var(--accent)' }}
+                  onChange={e => { const v = e.target.checked; applyFilter(() => setHasEpub(v)) }}
                 />
                 Chỉ hiện truyện có EPUB
               </label>
             </div>
 
             {hasActiveFilters && (
-              <button type="button" className="epub-filter-chip" onClick={resetFilters} style={{ alignSelf: 'flex-start', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                <X size={13} /> Xóa bộ lọc
+              <button type="button" className="epub-filter-chip epub-filter-chip--ghost" onClick={resetFilters}>
+                <X size={14} aria-hidden="true" /> Xóa bộ lọc
               </button>
             )}
           </div>
         )}
       </div>
 
-      {/* ── Quick sort chips (luôn hiện) ── */}
-      <div className="epub-catalog__quick-sort">
+      {/* ── Quick sort chips (luôn hiện, cuộn ngang trên mobile) ── */}
+      <div className="epub-catalog__quick-sort" role="group" aria-label="Sắp xếp nhanh">
         {SORT_OPTIONS.slice(0, 4).map(opt => {
           const Icon = opt.icon
           return (
@@ -240,17 +223,9 @@ export default function EpubCatalogPage() {
               key={opt.value}
               className="epub-filter-chip"
               aria-pressed={sort === opt.value}
-              onClick={() => setSort(opt.value)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '5px',
-                padding: '5px 12px', borderRadius: '20px', cursor: 'pointer', whiteSpace: 'nowrap',
-                background: sort === opt.value ? 'var(--accent-gradient)' : 'var(--glass-bg)',
-                border: `1px solid ${sort === opt.value ? 'transparent' : 'var(--border)'}`,
-                color: sort === opt.value ? '#fff' : 'var(--text-muted)',
-                fontSize: '0.8rem', transition: 'all 0.2s',
-              }}
+              onClick={() => applyFilter(() => setSort(opt.value))}
             >
-              <Icon size={12} /> {opt.label}
+              <Icon size={14} aria-hidden="true" /> {opt.label}
             </button>
           )
         })}
@@ -258,34 +233,42 @@ export default function EpubCatalogPage() {
 
       {/* ── Grid ── */}
       {loading && novels.length === 0 ? (
-        <div className="epub-catalog__grid">
+        <div className="epub-catalog__grid hd-stagger" role="status" aria-label="Đang tải danh sách truyện">
           {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : novels.length === 0 ? (
-        <div className="glass-panel" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📭</div>
-          <div style={{ fontWeight: 600 }}>Không tìm thấy truyện nào</div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.5rem' }}>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+        <div className="glass-panel hd-empty">
+          <div className="hd-empty__icon"><SearchX size={28} aria-hidden="true" /></div>
+          <div className="hd-empty__title">Không tìm thấy truyện nào</div>
+          <p className="hd-empty__text">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.</p>
           {hasActiveFilters && (
-            <button onClick={resetFilters} className="btn btn-secondary" style={{ marginTop: '1rem' }}>
-              <X size={14} /> Xóa bộ lọc
-            </button>
+            <div className="hd-empty__actions">
+              <button type="button" onClick={resetFilters} className="btn btn-secondary">
+                <X size={16} aria-hidden="true" /> Xóa bộ lọc
+              </button>
+            </div>
           )}
         </div>
       ) : (
         <>
           <div className="epub-catalog__grid">
-            {novels.map(n => <EpubCard key={n.slug} novel={n} />)}
+            {novels.map((n, i) => (
+              // .hd-reveal ở lớp bọc (không đặt lên .epub-card) để hiệu ứng
+              // hover/nhấn của thẻ không bị trễ theo transition-delay so le.
+              <div key={n.slug} className="epub-catalog__cell hd-reveal" style={{ '--i': i % 6 }}>
+                <EpubCard novel={n} />
+              </div>
+            ))}
           </div>
 
           {/* Load more */}
           {page < pages && (
-            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <div className="epub-catalog__more">
               <button
+                type="button"
                 onClick={loadMore}
                 disabled={loading}
                 className="btn btn-secondary epub-catalog__load-more"
-                style={{ minWidth: '200px' }}
               >
                 {loading ? 'Đang tải...' : `Tải thêm (${fmtNumber(total - novels.length)} còn lại)`}
               </button>
@@ -306,13 +289,6 @@ function FilterChip({ label, active, onClick }) {
       className="epub-filter-chip"
       aria-pressed={Boolean(active)}
       onClick={onClick}
-      style={{
-        padding: '5px 12px', borderRadius: '20px', cursor: 'pointer', fontSize: '0.8rem',
-        background: active ? 'rgba(201,147,46,0.2)' : 'var(--glass-bg)',
-        border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
-        color: active ? 'var(--accent)' : 'var(--text-muted)',
-        transition: 'all 0.15s', whiteSpace: 'nowrap',
-      }}
     >
       {label}
     </button>
@@ -327,14 +303,13 @@ FilterChip.propTypes = {
 
 function SkeletonCard() {
   return (
-    <div style={{ borderRadius: '14px', overflow: 'hidden', background: 'var(--glass-bg)', border: '1px solid var(--border)' }}>
-      <div style={{ aspectRatio: '2/3', background: 'rgba(255,255,255,0.04)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-      <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div style={{ height: '12px', background: 'rgba(255,255,255,0.06)', borderRadius: '6px', animation: 'pulse 1.5s ease-in-out infinite' }} />
-        <div style={{ height: '10px', width: '60%', background: 'rgba(255,255,255,0.04)', borderRadius: '6px', animation: 'pulse 1.5s ease-in-out infinite' }} />
-        <div style={{ height: '32px', background: 'rgba(201,147,46,0.1)', borderRadius: '8px', animation: 'pulse 1.5s ease-in-out infinite' }} />
+    <div className="epub-skel-card" aria-hidden="true">
+      <span className="hd-skel epub-skel-card__cover" />
+      <div className="epub-skel-card__body">
+        <span className="hd-skel epub-skel-card__line" />
+        <span className="hd-skel epub-skel-card__line epub-skel-card__line--short" />
+        <span className="hd-skel epub-skel-card__btn" />
       </div>
-      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
     </div>
   )
 }

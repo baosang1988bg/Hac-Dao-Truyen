@@ -16,3 +16,24 @@
 .external-rankings-list a { display: inline-flex; align-items: center; min-height: 24px; max-width: 100%; color: inherit; font-weight: 600; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .external-rankings-list a:hover { color: var(--accent); text-decoration: underline; }
 .external-rankings-list small { display: block; color: var(--text-secondary); margin-top: var(--space-1, 4px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Mobile (<1024px): bỏ khung cuộn lồng 620px, chỉ hiện 5 mục đầu + nút mở ── */
+.external-rankings-more { display: none; }
+.external-rankings-sources button { transition: color var(--dur-2, 220ms) var(--ease-out, ease), border-color var(--dur-2, 220ms) var(--ease-out, ease), transform var(--dur-1, 120ms) var(--ease-out, ease); }
+@media (max-width: 1023.98px) {
+  .external-rankings-sources { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; scroll-snap-type: x proximity; margin-inline: calc(-1 * var(--space-1, 4px)); padding: 0 var(--space-1, 4px) var(--space-1, 4px); }
+  .external-rankings-sources::-webkit-scrollbar { display: none; }
+  .external-rankings-sources button { flex: 0 0 auto; scroll-snap-align: start; white-space: nowrap; }
+  .external-rankings-filter select { flex: 1 1 100%; }
+  .external-rankings-list { max-height: none; overflow: visible; }
+  .external-rankings-list:not(.is-expanded) li:nth-child(n+6) { display: none; }
+  .external-rankings-list li:last-child { border-bottom: 0; }
+  .external-rankings-more {
+    display: flex; align-items: center; justify-content: center; gap: var(--space-1, 4px);
+    width: 100%; min-height: var(--tap-target-min, 44px); margin-top: var(--space-2, 8px);
+    font: inherit; font-size: .85rem; font-weight: 600; color: var(--accent);
+    background: rgba(201, 147, 46, 0.08); border: 1px solid rgba(201, 147, 46, 0.2); border-radius: 10px; cursor: pointer;
+  }
+  .external-rankings-more[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .external-rankings-more svg { transition: transform var(--dur-2, 220ms) var(--ease-out, ease); }
+}

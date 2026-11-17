@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { Key, BookOpen, AlertCircle, ArrowLeft } from 'lucide-react'
 import api from '../api'
+import '../styles/library-epub.css'
 
 /**
  * Trang đăng nhập quản trị (standalone).
@@ -36,83 +37,59 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login-container" style={{
-      minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'radial-gradient(circle at top right, #1e293b, #0f172a)',
-      padding: 'var(--space-4, 16px)'
-    }}>
-      <div className="glass-panel animate-fade-in" style={{
-        width: '100%', maxWidth: '400px', padding: 'clamp(1.5rem, 8vw, 2.5rem)', textAlign: 'center',
-        border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
-      }}>
-        <div style={{
-          background: 'var(--accent-gradient)', width: '60px', height: '60px',
-          borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 1.5rem', boxShadow: '0 0 20px rgba(201,147,46,0.4)'
-        }}>
+    <div className="login-container admin-login">
+      <div className="glass-panel admin-login__panel">
+        <div className="admin-login__logo">
           <BookOpen size={30} color="white" />
         </div>
 
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem', color: 'white' }}>
-          Hắc Đạo<span style={{ color: 'var(--accent)' }}>Truyện</span>
+        <h1 className="admin-login__title">
+          Hắc Đạo<span>Truyện</span>
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+        <p className="admin-login__sub">
           Khu vực dành cho quản trị viên
         </p>
 
-        <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ position: 'relative' }}>
-            <Key size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+        <div className="admin-login__form">
+          <div className="admin-login__field">
+            <Key size={18} aria-hidden="true" />
             <input
               type="password"
               placeholder="Mật khẩu Admin"
+              aria-label="Mật khẩu quản trị"
+              aria-invalid={Boolean(error)}
+              className={`admin-login__input${error ? ' has-error' : ''}`}
               value={password}
               onChange={e => { setPassword(e.target.value); if (error) setError('') }}
               onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
               autoComplete="current-password"
+              enterKeyHint="go"
               autoFocus
-              style={{
-                width: '100%', padding: '0.8rem 1rem 0.8rem 2.5rem', borderRadius: '10px',
-                background: 'rgba(0,0,0,0.2)',
-                border: error ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
-                color: 'white', outline: 'none', fontSize: '1rem', minHeight: '48px'
-              }}
             />
           </div>
 
           {error && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
-              color: '#fca5a5', fontSize: '0.82rem', fontWeight: 500,
-              padding: '0.6rem 0.8rem', borderRadius: '10px', textAlign: 'left'
-            }}>
-              <AlertCircle size={15} style={{ flexShrink: 0 }} />
+            <div className="admin-login__error" role="alert">
+              <AlertCircle size={15} />
               {error}
             </div>
           )}
 
           <button
+            type="button"
             onClick={handleAdminLogin}
             disabled={loading}
-            className="btn btn-primary"
-            style={{ width: '100%', padding: '0.8rem', justifyContent: 'center', minHeight: '44px', opacity: loading ? 0.7 : 1 }}
+            className="btn btn-primary admin-login__submit"
           >
             {loading ? 'Đang xác thực...' : 'Đăng nhập'}
           </button>
 
-          <Link
-            to="/"
-            style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-              color: 'var(--text-muted)', fontSize: '0.85rem', minHeight: '44px',
-            }}
-          >
+          <Link to="/" className="admin-login__back">
             <ArrowLeft size={15} /> Về trang chủ đọc truyện
           </Link>
         </div>
 
-        <div style={{ marginTop: '2rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.2)' }}>
+        <div className="admin-login__foot">
           Hệ thống dịch thuật Hắc Đạo Truyện v2.0
         </div>
       </div>

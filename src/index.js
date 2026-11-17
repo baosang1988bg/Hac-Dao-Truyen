@@ -1185,7 +1185,9 @@ async function getUpdatesFeed(env) {
       SELECT c.novel_slug,
              date(c.created_at, '+7 hours') AS day,
              COUNT(*) AS count,
-             MIN(c.chapter_number) AS from_chapter,
+             -- Bỏ chương số 0 (lời tác giả/ngoại truyện/Drive không rõ số)
+             -- khi tính chương đầu lô, để không gắn nhầm nhãn "Truyện mới".
+             MIN(CASE WHEN c.chapter_number > 0 THEN c.chapter_number END) AS from_chapter,
              MAX(c.chapter_number) AS to_chapter,
              MAX(c.created_at) AS last_at
       FROM chapters c
@@ -1211,8 +1213,10 @@ async function getUpdatesFeed(env) {
     latest_title: r.latest_title || '',
     // created_at là UTC dạng "YYYY-MM-DD HH:MM:SS" → ISO có hậu tố Z.
     last_at: typeof r.last_at === 'string' ? `${r.last_at.replace(' ', 'T')}Z` : null,
-    // Lô bắt đầu từ chương 1 = truyện vừa lên site (không suy diễn gì thêm).
-    is_new_novel: (Number(r.from_chapter) || 0) <= 1,
+    // Lô bắt đầu đúng từ chương 1 = truyện vừa lên site (không suy diễn gì thêm).
+    // Giới hạn đã biết: nếu bật ENABLE_DRIVE_CACHE_WRITES (mặc định tắt), chương
+    // cũ tự ghi cache từ Drive khi có người đọc cũng mang created_at mới.
+    is_new_novel: Number(r.from_chapter) === 1,
   }));
 
   const novelsUpdated = new Set(items.map(i => i.slug)).size;
@@ -2759,8 +2763,10 @@ async function adminTakedownRestore(request, env, slug, action) {
 
   // Purge best-effort edge cache chi tiết/mục lục (colo hiện tại). Nội dung
   // chương luôn kiểm tra published trước cache nên không cần purge từng chương.
-  const base = `${new URL(request.url).origin}/api/novels/${slug}`;
-  await purgeEdgeCache([base, `${base}/chapters`, `${base}/synopsis`]);
+  const origin = new URL(request.url).origin;
+  const base = `${origin}/api/novels/${slug}`;
+  // /api/updates cũng liệt kê truyện → purge để truyện vừa gỡ không còn trong feed.
+  await purgeEdgeCache([base, `${base}/chapters`, `${base}/synopsis`, `${origin}/api/updates`]);
 
   return jsonResponse({ status: 'success', published: Boolean(published) });
 }

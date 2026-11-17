@@ -31,9 +31,9 @@ export default function RecentCommentsSection() {
   if (!comments || comments.length === 0) return null
 
   return (
-    <section className="home-section" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
+    <section className="home-section hp-enter" style={{ marginBottom: 'var(--section-gap, 2.25rem)' }}>
       <SectionHeader icon={<MessageSquare size={15} />} title="Đang Thảo Luận" />
-      <div className="hp-toplist">
+      <div className="hp-toplist hp-stagger">
         {comments.map(c => (
           <Link
             key={c.id}

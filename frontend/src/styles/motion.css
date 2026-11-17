@@ -74,8 +74,11 @@
 }
 
 /* ── Xuất hiện so le cho danh sách con (grid card, hàng cuộn ngang) ── */
+/* fill "backwards" (không phải both): chỉ giữ trạng thái ẩn trong lúc chờ delay,
+   chạy xong thì trả transform về CSS gốc → hover/:active của card vẫn chạy và
+   không để lại containing block cho con position:fixed. */
 .hd-stagger > * {
-  animation: hd-fade-up var(--dur-3) var(--ease-out) both;
+  animation: hd-fade-up var(--dur-3) var(--ease-out) backwards;
 }
 .hd-stagger > *:nth-child(1) { animation-delay: 0ms; }
 .hd-stagger > *:nth-child(2) { animation-delay: calc(1 * var(--stagger-step)); }

@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types'
 import { useEffect, useMemo, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { Sparkles, RefreshCw, BookOpen, ChevronRight, Search, X } from 'lucide-react'
 import NovelCover from '../components/NovelCover'
@@ -40,7 +41,7 @@ export default function UpdatesPage() {
 
   // Mở trang = đã xem → tắt chấm đỏ ở tab "Mới".
   useEffect(() => {
-    if (items.length) markAllSeen()
+    if (items.length) markAllSeen(items)
   }, [items, markAllSeen])
 
   useEffect(() => {
@@ -59,7 +60,9 @@ export default function UpdatesPage() {
 
   const changeFilter = (id) => {
     if (id === filter) return
-    withViewTransition(() => setFilter(id))
+    // flushSync: DOM phải cập nhật NGAY trong callback để View Transitions chụp
+    // đúng trạng thái mới (không có thì hiệu ứng bị mất/nháy).
+    withViewTransition(() => flushSync(() => setFilter(id)))
   }
 
   const refresh = () => {

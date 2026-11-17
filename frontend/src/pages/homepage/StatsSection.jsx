@@ -27,7 +27,7 @@ export default function StatsSection() {
   }, [])
 
   if (!stats) {
-    return <div className="hp-stats" style={{ height: '76px' }} aria-hidden="true" />
+    return <div className="hp-stats hd-skel" style={{ height: '76px', borderRadius: '12px' }} aria-hidden="true" />
   }
 
   const hasNumber = v => v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v))
@@ -41,7 +41,7 @@ export default function StatsSection() {
   if (!items.length) return null
 
   return (
-    <dl className={`hp-stats${items.length === 4 ? ' hp-stats--4' : ''}`}>
+    <dl className={`hp-stats hp-stagger hp-enter${items.length === 4 ? ' hp-stats--4' : ''}`}>
       {items.map(({ value, label }) => (
         <div key={label} className="hp-stats__item">
           <dt className="hp-stats__label">{label}</dt>
