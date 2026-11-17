@@ -288,6 +288,6 @@ test('cấu hình deploy: file tĩnh không đi qua Worker và có Cache-Control
   assert.ok(!rules.some(p => p.startsWith('!')));
 
   const headers = await readFile(new URL('../../frontend/public/_headers', import.meta.url), 'utf8');
-  assert.match(headers, /\/assets\/\*\n\s+Cache-Control: public, max-age=31536000, immutable/);
-  assert.match(headers, /\/sw\.js\n\s+Cache-Control: no-cache/);
+  assert.match(headers, /\/assets\/\*\r?\n\s+Cache-Control: public, max-age=31536000, immutable/);
+  assert.match(headers, /\/sw\.js\r?\n\s+Cache-Control: no-cache/);
 });
