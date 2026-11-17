@@ -65,7 +65,7 @@ export default function SearchSection({
       {/* Kết quả tìm kiếm */}
       {/* Dưới 2 ký tự HomePage chưa gửi tìm kiếm → chưa hiện khung kết quả. */}
       {searchQuery.trim().length >= 2 && (
-        <section className="home-section hp-enter" style={{ marginBottom: '2rem' }}>
+        <section className="home-section hp-enter" style={{ marginBottom: '2rem' }} data-track-section="home_search_results">
           <h2 className="home-section__title">
             <Search size={18} style={{ color: 'var(--accent)' }} />
             {' '}Kết quả tìm kiếm ({searchResults ? searchResults.length : '...'})

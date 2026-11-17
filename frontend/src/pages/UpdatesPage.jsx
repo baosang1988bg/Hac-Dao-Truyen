@@ -177,7 +177,7 @@ export default function UpdatesPage() {
                 <span>{g.label}</span>
                 <span className="upd-day__meta">{fmtNumber(g.chapters)} chương</span>
               </h2>
-              <ol className="upd-list">
+              <ol className="upd-list" data-track-section="updates_feed">
                 {g.items.map((it, i) => (
                   <UpdateItem
                     key={`${it.slug}-${it.day}`}

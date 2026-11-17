@@ -1,6 +1,7 @@
 import { Component } from 'react'
 import PropTypes from 'prop-types'
 import { isChunkLoadError } from '../utils/lazyWithReload'
+import { trackEvent, pageTypeOf } from '../utils/analytics'
 
 /**
  * Lưới an toàn cuối cho toàn bộ <Routes>: lỗi render hoặc chunk lazy tải hỏng
@@ -26,6 +27,12 @@ export default class AppErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('[AppErrorBoundary]', error, info?.componentStack)
+    // GA4 recommended event `exception` — đếm trang trắng/lỗi render theo loại trang.
+    trackEvent('exception', {
+      description: String(error?.message || error).slice(0, 100),
+      fatal: true,
+      page_type: pageTypeOf(window.location.pathname),
+    })
   }
 
   handleReload = () => {

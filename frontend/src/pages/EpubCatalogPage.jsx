@@ -8,6 +8,7 @@ import { extractNovels } from '../utils/novelsApi'
 import { cachedGet, peekCache } from '../utils/apiCache'
 import { normalizeGenreList, GENRES_URL, GENRES_TTL } from '../utils/genreLabels'
 import { withViewTransition } from '../utils/motion'
+import { trackEvent, trackEventDebounced, trackSearch } from '../utils/analytics'
 import '../styles/library-epub.css'
 
 // 12 truyện mỗi lần tải: mỗi thẻ kéo thêm 1 ảnh bìa (đa số đi qua Worker
@@ -85,6 +86,18 @@ export default function EpubCatalogPage() {
       setPages(data?.pages ?? 1)
       setNovels(prev => (reset || pg === 1) ? list : [...prev, ...list])
       setPage(pg)
+      if (pg === 1) {
+        if (qEffective) trackSearch(qEffective, { location: 'epub_catalog', resultsCount: data?.total ?? list.length })
+        // Bộ lọc đang áp dụng (debounce: đổi liên tục chỉ gửi trạng thái cuối).
+        if (genre || status || hasEpub || sort !== 'updated_at') {
+          trackEventDebounced('epub_filter', 'filter_apply', {
+            filter_genre: genre || undefined, filter_status: status || undefined,
+            filter_has_epub: hasEpub, sort, results_count: data?.total ?? list.length,
+          })
+        }
+      } else {
+        trackEvent('load_more', { list_name: 'epub_catalog', page_number: pg })
+      }
     } catch { /* silent */ }
     finally { if (reqIdRef.current === myReq) setLoading(false) }
   }, [qEffective, sort, genre, status, hasEpub])
@@ -264,7 +277,7 @@ export default function EpubCatalogPage() {
         </div>
       ) : (
         <>
-          <div className="epub-catalog__grid">
+          <div className="epub-catalog__grid" data-track-section="epub_catalog">
             {novels.map((n, i) => (
               // .hd-reveal ở lớp bọc (không đặt lên .epub-card) để hiệu ứng
               // hover/nhấn của thẻ không bị trễ theo transition-delay so le.

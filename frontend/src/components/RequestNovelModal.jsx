@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { X, Send, Loader2, CheckCircle2, LogIn } from 'lucide-react'
 import userApi, { isLoggedIn } from '../userApi'
 import Modal from './ui/Modal'
+import { trackEvent } from '../utils/analytics'
 import '../styles/library-epub.css'
 
 /**
@@ -39,6 +40,10 @@ export default function RequestNovelModal({ onClose }) {
     setBusy(true)
     try {
       await userApi.post('/novel-requests', { url: url.trim(), note: note.trim() })
+      // Chỉ gửi tên miền nguồn (không gửi URL đầy đủ/ghi chú) → biết người đọc hay xin truyện từ đâu.
+      let sourceDomain
+      try { sourceDomain = new URL(url.trim()).hostname } catch { /* không phải URL */ }
+      trackEvent('novel_request_submit', { source_domain: sourceDomain, has_note: Boolean(note.trim()) })
       setDone(true)
     } catch (err) {
       setError(friendlyError(err))

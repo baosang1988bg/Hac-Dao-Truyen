@@ -19,6 +19,7 @@ import { runWhenIdle } from '../utils/idle'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import ScrollToTopButton from '../components/ui/ScrollToTopButton'
 import { withViewTransition } from '../utils/motion'
+import { trackEvent } from '../utils/analytics'
 import '../styles/reading.css'
 import '../styles/novel-reader.css'
 
@@ -181,9 +182,13 @@ function NovelPageContent({ slug }) {
 
       {/* ── Thanh hành động ──
           Mobile: nút chính full-width, các nút phụ chia đều 1 hàng (novel-reader.css). */}
-      <div className="novel-action-bar hd-reveal" ref={actionBarRef} style={{ '--i': 2 }}>
+      <div className="novel-action-bar hd-reveal" ref={actionBarRef} style={{ '--i': 2 }} data-track-section="novel_action_bar">
         {mainCta && (
-          <Link to={mainCta.to} className="btn btn-primary hd-press novel-action-bar__main">
+          <Link
+            to={mainCta.to}
+            className="btn btn-primary hd-press novel-action-bar__main"
+            data-track-action={lastRead ? 'continue_reading' : 'start_reading'}
+          >
             <MainIcon size={18} aria-hidden="true" /> <span>{mainCta.label}</span>
           </Link>
         )}
@@ -223,7 +228,7 @@ function NovelPageContent({ slug }) {
       {/* Thanh "Đọc tiếp" dính đáy — chỉ hiện trên mobile (CSS) khi thanh hành
           động đã cuộn khuất; nằm ngay trên bottom tab bar. */}
       {mainCta && (
-        <div className={`novel-sticky-cta${showStickyCta ? ' is-visible' : ''}`} aria-hidden={!showStickyCta}>
+        <div className={`novel-sticky-cta${showStickyCta ? ' is-visible' : ''}`} aria-hidden={!showStickyCta} data-track-section="novel_sticky_cta">
           <Link to={mainCta.to} className="btn btn-primary hd-press" tabIndex={showStickyCta ? undefined : -1}>
             <MainIcon size={18} aria-hidden="true" /> <span>{mainCta.label}</span>
           </Link>
@@ -305,6 +310,8 @@ function FollowButton({ slug }) {
 
   const toggle = async () => {
     if (!isLoggedIn()) {
+      // Phễu "muốn theo dõi nhưng chưa có tài khoản" → đo tỉ lệ chuyển sang đăng ký.
+      trackEvent('login_prompt', { feature: 'follow', novel_slug: slug })
       navigate('/account')
       return
     }
@@ -315,6 +322,7 @@ function FollowButton({ slug }) {
     try {
       if (next) await userApi.put(`/user/bookmarks/${slug}`)
       else await userApi.delete(`/user/bookmarks/${slug}`)
+      trackEvent(next ? 'novel_follow' : 'novel_unfollow', { novel_slug: slug, source: 'novel_page' })
     } catch (err) {
       setFollowing(!next) // hoàn tác
       if (err.response?.status === 401) navigate('/account')
@@ -413,7 +421,7 @@ function ChapterList({ slug, chapters, epubOnly }) {
   const remaining = filtered.length - shown.length
 
   return (
-    <div className="glass-panel chapter-list-panel hd-reveal" style={{ '--i': 3 }}>
+    <div className="glass-panel chapter-list-panel hd-reveal" style={{ '--i': 3 }} data-track-section="novel_chapter_list">
       {/* Toolbar */}
       <div className="chapter-list-toolbar">
         <div className="chapter-list-search">

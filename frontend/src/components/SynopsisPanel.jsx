@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types'
 import { useState, useCallback, useRef, useEffect } from 'react';
 import api from '../api'
+import { trackEvent } from '../utils/analytics'
 
 /**
  * SynopsisPanel — Hiển thị phần giới thiệu truyện (synopsis).
@@ -31,6 +32,9 @@ export default function SynopsisPanel({ slug, synopsis, hasMore = false, maxLine
       setExpanded(false)
       return
     }
+
+    // GA4: người đọc muốn đọc giới thiệu đầy đủ — tín hiệu "đang cân nhắc" truyện.
+    trackEvent('synopsis_expand', { novel_slug: slug })
 
     // Đã fetch đầy đủ rồi
     if (fetched) {

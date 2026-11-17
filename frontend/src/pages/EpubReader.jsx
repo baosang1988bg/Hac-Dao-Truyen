@@ -5,6 +5,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Settings, BookOpen, List, X } fro
 import api from '../api'
 import userApi, { isLoggedIn } from '../userApi'
 import ReaderSettingsPanel from '../components/ReaderSettingsPanel'
+import { trackEvent } from '../utils/analytics'
 import useReaderSettings, { THEMES } from '../hooks/useReaderSettings'
 import '../styles/library-epub.css'
 
@@ -29,6 +30,22 @@ export default function EpubReader() {
   const [showToc, setShowToc]     = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [progress, setProgress]   = useState(0) // 0-100%
+
+  // GA4: mốc tiến độ EPUB (25/50/75/100%) — chỉ mốc vượt qua TRONG phiên này
+  // (mở lại ở 60% không bắn lại 25/50), mỗi mốc 1 lần.
+  const epubMilestonesRef = useRef({ slug: null, baseline: null, sent: new Set() })
+  useEffect(() => {
+    const st = epubMilestonesRef.current
+    if (st.slug !== slug) Object.assign(st, { slug, baseline: null, sent: new Set() })
+    if (!progress) return
+    if (st.baseline === null) { st.baseline = progress; return }
+    for (const m of [25, 50, 75, 100]) {
+      if (progress >= m && st.baseline < m && !st.sent.has(m)) {
+        st.sent.add(m)
+        trackEvent('epub_progress', { novel_slug: slug, percent: m })
+      }
+    }
+  }, [progress, slug])
   const touchStartX = useRef(null)
   const lastSyncedCfiRef = useRef(null) // debounce: chỉ sync progress khi CFI thực sự đổi
 
@@ -175,6 +192,8 @@ export default function EpubReader() {
           if (!destroyed) await rendition.display()
         }
 
+        trackEvent('epub_open', { novel_slug: slug, resumed: Boolean(savedCfi) })
+
         // Build TOC
         await book.loaded.navigation
         if (destroyed) return
@@ -191,6 +210,7 @@ export default function EpubReader() {
         removeKeyboard = () => document.removeEventListener('keydown', onKey)
       } catch (err) {
         if (!destroyed) {
+          trackEvent('epub_load_error', { novel_slug: slug, description: String(err.message || err) })
           setError(err.message || 'Không thể tải EPUB')
           setLoading(false)
         }

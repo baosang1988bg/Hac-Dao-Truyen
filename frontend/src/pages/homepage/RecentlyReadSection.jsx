@@ -153,6 +153,7 @@ export default function RecentlyReadSection() {
               <Link
                 to={readUrl}
                 className="btn btn-primary"
+                data-track-action="continue_reading"
                 style={{
                   width: '100%',
                   padding: 'var(--space-2, 8px) var(--space-3, 12px)',

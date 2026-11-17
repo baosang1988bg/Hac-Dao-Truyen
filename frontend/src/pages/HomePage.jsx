@@ -4,6 +4,7 @@ import { extractNovels } from '../utils/novelsApi'
 import { cachedGet } from '../utils/apiCache'
 import LazyMount from '../components/LazyMount'
 import { prefersReducedMotion } from '../utils/motion'
+import { trackSearch } from '../utils/analytics'
 import '../styles/home.css'
 
 // ── Truyentrung.com UI Components ──
@@ -95,7 +96,11 @@ export default function HomePage() {
       cachedGet('/novels', { params: { q, limit: SEARCH_LIMIT }, signal: controller.signal })
         .then(data => {
           if (searchReqId.current !== myReqId) return // response cũ đến muộn — bỏ qua
-          setSearchResults(extractNovels(data))
+          const list = extractNovels(data)
+          setSearchResults(list)
+          // GA4 `search` (debounce 1.5s trong trackSearch → chỉ từ khoá cuối cùng).
+          // results_count = 0 → danh sách "truyện người đọc tìm mà chưa có".
+          trackSearch(q, { location: 'home', resultsCount: list.length })
           setSearchLoading(false)
         })
         .catch(() => {
@@ -132,7 +137,13 @@ export default function HomePage() {
   // cho vài khối đầu (cùng lúc trong màn hình đầu) để so le nhẹ.
   // .hp-slot:empty bị ẩn (home.css) → section trả null không để lại khoảng trống.
   const slot = (key, node, i = 0) => (
-    <div key={key} className={`hp-slot hp-slot--${key} hd-reveal`} style={i ? { '--i': i } : undefined}>
+    <div
+      key={key}
+      className={`hp-slot hp-slot--${key} hd-reveal`}
+      style={i ? { '--i': i } : undefined}
+      // GA4: click vào truyện/chương trong khối này → select_content{section: key}
+      data-track-section={`home_${key}`}
+    >
       {node}
     </div>
   )

@@ -5,6 +5,7 @@ import { MessageSquare, Send, Loader2, Trash2 } from 'lucide-react'
 import api from '../api'
 import userApi, { isLoggedIn, getUserInfo } from '../userApi'
 import { fmtTimeAgo } from '../utils/format'
+import { trackEvent } from '../utils/analytics'
 
 /**
  * Bình luận cuối trang đọc (theo chương).
@@ -51,6 +52,8 @@ export default function ChapterComments({ slug, chapter }) {
     try {
       const num = /^\d+$/.test(String(chapter)) ? Number(chapter) : chapter
       await userApi.post(`/novels/${slug}/comments`, { chapter: num, content })
+      // KHÔNG gửi nội dung bình luận (có thể chứa thông tin cá nhân) — chỉ độ dài.
+      trackEvent('comment_post', { novel_slug: slug, chapter_number: typeof num === 'number' ? num : undefined, comment_length: content.length })
       setText('')
       // Refresh danh sách sau khi gửi thành công
       const res = await userApi.get(`/novels/${slug}/comments`, { params: { chapter } })

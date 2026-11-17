@@ -9,6 +9,7 @@ import { fetchNovelsBySlugsBatch } from '../utils/novelsApi'
 import { novelDisplayTitle } from '../utils/format'
 import GoogleLoginButton from '../components/GoogleLoginButton'
 import { staggerIndex } from '../utils/motion'
+import { trackAuth, trackEvent } from '../utils/analytics'
 import '../styles/library-epub.css'
 
 /**
@@ -61,8 +62,10 @@ function AuthForm({ onSuccess }) {
         : { email: email.trim(), password }
       const res = await userApi.post(`/user/${mode}`, payload)
       saveUserSession(res.data.token, res.data.user)
+      trackAuth(mode === 'register' ? 'sign_up' : 'login', 'password', res.data.user)
       onSuccess(res.data.user)
     } catch (err) {
+      trackEvent('auth_error', { auth_mode: mode, method: 'password', status: err.response?.status || 0 })
       setError(friendlyAuthError(err, mode))
     } finally {
       setBusy(false)
@@ -198,6 +201,7 @@ function AccountDashboard({ user, onLogout }) {
     setItems(list => list.filter(it => it.slug !== slug)) // optimistic
     try {
       await userApi.delete(`/user/bookmarks/${slug}`)
+      trackEvent('novel_unfollow', { novel_slug: slug, source: 'account' })
     } catch {
       setItems(prev) // hoàn tác nếu lỗi
     }
@@ -205,6 +209,7 @@ function AccountDashboard({ user, onLogout }) {
 
   const logout = async () => {
     try { await userApi.post('/user/logout') } catch { /* token có thể đã hết hạn */ }
+    trackEvent('logout') // gửi TRƯỚC khi xoá user_id → event còn gắn đúng người
     clearUserSession()
     onLogout()
   }
@@ -252,7 +257,7 @@ function AccountDashboard({ user, onLogout }) {
       )}
 
       {items !== null && items.length > 0 && (
-        <div className="bookmark-list">
+        <div className="bookmark-list" data-track-section="account_following">
           {items.map(({ slug, novel, prog, chapterCount, newCount }, i) => (
             <div key={slug} className="glass-panel bookmark-row hd-reveal" style={{ '--i': staggerIndex(i) }}>
               <div className="bookmark-row__body">
@@ -271,6 +276,7 @@ function AccountDashboard({ user, onLogout }) {
                 <Link
                   to={`/novel/${slug}/read/${prog.chapter}`}
                   className="btn btn-primary bookmark-row__action"
+                  data-track-action="continue_reading"
                 >
                   <BookOpen size={14} /> Đọc tiếp
                 </Link>

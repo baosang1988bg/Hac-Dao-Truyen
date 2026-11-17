@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types'
 import { useEffect, useRef, useState } from 'react'
 import userApi, { saveUserSession } from '../userApi'
+import { trackAuth, trackEvent } from '../utils/analytics'
 import '../styles/library-epub.css'
 
 const GIS_SCRIPT_SRC = 'https://accounts.google.com/gsi/client'
@@ -42,8 +43,11 @@ export default function GoogleLoginButton({ onSuccess, onError }) {
       try {
         const res = await userApi.post('/user/google-login', { credential: response.credential })
         saveUserSession(res.data.token, res.data.user)
+        // API không báo "tài khoản mới tạo" → ghi chung là login (method google).
+        trackAuth('login', 'google', res.data.user)
         onSuccess(res.data.user)
       } catch (err) {
+        trackEvent('auth_error', { auth_mode: 'login', method: 'google', status: err.response?.status || 0 })
         onError?.(err)
       }
     }

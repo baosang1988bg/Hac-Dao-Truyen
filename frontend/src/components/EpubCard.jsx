@@ -9,6 +9,7 @@ import { fmtNumber, novelDisplayTitle } from '../utils/format'
 import { splitGenres } from '../utils/genreLabels'
 import { isEpubDownloaded, downloadEpubOffline } from '../utils/epubOffline'
 import { isNovelCompleted } from '../utils/novelStatus'
+import { trackEvent } from '../utils/analytics'
 import '../styles/library-epub.css'
 
 /**
@@ -39,6 +40,7 @@ export function EpubCard({ novel }) {
     try {
       await downloadEpubOffline(novel.slug)
       setDownloaded(true)
+      trackEvent('offline_download', { novel_slug: novel.slug, download_type: 'epub' })
     } catch {
       // Lỗi tải (offline/mạng lỗi) — người dùng có thể thử lại, không cần báo ồn ào.
     } finally {

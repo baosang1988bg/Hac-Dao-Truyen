@@ -67,7 +67,7 @@ export default function LibraryPage() {
     }))
 
   return (
-    <div className="container animate-fade-in library-page">
+    <div className="container animate-fade-in library-page" data-track-section="library">
       <div className="hd-page-head">
         <h1 className="page-title">
           <LibraryBig size={24} style={{ color: 'var(--accent)' }} aria-hidden="true" /> Tủ truyện

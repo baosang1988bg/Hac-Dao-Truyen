@@ -18,6 +18,7 @@ import {
 import { fmtChapterDate, fmtNovelTitle } from '../utils/format'
 import { cachedGet, peekCache } from '../utils/apiCache'
 import { runWhenIdle } from '../utils/idle'
+import { trackEvent, trackEventDebounced, createChapterTracker, bumpCompletedCount } from '../utils/analytics'
 import '../styles/reading.css'
 import '../styles/novel-reader.css'
 
@@ -362,13 +363,23 @@ export default function Reader() {
   // vị trí của skeleton / chương cũ vào key của chương mới).
   const readyRef = useRef(ready)
   readyRef.current = ready
+  // GA4: bộ đo của lượt đọc chương hiện tại (null khi chưa hiển thị nội dung).
+  const readTrackerRef = useRef(null)
 
   // ── Tải trước chương để đọc offline (service worker cache lại) ────────────
   const [downloading, setDownloading] = useState(false)
   const [dlProgress, setDlProgress] = useState(null) // { done, total } | null
 
   // ── Reader Settings (Persistent) ──────────────────────────────────────────
-  const { settings, onChange } = useReaderSettings()
+  const { settings, onChange: applySetting } = useReaderSettings()
+  // GA4: theme/font/cỡ chữ người đọc chọn nhiều nhất → chọn mặc định tốt hơn.
+  // Debounce theo từng khoá: kéo slider chỉ gửi giá trị cuối.
+  const onChange = useCallback((key, value) => {
+    applySetting(key, value)
+    if (key !== 'ttsVoice') { // tên giọng đọc có thể lộ thông tin thiết bị — bỏ
+      trackEventDebounced(`reader_setting:${key}`, 'reader_setting_change', { setting: key, setting_value: String(value) })
+    }
+  }, [applySetting])
   const [showSettings, setShowSettings] = useState(false)
 
   // ── Text-to-Speech ─────────────────────────────────────────────────────────
@@ -458,6 +469,7 @@ export default function Reader() {
       .catch(err => {
         if (controller.signal.aborted || contentEpochRef.current !== myEpoch) return // đã hủy do đổi chương — bỏ qua
         console.error(err)
+        trackEvent('reader_error', { novel_slug: slug, status: err?.response?.status || 0 })
         setDoc({ url: contentUrl, content: '', error: err })
       })
     return () => { controller.abort() }
@@ -531,6 +543,8 @@ export default function Reader() {
       if (progressBarRef.current) progressBarRef.current.style.transform = `scaleX(${ratio})`
       // Boolean → React tự bỏ qua re-render khi giá trị không đổi.
       setShowScrollTop(top > 400)
+      // GA4: độ sâu đọc (chỉ do người dùng cuộn — không tính lần khôi phục vị trí).
+      if (byUser) readTrackerRef.current?.progress(ratio)
 
       // Auto-hide top nav: cuộn xuống thì ẩn, cuộn lên thì hiện
       const last = lastScrollRef.current
@@ -583,19 +597,65 @@ export default function Reader() {
   const chapterLabel = currentChapterObj?.title || (isNumberParam ? `Chương ${chapter}` : fmtChapterLabel(chapter))
   useDocumentTitle([chapterLabel, novelTitle].filter(Boolean).join(' – '))
 
-  const goNext = useCallback(() => {
-    if (nextChapter) navigate(chapterUrl(slug, nextChapter))
+  // method: 'button' | 'key' | 'tap' — biết người đọc lật chương bằng cách nào
+  // (onClick truyền event object → coi là 'button').
+  const goNext = useCallback((method) => {
+    if (!nextChapter) return
+    trackEvent('chapter_navigate', { novel_slug: slug, direction: 'next', method: typeof method === 'string' ? method : 'button' })
+    navigate(chapterUrl(slug, nextChapter))
   }, [nextChapter, slug, navigate])
 
-  const goPrev = useCallback(() => {
-    if (prevChapter) navigate(chapterUrl(slug, prevChapter))
+  const goPrev = useCallback((method) => {
+    if (!prevChapter) return
+    trackEvent('chapter_navigate', { novel_slug: slug, direction: 'prev', method: typeof method === 'string' ? method : 'button' })
+    navigate(chapterUrl(slug, prevChapter))
   }, [prevChapter, slug, navigate])
+
+  // ── GA4: vòng đời 1 lượt đọc chương ───────────────────────────────────────
+  // chapter_start khi nội dung hiển thị; chapter_progress 25/50/75; chapter_complete
+  // khi cuộn ≥ 90% và đọc thực ≥ 15s (chỉ tính lúc tab hiển thị). Mốc tổng số
+  // chương đã đọc xong → reading_milestone; đọc xong chương MỚI NHẤT → novel_caught_up.
+  const hasNextRef = useRef(false)
+  hasNextRef.current = Boolean(nextChapter)
+  useEffect(() => {
+    if (!ready) return undefined
+    const n = novelRef.current
+    const base = {
+      novel_slug: slug,
+      novel_title: n ? fmtNovelTitle(n.title_is_slug ? '' : n.title, n.slug || slug) : undefined,
+      chapter_number: /^\d+$/.test(chapter) ? Number(chapter) : undefined,
+      content_type: /^\d+$/.test(chapter) ? 'chapter' : 'note',
+    }
+    const tracker = createChapterTracker({
+      base,
+      onComplete: () => {
+        const { count, milestone } = bumpCompletedCount()
+        if (milestone) trackEvent('reading_milestone', { chapters_completed: count })
+        if (!hasNextRef.current) trackEvent('novel_caught_up', { novel_slug: slug, chapter_number: base.chapter_number })
+      },
+    })
+    readTrackerRef.current = tracker
+    tracker.start()
+    if (document.visibilityState === 'hidden') tracker.setVisible(false)
+    const onVisibility = () => tracker.setVisible(document.visibilityState === 'visible')
+    document.addEventListener('visibilitychange', onVisibility)
+    // Chương ngắn (vừa 1 màn hình) không có sự kiện cuộn → kiểm tra định kỳ.
+    const { max } = readScroll()
+    if (max <= 1) tracker.progress(1)
+    const tickId = setInterval(() => tracker.tick(), 5000)
+    return () => {
+      clearInterval(tickId)
+      document.removeEventListener('visibilitychange', onVisibility)
+      tracker.end()
+      if (readTrackerRef.current === tracker) readTrackerRef.current = null
+    }
+  }, [ready, slug, chapter])
 
   useEffect(() => {
     const handleKey = (e) => {
       if (shouldIgnoreKey(e)) return
-      if (e.key === 'ArrowRight') goNext()
-      if (e.key === 'ArrowLeft') goPrev()
+      if (e.key === 'ArrowRight') goNext('key')
+      if (e.key === 'ArrowLeft') goPrev('key')
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
@@ -618,8 +678,11 @@ export default function Reader() {
   const toggleTts = useCallback(() => {
     if (tts.isPlaying && !tts.isPaused) ttsPause()
     else if (tts.isPaused) ttsResume()
-    else ttsPlay(stripMarkdown(content), { voiceName: settings.ttsVoice, rate: settings.ttsRate })
-  }, [tts.isPlaying, tts.isPaused, ttsPause, ttsResume, ttsPlay, content, settings.ttsVoice, settings.ttsRate])
+    else {
+      trackEvent('tts_start', { novel_slug: slug, tts_rate: settings.ttsRate, has_custom_voice: Boolean(settings.ttsVoice) })
+      ttsPlay(stripMarkdown(content), { voiceName: settings.ttsVoice, rate: settings.ttsRate })
+    }
+  }, [slug, tts.isPlaying, tts.isPaused, ttsPause, ttsResume, ttsPlay, content, settings.ttsVoice, settings.ttsRate])
 
   // ── Tap zones (mobile): chạm mép trái/phải để chuyển chương ────────────────
   // Trước đây là 2 div position:fixed (12% bề rộng, z-index 30) phủ LÊN nội
@@ -664,8 +727,8 @@ export default function Reader() {
       // Bỏ qua nếu người dùng đang cuộn / giữ lâu (chọn văn bản)
       if (dx > 10 || dy > 10 || dt > 350) return
       if (hasSelection()) return
-      if (start.dir === 'prev') goPrevRef.current()
-      else goNextRef.current()
+      if (start.dir === 'prev') goPrevRef.current('tap')
+      else goNextRef.current('tap')
     }
 
     const onCancel = () => { touchRef.current = null }
@@ -705,6 +768,7 @@ export default function Reader() {
       setDlProgress({ done, total: next.length })
     }
     setDownloading(false)
+    trackEvent('offline_download', { novel_slug: slug, download_type: 'chapters', chapter_count: next.length })
   }
 
   const themeId = THEMES[settings.theme] ? settings.theme : 'sepia'
