@@ -493,3 +493,37 @@
   .reader-content { padding: 0.75rem 0 2.5rem; }
   .reader-p { text-align: left; text-indent: 0.6em; }
 }
+
+/* Selection Quick-Edit Popover */
+.reader-selection-popover {
+  position: fixed;
+  z-index: 100;
+  animation: popoverFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popoverFadeIn {
+  from { opacity: 0; transform: translate(-50%, -85%) scale(0.95); }
+  to { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+}
+
+.reader-selection-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  background: var(--accent, #d97706);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+.reader-selection-btn:active {
+  transform: scale(0.96);
+  filter: brightness(0.95);
+}

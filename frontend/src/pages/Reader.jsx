@@ -8,6 +8,9 @@ import userApi, { isLoggedIn, getIdentityNamespace } from '../userApi'
 import ChapterComments from '../components/ChapterComments'
 import Modal from '../components/ui/Modal'
 import ReaderSettingsPanel from '../components/ReaderSettingsPanel'
+import InlineGlossaryModal from '../components/InlineGlossaryModal'
+import ReplacementsManagerModal from '../components/ReplacementsManagerModal'
+import { getReplacements, saveReplacement, removeReplacement, applyReplacements } from '../utils/readerReplacements'
 import useReaderSettings, { THEMES } from '../hooks/useReaderSettings'
 import useTextToSpeech from '../hooks/useTextToSpeech'
 import useDocumentTitle from '../hooks/useDocumentTitle'
@@ -327,6 +330,15 @@ export default function Reader() {
   // cùng lượt render, không nháy skeleton.
   const contentUrl = `/novels/${slug}/chapters/${chapterRequestId(chapter)}`
   const [doc, setDoc] = useState({ url: null, content: '', error: null })
+  const [replacements, setReplacements] = useState(() => getReplacements(slug))
+  const [selectionCoords, setSelectionCoords] = useState(null)
+  const [selectedText, setSelectedText] = useState('')
+  const [isInlineGlossaryOpen, setIsInlineGlossaryOpen] = useState(false)
+  const [isReplacementsManagerOpen, setIsReplacementsManagerOpen] = useState(false)
+
+  useEffect(() => {
+    setReplacements(getReplacements(slug))
+  }, [slug])
   const [reloadNonce, setReloadNonce] = useState(0)
   const docMatches = doc.url === contentUrl
   const peeked = docMatches ? undefined : peekCache(contentUrl)
@@ -777,9 +789,56 @@ export default function Reader() {
   // ReactMarkdown parse lại toàn bộ chương mỗi lần render → memo theo nội dung
   // + ngày đăng; components ổn định theo ngày đăng.
   const markdownComponents = useMemo(() => makeMarkdownComponents(currentChapterDate), [currentChapterDate])
+  const handleSelection = useCallback(() => {
+    if (typeof window === 'undefined') return
+    const sel = window.getSelection()
+    if (!sel || sel.isCollapsed) {
+      setSelectionCoords(null)
+      return
+    }
+    const t = sel.toString().trim()
+    if (t.length >= 1 && t.length <= 80) {
+      try {
+        const range = sel.getRangeAt(0)
+        const rect = range.getBoundingClientRect()
+        if (rect && rect.width > 0 && rect.height > 0) {
+          setSelectedText(t)
+          setSelectionCoords({
+            x: Math.max(40, Math.min(window.innerWidth - 40, rect.left + rect.width / 2)),
+            y: Math.max(60, rect.top - 12),
+          })
+          return
+        }
+      } catch { /* ignore */ }
+    }
+    setSelectionCoords(null)
+  }, [])
+
+  const handleApplyReplacement = useCallback(({ from, to, scope }) => {
+    if (scope === 'all') {
+      const updated = saveReplacement(slug, { from, to })
+      setReplacements(updated)
+    } else {
+      setDoc(prev => ({ ...prev, content: applyReplacements(prev.content || content, [{ from, to }]) }))
+    }
+    if (window.getSelection) {
+      window.getSelection().removeAllRanges()
+    }
+  }, [slug, content])
+
+  const handleDeleteReplacement = useCallback((id) => {
+    const updated = removeReplacement(slug, id)
+    setReplacements(updated)
+  }, [slug])
+
+  const displayContent = useMemo(
+    () => applyReplacements(content, replacements),
+    [content, replacements],
+  )
+
   const renderedContent = useMemo(
-    () => <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>,
-    [content, markdownComponents],
+    () => <ReactMarkdown components={markdownComponents}>{displayContent}</ReactMarkdown>,
+    [displayContent, markdownComponents],
   )
 
   const indexLabel = isAuthorNote
@@ -817,6 +876,8 @@ export default function Reader() {
 
         <div
           className="reader-content"
+          onMouseUp={handleSelection}
+          onTouchEnd={handleSelection}
           style={{
             fontSize: `${settings.fontSize}px`,
             fontFamily: settings.fontFamily,
@@ -883,7 +944,13 @@ export default function Reader() {
           </div>
 
           <div className="reader-settings-sheet__body">
-            <ReaderSettingsPanel settings={settings} onChange={onChange} ttsVoices={tts.voices} />
+            <ReaderSettingsPanel
+              settings={settings}
+              onChange={onChange}
+              ttsVoices={tts.voices}
+              customReplacementsCount={replacements.length}
+              onOpenReplacementsManager={() => setIsReplacementsManagerOpen(true)}
+            />
 
             {/* Đọc offline: tải trước N chương kế tiếp để service worker cache */}
             <div style={{ marginTop: 'var(--space-5, 24px)', marginBottom: '0.5rem' }}>
@@ -937,6 +1004,42 @@ export default function Reader() {
           {syncStatus === 'error' && (<><AlertTriangle size={12} color="#f87171" /> Chưa lưu được, sẽ thử lại</>)}
         </div>
       )}
+
+      {selectionCoords && (
+        <div
+          className="reader-selection-popover"
+          style={{
+            left: `${selectionCoords.x}px`,
+            top: `${selectionCoords.y}px`,
+          }}
+        >
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault()
+              setIsInlineGlossaryOpen(true)
+              setSelectionCoords(null)
+            }}
+            className="reader-selection-btn"
+          >
+            <span>✏️ Sửa từ</span>
+          </button>
+        </div>
+      )}
+
+      <InlineGlossaryModal
+        isOpen={isInlineGlossaryOpen}
+        onClose={() => setIsInlineGlossaryOpen(false)}
+        initialFrom={selectedText}
+        onApply={handleApplyReplacement}
+      />
+
+      <ReplacementsManagerModal
+        isOpen={isReplacementsManagerOpen}
+        onClose={() => setIsReplacementsManagerOpen(false)}
+        replacements={replacements}
+        onDelete={handleDeleteReplacement}
+      />
     </div>
   )
 }

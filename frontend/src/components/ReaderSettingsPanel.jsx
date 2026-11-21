@@ -16,7 +16,7 @@ const FONTS = [
 
 // C08: chỉ hiện mục Giọng đọc khi trang gọi truyền `ttsVoices` (Reader.jsx —
 // EpubReader.jsx chưa có tính năng TTS, không tự thêm ở đợt này).
-export default function ReaderSettingsPanel({ settings, onChange, ttsVoices }) {
+export default function ReaderSettingsPanel({ settings, onChange, ttsVoices, customReplacementsCount = 0, onOpenReplacementsManager }) {
   const themeId = THEMES[settings.theme] ? settings.theme : 'sepia'
   const previewLineHeight = Math.max(settings.lineHeight, 1.5)
   const showTts = Array.isArray(ttsVoices)
@@ -109,6 +109,25 @@ export default function ReaderSettingsPanel({ settings, onChange, ttsVoices }) {
           </label>
         </fieldset>
       )}
+      {typeof onOpenReplacementsManager === 'function' && (
+        <div style={{ paddingTop: '0.75rem', marginTop: '0.5rem', borderTop: '1px solid rgba(128,128,128,0.2)' }}>
+          <button
+            type="button"
+            onClick={onOpenReplacementsManager}
+            className="reader-settings-replacements-btn"
+            style={{
+              display: 'flex', width: '100%', justifyContent: 'space-between',
+              alignItems: 'center', padding: '0.5rem 0.75rem', borderRadius: '0.375rem',
+              border: '1px solid rgba(217,119,6,0.3)', cursor: 'pointer', background: 'transparent'
+            }}
+          >
+            <span>✏️ Từ đã sửa thủ công</span>
+            <span style={{ fontSize: '0.75rem', fontWeight: 'bold', padding: '0.125rem 0.5rem', borderRadius: '9999px', background: 'rgba(217,119,6,0.2)' }}>
+              {customReplacementsCount}
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -126,4 +145,6 @@ ReaderSettingsPanel.propTypes = {
   onChange: PropTypes.func.isRequired,
   // Danh sách SpeechSynthesisVoice — chỉ truyền từ Reader.jsx (có TTS).
   ttsVoices: PropTypes.array,
+  customReplacementsCount: PropTypes.number,
+  onOpenReplacementsManager: PropTypes.func,
 }
