@@ -1,5 +1,5 @@
 {
-  "revision": 402,
+  "revision": 425,
   "conflicts": [
     {
       "term": "坤鼎",
@@ -21,6 +21,13 @@
       "suggested_value": "Thương Lan Đế triều",
       "revision_seen": 198,
       "ts": "2026-10-25T09:32:09"
+    },
+    {
+      "term": "青松道長",
+      "current_value": "Thanh Tùng Đạo Trưởng",
+      "suggested_value": "Thanh Tùng Đạo trưởng",
+      "revision_seen": 416,
+      "ts": "2026-11-21T13:09:39"
     }
   ]
 }
