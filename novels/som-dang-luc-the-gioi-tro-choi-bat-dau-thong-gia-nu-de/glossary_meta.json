@@ -1,5 +1,5 @@
 {
-  "revision": 465,
+  "revision": 475,
   "conflicts": [
     {
       "term": "坤鼎",
@@ -28,6 +28,13 @@
       "suggested_value": "Thanh Tùng Đạo trưởng",
       "revision_seen": 416,
       "ts": "2026-11-21T13:09:39"
+    },
+    {
+      "term": "天風道人",
+      "current_value": "Thiên Phong Đạo Nhân",
+      "suggested_value": "Thiên Phong đạo nhân",
+      "revision_seen": 473,
+      "ts": "2026-11-25T01:27:49"
     }
   ]
 }
