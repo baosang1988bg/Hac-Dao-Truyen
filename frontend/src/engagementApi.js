@@ -8,6 +8,7 @@
  */
 import api, { publicApi } from './api'
 import userApi from './userApi'
+import { cachedGet } from './utils/apiCache'
 
 // ── Lượt đọc thật ────────────────────────────────────────────────────────────
 /** Xin token khi mở chương. Trả { token|null, min_seconds } hoặc null nếu lỗi. */
@@ -69,6 +70,23 @@ export function fetchNovelNames(slug) {
     namesCache.set(slug, p)
   }
   return namesCache.get(slug)
+}
+
+// ── Nhiều bản dịch (migration 016) ──────────────────────────────────────────
+// Bản mặc định luôn có, kể cả khi lỗi mạng / Worker chưa có route → trang vẫn
+// đọc được bản AI như cũ.
+const DEFAULT_EDITIONS = [{ code: 'he-thong', name: 'Bản dịch AI (Hắc Đạo)', kind: 'ai', default: true }]
+
+/** Trả mảng [{ code, name, kind, translator?, license_note?, chapter_count?, default }]. Không ném lỗi. */
+export async function fetchEditions(slug) {
+  if (!slug) return DEFAULT_EDITIONS
+  try {
+    const data = await cachedGet(`/novels/${encodeURIComponent(slug)}/editions`)
+    const list = Array.isArray(data?.editions) ? data.editions.filter(e => e && typeof e.code === 'string') : []
+    return list.length ? list : DEFAULT_EDITIONS
+  } catch {
+    return DEFAULT_EDITIONS
+  }
 }
 
 // ── Góp ý name ───────────────────────────────────────────────────────────────

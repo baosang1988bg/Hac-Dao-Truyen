@@ -33,6 +33,10 @@ CREATE TABLE IF NOT EXISTS novels (
   takedown_reason   TEXT DEFAULT '',
   takedown_at       TEXT,
   license_note      TEXT DEFAULT '',
+  -- Migration 016: số bản dịch phụ (bảng editions) đang published; 0 = chỉ có
+  -- bản AI mặc định 'he-thong'. Worker /api/sync/edition ghi. (Production thêm
+  -- bằng ALTER nên nằm SAU chapter_count — drift check so cột theo tên, không theo thứ tự.)
+  edition_count     INTEGER DEFAULT 0,
   -- Migration 014: số chương (chapter_number > 0, khác nhau) lưu sẵn — chỉ dùng
   -- để sắp xếp sort=chapter_count; Worker sync + migrate_to_cloudflare.py ghi.
   chapter_count     INTEGER DEFAULT 0
@@ -215,3 +219,32 @@ CREATE TABLE IF NOT EXISTS user_prefs (
   updated_at        TEXT NOT NULL DEFAULT (datetime('now')),
   client_updated_at INTEGER
 );
+
+-- HacDaoTruyen — Migration 016: một truyện nhiều bản dịch (bản AI hiện có = mặc định ngầm định 'he-thong', không có dòng ở đây).
+CREATE TABLE IF NOT EXISTS editions (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  novel_slug    TEXT NOT NULL REFERENCES novels(slug),
+  code          TEXT NOT NULL,                 -- [a-z0-9-]{1,40}, khác 'he-thong'
+  name          TEXT NOT NULL,                 -- tên hiển thị, vd "Bản dịch của nhóm X"
+  translator    TEXT DEFAULT '',
+  kind          TEXT NOT NULL DEFAULT 'human' CHECK (kind IN ('ai','human','convert')),
+  license_note  TEXT NOT NULL DEFAULT '',      -- giấy phép/nguồn gốc (bắt buộc khi sync)
+  published     INTEGER NOT NULL DEFAULT 0,
+  chapter_count INTEGER NOT NULL DEFAULT 0,    -- số chương (chapter_number > 0, khác nhau)
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(novel_slug, code)
+);
+
+CREATE TABLE IF NOT EXISTS edition_chapters (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  edition_id     INTEGER NOT NULL REFERENCES editions(id),
+  filename       TEXT NOT NULL,
+  title          TEXT NOT NULL,
+  chapter_number INTEGER DEFAULT 0,
+  r2_key         TEXT NOT NULL,                -- "<slug>/ed/<code>/content/<sha256>.md"
+  created_at     TEXT DEFAULT (datetime('now')),
+  UNIQUE(edition_id, filename)
+);
+
+CREATE INDEX IF NOT EXISTS idx_edition_chapters_number ON edition_chapters(edition_id, chapter_number);

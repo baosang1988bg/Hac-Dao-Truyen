@@ -327,7 +327,12 @@ async function injectNovelSeo(indexRes, url, env) {
       };
       ldBlocks.unshift(jsonLdScript(book));
     }
+    // ?ban=<code> khác bản mặc định → trang bản dịch phụ: noindex (tránh trùng
+    // nội dung), canonical vẫn trỏ về URL bản mặc định ở trên (không kèm ?ban).
+    const ban = url.searchParams.get('ban');
+    const isAltEdition = ban !== null && ban !== '' && ban !== DEFAULT_EDITION_CODE;
     const metas = [
+      isAltEdition ? '<meta name="robots" content="noindex, follow" />' : '',
       `<meta name="description" content="${escapeHtmlAttr(description)}" />`,
       `<link rel="canonical" href="${escapeHtmlAttr(canonical)}" />`,
       `<meta property="og:type" content="${chapterParam ? 'article' : 'book'}" />`,
@@ -371,7 +376,7 @@ async function handleApi(request, url, env, ctx) {
     return proxyCover(request, url, env, ctx);
   }
 
-  const isSync = ['/api/admin/sync-novel', '/api/admin/sync-rankings'].includes(path) && method === 'POST';
+  const isSync = ['/api/admin/sync-novel', '/api/admin/sync-rankings', '/api/sync/edition'].includes(path) && method === 'POST';
   // Chỉ phân loại sync sau khi xác minh key; header giả không được bypass.
   const verifiedSync = isSync && env.SYNC_KEY && timingSafeEqualStr(request.headers.get('x-sync-key') || '', env.SYNC_KEY);
   const isLogin = ['/api/auth/login','/api/user/login','/api/user/register','/api/user/google-login'].includes(path);
@@ -417,6 +422,9 @@ async function handleApi(request, url, env, ctx) {
   }
 
   if (path === '/api/admin/sync-rankings' && method === 'POST') return syncRankings(env, request);
+
+  // POST /api/sync/edition — đẩy 1 lô chương của bản dịch phụ (SYNC_KEY)
+  if (path === '/api/sync/edition' && method === 'POST') return syncEdition(env, request, ctx);
   if (path === '/api/rankings' && method === 'GET') {
     return cachedJsonResponse(request, ctx, 3600, () => getRankings(env));
   }
@@ -545,6 +553,46 @@ async function handleApi(request, url, env, ctx) {
   if (synopsisMatch && method === 'GET') {
     // 1 dòng D1 + 1 object R2 mỗi lượt → cache (takedown đã purge key này).
     return cachedJsonResponse(request, ctx, 600, () => getSynopsis(env, synopsisMatch[1]), { sMaxAge: 3600 });
+  }
+
+  // ── Bản dịch phụ (migration 016). Đặt TRƯỚC route chương cũ cho rõ ràng —
+  // hai nhóm không thể nuốt nhầm nhau: regex cũ `^/api/novels/([^/]+)/chapters/(.+)$`
+  // bắt buộc đoạn thứ 4 là "chapters" (ở đây là "editions") và ngược lại.
+  // GET /api/novels/:slug/editions
+  const editionsMatch = path.match(/^\/api\/novels\/([^/]+)\/editions$/);
+  if (editionsMatch && method === 'GET') {
+    return cachedJsonResponse(request, ctx, 600, () => getEditions(env, editionsMatch[1]), { sMaxAge: 1800 });
+  }
+  // GET /api/novels/:slug/editions/:code/chapters
+  const editionChaptersMatch = path.match(/^\/api\/novels\/([^/]+)\/editions\/([^/]+)\/chapters$/);
+  if (editionChaptersMatch && method === 'GET') {
+    return cachedJsonResponse(request, ctx, 600,
+      () => getEditionChapters(env, editionChaptersMatch[1], editionChaptersMatch[2]), { sMaxAge: 1800 });
+  }
+  // GET /api/novels/:slug/editions/:code/chapters/:id — chi phí như route chương
+  // cũ: NGOÀI cache chỉ kiểm novels.published (1 dòng theo PK) → takedown truyện
+  // có hiệu lực ngay kể cả khi edge còn giữ bản cache. Kiểm editions.published
+  // nằm TRONG loader được cache (memo isolate 60 giây, xem resolveEditionMemo);
+  // ẩn bản dịch qua POST /api/sync/edition purge mục lục + các chương của bản
+  // đó (colo hiện tại) và xoá memo. Nội dung: trình duyệt 5 phút, edge 1 giờ.
+  const editionChapterMatch = path.match(/^\/api\/novels\/([^/]+)\/editions\/([^/]+)\/chapters\/(.+)$/);
+  if (editionChapterMatch && method === 'GET') {
+    const [, edSlug, edCode, rawId] = editionChapterMatch;
+    let identifier;
+    try { identifier = decodeURIComponent(rawId); }
+    catch { return jsonResponse({ error: 'Chapter content not found' }, 404); }
+    if (!SLUG_RE.test(edSlug) || !isEditionCode(edCode)) {
+      return jsonResponse({ error: 'Chapter content not found', identifier }, 404, { 'Cache-Control': 'no-store' });
+    }
+    const pubRow = await env.DB.prepare(`SELECT published FROM novels WHERE slug = ?`).bind(edSlug).first();
+    if (!pubRow || !pubRow.published) {
+      return jsonResponse({ error: 'Chapter content not found', identifier }, 404, { 'Cache-Control': 'no-store' });
+    }
+    return cachedJsonResponse(request, ctx, 300, async () => {
+      const ed = await resolveEditionMemo(env, edSlug, edCode);
+      if (!ed || !ed.published) return jsonResponse({ error: 'Chapter content not found', identifier }, 404);
+      return getEditionChapterContent(env, ed.id, identifier);
+    }, { sMaxAge: 3600 });
   }
 
   // GET /api/novels/:slug/chapters
@@ -2219,6 +2267,9 @@ async function getNovel(env, slug, request, ctx) {
     // Điểm thật từ novel_ratings (đã tổng hợp vào novels khi chấm) — NovelRating hiển thị.
     rating: novel.rating_count > 0 ? Math.round((novel.rating_sum / novel.rating_count) * 10) / 10 : 0,
     rating_count: novel.rating_count || 0,
+    // Migration 016: số bản dịch phụ đang published (cột chưa có → 0). Frontend
+    // chỉ tải /editions khi > 0 để truyện thường không tốn thêm request.
+    edition_count: Number(novel.edition_count) || 0,
   };
 
   if (!isAdmin) {
@@ -2991,6 +3042,343 @@ async function syncNovelBatch(env, request, ctx) {
   return jsonResponse({success:true,slug,chapters_synced:chapters.length});
 }
 
+// ── Nhiều bản dịch cho một truyện (migration 016, học từ truyentrung) ────────
+// Bản AI hiện có là bản MẶC ĐỊNH NGẦM ĐỊNH code 'he-thong': không có dòng DB,
+// vẫn đọc qua route cũ /api/novels/:slug/chapters[/:id] (không đổi gì). Bản dịch
+// khác (dịch giả người, convert...) nằm ở bảng editions + edition_chapters, nội
+// dung R2 `<slug>/ed/<code>/content/<sha256>.md` (đặt tên theo nội dung như
+// syncNovelBatch). Mọi route ở đây chịu được việc migration 016 CHƯA chạy:
+// /editions chỉ trả bản mặc định, route bản dịch khác 404, sync 503 — không 500.
+const DEFAULT_EDITION_CODE = 'he-thong';
+const DEFAULT_EDITION = Object.freeze({ code: DEFAULT_EDITION_CODE, name: 'Bản dịch AI (Hắc Đạo)', kind: 'ai', default: true });
+const EDITION_CODE_RE = /^[a-z0-9-]{1,40}$/;
+const EDITION_KINDS = new Set(['ai', 'human', 'convert']);
+const EDITION_SYNC_MAX_BYTES = 2 * 1024 * 1024;
+const EDITION_SYNC_MAX_CHAPTERS = 25;
+const EDITION_NAME_MAX = 120;
+const EDITION_TRANSLATOR_MAX = 120;
+const EDITION_LICENSE_MAX = 2000;
+
+function isEditionCode(code) {
+  return typeof code === 'string' && EDITION_CODE_RE.test(code) && code !== DEFAULT_EDITION_CODE;
+}
+
+// Dò cột novels.edition_count (migration 016) giống hasChapterCountColumn: 1 lần
+// / isolate bằng LIMIT 0 (0 rows_read); thiếu cột → sync bỏ qua bước cập nhật,
+// dò lại sau 10 phút.
+let _hasEditionCountCol = null;
+let _editionCountColCheckedAt = 0;
+async function hasEditionCountColumn(env) {
+  if (_hasEditionCountCol === true) return true;
+  const now = Date.now();
+  if (_hasEditionCountCol === false && now - _editionCountColCheckedAt < CHAPTER_COUNT_COL_RECHECK_MS) return false;
+  _editionCountColCheckedAt = now;
+  try {
+    await env.DB.prepare('SELECT edition_count FROM novels LIMIT 0').all();
+    _hasEditionCountCol = true;
+  } catch {
+    _hasEditionCountCol = false;
+  }
+  return _hasEditionCountCol;
+}
+
+// GET /api/novels/:slug/editions — bản mặc định luôn đứng đầu + các bản published.
+async function getEditions(env, slug) {
+  if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Novel not found' }, 404);
+  const novel = await env.DB.prepare(`SELECT published FROM novels WHERE slug = ?`).bind(slug).first();
+  if (!novel || !novel.published) return jsonResponse({ error: 'Novel not found' }, 404);
+  let rows = [];
+  try {
+    ({ results: rows } = await env.DB.prepare(`
+      SELECT code, name, translator, kind, license_note, chapter_count, updated_at
+      FROM editions WHERE novel_slug = ? AND published = 1 ORDER BY id ASC
+    `).bind(slug).all());
+  } catch (err) {
+    if (!isMissingTableError(err)) throw err;
+    rows = []; // migration 016 chưa chạy → chỉ có bản mặc định
+  }
+  const editions = [{ ...DEFAULT_EDITION }];
+  for (const r of rows || []) {
+    if (!isEditionCode(r.code)) continue;
+    editions.push({
+      code: r.code,
+      name: r.name,
+      translator: r.translator || '',
+      kind: EDITION_KINDS.has(r.kind) ? r.kind : 'human',
+      license_note: r.license_note || '',
+      chapter_count: r.chapter_count || 0,
+      updated_at: r.updated_at || null,
+      default: false,
+    });
+  }
+  return jsonResponse({ slug, default: DEFAULT_EDITION_CODE, editions });
+}
+
+// Tra bản dịch đang mở được (truyện published + bản dịch published). Trả id
+// hoặc null. Bảng chưa có → null (route trả 404 như bản dịch không tồn tại).
+async function findOpenEdition(env, slug, code) {
+  if (!SLUG_RE.test(slug) || !isEditionCode(code)) return null;
+  try {
+    const row = await env.DB.prepare(`
+      SELECT e.id AS id, e.published AS ed_published, n.published AS novel_published
+      FROM editions e JOIN novels n ON n.slug = e.novel_slug
+      WHERE e.novel_slug = ? AND e.code = ?
+    `).bind(slug, code).first();
+    if (!row || !row.ed_published || !row.novel_published) return null;
+    return row.id;
+  } catch (err) {
+    if (isMissingTableError(err)) return null;
+    throw err;
+  }
+}
+
+// Memo trong isolate `slug:code → { id, published, ts }` (TTL 60 giây) cho
+// loader nội dung chương bản phụ — lượt MISS edge liên tiếp (đọc nhiều chương
+// cùng bản) không tốn thêm dòng D1. Chỉ là memo best-effort: isolate khác có
+// thể thấy trạng thái cũ ≤ 60 giây sau khi ẩn bản dịch.
+const EDITION_MEMO_TTL_MS = 60_000;
+const EDITION_MEMO_MAX = 500;
+const _editionMemo = new Map();
+
+async function resolveEditionMemo(env, slug, code) {
+  const key = `${slug}:${code}`;
+  const now = Date.now();
+  const hit = _editionMemo.get(key);
+  if (hit && now - hit.ts < EDITION_MEMO_TTL_MS) return hit.id ? hit : null;
+  let row = null;
+  try {
+    row = await env.DB.prepare(`SELECT id, published FROM editions WHERE novel_slug = ? AND code = ?`).bind(slug, code).first();
+  } catch (err) {
+    if (!isMissingTableError(err)) throw err;
+  }
+  if (_editionMemo.size >= EDITION_MEMO_MAX) _editionMemo.clear(); // chặn phình bộ nhớ isolate
+  const entry = { id: row ? row.id : null, published: Boolean(row && row.published), ts: now };
+  _editionMemo.set(key, entry);
+  return entry.id ? entry : null;
+}
+
+/** Xoá memo của 1 bản dịch (code) hoặc mọi bản dịch của truyện (code bỏ trống). */
+function forgetEditionMemo(slug, code) {
+  if (code) { _editionMemo.delete(`${slug}:${code}`); return; }
+  const prefix = `${slug}:`;
+  for (const k of [..._editionMemo.keys()]) if (k.startsWith(prefix)) _editionMemo.delete(k);
+}
+
+// GET /api/novels/:slug/editions/:code/chapters — mục lục bản dịch (KHÔNG
+// fallback catalog/Drive/bundle). Cùng dạng mảng với route mục lục cũ.
+async function getEditionChapters(env, slug, code) {
+  const editionId = await findOpenEdition(env, slug, code);
+  if (!editionId) return jsonResponse({ error: 'Edition not found' }, 404);
+  const { results } = await env.DB.prepare(`
+    SELECT filename, title, chapter_number, created_at FROM edition_chapters
+    WHERE edition_id = ? ORDER BY chapter_number ASC
+  `).bind(editionId).all();
+  return jsonResponse(sortAndDeduplicateCatalog(results || []));
+}
+
+// Nội dung 1 chương của bản dịch; identifier = số chương hoặc filename như route cũ.
+async function getEditionChapterContent(env, editionId, identifier) {
+  const numericIdentifier = /^\d+$/.test(identifier);
+  let num = numericIdentifier ? parseInt(identifier, 10) : 0;
+  if (!num) {
+    const m = identifier.match(/(?:Chương|第)\s*(\d+)/i) || identifier.match(/(\d+)/);
+    if (m) num = parseInt(m[1], 10);
+  }
+  let row = null;
+  if (!numericIdentifier) {
+    row = await env.DB.prepare(`
+      SELECT r2_key, filename, title, chapter_number FROM edition_chapters
+      WHERE edition_id = ? AND filename = ? LIMIT 1
+    `).bind(editionId, identifier).first();
+  }
+  if (!row && num > 0) {
+    const { results } = await env.DB.prepare(`
+      SELECT r2_key, filename, title, chapter_number FROM edition_chapters
+      WHERE edition_id = ? AND chapter_number = ?
+    `).bind(editionId, num).all();
+    row = pickCanonicalChapter(results, num);
+  }
+  if (row && row.r2_key) {
+    const obj = await env.CHAPTERS.get(row.r2_key);
+    if (obj) return chapterResponse(await obj.text());
+  }
+  return jsonResponse({ error: 'Chapter content not found', identifier }, 404);
+}
+
+function validEditionChapter(c) {
+  return c && typeof c.filename === 'string' && c.filename && c.filename.length <= 240
+    && !/[\\/\x00-\x1f]/.test(c.filename) && c.filename !== '.' && c.filename !== '..'
+    && typeof c.title === 'string' && c.title.length <= 500
+    && typeof c.content === 'string' && c.content.trim()
+    && Number.isSafeInteger(c.number) && c.number >= 0;
+}
+
+// POST /api/sync/edition — đẩy 1 lô ≤ 25 chương của một bản dịch (tools:
+// migrate_to_cloudflare.py --edition). Body:
+//   { slug, edition: { code, name, translator?, kind, license_note, published? },
+//     chapters: [{ filename, title, number, content }] }
+// Đồng bộ lại cùng nội dung (cùng hash, cùng tiêu đề/số) → 0 lượt ghi R2/D1.
+// Ghi đè nội dung đã có được phép (một nguồn ghi duy nhất là công cụ của admin).
+async function syncEdition(env, request, ctx) {
+  const authHeader = request.headers.get('x-sync-key') || '';
+  if (!env.SYNC_KEY || !timingSafeEqualStr(authHeader, env.SYNC_KEY)) {
+    return jsonResponse({ error: 'Unauthorized sync key' }, 401);
+  }
+  if (env.ALLOW_SYNC_WRITES !== 'true') return jsonResponse({ error: 'Cloud sync writes are disabled' }, 503);
+  const parsed = await readLimitedJson(request, EDITION_SYNC_MAX_BYTES);
+  if (!parsed.ok) return jsonResponse({ error: parsed.status === 413 ? 'Payload too large' : 'Invalid JSON' }, parsed.status);
+  const data = parsed.body || {};
+  const { slug, edition, chapters } = data;
+  if (typeof slug !== 'string' || !SLUG_RE.test(slug)) return jsonResponse({ error: 'Invalid slug' }, 400);
+  if (!edition || typeof edition !== 'object' || !isEditionCode(edition.code)) {
+    return jsonResponse({ error: `Invalid edition code (chỉ [a-z0-9-]{1,40}, khác '${DEFAULT_EDITION_CODE}')` }, 400);
+  }
+  const code = edition.code;
+  const name = typeof edition.name === 'string' ? edition.name.trim() : '';
+  const translator = edition.translator === undefined || edition.translator === null ? '' : edition.translator;
+  const licenseNote = typeof edition.license_note === 'string' ? edition.license_note.trim() : '';
+  if (!name || name.length > EDITION_NAME_MAX) return jsonResponse({ error: 'Invalid edition name' }, 400);
+  if (typeof translator !== 'string' || translator.length > EDITION_TRANSLATOR_MAX) return jsonResponse({ error: 'Invalid translator' }, 400);
+  if (!EDITION_KINDS.has(edition.kind)) return jsonResponse({ error: 'Invalid kind (ai|human|convert)' }, 400);
+  // Bắt buộc ghi rõ giấy phép/nguồn gốc — bản dịch của người khác không có
+  // căn cứ được phép đăng thì KHÔNG được lên site.
+  if (!licenseNote || licenseNote.length > EDITION_LICENSE_MAX) return jsonResponse({ error: 'license_note is required' }, 400);
+  if (edition.published !== undefined && typeof edition.published !== 'boolean') return jsonResponse({ error: 'Invalid published' }, 400);
+  const published = edition.published === undefined ? null : (edition.published ? 1 : 0);
+  if (!Array.isArray(chapters) || chapters.length > EDITION_SYNC_MAX_CHAPTERS) {
+    return jsonResponse({ error: `Expected 0–${EDITION_SYNC_MAX_CHAPTERS} chapters` }, 400);
+  }
+  const filenames = new Set();
+  for (const c of chapters) {
+    if (!validEditionChapter(c) || filenames.has(c.filename)) return jsonResponse({ error: 'Invalid or duplicate chapter' }, 400);
+    filenames.add(c.filename);
+  }
+
+  const novel = await env.DB.prepare(`SELECT slug FROM novels WHERE slug = ?`).bind(slug).first();
+  if (!novel) return jsonResponse({ error: 'Novel not found' }, 404);
+
+  let existing;
+  try {
+    existing = await env.DB.prepare(`
+      SELECT id, name, translator, kind, license_note, published FROM editions WHERE novel_slug = ? AND code = ?
+    `).bind(slug, code).first();
+  } catch (err) {
+    if (isMissingTableError(err)) return jsonResponse({ error: 'Editions are not enabled (migration 016 chưa chạy)' }, 503);
+    throw err;
+  }
+
+  const oldRows = new Map();
+  if (existing && chapters.length) {
+    const placeholders = chapters.map(() => '?').join(',');
+    const { results } = await env.DB.prepare(`
+      SELECT filename, title, chapter_number, r2_key FROM edition_chapters
+      WHERE edition_id = ? AND filename IN (${placeholders})
+    `).bind(existing.id, ...chapters.map(c => c.filename)).all();
+    for (const r of results || []) oldRows.set(r.filename, r);
+  }
+
+  const changed = [];
+  for (const c of chapters) {
+    const body = c.content.startsWith('#') ? c.content : `# ${c.title}\n\n${c.content}`;
+    const hash = toHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body)));
+    const key = `${slug}/ed/${code}/content/${hash}.md`;
+    const old = oldRows.get(c.filename);
+    if (old && old.r2_key === key && old.title === c.title && Number(old.chapter_number) === c.number) continue;
+    changed.push({ ...c, body, key, putR2: !old || old.r2_key !== key });
+  }
+
+  const metaChanged = !existing
+    || existing.name !== name || (existing.translator || '') !== translator
+    || existing.kind !== edition.kind || (existing.license_note || '') !== licenseNote
+    || (published !== null && Number(existing.published) !== published);
+  const publishedChanged = !existing || (published !== null && Number(existing.published) !== published);
+
+  // Không có gì đổi → không ghi R2/D1, không purge.
+  if (!metaChanged && !changed.length) {
+    return jsonResponse({ success: true, slug, code, chapters_synced: chapters.length, chapters_written: 0, edition_written: false });
+  }
+
+  // Object bất biến (đặt tên theo hash) ghi TRƯỚC D1; commit lỗi chỉ để lại object mồ côi, gửi lại an toàn.
+  for (const c of changed) if (c.putR2) await env.CHAPTERS.put(c.key, c.body);
+
+  const operations = [];
+  if (metaChanged) {
+    operations.push(env.DB.prepare(`
+      INSERT INTO editions (novel_slug, code, name, translator, kind, license_note, published)
+      VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, 0))
+      ON CONFLICT(novel_slug, code) DO UPDATE SET
+        name = excluded.name, translator = excluded.translator, kind = excluded.kind,
+        license_note = excluded.license_note,
+        published = COALESCE(?, editions.published),
+        updated_at = datetime('now')
+    `).bind(slug, code, name, translator, edition.kind, licenseNote, published, published));
+  }
+  for (const c of changed) {
+    operations.push(env.DB.prepare(`
+      INSERT INTO edition_chapters (edition_id, filename, title, chapter_number, r2_key)
+      VALUES ((SELECT id FROM editions WHERE novel_slug = ? AND code = ?), ?, ?, ?, ?)
+      ON CONFLICT(edition_id, filename) DO UPDATE SET
+        title = excluded.title, chapter_number = excluded.chapter_number, r2_key = excluded.r2_key
+    `).bind(slug, code, c.filename, c.title, c.number, c.key));
+  }
+  if (changed.length) {
+    // Cùng công thức đếm với novels.chapter_count (chương số > 0, khác nhau).
+    operations.push(env.DB.prepare(`
+      UPDATE editions SET
+        chapter_count = (SELECT COUNT(DISTINCT CASE WHEN ec.chapter_number > 0 THEN ec.chapter_number END)
+                         FROM edition_chapters ec WHERE ec.edition_id = editions.id),
+        updated_at = datetime('now')
+      WHERE novel_slug = ? AND code = ?
+    `).bind(slug, code));
+  }
+  const withEditionCount = publishedChanged && await hasEditionCountColumn(env);
+  if (withEditionCount) {
+    // edition_count = số bản dịch KHÁC mặc định đang published (frontend chỉ hiện bộ chọn khi > 0).
+    operations.push(env.DB.prepare(`
+      UPDATE novels SET edition_count = (SELECT COUNT(*) FROM editions e WHERE e.novel_slug = novels.slug AND e.published = 1)
+      WHERE slug = ?
+    `).bind(slug));
+  }
+  await env.DB.batch(operations);
+  forgetEditionMemo(slug, code);
+
+  // Purge best-effort (colo hiện tại): danh sách bản dịch, mục lục bản dịch,
+  // chi tiết truyện (edition_count) và các chương vừa ghi (số lớn trước).
+  const origin = new URL(request.url).origin;
+  const base = `${origin}/api/novels/${slug}`;
+  const edBase = `${base}/editions/${code}`;
+  const purgeUrls = new Set([`${base}/editions`, `${edBase}/chapters`]);
+  if (withEditionCount) purgeUrls.add(base);
+  const addChapterUrls = (list) => {
+    for (const c of list) {
+      if (purgeUrls.size >= PURGE_MAX_PER_REQUEST) break;
+      if (c.number > 0) purgeUrls.add(`${edBase}/chapters/${c.number}`);
+      purgeUrls.add(`${edBase}/chapters/${encodeURIComponent(c.filename)}`);
+    }
+  };
+  addChapterUrls([...changed].sort((a, b) => (Number(b.number) || 0) - (Number(a.number) || 0)));
+  if (existing && publishedChanged && published === 0) {
+    // Vừa ẩn bản dịch: nội dung chương đã cache không còn qua bước kiểm
+    // editions.published → purge thêm các chương mới nhất (người đọc tập trung
+    // ở đây) trong giới hạn PURGE_MAX_PER_REQUEST; chương cũ hơn hết hạn ≤ 1 giờ.
+    try {
+      const { results } = await env.DB.prepare(`
+        SELECT filename, chapter_number AS number FROM edition_chapters
+        WHERE edition_id = ? ORDER BY chapter_number DESC LIMIT ?
+      `).bind(existing.id, PURGE_MAX_PER_REQUEST).all();
+      addChapterUrls(results || []);
+    } catch (err) {
+      console.warn('edition purge list failed:', err && err.message ? err.message : err);
+    }
+  }
+  const purge = purgeEdgeCache([...purgeUrls].slice(0, PURGE_MAX_PER_REQUEST));
+  if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(purge); else await purge;
+  return jsonResponse({
+    success: true, slug, code,
+    chapters_synced: chapters.length, chapters_written: changed.length, edition_written: metaChanged,
+  });
+}
+
 // ── User account system (roadmap 3.1–3.4) ────────────────────────────────────
 // Mirror hợp đồng API của backend FastAPI: register/login/logout/me,
 // bookmarks, reading progress, comments. Dữ liệu ở D1 (migrations/002_users.sql).
@@ -3644,11 +4032,22 @@ async function adminTakedownRestore(request, env, slug, action) {
   `).bind(action, slug, reason).run();
 
   // Purge best-effort edge cache chi tiết/mục lục (colo hiện tại). Nội dung
-  // chương luôn kiểm tra published trước cache nên không cần purge từng chương.
+  // chương (cả bản dịch phụ) luôn kiểm tra novels.published trước cache nên
+  // không cần purge từng chương.
   const origin = new URL(request.url).origin;
   const base = `${origin}/api/novels/${slug}`;
   // /api/updates cũng liệt kê truyện → purge để truyện vừa gỡ không còn trong feed.
-  await purgeEdgeCache([base, `${base}/chapters`, `${base}/synopsis`, `${origin}/api/updates`]);
+  const purgeUrls = [base, `${base}/chapters`, `${base}/synopsis`, `${origin}/api/updates`, `${base}/editions`];
+  // Mục lục từng bản dịch phụ: không biết code → đọc từ D1 (bảng có thể chưa
+  // có nếu migration 016 chưa chạy → bỏ qua).
+  try {
+    const { results } = await env.DB.prepare(`SELECT code FROM editions WHERE novel_slug = ? LIMIT 30`).bind(slug).all();
+    for (const r of results || []) {
+      if (isEditionCode(r.code)) purgeUrls.push(`${base}/editions/${r.code}/chapters`);
+    }
+  } catch { /* migration 016 chưa chạy / D1 lỗi — purge phần còn lại */ }
+  forgetEditionMemo(slug);
+  await purgeEdgeCache(purgeUrls);
 
   return jsonResponse({ status: 'success', published: Boolean(published) });
 }
