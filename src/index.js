@@ -502,6 +502,12 @@ async function handleApi(request, url, env, ctx) {
     return cachedJsonResponse(request, ctx, 300, () => getViewRankings(env, url), { sMaxAge: 900, cacheParams: ['period', 'limit'] });
   }
 
+  // GET /api/novels/:slug/names — chỉ mục vi → zh từ glossary (hộp sửa name tra chữ Hán)
+  const namesMatch = path.match(/^\/api\/novels\/([^/]+)\/names$/);
+  if (namesMatch && method === 'GET') {
+    return cachedJsonResponse(request, ctx, 600, () => getPublicNames(env, namesMatch[1]), { sMaxAge: 3600 });
+  }
+
   // GET /api/novels/:slug/replacements — quy tắc sửa name công khai đã duyệt
   const replacementsMatch = path.match(/^\/api\/novels\/([^/]+)\/replacements$/);
   if (replacementsMatch && method === 'GET') {
@@ -1823,7 +1829,51 @@ async function loadPublicReplacements(env, slug) {
 async function getPublicReplacements(env, slug) {
   if (!(await isPublishedNovel(env, slug))) return jsonResponse({ error: 'Novel not found' }, 404);
   const rules = await loadPublicReplacements(env, slug);
-  return jsonResponse({ slug, rules: rules.map(r => ({ from: r.from, to: r.to })) });
+  // whole: quy tắc công khai chỉ khớp NGUYÊN TỪ (không thay "Lâm" bên trong "Lâm Phong"
+  // khi quy tắc là "Lâm" → "Lam"). Quy tắc cũ đã lưu không có cờ vẫn trả whole: true
+  // vì mọi quy tắc công khai đều là name/cụm do admin duyệt.
+  return jsonResponse({ slug, rules: rules.map(r => ({ from: r.from, to: r.to, whole: r.whole !== false })) });
+}
+
+// ── Chỉ mục name vi → zh (học từ sangtacviet: mỗi từ giữ chữ Hán gốc) ─────────
+// Bản dịch AI chỉ có tiếng Việt, nhưng pipeline dịch đã gộp tên mới (zh → vi) vào
+// glossary R2 sau mỗi batch → đảo ngược glossary là biết chữ Hán của phần lớn name.
+// Reader tải lười khi mở hộp sửa name. Tắt công khai bằng biến PUBLIC_NAMES=off.
+const PUBLIC_NAMES_MAX = 20000;
+const PUBLIC_NAME_MAX_LEN = 60;
+
+function buildNamesIndex(glossary) {
+  const byVi = new Map(); // vi (lower) -> { vi, zh: Set }
+  if (!glossary || typeof glossary !== 'object' || Array.isArray(glossary)) return [];
+  for (const [zhRaw, viRaw] of Object.entries(glossary)) {
+    if (typeof viRaw !== 'string') continue;
+    const zh = String(zhRaw).trim();
+    const vi = viRaw.replace(/\s+/g, ' ').trim();
+    if (!zh || !vi || zh.length > PUBLIC_NAME_MAX_LEN || vi.length > PUBLIC_NAME_MAX_LEN) continue;
+    const key = vi.toLowerCase();
+    let entry = byVi.get(key);
+    if (!entry) {
+      if (byVi.size >= PUBLIC_NAMES_MAX) break;
+      entry = { vi, zh: new Set() };
+      byVi.set(key, entry);
+    }
+    entry.zh.add(zh);
+  }
+  return [...byVi.values()]
+    .map(e => ({ vi: e.vi, zh: [...e.zh].slice(0, 5) }))
+    .sort((a, b) => b.vi.length - a.vi.length || (a.vi < b.vi ? -1 : a.vi > b.vi ? 1 : 0));
+}
+
+async function getPublicNames(env, slug) {
+  if (String(env.PUBLIC_NAMES || '').toLowerCase() === 'off') return jsonResponse({ error: 'Not found' }, 404);
+  if (!(await isPublishedNovel(env, slug))) return jsonResponse({ error: 'Novel not found' }, 404);
+  let glossary = {};
+  try {
+    const obj = await env.CHAPTERS.get(`${slug}/glossary.json`);
+    if (obj) glossary = await obj.json();
+  } catch { glossary = {}; }
+  const names = buildNamesIndex(glossary);
+  return jsonResponse({ slug, count: names.length, names });
 }
 
 async function glossarySuggestionCreate(request, env, slug) {
@@ -1970,7 +2020,7 @@ async function adminGlossarySuggestionReview(request, env, id) {
         const rules = (Array.isArray(data?.rules) ? data.rules : Array.isArray(data) ? data : [])
           .filter(r => r && typeof r.from === 'string' && typeof r.to === 'string');
         const idx = rules.findIndex(r => r.from.toLowerCase() === row.from_text.toLowerCase());
-        const rule = { from: row.from_text, to: toText, suggestion_id: id, updated_at: new Date().toISOString() };
+        const rule = { from: row.from_text, to: toText, whole: true, suggestion_id: id, updated_at: new Date().toISOString() };
         if (idx >= 0) rules[idx] = { ...rules[idx], ...rule };
         else rules.push(rule);
         return { rules: rules.slice(-PUBLIC_REPLACEMENTS_MAX) };
@@ -1982,7 +2032,7 @@ async function adminGlossarySuggestionReview(request, env, id) {
       return jsonResponse({ error: 'Không ghi được R2, góp ý vẫn ở trạng thái chờ' }, 502);
     }
     const origin = new URL(request.url).origin;
-    await purgeEdgeCache([`${origin}/api/novels/${row.slug}/replacements`]);
+    await purgeEdgeCache([`${origin}/api/novels/${row.slug}/replacements`, `${origin}/api/novels/${row.slug}/names`]);
   }
   await env.DB.prepare(`INSERT INTO admin_actions (action, slug, note) VALUES (?, ?, ?)`)
     .bind(`glossary_suggestion_${status}`, row.slug, `#${id}: ${row.from_text} → ${toText || row.to_text}`.slice(0, 2000)).run();
@@ -2752,6 +2802,8 @@ async function updateGlossary(env, slug, request) {
   await env.DB.prepare(`
     UPDATE novels SET glossary = ?, glossary_count = ?, updated_at = ? WHERE slug = ?
   `).bind('{}', Object.keys(glossary).length, new Date().toISOString(), slug).run();
+  // Chỉ mục name công khai đọc từ glossary R2 → purge để hộp sửa name thấy ngay (colo hiện tại).
+  await purgeEdgeCache([`${new URL(request.url).origin}/api/novels/${slug}/names`]);
 
   return jsonResponse({ status: 'success', message: 'Glossary updated and saved to R2' });
 }

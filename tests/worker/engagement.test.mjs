@@ -198,7 +198,7 @@ test('duyệt góp ý: chỉ admin; duyệt ghi replacements + glossary R2; khô
   const res2 = await (await call('admin/glossary-suggestions/2/review', { method: 'POST', headers: admin, body: { status: 'approved' } })).json();
   assert.equal(res2.applied_glossary, false);
   const pub = await (await call('novels/demo/replacements')).json();
-  assert.deepEqual(pub.rules, [{ from: 'Hạ Thìn', to: 'Hạ Thần Tử' }, { from: 'linh khi', to: 'linh khí' }]);
+  assert.deepEqual(pub.rules, [{ from: 'Hạ Thìn', to: 'Hạ Thần Tử', whole: true }, { from: 'linh khi', to: 'linh khí', whole: true }]);
   assert.equal((await call('admin/glossary-suggestions/1/review', { method: 'POST', headers: admin, body: { status: 'rejected' } })).status, 409);
   const actions = await db.prepare(`SELECT action FROM admin_actions ORDER BY id`).all();
   assert.deepEqual(actions.results.map(r => r.action), ['glossary_suggestion_approved', 'glossary_suggestion_approved']);
@@ -285,4 +285,25 @@ test('SEO: trang truyện có JSON-LD Book + Breadcrumb (escape </script>), tran
   assert.ok(!chBlocks.find(b => b['@type'] === 'Book'));
   // Tham số chương không phải số → giữ index gốc (không sinh canonical tự do).
   assert.equal(await (await mf2.dispatchFetch('http://test.invalid/novel/demo/read/abc%C3%A1')).text(), html);
+});
+
+test('names: đảo glossary vi → zh, gộp trùng vi, bỏ mục hỏng, sắp cụm dài trước; PUBLIC_NAMES=off tắt', async t => {
+  const { r2, call } = await setup(t);
+  await r2.put('demo/glossary.json', JSON.stringify({
+    '夏辰': 'Hạ Thần', '夏晨': 'hạ thần', '武德殿': 'Võ Đức Điện', '坏': 123, '': 'Rỗng', '長': 'x'.repeat(61),
+  }));
+  const data = await (await call('novels/demo/names')).json();
+  assert.equal(data.count, 2);
+  assert.deepEqual(data.names, [
+    { vi: 'Võ Đức Điện', zh: ['武德殿'] },
+    { vi: 'Hạ Thần', zh: ['夏辰', '夏晨'] },
+  ]);
+  assert.equal((await call('novels/hidden/names')).status, 404);
+  const empty = await (await call('novels/other/names')).json();
+  assert.deepEqual(empty.names, []);
+});
+
+test('names: PUBLIC_NAMES=off trả 404', async t => {
+  const { call } = await setup(t, { bindings: { VIEW_TOKEN_SECRET: SECRET, PUBLIC_NAMES: 'off' } });
+  assert.equal((await call('novels/demo/names')).status, 404);
 });
