@@ -11,6 +11,9 @@ admin giả (http.server) rồi chạy Chromium headless (Playwright) qua 8 kị
   6. Đồng bộ cài đặt đọc giữa 2 context cùng token
   7. Nền theo theme ngay lúc DOMContentLoaded (không nháy #0f172a)
   8. Xuất/nhập gói name trong ReplacementsManagerModal
+  9. Nhiều bản dịch: đọc ?ban= giữ đoạn "N#pM" của bản mặc định (keep_paragraph),
+     lịch sử + hd:ban nhớ bản dịch → "Đọc tiếp" mang ?ban=; admin /admin/editions
+     ẩn bản dịch → D1 published/edition_count + API công khai cập nhật ngay
 
 KHÔNG gọi Cloudflare thật (mọi lệnh wrangler đều --local + --persist-to tạm).
 
@@ -45,6 +48,7 @@ ADMIN_TOKEN = 'admin-e2e'
 USER_TOKEN = 'u_' + 'ab' * 32
 USER_INFO = {'id': 1, 'email': 'e2e@example.com', 'name': 'Người Đọc E2E'}
 N_PARAGRAPHS = 60
+EDITION = 'nhom-e2e'
 
 ENV = dict(os.environ, WRANGLER_SEND_METRICS='false', CI='1',
            NO_PROXY='127.0.0.1,localhost', no_proxy='127.0.0.1,localhost')
@@ -107,6 +111,24 @@ def seed(persist):
         p = tmp / fn
         p.write_text(chapter_markdown(n), encoding='utf-8')
         wrangler('r2', 'object', 'put', f'hacdao-chapters/{SLUG}/{fn}', '--local', '--persist-to', str(persist),
+                 '--file', str(p), '--content-type', 'text/markdown; charset=utf-8')
+    # Bản dịch phụ (migration 016 đã có trong schema.sql): 2 chương, đang published.
+    sql.append(
+        f"INSERT INTO editions (id, novel_slug, code, name, translator, kind, license_note, published, chapter_count) "
+        f"VALUES (1, '{SLUG}', '{EDITION}', 'Bản dịch nhóm E2E', 'Nhóm E2E', 'human', "
+        f"'Nhóm E2E đồng ý cho đăng (thư 2026-11-26)', 1, 2);"
+    )
+    sql.append(f"UPDATE novels SET edition_count = 1 WHERE slug = '{SLUG}';")
+    for n in (1, 2):
+        key = f'{SLUG}/ed/{EDITION}/content/e2e{n}.md'
+        sql.append(
+            f"INSERT INTO edition_chapters (edition_id, filename, title, chapter_number, r2_key) "
+            f"VALUES (1, 'E{n}_VI.md', 'Chương {n}: Bản nhóm', {n}, '{key}');"
+        )
+        p = tmp / f'ed{n}.md'
+        p.write_text(f'# Chương {n}: Bản nhóm\n\n' + '\n\n'.join(
+            f'Bản nhóm E2E đoạn {i}. Hạ Thần nhìn về phía chân trời.' for i in range(30)), encoding='utf-8')
+        wrangler('r2', 'object', 'put', f'hacdao-chapters/{key}', '--local', '--persist-to', str(persist),
                  '--file', str(p), '--content-type', 'text/markdown; charset=utf-8')
     g = tmp / 'glossary.json'
     g.write_text(json.dumps({'夏辰': 'Hạ Thần', '林风': 'Lâm Phong', '宗门': 'tông môn'}, ensure_ascii=False), encoding='utf-8')
@@ -648,6 +670,84 @@ def scenario(base, persist):
             record('8. Xuất/nhập gói name', True, f'(xuất {dl.suggested_filename}: {len(pack["rules"])} quy tắc; nhập JSON "{n_json.strip()}"; nhập TXT "{ntext.strip()}")')
         check('8. Xuất/nhập gói name', t8, pageA)
         ctxA.close()
+
+        # 9 ── Nhiều bản dịch
+        def t9_reader():
+            # Tiến độ server đang ở đoạn 20 của chương 1 (bản mặc định).
+            d1_query(persist, "UPDATE reading_progress SET chapter = 1, position = '1#p20', client_updated_at = NULL "
+                              f"WHERE user_id = 1 AND slug = '{SLUG}'")
+            d1_query(persist, "INSERT OR IGNORE INTO reading_progress (user_id, slug, chapter, position, type) "
+                              f"VALUES (1, '{SLUG}', 1, '1#p20', 'chapter')")
+            c = new_context(browser, base, storage=logged_in)
+            p = c.new_page()
+            wp = PageWatch(p, 'edition')
+            try:
+                p.goto(f'/novel/{SLUG}/read/1?ban={EDITION}')
+                wait_reader(p)
+                ok = wait_for(p, lambda: 'Bản nhóm E2E đoạn 0' in reader_text(p), 8)
+                expect(ok, 'Reader ?ban không hiện nội dung bản phụ')
+                put = wait_for(p, lambda: wp.find('PUT', f'/api/user/progress/{SLUG}'), 8)
+                expect(put and put[0][2] == 200, f'PUT progress: {put}')
+                body = json.loads(put[0][3] or '{}')
+                expect(body.get('keep_paragraph') is True and 'paragraph' not in body, f'body PUT: {body}')
+                row = d1_query(persist, f"SELECT chapter, position FROM reading_progress WHERE user_id = 1 AND slug = '{SLUG}'")
+                expect(row and row[0]['position'] == '1#p20', f'D1 position sau khi đọc bản phụ: {row}')
+                stored = p.evaluate(f"localStorage.getItem('hd:ban:{SLUG}')")
+                expect(stored == EDITION, f'hd:ban = {stored!r}')
+                hist = json.loads(p.evaluate("localStorage.getItem('reading_history_v2')") or '[]')
+                entry = next((h for h in hist if h.get('slug') == SLUG), {})
+                expect(entry.get('ban') == EDITION, f'lịch sử: {entry}')
+                # Trang chủ + Tủ truyện: "Đọc tiếp" mang ?ban=
+                p.goto('/', wait_until='networkidle')
+                # Mục "Vừa đọc gần đây" nằm trong LazyMount → cuộn dần tới khi được gắn vào DOM.
+                link = p.locator(f'a[href="/novel/{SLUG}/read/1?ban={EDITION}"]')
+                ok = wait_for(p, lambda: p.mouse.wheel(0, 500) or link.count() > 0, 10)
+                expect(ok, 'trang chủ: không thấy link "Đọc tiếp" có ?ban=')
+                p.goto('/library', wait_until='networkidle')
+                p.locator(f'a[href="/novel/{SLUG}/read/1?ban={EDITION}"]').first.wait_for(timeout=10000)
+                # NovelPage hiện đúng bản đang đọc (nút Đọc tiếp cũng mang ?ban).
+                p.goto(f'/novel/{SLUG}', wait_until='networkidle')
+                p.locator(f'a[href="/novel/{SLUG}/read/1?ban={EDITION}"]').first.wait_for(timeout=10000)
+                expect(not wp.errors, 'lỗi JS: ' + ' | '.join(wp.errors[:3]))
+                record('9a. Đọc ?ban giữ N#pM + Đọc tiếp nhớ bản dịch', True, f'(PUT {body}, D1 {row[0]["position"]})')
+            except Exception:
+                shot(p, '9a_edition')
+                raise
+            finally:
+                c.close()
+        check('9a. Đọc ?ban giữ N#pM + Đọc tiếp nhớ bản dịch', t9_reader)
+
+        def t9_admin():
+            c = new_context(browser, base, storage={'authToken': ADMIN_TOKEN, 'userRole': 'admin'})
+            p = c.new_page()
+            wp = PageWatch(p, 'admin-editions')
+            try:
+                p.goto('/admin', wait_until='networkidle')
+                p.get_by_role('link', name='Bản dịch').first.click()
+                p.wait_for_url('**/admin/editions', timeout=8000)
+                p.get_by_text('Nhóm E2E đồng ý cho đăng (thư 2026-11-26)').first.wait_for(timeout=10000)
+                p.locator('input[aria-label="Lọc theo slug truyện"]').fill(SLUG)
+                p.get_by_role('button', name='Lọc', exact=True).click()
+                p.get_by_text('Đang hiện', exact=True).first.wait_for(timeout=8000)
+                p.once('dialog', lambda d: d.accept())
+                p.get_by_role('button', name=re.compile('^Ẩn bản dịch')).first.click()
+                post = wait_for(p, lambda: wp.find('POST', f'/api/admin/novels/{SLUG}/editions/{EDITION}'), 8)
+                expect(post and post[0][2] == 200, f'POST ẩn: {post}')
+                p.get_by_text('Đang ẩn', exact=True).first.wait_for(timeout=8000)
+                row = d1_query(persist, f"SELECT e.published, n.edition_count FROM editions e JOIN novels n ON n.slug = e.novel_slug WHERE e.code = '{EDITION}'")
+                expect(row and row[0]['published'] == 0 and row[0]['edition_count'] == 0, f'D1: {row}')
+                pub = json.loads(urllib.request.urlopen(f'{base}/api/novels/{SLUG}/editions', timeout=10).read())
+                expect([e['code'] for e in pub['editions']] == ['he-thong'], f'/editions công khai: {pub}')
+                acts = d1_query(persist, "SELECT action, note FROM admin_actions WHERE action LIKE 'edition_%'")
+                expect(acts == [{'action': 'edition_hide', 'note': EDITION}], f'admin_actions: {acts}')
+                expect(not wp.errors, 'lỗi JS admin: ' + ' | '.join(wp.errors[:3]))
+                record('9b. Admin ẩn bản dịch', True, f'(D1 {row[0]}, /editions {[e["code"] for e in pub["editions"]]})')
+            except Exception:
+                shot(p, '9b_admin_editions')
+                raise
+            finally:
+                c.close()
+        check('9b. Admin ẩn bản dịch', t9_admin)
         browser.close()
 
 

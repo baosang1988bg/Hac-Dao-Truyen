@@ -302,3 +302,84 @@ test('SEO: ?ban=<bản phụ> thêm noindex, canonical vẫn về bản mặc đ
     assert.match(html, /rel="canonical"/, p);
   }
 });
+
+// ── Trang admin bản dịch: GET /api/admin/editions, POST /api/admin/novels/:slug/editions/:code ──
+const adminOutbound = req => new Response(null, {
+  status: new URL(req.url).pathname === '/api/auth/verify' && req.headers.get('Authorization') === 'Bearer admin-token' ? 200 : 401,
+});
+const ADMIN = { Authorization: 'Bearer admin-token' };
+
+test('admin editions: quyền (khách/độc giả/token sai → 403), liệt kê cả bản ẩn kèm chapter_count/license_note', async t => {
+  const { call } = await setup(t, { bindings: { BACKEND_URL: 'http://backend.test' }, outbound: adminOutbound });
+  assert.equal((await sync(call, { slug: 'demo', edition: EDITION, chapters: [chapter(1), chapter(2)] })).status, 200);
+  assert.equal((await sync(call, { slug: 'demo', edition: { ...EDITION, code: 'nhom-b', name: 'B', published: false }, chapters: [] })).status, 200);
+
+  assert.equal((await call('admin/editions?slug=demo')).status, 403);
+  assert.equal((await call('admin/editions?slug=demo', { headers: { Authorization: 'Bearer sai' } })).status, 403);
+  assert.equal((await call('admin/editions?slug=demo', { headers: { Authorization: `Bearer u_${'a'.repeat(64)}` } })).status, 403);
+  assert.equal((await call('admin/novels/demo/editions/nhom-a', { method: 'POST', body: { published: false } })).status, 403);
+
+  const res = await call('admin/editions?slug=demo', { headers: ADMIN });
+  assert.equal(res.status, 200);
+  const rows = await res.json();
+  assert.deepEqual(rows.map(r => [r.code, r.published, r.chapter_count]).sort(), [['nhom-a', true, 2], ['nhom-b', false, 0]]);
+  const a = rows.find(r => r.code === 'nhom-a');
+  assert.equal(a.license_note, EDITION.license_note);
+  assert.equal(a.slug, 'demo');
+  assert.equal(a.novel_title, 'Demo');
+  assert.ok(a.updated_at);
+  // Không lọc slug → toàn site; slug sai định dạng 400; truyện không có bản → [].
+  assert.equal((await (await call('admin/editions', { headers: ADMIN })).json()).length, 2);
+  assert.equal((await call('admin/editions?slug=Bad%20Slug', { headers: ADMIN })).status, 400);
+  assert.deepEqual(await (await call('admin/editions?slug=hidden', { headers: ADMIN })).json(), []);
+});
+
+test('admin editions: ẩn/hiện cập nhật published + edition_count, purge cache, xoá memo, ghi admin_actions', async t => {
+  const { call, db } = await setup(t, { bindings: { BACKEND_URL: 'http://backend.test' }, outbound: adminOutbound });
+  assert.equal((await sync(call, { slug: 'demo', edition: EDITION, chapters: [chapter(1), chapter(2)] })).status, 200);
+  const paths = ['novels/demo', 'novels/demo/editions', 'novels/demo/editions/nhom-a/chapters',
+    'novels/demo/editions/nhom-a/chapters/1', 'novels/demo/editions/nhom-a/chapters/2',
+    `novels/demo/editions/nhom-a/chapters/${encodeURIComponent('A-2_VI.md')}`];
+  for (const p of paths) {
+    assert.equal((await call(p)).status, 200, p);
+    assert.equal((await call(p)).headers.get('X-Worker-Cache'), 'HIT', p);
+  }
+  assert.equal((await (await call('novels/demo')).json()).edition_count, 1);
+
+  const off = await call('admin/novels/demo/editions/nhom-a', { method: 'POST', body: { published: false }, headers: ADMIN });
+  assert.equal(off.status, 200, await off.clone().text());
+  assert.deepEqual(await off.json(), { ok: true, slug: 'demo', code: 'nhom-a', published: false, edition_count: 0 });
+  assert.equal((await db.prepare(`SELECT published FROM editions WHERE code='nhom-a'`).first()).published, 0);
+  assert.equal((await db.prepare(`SELECT edition_count FROM novels WHERE slug='demo'`).first()).edition_count, 0);
+  // Cache đã purge: chi tiết truyện thấy edition_count 0, /editions chỉ còn bản mặc định, chương bản phụ 404.
+  assert.equal((await (await call('novels/demo')).json()).edition_count, 0);
+  assert.deepEqual((await (await call('novels/demo/editions')).json()).editions.map(e => e.code), ['he-thong']);
+  for (const p of paths.slice(2)) assert.equal((await call(p)).status, 404, p);
+
+  const on = await call('admin/novels/demo/editions/nhom-a', { method: 'POST', body: { published: true }, headers: ADMIN });
+  assert.equal((await on.json()).edition_count, 1);
+  assert.equal((await call('novels/demo/editions/nhom-a/chapters/1')).status, 200);
+  assert.equal((await (await call('novels/demo')).json()).edition_count, 1);
+
+  const { results } = await db.prepare(`SELECT action, slug, note FROM admin_actions ORDER BY id`).all();
+  assert.deepEqual(results.map(r => [r.action, r.slug, r.note]), [['edition_hide', 'demo', 'nhom-a'], ['edition_show', 'demo', 'nhom-a']]);
+});
+
+test('admin editions: 404 bản/truyện không có, cấm he-thong, body sai 400, trước migration 016', async t => {
+  const { call } = await setup(t, { bindings: { BACKEND_URL: 'http://backend.test' }, outbound: adminOutbound });
+  assert.equal((await sync(call, { slug: 'demo', edition: EDITION, chapters: [chapter(1)] })).status, 200);
+  const post = (p, body) => call(p, { method: 'POST', body, headers: ADMIN });
+  assert.equal((await post('admin/novels/demo/editions/khong-co', { published: false })).status, 404);
+  assert.equal((await post('admin/novels/khong-co/editions/nhom-a', { published: false })).status, 404);
+  assert.equal((await post('admin/novels/demo/editions/he-thong', { published: false })).status, 400);
+  assert.equal((await post('admin/novels/demo/editions/NHOM-A', { published: false })).status, 400);
+  assert.equal((await post('admin/novels/demo/editions/nhom-a', { published: 'false' })).status, 400);
+  assert.equal((await post('admin/novels/demo/editions/nhom-a', {})).status, 400);
+  assert.equal((await call('admin/novels/demo/editions/nhom-a', { method: 'POST', raw: '{x', headers: ADMIN })).status, 400);
+
+  const pre = await setup(t, { withMigration: false, bindings: { BACKEND_URL: 'http://backend.test' }, outbound: adminOutbound });
+  const list = await pre.call('admin/editions?slug=demo', { headers: ADMIN });
+  assert.equal(list.status, 200);
+  assert.deepEqual(await list.json(), []);
+  assert.equal((await pre.call('admin/novels/demo/editions/nhom-a', { method: 'POST', body: { published: true }, headers: ADMIN })).status, 404);
+});

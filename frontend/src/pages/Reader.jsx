@@ -22,7 +22,7 @@ import {
 } from '../utils/ttsQueue'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import {
-  saveReadProgress, updateHistoryMeta, fmtChapterLabel, saveReadParagraph, getReadParagraph,
+  saveReadProgress, updateHistoryMeta, fmtChapterLabel, saveReadParagraph, getReadParagraph, setStoredEdition,
 } from '../utils/readingHistory'
 import {
   normalizeChapterCatalog, getChapNum, chapterIdentifier, chapterUrl, findChapterIndex, chapterRequestId,
@@ -161,10 +161,12 @@ function progressQueueKey(slug) { return `${PROGRESS_QUEUE_PREFIX}${getIdentityN
 
 // Hàng đợi offline chỉ giữ BẢN MỚI NHẤT (ghi đè, không append lịch sử cũ).
 // paragraph (tuỳ chọn): index đoạn văn đang đọc → server lưu position "12#p34".
-function writeQueuedProgress(slug, chapterNum, paragraph) {
+// keepParagraph: đang đọc bản dịch phụ → nhờ server giữ đoạn của bản mặc định.
+function writeQueuedProgress(slug, chapterNum, paragraph, keepParagraph = false) {
   try {
     const entry = { chapter: chapterNum, ts: Date.now() }
     if (Number.isInteger(paragraph) && paragraph >= 0) entry.paragraph = paragraph
+    if (keepParagraph) entry.keep_paragraph = true
     localStorage.setItem(progressQueueKey(slug), JSON.stringify(entry))
   } catch { /* storage đầy/bị chặn — best effort, không crash */ }
 }
@@ -181,10 +183,16 @@ function clearQueuedProgress(slug) {
   try { localStorage.removeItem(progressQueueKey(slug)) } catch { /* ignore */ }
 }
 
-/** Body PUT /user/progress — chỉ thêm `paragraph` khi là số nguyên hợp lệ. */
-function progressBody(chapterNum, paragraph) {
+/**
+ * Body PUT /user/progress — chỉ thêm `paragraph` khi là số nguyên hợp lệ.
+ * keepParagraph (đọc bản dịch phụ ?ban=): gửi `keep_paragraph: true` để server
+ * giữ nguyên vị trí đoạn "N#pM" của bản mặc định khi vẫn cùng chương N (thay
+ * vì ghi đè thành "N"). Không bao giờ gửi kèm paragraph trong trường hợp này.
+ */
+function progressBody(chapterNum, paragraph, keepParagraph = false) {
   const body = { type: 'chapter', chapter: chapterNum }
-  if (Number.isInteger(paragraph) && paragraph >= 0) body.paragraph = paragraph
+  if (keepParagraph) body.keep_paragraph = true
+  else if (Number.isInteger(paragraph) && paragraph >= 0) body.paragraph = paragraph
   return body
 }
 
@@ -206,7 +214,7 @@ async function flushAllQueuedProgress() {
     const queued = readQueuedProgress(slugFromKey)
     if (!queued) continue
     try {
-      await userApi.put(`/user/progress/${slugFromKey}`, progressBody(queued.chapter, queued.paragraph))
+      await userApi.put(`/user/progress/${slugFromKey}`, progressBody(queued.chapter, queued.paragraph, queued.keep_paragraph === true))
       clearQueuedProgress(slugFromKey)
     } catch (err) {
       const status = err.response?.status
@@ -535,15 +543,15 @@ export default function Reader() {
   // (không đánh dấu synced lạc quan trước khi có xác nhận).
   // quiet = cập nhật đoạn văn khi đang đọc: không bật dòng "Đang lưu tiến
   // trình..." mỗi lần gửi định kỳ; chỉ chốt trạng thái nếu dòng đó đang hiện dở.
-  const syncProgress = useCallback((novelSlug, chapterNum, paragraph, { quiet = false } = {}) => {
-    writeQueuedProgress(novelSlug, chapterNum, paragraph) // giữ bản mới nhất trong hàng đợi ngay từ đầu
+  const syncProgress = useCallback((novelSlug, chapterNum, paragraph, { quiet = false, keepParagraph = false } = {}) => {
+    writeQueuedProgress(novelSlug, chapterNum, paragraph, keepParagraph) // giữ bản mới nhất trong hàng đợi ngay từ đầu
     const myEpoch = ++progressEpochRef.current
     if (!quiet) setSyncStatus('saving')
 
     const attempt = async (retriesLeft) => {
       if (progressEpochRef.current !== myEpoch) return // đã chuyển chương khác — bỏ, request mới lo việc này
       try {
-        await userApi.put(`/user/progress/${novelSlug}`, progressBody(chapterNum, paragraph))
+        await userApi.put(`/user/progress/${novelSlug}`, progressBody(chapterNum, paragraph, keepParagraph))
         if (progressEpochRef.current !== myEpoch) return
         clearQueuedProgress(novelSlug)
         if (quiet) setSyncStatus(s => (s === 'saving' || s === 'error' ? 'saved' : s))
@@ -635,12 +643,21 @@ export default function Reader() {
         if (contentEpochRef.current !== myEpoch) return
         if (typeof data?.content !== 'string') throw new Error('Chương không có nội dung')
         setDoc({ url: contentUrl, content: data.content, error: null })
-        // Lưu tiến trình đọc (local) — kèm tên + bìa để trang chủ hiện ngay.
+        // Lưu tiến trình đọc (local) — kèm tên + bìa để trang chủ hiện ngay, và
+        // bản dịch đang đọc (null = mặc định) để link "Đọc tiếp" mang đúng ?ban=.
         const n = novelRef.current
-        saveReadProgress(slug, chapter, n ? {
-          title: fmtNovelTitle(n.title_is_slug ? '' : n.title, n.slug || slug),
-          cover_url: n.cover_url,
-        } : undefined)
+        const curBan = banRef.current
+        saveReadProgress(slug, chapter, {
+          ...(n ? {
+            title: fmtNovelTitle(n.title_is_slug ? '' : n.title, n.slug || slug),
+            cover_url: n.cover_url,
+          } : {}),
+          ban: curBan,
+        })
+        // Mở thẳng link có ?ban (từ "Đọc tiếp", chia sẻ...) → nhớ bản dịch cho
+        // NovelPage. Chỉ ghi khi tải được chương (bản dịch không tồn tại/đã ẩn
+        // → 404 → không ghi). Không có ?ban thì không xoá lựa chọn đã lưu.
+        if (curBan) setStoredEdition(slug, curBan)
         // Đồng bộ tiến trình lên server nếu đã đăng nhập — chỉ THỬ 1 lần cho
         // mỗi (slug, chapter) mới, không phụ thuộc sự kiện cuộn.
         const syncKey = `${slug}/${chapter}`
@@ -649,8 +666,8 @@ export default function Reader() {
           if (/^\d+$/.test(chapter)) {
             // Mở lại chương đang đọc dở → gửi kèm đoạn văn đã lưu (nếu có);
             // bản dịch phụ chỉ gửi số chương.
-            const savedParagraph = banRef.current ? null : getReadParagraph(slug, chapter)
-            syncProgress(slug, Number(chapter), savedParagraph ?? undefined)
+            const savedParagraph = curBan ? null : getReadParagraph(slug, chapter)
+            syncProgress(slug, Number(chapter), savedParagraph ?? undefined, { keepParagraph: Boolean(curBan) })
           } else {
             // Chương không có số thứ tự hợp lệ (vd author note) — contract
             // 'chapter' yêu cầu integer, không có cách biểu diễn hợp lệ nên

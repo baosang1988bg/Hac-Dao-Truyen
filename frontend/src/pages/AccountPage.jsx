@@ -6,6 +6,8 @@ import userApi, {
   saveUserSession, clearUserSession, getUserInfo, isLoggedIn,
 } from '../userApi'
 import { fetchNovelsBySlugsBatch } from '../utils/novelsApi'
+import { getAllHistory } from '../utils/readingHistory'
+import { continueReadingUrl } from '../utils/chapters'
 import { novelDisplayTitle, fmtDate } from '../utils/format'
 import { fetchMyGlossarySuggestions } from '../engagementApi'
 import { suggestionStatusLabel, suggestionChapterHref, serverErrorMessage } from '../utils/engagement'
@@ -173,6 +175,10 @@ function AccountDashboard({ user, onLogout }) {
         // (≤24 slug/lô), tự fallback gọi lẻ /novels/:slug nếu backend cũ.
         const novelsBySlug = await fetchNovelsBySlugsBatch(userApi, bookmarks.map(bm => bm.slug))
         if (!alive) return
+        // Tiến độ server không biết bản dịch → lấy `ban` từ lịch sử đọc local
+        // của máy này, CHỈ khi lịch sử cùng chương với server (đọc trên máy
+        // khác/chương khác thì mở bản mặc định cho chắc).
+        const localBySlug = new Map(getAllHistory().map(h => [h.slug, h]))
         const list = bookmarks.map(bm => {
           const novel = novelsBySlug.get(bm.slug)
           const prog = progress.find(p => p.slug === bm.slug)
@@ -181,7 +187,9 @@ function AccountDashboard({ user, onLogout }) {
           const newCount = Number.isFinite(readChapter) && chapterCount > readChapter
             ? chapterCount - readChapter
             : (prog ? 0 : null) // null = chưa đọc chương nào (không hiện badge âm)
-          return { ...bm, novel, prog, chapterCount, newCount }
+          const local = prog ? localBySlug.get(bm.slug) : null
+          const ban = local && String(local.chapter) === String(prog.chapter) ? local.ban : null
+          return { ...bm, novel, prog, ban, chapterCount, newCount }
         }).filter(it => it.novel)
         setItems(list)
       })
@@ -260,7 +268,7 @@ function AccountDashboard({ user, onLogout }) {
 
       {items !== null && items.length > 0 && (
         <div className="bookmark-list" data-track-section="account_following">
-          {items.map(({ slug, novel, prog, chapterCount, newCount }, i) => (
+          {items.map(({ slug, novel, prog, ban, chapterCount, newCount }, i) => (
             <div key={slug} className="glass-panel bookmark-row hd-reveal" style={{ '--i': staggerIndex(i) }}>
               <div className="bookmark-row__body">
                 <Link to={`/novel/${slug}`} className="bookmark-row__title">
@@ -276,7 +284,7 @@ function AccountDashboard({ user, onLogout }) {
               </div>
               {prog ? (
                 <Link
-                  to={`/novel/${slug}/read/${prog.chapter}`}
+                  to={continueReadingUrl(slug, prog.chapter, ban)}
                   className="btn btn-primary bookmark-row__action"
                   data-track-action="continue_reading"
                 >

@@ -538,6 +538,16 @@ async function handleApi(request, url, env, ctx) {
     return adminGlossarySuggestionReview(request, env, parseInt(suggestReviewMatch[1], 10));
   }
 
+  // GET /api/admin/editions?slug= — admin xem mọi bản dịch phụ (cả bản đang ẩn)
+  if (path === '/api/admin/editions' && method === 'GET') {
+    return adminEditionsList(request, env, url);
+  }
+  // POST /api/admin/novels/:slug/editions/:code — admin ẩn/hiện 1 bản dịch phụ
+  const adminEditionMatch = path.match(/^\/api\/admin\/novels\/([^/]+)\/editions\/([^/]+)$/);
+  if (adminEditionMatch && method === 'POST') {
+    return adminEditionSetPublished(request, env, ctx, adminEditionMatch[1], adminEditionMatch[2]);
+  }
+
   // GET/PUT /api/user/prefs — cài đặt Reader + quy tắc thay thế cá nhân
   if (path === '/api/user/prefs' && method === 'GET') return userPrefsGet(request, env);
   if (path === '/api/user/prefs' && method === 'PUT') return userPrefsPut(request, env);
@@ -3379,6 +3389,120 @@ async function syncEdition(env, request, ctx) {
   });
 }
 
+// GET /api/admin/editions?slug= — danh sách bản dịch phụ cho trang admin, gồm
+// cả bản unpublished (route công khai /editions chỉ trả bản published). Bỏ trống
+// slug → 200 bản mới cập nhật nhất toàn site. Bảng chưa có (migration 016 chưa
+// chạy) → []. KHÔNG cache: admin cần thấy trạng thái thật ngay sau khi ẩn/hiện.
+const ADMIN_EDITIONS_LIMIT = 200;
+async function adminEditionsList(request, env, url) {
+  if (!(await isAdminRequest(request, env))) return jsonResponse({ error: 'Unauthorized' }, 403);
+  const slug = (url.searchParams.get('slug') || '').trim();
+  if (slug && !SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
+  try {
+    const { results } = await env.DB.prepare(`
+      SELECT e.novel_slug AS slug, n.title AS novel_title, e.code, e.name, e.translator, e.kind,
+             e.license_note, e.published, e.chapter_count, e.created_at, e.updated_at
+      FROM editions e LEFT JOIN novels n ON n.slug = e.novel_slug
+      ${slug ? 'WHERE e.novel_slug = ?' : ''}
+      ORDER BY e.updated_at DESC, e.id DESC LIMIT ${ADMIN_EDITIONS_LIMIT}
+    `).bind(...(slug ? [slug] : [])).all();
+    return jsonResponse((results || []).map(r => ({
+      slug: r.slug,
+      novel_title: r.novel_title || '',
+      code: r.code,
+      name: r.name,
+      translator: r.translator || '',
+      kind: r.kind,
+      license_note: r.license_note || '',
+      published: Boolean(r.published),
+      chapter_count: Number(r.chapter_count) || 0,
+      created_at: r.created_at || null,
+      updated_at: r.updated_at || null,
+    })));
+  } catch (err) {
+    if (isMissingTableError(err)) return jsonResponse([]);
+    throw err;
+  }
+}
+
+// POST /api/admin/novels/:slug/editions/:code  body { published: boolean } —
+// ẩn/hiện 1 bản dịch phụ. Cập nhật editions.published + novels.edition_count
+// trong MỘT batch, ghi admin_actions (audit), xoá memo isolate và purge edge
+// cache giống POST /api/sync/edition khi ẩn: /editions, chi tiết truyện, mục lục
+// bản dịch + các chương mới nhất (≤ PURGE_MAX_PER_REQUEST). Bản mặc định
+// 'he-thong' không có dòng DB → isEditionCode từ chối (400).
+async function adminEditionSetPublished(request, env, ctx, slug, rawCode) {
+  if (!(await isAdminRequest(request, env))) return jsonResponse({ error: 'Unauthorized' }, 403);
+  let code = rawCode;
+  try { code = decodeURIComponent(rawCode); } catch { /* giữ nguyên → isEditionCode loại */ }
+  if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
+  if (!isEditionCode(code)) {
+    return jsonResponse({ error: `Mã bản dịch không hợp lệ (không sửa được bản mặc định '${DEFAULT_EDITION_CODE}')` }, 400);
+  }
+  const parsed = await readLimitedJson(request, DEFAULT_JSON_MAX_BYTES);
+  if (!parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, parsed.status);
+  if (!parsed.body || typeof parsed.body.published !== 'boolean') {
+    return jsonResponse({ error: 'published phải là boolean' }, 400);
+  }
+  const published = parsed.body.published ? 1 : 0;
+
+  let existing;
+  try {
+    existing = await env.DB.prepare(`SELECT id, published FROM editions WHERE novel_slug = ? AND code = ?`).bind(slug, code).first();
+  } catch (err) {
+    if (isMissingTableError(err)) return jsonResponse({ error: 'Edition not found' }, 404);
+    throw err;
+  }
+  if (!existing) return jsonResponse({ error: 'Edition not found' }, 404);
+
+  const withEditionCount = await hasEditionCountColumn(env);
+  const operations = [
+    env.DB.prepare(`UPDATE editions SET published = ?, updated_at = datetime('now') WHERE id = ?`).bind(published, existing.id),
+  ];
+  if (withEditionCount) {
+    operations.push(env.DB.prepare(`
+      UPDATE novels SET edition_count = (SELECT COUNT(*) FROM editions e WHERE e.novel_slug = novels.slug AND e.published = 1)
+      WHERE slug = ?
+    `).bind(slug));
+  }
+  operations.push(env.DB.prepare(`INSERT INTO admin_actions (action, slug, note) VALUES (?, ?, ?)`)
+    .bind(published ? 'edition_show' : 'edition_hide', slug, code));
+  await env.DB.batch(operations);
+  forgetEditionMemo(slug, code);
+
+  const origin = new URL(request.url).origin;
+  const base = `${origin}/api/novels/${slug}`;
+  const edBase = `${base}/editions/${code}`;
+  const purgeUrls = new Set([`${base}/editions`, `${edBase}/chapters`, base]);
+  if (!published) {
+    // Vừa ẩn: chương đã cache không còn qua bước kiểm editions.published →
+    // purge các chương mới nhất (theo số + filename) trong giới hạn; chương cũ
+    // hơn hết hạn edge ≤ 1 giờ (cùng chính sách với /api/sync/edition).
+    try {
+      const { results } = await env.DB.prepare(`
+        SELECT filename, chapter_number AS number FROM edition_chapters
+        WHERE edition_id = ? ORDER BY chapter_number DESC LIMIT ?
+      `).bind(existing.id, PURGE_MAX_PER_REQUEST).all();
+      for (const c of results || []) {
+        if (purgeUrls.size >= PURGE_MAX_PER_REQUEST) break;
+        if (Number(c.number) > 0) purgeUrls.add(`${edBase}/chapters/${c.number}`);
+        purgeUrls.add(`${edBase}/chapters/${encodeURIComponent(c.filename)}`);
+      }
+    } catch (err) {
+      console.warn('edition purge list failed:', err && err.message ? err.message : err);
+    }
+  }
+  const purge = purgeEdgeCache([...purgeUrls].slice(0, PURGE_MAX_PER_REQUEST));
+  if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(purge); else await purge;
+
+  let editionCount = null;
+  if (withEditionCount) {
+    const row = await env.DB.prepare(`SELECT edition_count FROM novels WHERE slug = ?`).bind(slug).first();
+    editionCount = row ? Number(row.edition_count) || 0 : 0;
+  }
+  return jsonResponse({ ok: true, slug, code, published: Boolean(published), edition_count: editionCount });
+}
+
 // ── User account system (roadmap 3.1–3.4) ────────────────────────────────────
 // Mirror hợp đồng API của backend FastAPI: register/login/logout/me,
 // bookmarks, reading progress, comments. Dữ liệu ở D1 (migrations/002_users.sql).
@@ -3749,17 +3873,27 @@ async function userProgressUpdate(request, env, slug) {
   // MỘT statement nguyên tử (không tách SELECT rồi UPDATE — sẽ có race).
   // KHÔNG lấy max(chapter): đọc lại chương trước là tiến độ mới hợp lệ.
   const clientUpdatedAt = Number.isSafeInteger(body?.client_updated_at) ? body.client_updated_at : null;
+  // keep_paragraph (tuỳ chọn): client đang đọc BẢN DỊCH PHỤ (?ban=) chỉ biết số
+  // chương, không biết đoạn của bản mặc định. Nếu cùng chương với tiến độ đã lưu
+  // thì giữ nguyên position cũ ("12#p34") thay vì ghi đè thành "12"; khác chương
+  // thì ghi như thường. So sánh nằm trong CASE của DO UPDATE → vẫn MỘT statement
+  // nguyên tử (không SELECT rồi UPDATE). Chỉ áp dụng cho type 'chapter'.
+  const keepParagraph = type === 'chapter' && body && body.keep_paragraph === true ? 1 : 0;
   const { meta } = await env.DB.prepare(`
     INSERT INTO reading_progress (user_id, slug, chapter, position, type, updated_at, client_updated_at)
     VALUES (?, ?, ?, ?, ?, datetime('now'), ?)
     ON CONFLICT(user_id, slug) DO UPDATE SET
-      chapter = excluded.chapter, position = excluded.position,
+      chapter = excluded.chapter,
+      position = CASE
+        WHEN ? = 1 AND reading_progress.type = 'chapter' AND reading_progress.chapter = excluded.chapter
+          AND reading_progress.position IS NOT NULL
+        THEN reading_progress.position ELSE excluded.position END,
       type = excluded.type, updated_at = excluded.updated_at,
       client_updated_at = excluded.client_updated_at
     WHERE excluded.client_updated_at IS NULL
        OR reading_progress.client_updated_at IS NULL
        OR excluded.client_updated_at >= reading_progress.client_updated_at
-  `).bind(user.id, slug, chapter, position, type, clientUpdatedAt).run();
+  `).bind(user.id, slug, chapter, position, type, clientUpdatedAt, keepParagraph).run();
 
   if (!meta.changes) {
     return jsonResponse({ ok: false, error: 'Đã có tiến độ mới hơn được lưu, bỏ qua request cũ này' }, 409);

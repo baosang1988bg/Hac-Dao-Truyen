@@ -9,7 +9,9 @@ import {
 } from 'lucide-react'
 import userApi, { isLoggedIn } from '../userApi'
 import NovelCover from '../components/NovelCover'
-import { getLastReadForSlug, fmtChapterLabel, getReadChapters } from '../utils/readingHistory'
+import {
+  getLastReadForSlug, fmtChapterLabel, getReadChapters, getStoredEdition, setStoredEdition,
+} from '../utils/readingHistory'
 import { fmtTimeAgo, fmtNumber, fmtChapterDate, isRecentChapter, fmtNovelTitle, cleanAuthor } from '../utils/format'
 import { splitGenres } from '../utils/genreLabels'
 import SynopsisPanel from '../components/SynopsisPanel'
@@ -53,20 +55,8 @@ function chapterCountLabel(novel) {
   return `${fmtNumber(novel.chapter_count || 0)} chương đã dịch`
 }
 
-// ── Bản dịch đã chọn (nhớ theo truyện) ──────────────────────────────────────
-const EDITION_KEY_PREFIX = 'hd:ban:'
+// ── Bản dịch đã chọn (nhớ theo truyện, khoá 'hd:ban:<slug>' ở utils/readingHistory) ──
 const EDITION_KIND_LABELS = { ai: 'Dịch AI', human: 'Dịch giả', convert: 'Convert' }
-
-function readStoredEdition(slug) {
-  try { return normalizeEditionCode(localStorage.getItem(EDITION_KEY_PREFIX + slug)) } catch { return null }
-}
-
-function writeStoredEdition(slug, code) {
-  try {
-    if (code) localStorage.setItem(EDITION_KEY_PREFIX + slug, code)
-    else localStorage.removeItem(EDITION_KEY_PREFIX + slug)
-  } catch { /* chế độ riêng tư / chặn storage — chỉ không nhớ được lựa chọn */ }
-}
 
 /**
  * Trang chi tiết truyện dành cho GUEST (public).
@@ -90,7 +80,7 @@ function NovelPageContent({ slug }) {
   // lưu nằm trong danh sách bản published; còn lại dùng bản mặc định.
   const editionCount = Number(novelReq.data?.edition_count) || 0
   const [editions, setEditions] = useState(null)
-  const [storedBan, setStoredBan] = useState(() => readStoredEdition(slug))
+  const [storedBan, setStoredBan] = useState(() => getStoredEdition(slug))
   useEffect(() => {
     if (editionCount <= 0) return undefined
     let alive = true
@@ -101,7 +91,7 @@ function NovelPageContent({ slug }) {
   const chooseEdition = (code) => {
     const next = normalizeEditionCode(code)
     setStoredBan(next)
-    writeStoredEdition(slug, next)
+    setStoredEdition(slug, next)
     trackEvent('select_content', { content_type: 'edition', item_id: next || DEFAULT_EDITION_CODE, novel_slug: slug })
   }
   const chaptersReq = useCachedGet(chapterListPath(slug, ban))

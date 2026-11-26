@@ -89,6 +89,26 @@ export async function fetchEditions(slug) {
   }
 }
 
+// ── Admin: quản lý bản dịch phụ ──────────────────────────────────────────────
+/**
+ * Admin. Mọi bản dịch phụ (cả bản đang ẩn) — lọc theo slug nếu có. Ném lỗi axios.
+ * Trả [{ slug, novel_title, code, name, translator, kind, license_note, published,
+ *        chapter_count, created_at, updated_at }].
+ */
+export async function fetchAdminEditions(slug = '') {
+  const { data } = await api.get('/admin/editions', { params: slug ? { slug } : {} })
+  return Array.isArray(data) ? data : []
+}
+
+/** Admin. Ẩn/hiện 1 bản dịch phụ → { ok, slug, code, published, edition_count }. Ném lỗi axios. */
+export async function setAdminEditionPublished(slug, code, published) {
+  const { data } = await api.post(
+    `/admin/novels/${encodeURIComponent(slug)}/editions/${encodeURIComponent(code)}`,
+    { published: Boolean(published) },
+  )
+  return data
+}
+
 // ── Góp ý name ───────────────────────────────────────────────────────────────
 /** Cần đăng nhập. body: { from, to, original?, note?, chapter? }. Ném lỗi axios (đọc err.response.data.error). */
 export async function submitGlossarySuggestion(slug, body) {

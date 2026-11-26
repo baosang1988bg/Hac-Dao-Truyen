@@ -124,6 +124,19 @@ export function chapterUrl(slug, chapter, ban) {
 }
 
 /**
+ * URL "Đọc tiếp" từ một mục lịch sử đọc: `chapter` là tham số chương đã lưu
+ * (chuỗi số "12" hoặc filename), `ban` là mã bản dịch đang đọc (null = mặc
+ * định). Chương dạng số đi qua chapterUrl như mọi link chương khác; filename
+ * giữ nguyên dạng cũ (`/read/<chapter>`) để không đổi URL của dữ liệu cũ.
+ */
+export function continueReadingUrl(slug, chapter, ban) {
+  if (!slug || chapter === null || chapter === undefined || chapter === '') return `/novel/${slug}`
+  const raw = String(chapter)
+  if (/^\d+$/.test(raw) && Number(raw) > 0) return chapterUrl(slug, { number: Number(raw) }, ban)
+  return withEditionQuery(`/novel/${slug}/read/${raw}`, ban)
+}
+
+/**
  * Vị trí chương hiện tại trong mục lục theo tham số URL (số hoặc filename).
  * Trả -1 nếu không tìm thấy.
  */
