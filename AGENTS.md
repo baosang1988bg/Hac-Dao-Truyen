@@ -16,7 +16,7 @@ Hiến pháp Spec Kit: `.specify/memory/constitution.md`.
   `migrate_to_cloudflare.py`, `wrangler d1 … --remote`, `wrangler r2 object put/delete`,
   `gh workflow run`, `gh variable set`, `gh secret set`.
 - Đọc, in hoặc commit secret: `.env`, `.dev.vars`, `credentials.json`, `key_status.json`.
-- Commit/push thẳng lên `main`, `git push --force`. Chỉ làm trên nhánh `feature/…` hoặc `chore/…`.
+- Commit/push thẳng lên `prod` (hoặc `main`), `git push --force`. Chỉ làm trên nhánh `feature/…`, `chore/…` hoặc `dev` (khi được yêu cầu).
 - Đổi `"title"` trong `novel.json` sang tiếng Trung (tên Trung chỉ ở `"original_title"`).
 
 Khi chạy trong OpenHands, các lệnh trên còn bị chặn cứng bởi `.openhands/hooks/block_dangerous.sh`.

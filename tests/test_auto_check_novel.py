@@ -252,7 +252,7 @@ def _fake_git(monkeypatch, *, dirty="", head="abc", origin="abc"):
         if cmd[:2] == ["git", "status"]:
             return _Proc(dirty)
         if cmd[:2] == ["git", "rev-parse"]:
-            return _Proc((origin if "origin/main" in cmd else head) + "\n")
+            return _Proc((origin if any(ref in cmd for ref in ("origin/prod", "origin/main")) else head) + "\n")
         return _Proc()
     monkeypatch.setattr(auto_check_novel.subprocess, "run", fake_run)
     return calls
