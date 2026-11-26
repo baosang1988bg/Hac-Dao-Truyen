@@ -110,6 +110,15 @@ logs/
 discover_results/
 # Database người dùng (SQLite) — không commit dữ liệu tài khoản
 data/
+# Bảng âm Hán Việt sinh bởi tools/build_hanviet.py — dữ liệu tĩnh, PHẢI commit.
+# Chỉ mở ĐÚNG 2 file (thư mục data/ còn lại vẫn bị ignore — tránh lỡ commit
+# dict/cache lớn như phrases_dict.json).
+!frontend/src/data/
+frontend/src/data/*
+!frontend/src/data/hanviet.json
+!tools/converter/data/
+tools/converter/data/*
+!tools/converter/data/chinese_phienam.txt
 
 # ─────────────────────────────────────────────
 # OS / EDITOR

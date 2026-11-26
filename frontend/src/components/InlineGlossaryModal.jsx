@@ -6,6 +6,10 @@ import { isLoggedIn } from '../userApi'
 import { submitGlossarySuggestion, fetchNovelNames } from '../engagementApi'
 import { NAME_CASING_STYLES, applyCasing, expandSelection } from '../utils/nameEditor'
 import {
+  loadHanViet, hanVietReadings, hanVietChars, hanVietSuggestion, cycleHanVietPick, isHanText,
+} from '../utils/hanviet'
+import '../styles/name-editor.css'
+import {
   lookupNameZh,
   validateSuggestion,
   SUGGESTION_TEXT_MAX as TEXT_MAX,
@@ -125,9 +129,50 @@ export default function InlineGlossaryModal({
   }
 
   // Kiểu viết hoa áp lên ô "Thay bằng"; ô còn trống thì lấy cụm gốc làm đầu vào.
+  // Nhớ kiểu vừa chọn để nút "Dùng" của gợi ý Hán Việt điền đúng kiểu đó.
+  const [casing, setCasing] = useState('title')
   const applyCasingStyle = (style) => {
+    setCasing(style)
     const base = toText.trim() ? toText : fromText
     setToText(applyCasing(base, style))
+  }
+
+  // ── Gợi ý âm Hán Việt ──────────────────────────────────────────────────
+  // Nguồn chữ Hán: ô "Chữ Hán gốc" (người dùng tự nhập / tự điền) > cụm gốc
+  // nếu chính nó là chữ Hán > kết quả tra /names đầu tiên.
+  const hvZh = useMemo(() => {
+    const own = original.trim()
+    if (suggest && isHanText(own)) return own
+    if (isHanText(fromText)) return fromText.trim()
+    return zhList[0] || ''
+  }, [suggest, original, fromText, zhList])
+  // Bảng ~80 KB tải lười (chunk riêng) — chỉ khi modal mở VÀ có chữ Hán để phiên âm.
+  const [hvTable, setHvTable] = useState(null)
+  const [hvFailed, setHvFailed] = useState(false)
+  const needHanViet = isOpen && Boolean(hvZh)
+  useEffect(() => {
+    if (!needHanViet || hvTable) return undefined
+    let alive = true
+    loadHanViet()
+      .then(table => { if (alive) { setHvTable(table); setHvFailed(false) } })
+      .catch(() => { if (alive) setHvFailed(true) })
+    return () => { alive = false }
+  }, [needHanViet, hvTable])
+  // Âm đã chọn cho từng chữ nhiều âm; gắn với chuỗi chữ Hán → đổi chữ là tự về mặc định.
+  const [hvPickState, setHvPickState] = useState({ zh: '', picks: [] })
+  const hvPicks = hvPickState.zh === hvZh ? hvPickState.picks : []
+  const hvReadings = useMemo(() => (hvTable && hvZh ? hanVietReadings(hvZh, hvTable) : []), [hvTable, hvZh])
+  const hvChars = useMemo(() => hanVietChars(hvZh), [hvZh])
+  const hvText = hvTable && hvZh ? hanVietSuggestion(hvZh, hvTable, hvPicks) : ''
+  const hvCased = hvText ? applyCasing(hvText, casing) : ''
+  const hvTokens = hvCased ? hvCased.split(' ') : []
+  const hvAllMissing = hvReadings.length > 0 && hvReadings.every(list => list[0] === '?')
+  const hvSomeMissing = hvReadings.some(list => list[0] === '?')
+  const cycleReading = (index, count) => {
+    setHvPickState({ zh: hvZh, picks: cycleHanVietPick(hvPicks, index, count) })
+  }
+  const applyHanViet = () => {
+    if (hvCased && !hvAllMissing) setToText(hvCased)
   }
 
   const sendSuggestion = async (cleanFrom, cleanTo) => {
@@ -189,14 +234,15 @@ export default function InlineGlossaryModal({
     <Modal
       onClose={handleClose}
       ariaLabel="Sửa từ / Thêm vào Glossary"
+      panelClassName="ne-panel"
     >
       <form onSubmit={handleSubmit} className="inline-glossary-form">
-        <h3 style={{ margin: '0 0 1rem', fontSize: '1.05rem', fontWeight: 700 }}>Sửa từ / Thêm vào Glossary</h3>
-        <div className="mb-4">
-          <label htmlFor="ig-from" className="block text-sm font-medium mb-1 opacity-80">
+        <h3 className="ne-title">Sửa từ / Thêm vào Glossary</h3>
+        <div className="ne-field">
+          <label htmlFor="ig-from" className="ne-label">
             Cụm gốc trong truyện
           </label>
-          <div className="flex items-stretch gap-1.5">
+          <div className="ne-row">
             {range && (
               <button
                 type="button"
@@ -204,7 +250,7 @@ export default function InlineGlossaryModal({
                 disabled={!expandLeft}
                 title="Mở rộng cụm sang trái 1 từ"
                 aria-label="Mở rộng cụm sang trái 1 từ"
-                className="px-2 text-sm rounded-md border hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30"
+                className="ne-btn ne-btn--icon"
               >
                 ◀+
               </button>
@@ -212,7 +258,7 @@ export default function InlineGlossaryModal({
             <input
               id="ig-from"
               type="text"
-              className="flex-1 min-w-0 px-3 py-2 border rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="ne-input"
               value={fromText}
               onChange={(e) => setFromText(e.target.value)}
               placeholder="Cụm cần sửa..."
@@ -227,36 +273,36 @@ export default function InlineGlossaryModal({
                 disabled={!expandRight}
                 title="Mở rộng cụm sang phải 1 từ"
                 aria-label="Mở rộng cụm sang phải 1 từ"
-                className="px-2 text-sm rounded-md border hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30"
+                className="ne-btn ne-btn--icon"
               >
                 +▶
               </button>
             )}
           </div>
           {zhList.length > 0 && (
-            <p className="mt-1 text-sm opacity-80" lang="zh">
+            <p className="ne-zh" lang="zh">
               <span lang="vi">Chữ Hán: </span>
-              <span className="font-medium">{zhList.join(' · ')}</span>
+              <strong>{zhList.join(' · ')}</strong>
             </p>
           )}
         </div>
 
-        <div className="mb-4">
-          <label htmlFor="ig-to" className="block text-sm font-medium mb-1 opacity-80">
+        <div className="ne-field">
+          <label htmlFor="ig-to" className="ne-label">
             Thay bằng
           </label>
           <input
             id="ig-to"
             type="text"
-            className="w-full px-3 py-2 border rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="ne-input"
             value={toText}
             onChange={(e) => setToText(e.target.value)}
             placeholder="Nghĩa mới chính xác (vd: Lạc Vũ)..."
             maxLength={TEXT_MAX}
             required
           />
-          {/* Chọn nhanh kiểu viết hoa (học từ STV) */}
-          <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Kiểu viết hoa">
+          {/* Chọn nhanh kiểu viết hoa (học từ STV); kiểu đang chọn cũng dùng cho gợi ý Hán Việt */}
+          <div className="ne-chips" role="group" aria-label="Kiểu viết hoa">
             {NAME_CASING_STYLES.map(st => (
               <button
                 key={st.key}
@@ -264,29 +310,85 @@ export default function InlineGlossaryModal({
                 onClick={() => applyCasingStyle(st.key)}
                 disabled={!toText.trim() && !fromText.trim()}
                 title={`vd: ${st.hint}`}
-                className="px-2 py-0.5 text-xs rounded border hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-40"
+                aria-pressed={casing === st.key}
+                className="ne-chip"
               >
                 {st.label}
               </button>
             ))}
           </div>
-          <label className="mt-3 flex items-center gap-1.5 cursor-pointer text-sm">
+          {/* Gợi ý âm Hán Việt — chỉ hiện khi có chữ Hán (tra /names hoặc tự nhập) */}
+          {hvZh && (
+            <div className="ne-hanviet" aria-live="polite">
+              <span className="ne-hanviet__label">Hán Việt:</span>
+              {hvFailed ? (
+                <span className="ne-hint" style={{ margin: 0 }}>không tải được bảng âm</span>
+              ) : !hvTable ? (
+                <span className="ne-hint" style={{ margin: 0 }}>đang tải…</span>
+              ) : (
+                <>
+                  <span className="ne-hanviet__syls">
+                    {hvReadings.map((list, i) => {
+                      const shown = hvTokens[i] ?? list[0]
+                      const ch = hvChars[i] || ''
+                      if (list.length > 1) {
+                        return (
+                          <button
+                            key={`${i}-${ch}`}
+                            type="button"
+                            className="ne-chip ne-hanviet__syl--multi"
+                            onClick={() => cycleReading(i, list.length)}
+                            title={`Đổi âm chữ ${ch}: ${list.join(' / ')}`}
+                            aria-label={`Đổi âm chữ ${ch}, đang là ${shown}, có ${list.length} âm: ${list.join(', ')}`}
+                          >
+                            {shown}
+                          </button>
+                        )
+                      }
+                      return (
+                        <span
+                          key={`${i}-${ch}`}
+                          className={`ne-hanviet__syl${list[0] === '?' ? ' ne-hanviet__syl--missing' : ''}`}
+                          title={list[0] === '?' ? `Chưa có âm cho chữ ${ch}` : ch}
+                        >
+                          {shown}
+                        </span>
+                      )
+                    })}
+                  </span>
+                  <button
+                    type="button"
+                    className="ne-btn ne-btn--primary ne-hanviet__use"
+                    onClick={applyHanViet}
+                    disabled={hvAllMissing}
+                    title={`Điền "${hvCased}" vào ô Thay bằng`}
+                  >
+                    Dùng
+                  </button>
+                  {hvSomeMissing && !hvAllMissing && (
+                    <span className="ne-hint" style={{ margin: 0, flexBasis: '100%' }}>Chữ có dấu ? chưa có âm — sửa tay sau khi bấm Dùng.</span>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+          <label className="ne-check" style={{ marginTop: '0.6rem' }}>
             <input
               type="checkbox"
               checked={whole}
               onChange={(e) => setWhole(e.target.checked)}
             />
             <span>Chỉ khớp nguyên từ</span>
-            <span className="text-xs opacity-60">(không thay khi cụm nằm trong từ khác)</span>
+            <span className="ne-check__note">(không thay khi cụm nằm trong từ khác)</span>
           </label>
         </div>
 
-        <div className="mb-5">
-          <label className="block text-sm font-medium mb-2 opacity-80">
+        <div className="ne-field ne-field--loose">
+          <span className="ne-label" id="ig-scope-label">
             Phạm vi áp dụng
-          </label>
-          <div className="flex gap-4 text-sm">
-            <label className="flex items-center gap-1.5 cursor-pointer">
+          </span>
+          <div className="ne-radios" role="radiogroup" aria-labelledby="ig-scope-label">
+            <label className="ne-check">
               <input
                 type="radio"
                 name="scope"
@@ -296,7 +398,7 @@ export default function InlineGlossaryModal({
               />
               <span>Toàn bộ truyện này (nhớ lâu dài)</span>
             </label>
-            <label className="flex items-center gap-1.5 cursor-pointer">
+            <label className="ne-check">
               <input
                 type="radio"
                 name="scope"
@@ -311,8 +413,8 @@ export default function InlineGlossaryModal({
 
         {/* Góp ý name cho mọi người — chỉ khi đã đăng nhập */}
         {slug && (loggedIn ? (
-          <div className="mb-5 text-sm">
-            <label className="flex items-center gap-1.5 cursor-pointer font-medium">
+          <div className="ne-field ne-field--loose">
+            <label className="ne-check ne-check--strong">
               <input
                 type="checkbox"
                 checked={suggest}
@@ -321,27 +423,30 @@ export default function InlineGlossaryModal({
               <span>Gửi góp ý cho mọi người</span>
             </label>
             {suggest && (
-              <div className="mt-3 space-y-3">
+              <div className="ne-suggest">
                 <div>
-                  <label className="block text-sm mb-1 opacity-80">Chữ Hán gốc (nếu biết)</label>
+                  <label htmlFor="ig-original" className="ne-label">Chữ Hán gốc (nếu biết)</label>
                   <input
+                    id="ig-original"
                     type="text"
-                    className="w-full px-3 py-2 border rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    lang="zh"
+                    className="ne-input"
                     value={original}
                     onChange={(e) => setOriginal(e.target.value)}
                     placeholder="vd: 洛羽"
                     maxLength={ORIGINAL_MAX}
                   />
                   {zhList.length > 1 && (
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
-                      <span className="opacity-70">Chọn:</span>
+                    <div className="ne-chips">
+                      <span className="ne-check__note">Chọn:</span>
                       {zhList.map(zh => (
                         <button
                           key={zh}
                           type="button"
                           lang="zh"
                           onClick={() => { autoOriginalRef.current = zh; setOriginal(zh) }}
-                          className={`px-2 py-0.5 rounded border ${original === zh ? 'border-amber-500 text-amber-700 dark:text-amber-400' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                          aria-pressed={original === zh}
+                          className="ne-chip"
                         >
                           {zh}
                         </button>
@@ -350,9 +455,10 @@ export default function InlineGlossaryModal({
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm mb-1 opacity-80">Ghi chú (tuỳ chọn)</label>
+                  <label htmlFor="ig-note" className="ne-label">Ghi chú (tuỳ chọn)</label>
                   <textarea
-                    className="w-full px-3 py-2 border rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    id="ig-note"
+                    className="ne-input"
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     placeholder="Lý do / ngữ cảnh ngắn..."
@@ -360,15 +466,15 @@ export default function InlineGlossaryModal({
                     rows={2}
                   />
                 </div>
-                <p className="text-xs opacity-60">
+                <p className="ne-hint" style={{ margin: 0 }}>
                   Góp ý được quản trị viên xem trước khi áp dụng cho mọi người đọc.
                 </p>
               </div>
             )}
           </div>
         ) : (
-          <p className="mb-5 text-xs opacity-70">
-            <Link to="/account" onClick={handleClose} className="underline">Đăng nhập</Link> để gửi góp ý sửa name cho mọi người.
+          <p className="ne-login">
+            <Link to="/account" onClick={handleClose}>Đăng nhập</Link> để gửi góp ý sửa name cho mọi người.
           </p>
         ))}
 
@@ -376,17 +482,17 @@ export default function InlineGlossaryModal({
           <div
             role={notice.type === 'error' ? 'alert' : 'status'}
             aria-live="polite"
-            className={`mb-4 px-3 py-2 rounded-md text-sm ${notice.type === 'error' ? 'bg-red-500/10 text-red-600' : 'bg-green-500/10 text-green-700'}`}
+            className={`ne-notice${notice.type === 'error' ? ' ne-notice--error' : ''}`}
           >
             {notice.text}
           </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-2 border-t border-opacity-10">
+        <div className="ne-actions">
           <button
             type="button"
             onClick={handleClose}
-            className="px-4 py-2 text-sm rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            className="ne-btn ne-btn--ghost"
           >
             {notice ? 'Đóng' : 'Hủy'}
           </button>
@@ -394,7 +500,7 @@ export default function InlineGlossaryModal({
             type="submit"
             disabled={sending || !fromText.trim() || !toText.trim() || notice?.type === 'success'}
             aria-busy={sending}
-            className="px-4 py-2 text-sm font-medium rounded-md bg-amber-600 hover:bg-amber-700 text-white transition-colors disabled:opacity-50"
+            className="ne-btn ne-btn--primary"
           >
             {sending
               ? 'Đang gửi...'

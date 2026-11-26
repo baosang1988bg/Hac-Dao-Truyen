@@ -2,6 +2,7 @@ import PropTypes from 'prop-types'
 import { useEffect, useRef, useState } from 'react'
 import { Trash2, Download, Upload } from 'lucide-react'
 import Modal from './ui/Modal'
+import '../styles/name-editor.css'
 import { buildNamePack, namePackFilename, parseNamePack, NAME_PACK_MAX_BYTES } from '../utils/nameEditor'
 
 export default function ReplacementsManagerModal({
@@ -72,84 +73,77 @@ export default function ReplacementsManagerModal({
     <Modal
       onClose={onClose}
       ariaLabel={`Từ đã sửa thủ công (${replacements.length})`}
+      panelClassName="ne-panel"
     >
       <div className="replacements-manager">
-        <h3 style={{ margin: '0 0 1rem', fontSize: '1.05rem', fontWeight: 700 }}>Từ đã sửa thủ công ({replacements.length})</h3>
+        <h3 className="ne-title">Từ đã sửa thủ công ({replacements.length})</h3>
         {replacements.length === 0 ? (
-          <p className="text-sm opacity-60 text-center py-6">
+          <p className="ne-empty">
             Chưa có từ nào được sửa thủ công cho truyện này. Bôi đen từ khi đọc để sửa nhanh!
           </p>
         ) : (
-          <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+          <ul className="ne-list">
             {replacements.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between p-2.5 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-sm"
-              >
-                <div className="flex-1 min-w-0 pr-3">
-                  <div className="flex items-center gap-2">
-                    <span className="line-through opacity-60 truncate max-w-[40%]">
-                      {item.from}
+              <li key={item.id} className="ne-item">
+                <div className="ne-item__body">
+                  <span className="ne-item__from">{item.from}</span>
+                  <span className="ne-item__arrow" aria-hidden="true">➔</span>
+                  <span className="ne-item__to">{item.to}</span>
+                  {item.whole === true && (
+                    <span className="ne-badge" title="Chỉ khớp nguyên từ">
+                      nguyên từ
                     </span>
-                    <span className="opacity-40">➔</span>
-                    <span className="font-semibold text-amber-600 dark:text-amber-400 truncate max-w-[45%]">
-                      {item.to}
-                    </span>
-                    {item.whole === true && (
-                      <span className="shrink-0 text-[10px] px-1 rounded border opacity-60" title="Chỉ khớp nguyên từ">
-                        nguyên từ
-                      </span>
-                    )}
-                  </div>
+                  )}
                 </div>
                 <button
                   type="button"
                   onClick={() => onDelete(item.id)}
                   title="Xoá quy tắc này"
-                  className="p-1.5 rounded hover:bg-red-500/10 text-red-500 transition-colors"
+                  aria-label={`Xoá quy tắc ${item.from} → ${item.to}`}
+                  className="ne-btn ne-btn--icon ne-btn--danger"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={16} aria-hidden="true" />
                 </button>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
 
         {notice && (
           <div
             role={notice.type === 'error' ? 'alert' : 'status'}
             aria-live="polite"
-            className={`mt-3 px-3 py-2 rounded-md text-sm ${notice.type === 'error' ? 'bg-red-500/10 text-red-600' : 'bg-green-500/10 text-green-700'}`}
+            className={`ne-notice ne-notice--below${notice.type === 'error' ? ' ne-notice--error' : ''}`}
           >
             {notice.text}
           </div>
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-4 mt-2 border-t border-opacity-10">
+        <div className="ne-actions ne-actions--split" style={{ marginTop: '1rem' }}>
           {slug && onImport ? (
-            <div className="flex gap-2">
+            <div className="ne-actions__group">
               <button
                 type="button"
                 onClick={handleExport}
                 disabled={replacements.length === 0}
                 title="Tải các quy tắc của truyện này về máy (file JSON)"
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-md border hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-40"
+                className="ne-btn"
               >
-                <Download size={14} /> Xuất
+                <Download size={14} aria-hidden="true" /> Xuất
               </button>
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
                 title="Nhập gói name (JSON đã xuất, hoặc văn bản mỗi dòng A=B)"
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-md border hover:bg-black/5 dark:hover:bg-white/5"
+                className="ne-btn"
               >
-                <Upload size={14} /> Nhập
+                <Upload size={14} aria-hidden="true" /> Nhập
               </button>
               <input
                 ref={fileRef}
                 type="file"
                 accept=".json,.txt,application/json,text/plain"
-                className="hidden"
+                hidden
                 onChange={handleFile}
               />
             </div>
@@ -157,7 +151,7 @@ export default function ReplacementsManagerModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm rounded-md bg-amber-600 hover:bg-amber-700 text-white transition-colors"
+            className="ne-btn ne-btn--primary"
           >
             Đóng
           </button>
