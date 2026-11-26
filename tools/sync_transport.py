@@ -5,7 +5,8 @@ import ssl
 import time
 
 
-def send_chunk(conn,payload,*,host,sync_key,budget,max_retries=5,sleep=time.sleep):
+def send_chunk(conn,payload,*,host,sync_key,budget,max_retries=5,sleep=time.sleep,path='/api/admin/sync-novel'):
+    # path: '/api/admin/sync-novel' (bản mặc định) hoặc '/api/sync/edition' (bản dịch phụ, migration 016).
     if not sync_key:return {'success':False,'error':'Thiếu sync key'},conn
     if budget is None:return {'success':False,'budget_exceeded':True,'error':'Chưa cấu hình ngân sách'},conn
     body=json.dumps(payload,ensure_ascii=False).encode('utf-8')
@@ -21,7 +22,7 @@ def send_chunk(conn,payload,*,host,sync_key,budget,max_retries=5,sleep=time.slee
             return {'success':False,'budget_exceeded':True,'error':budget.stopped_reason},conn
         delay=min(60,2**attempt)
         try:
-            conn,res,text=send_sync_request(conn,'/api/admin/sync-novel',body,host=host,sync_key=sync_key)
+            conn,res,text=send_sync_request(conn,path,body,host=host,sync_key=sync_key)
             if res.status==200:
                 data=json.loads(text)
                 return {'success':bool(data.get('success')),'error':data.get('error',''),'status':200},conn

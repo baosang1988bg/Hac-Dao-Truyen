@@ -5,6 +5,7 @@
    - App shell (/, /index.html, điều hướng SPA) : network-first, fallback cache
    - /assets/*  (bundle có hash, bất biến)      : cache-first
    - GET /api/novels/:slug/chapters/:id (nội dung chương, bất biến sau dịch)
+     + /api/novels/:slug/editions/:code/chapters/:id (bản dịch phụ)
                                                 : cache-first  → 'hacdao-chapters-v1'
    - GET /api/novels/:slug/epub (file EPUB)     : chỉ cache khi người dùng bấm
                                                   "Tải để đọc offline" (query
@@ -52,7 +53,8 @@ self.addEventListener('install', (event) => {
 /** Route API được cache network-first (danh sách, chi tiết, mục lục truyện). */
 function isCacheableNovelApi(pathname) {
   if (pathname === '/api/novels') return true
-  const m = pathname.match(/^\/api\/novels\/([^/]+)(\/chapters)?$/)
+  // Danh sách bản dịch + mục lục bản dịch phụ (migration 016) cũng network-first.
+  const m = pathname.match(/^\/api\/novels\/([^/]+)(\/chapters|\/editions|\/editions\/[^/]+\/chapters)?$/)
   return Boolean(m && !RESERVED_NOVEL_SEGMENTS.has(m[1]))
 }
 
@@ -262,7 +264,10 @@ self.addEventListener('fetch', (event) => {
   // Nội dung chương: cache-first để đọc offline, NHƯNG chương có thể được
   // dịch lại để sửa lỗi sau đó (URL/số chương không đổi) — dùng bản có
   // revalidate nền theo version (hash nội dung) thay vì cache-first thuần.
-  if (/^\/api\/novels\/[^/]+\/chapters\/.+/.test(url.pathname)) {
+  // Nội dung chương của bản dịch phụ (/editions/:code/chapters/:id) dùng CHUNG
+  // cache chương (cùng dạng { content, version }, không đổi tên cache).
+  if (/^\/api\/novels\/[^/]+\/chapters\/.+/.test(url.pathname) ||
+      /^\/api\/novels\/[^/]+\/editions\/[^/]+\/chapters\/.+/.test(url.pathname)) {
     event.respondWith(cacheFirstVersioned(event, CHAPTER_CACHE))
     return
   }

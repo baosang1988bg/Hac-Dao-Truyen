@@ -20,7 +20,10 @@ async function setup(t, { withColumn = true } = {}) {
     // Production TRƯỚC migration 014.
     schema = schema.replace(/,\s*chapter_count\s+INTEGER DEFAULT 0/, '')
       .split(';').filter(s => !/idx_novels_published_chapters/.test(s)).join(';');
-    assert.doesNotMatch(schema, /chapter_count\s+INTEGER|idx_novels_published_chapters/);
+    // Chỉ xét bảng novels: bảng editions (migration 016) có cột chapter_count riêng.
+    const novelsTable = schema.match(/CREATE TABLE IF NOT EXISTS novels \([\s\S]*?\n\);/)[0];
+    assert.doesNotMatch(novelsTable, /chapter_count\s+INTEGER/);
+    assert.doesNotMatch(schema, /idx_novels_published_chapters/);
   }
   await db.batch(schema.split(';').filter(s=>s.trim()).map(s=>db.prepare(s)));
   const call = (path,init) => mf.dispatchFetch(`http://test.invalid/api/${path}`,init);

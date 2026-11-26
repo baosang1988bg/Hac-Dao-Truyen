@@ -83,10 +83,57 @@ export function chapterIdentifier(chapter) {
   return chapter.filename ? encodeURIComponent(chapter.filename) : null
 }
 
-/** URL Reader của một chương ('#' nếu không xác định được). */
-export function chapterUrl(slug, chapter) {
+// ── Nhiều bản dịch (?ban=<code>, Worker migration 016) ──────────────────────
+// Bản AI hiện có là bản MẶC ĐỊNH 'he-thong' — URL không mang ?ban và đọc qua
+// route cũ /novels/:slug/chapters[/:id]. Bản khác: /novels/:slug/editions/:code/...
+export const DEFAULT_EDITION_CODE = 'he-thong'
+const EDITION_CODE_RE = /^[a-z0-9-]{1,40}$/
+
+/**
+ * Chuẩn hoá mã bản dịch từ URL/localStorage: mã hợp lệ KHÁC mặc định → giữ
+ * nguyên; null/rỗng/'he-thong'/chuỗi rác → null (= bản mặc định).
+ */
+export function normalizeEditionCode(ban) {
+  if (typeof ban !== 'string') return null
+  const code = ban.trim()
+  return EDITION_CODE_RE.test(code) && code !== DEFAULT_EDITION_CODE ? code : null
+}
+
+/** Gắn `?ban=<code>` vào đường dẫn khi là bản phụ; bản mặc định giữ nguyên URL. */
+export function withEditionQuery(path, ban) {
+  const code = normalizeEditionCode(ban)
+  if (!code || !path || path === '#') return path
+  return `${path}${path.includes('?') ? '&' : '?'}ban=${code}`
+}
+
+/** Đường dẫn API mục lục (tương đối với baseURL '/api'). */
+export function chapterListPath(slug, ban) {
+  const code = normalizeEditionCode(ban)
+  return code ? `/novels/${slug}/editions/${code}/chapters` : `/novels/${slug}/chapters`
+}
+
+/** Đường dẫn API nội dung chương; `id` đã ở dạng request (chapterIdentifier/chapterRequestId). */
+export function chapterContentPath(slug, id, ban) {
+  return `${chapterListPath(slug, ban)}/${id}`
+}
+
+/** URL Reader của một chương ('#' nếu không xác định được); giữ `?ban` khi là bản phụ. */
+export function chapterUrl(slug, chapter, ban) {
   const id = chapterIdentifier(chapter)
-  return id ? `/novel/${slug}/read/${id}` : '#'
+  return id ? withEditionQuery(`/novel/${slug}/read/${id}`, ban) : '#'
+}
+
+/**
+ * URL "Đọc tiếp" từ một mục lịch sử đọc: `chapter` là tham số chương đã lưu
+ * (chuỗi số "12" hoặc filename), `ban` là mã bản dịch đang đọc (null = mặc
+ * định). Chương dạng số đi qua chapterUrl như mọi link chương khác; filename
+ * giữ nguyên dạng cũ (`/read/<chapter>`) để không đổi URL của dữ liệu cũ.
+ */
+export function continueReadingUrl(slug, chapter, ban) {
+  if (!slug || chapter === null || chapter === undefined || chapter === '') return `/novel/${slug}`
+  const raw = String(chapter)
+  if (/^\d+$/.test(raw) && Number(raw) > 0) return chapterUrl(slug, { number: Number(raw) }, ban)
+  return withEditionQuery(`/novel/${slug}/read/${raw}`, ban)
 }
 
 /**

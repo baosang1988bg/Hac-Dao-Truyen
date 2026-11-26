@@ -2343,6 +2343,11 @@ html.hd-header-hidden { --hd-header-h: 0px; }
   font-size: 0.8rem;
   color: var(--text-muted);
 }
+.app-footer__link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
 /* Link đăng nhập quản trị dành cho khách: thu nhỏ, kém nổi nhưng vẫn truy cập được. */
 .site-header__navlink.site-header__admin-login {

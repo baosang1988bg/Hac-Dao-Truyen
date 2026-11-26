@@ -33,6 +33,8 @@ const AdminDashboard = lazyWithReload(() => import('./pages/admin/AdminDashboard
 const AdminNovels = lazyWithReload(() => import('./pages/admin/AdminNovels'))
 const AdminNovelDetail = lazyWithReload(() => import('./pages/admin/AdminNovelDetail'))
 const AdminNovelRequests = lazyWithReload(() => import('./pages/admin/AdminNovelRequests'))
+const AdminGlossarySuggestions = lazyWithReload(() => import('./pages/admin/AdminGlossarySuggestions'))
+const AdminEditions = lazyWithReload(() => import('./pages/admin/AdminEditions'))
 const AdminUsage = lazyWithReload(() => import('./pages/admin/AdminUsage'))
 
 /** Fallback tối giản khi chờ tải chunk của trang lazy. */
@@ -82,6 +84,8 @@ function lazyPage(element) {
  *     novels                   → AdminNovels
  *     novels/:slug             → AdminNovelDetail
  *     requests                 → AdminNovelRequests
+ *     glossary-suggestions     → AdminGlossarySuggestions (duyệt góp ý name)
+ *     editions                 → AdminEditions (ẩn/hiện bản dịch phụ)
  *     usage                    → AdminUsage (ước lượng ngân sách sync cục bộ)
  *     logs                     → Logs
  * - /logs                      → redirect /admin/logs (tương thích link cũ)
@@ -147,6 +151,8 @@ function App() {
         <Route path="novels" element={<AdminNovels />} />
         <Route path="novels/:slug" element={<AdminNovelDetail />} />
         <Route path="requests" element={<AdminNovelRequests />} />
+        <Route path="glossary-suggestions" element={<AdminGlossarySuggestions />} />
+        <Route path="editions" element={<AdminEditions />} />
         <Route path="usage" element={<AdminUsage />} />
         <Route path="logs" element={<Logs />} />
       </Route>

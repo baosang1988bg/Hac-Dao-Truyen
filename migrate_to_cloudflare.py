@@ -26,6 +26,9 @@ Cách dùng:
   python migrate_to_cloudflare.py --slug xich-tam-tuan-thien --skip-r2
   # Thử nghiệm batch-upload (KHÔNG dùng cho production khi chưa test kỹ):
   python migrate_to_cloudflare.py --slug xich-tam-tuan-thien --dry-run --batch-upload --bundle-size 50
+  # Bản dịch phụ (migration 016) — xem trước rồi mới gửi thật:
+  python migrate_to_cloudflare.py --slug xich-tam-tuan-thien --edition nhom-a --dry-run
+  python migrate_to_cloudflare.py --slug xich-tam-tuan-thien --edition nhom-a
 """
 
 import os, re, json, subprocess, argparse, sys, tempfile, base64, hashlib
@@ -1020,6 +1023,150 @@ def migrate_novel(slug: str, dry_run=False, skip_r2=False, skip_d1=False, limit=
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
+# ── Bản dịch phụ (migration 016, --edition <code>) ───────────────────────────
+# Một truyện có thể có nhiều bản dịch. Bản AI hiện có là bản mặc định ngầm định
+# 'he-thong' (đi đường sync cũ). Bản khác đặt ở:
+#   novels/<slug>/editions/<code>/edition.json   — name, translator, kind,
+#                                                  license_note (BẮT BUỘC), published
+#   novels/<slug>/editions/<code>/translated/*_VI.md
+# và được gửi theo lô ≤ 25 chương / ≤ 2 MiB tới Worker POST /api/sync/edition
+# (SYNC_KEY), dùng chung tools/sync_transport.send_chunk + ngân sách HACDAO_*.
+
+EDITION_CODE_RE = re.compile(r'^[a-z0-9-]{1,40}$')
+SLUG_RE = re.compile(r'^[a-z0-9-]{1,100}$')
+DEFAULT_EDITION_CODE = 'he-thong'
+EDITION_KINDS = ('ai', 'human', 'convert')
+EDITION_CHUNK_SIZE = 25
+EDITION_MAX_BYTES = 2 * 1024 * 1024
+EDITION_SYNC_PATH = '/api/sync/edition'
+DEFAULT_SYNC_HOST = 'hac-dao-truyen.nguyenbaosang1998.workers.dev'
+
+
+def load_edition_meta(edition_dir: Path, code: str) -> dict:
+    """Đọc + kiểm tra edition.json. Ném ValueError (thông điệp tiếng Việt) khi sai."""
+    path = Path(edition_dir) / 'edition.json'
+    if not path.exists():
+        raise ValueError(f'Thiếu {path}')
+    try:
+        raw = json.loads(path.read_text(encoding='utf-8'))
+    except Exception as exc:
+        raise ValueError(f'{path} không phải JSON hợp lệ: {exc}') from exc
+    if not isinstance(raw, dict):
+        raise ValueError(f'{path} phải là object JSON')
+    name = raw.get('name')
+    if not isinstance(name, str) or not name.strip() or len(name.strip()) > 120:
+        raise ValueError('edition.json: "name" bắt buộc, 1–120 ký tự')
+    translator = raw.get('translator', '')
+    if translator is None:
+        translator = ''
+    if not isinstance(translator, str) or len(translator) > 120:
+        raise ValueError('edition.json: "translator" phải là chuỗi ≤ 120 ký tự')
+    kind = raw.get('kind')
+    if kind not in EDITION_KINDS:
+        raise ValueError(f'edition.json: "kind" phải là một trong {", ".join(EDITION_KINDS)}')
+    license_note = raw.get('license_note')
+    if not isinstance(license_note, str) or not license_note.strip() or len(license_note.strip()) > 2000:
+        raise ValueError('edition.json: "license_note" BẮT BUỘC (ghi rõ giấy phép/nguồn gốc, ≤ 2000 ký tự)')
+    published = raw.get('published')
+    if not isinstance(published, bool):
+        raise ValueError('edition.json: "published" bắt buộc, true hoặc false')
+    return {'code': code, 'name': name.strip(), 'translator': translator, 'kind': kind,
+            'license_note': license_note.strip(), 'published': published}
+
+
+def load_edition(slug: str, code: str, novels_dir: Path = None):
+    """Trả (meta, chapters). chapters: [{filename,title,number,content}] theo thứ tự đọc."""
+    if not isinstance(slug, str) or not SLUG_RE.fullmatch(slug):
+        raise ValueError(f'Slug không hợp lệ: {slug!r}')
+    if not isinstance(code, str) or not EDITION_CODE_RE.fullmatch(code):
+        raise ValueError(f'Mã bản dịch không hợp lệ: {code!r} (chỉ [a-z0-9-], 1–40 ký tự)')
+    if code == DEFAULT_EDITION_CODE:
+        raise ValueError(f'"{DEFAULT_EDITION_CODE}" là bản mặc định — sync bằng đường thường, không dùng --edition')
+    edition_dir = Path(novels_dir or NOVELS_DIR) / slug / 'editions' / code
+    meta = load_edition_meta(edition_dir, code)
+    trans_dir = edition_dir / 'translated'
+    if not trans_dir.is_dir():
+        raise ValueError(f'Thiếu thư mục {trans_dir}')
+    chapters = []
+    for fp in get_effective_files(trans_dir):
+        if not fp.name.endswith('_VI.md'):
+            continue
+        if len(fp.name) > 240 or fp.name in ('.', '..'):
+            raise ValueError(f'Tên file quá dài/không hợp lệ: {fp.name[:60]}…')
+        content = fp.read_text(encoding='utf-8')
+        if not content.strip():
+            raise ValueError(f'File rỗng: {fp.name}')
+        title = get_title(fp)[:500]
+        chapters.append({'filename': fp.name, 'title': title,
+                         'number': get_chapter_number(title, fp.name), 'content': content})
+    if not chapters:
+        raise ValueError(f'{trans_dir} không có file *_VI.md nào')
+    return meta, chapters
+
+
+def build_edition_payloads(slug: str, meta: dict, chapters: list, chunk_size: int = EDITION_CHUNK_SIZE) -> list:
+    """Chia lô ≤ chunk_size chương và ≤ 2 MiB JSON (UTF-8) mỗi lô — khớp giới hạn Worker."""
+    payloads, current = [], []
+
+    def size_of(items):
+        return len(json.dumps({'slug': slug, 'edition': meta, 'chapters': items}, ensure_ascii=False).encode('utf-8'))
+
+    for ch in chapters:
+        if size_of([ch]) > EDITION_MAX_BYTES:
+            raise ValueError(f'Chương {ch["filename"]} vượt 2 MiB, không gửi được')
+        if current and (len(current) >= chunk_size or size_of(current + [ch]) > EDITION_MAX_BYTES):
+            payloads.append({'slug': slug, 'edition': meta, 'chapters': current})
+            current = []
+        current.append(ch)
+    if current:
+        payloads.append({'slug': slug, 'edition': meta, 'chapters': current})
+    return payloads
+
+
+def estimate_edition_ops(payloads: list) -> dict:
+    """Ước tính TỐI ĐA (lần đầu, mọi chương mới) theo cùng công thức send_chunk:
+    R2 = 1 lượt ghi/chương; D1 ≈ 4 dòng/chương + 5/lô. Gửi lại cùng nội dung thực tế = 0 ghi."""
+    n = sum(len(p['chapters']) for p in payloads)
+    return {'chunks': len(payloads), 'chapters': n, 'r2_writes': n, 'd1_rows': 4 * n + 5 * len(payloads)}
+
+
+def sync_edition(slug: str, code: str, dry_run: bool = False, novels_dir: Path = None,
+                 host: str = None, sync_key: str = None, budget=None, send=None) -> bool:
+    """Đọc + kiểm tra bản dịch rồi gửi từng lô. dry_run: chỉ in kế hoạch, KHÔNG gọi mạng."""
+    try:
+        meta, chapters = load_edition(slug, code, novels_dir)
+        payloads = build_edition_payloads(slug, meta, chapters)
+    except ValueError as exc:
+        print(f'❌ [{slug}/{code}] {exc}')
+        return False
+    est = estimate_edition_ops(payloads)
+    numbers = [c['number'] for c in chapters if c['number'] > 0]
+    print(f'📚 [{slug}] Bản dịch "{meta["name"]}" ({code}, {meta["kind"]}, '
+          f'{"published" if meta["published"] else "ẨN"}): {len(chapters)} chương'
+          + (f' (số {min(numbers)}–{max(numbers)})' if numbers else ''))
+    print(f'   Giấy phép: {meta["license_note"][:120]}')
+    print(f'   {est["chunks"]} lô → tối đa ~{est["r2_writes"]} lượt ghi R2, ~{est["d1_rows"]} dòng ghi D1')
+    if dry_run:
+        print('   (dry-run: không gửi gì)')
+        return True
+    if send is None:
+        from tools.sync_transport import send_chunk as send
+    conn = None
+    written = 0
+    try:
+        for i, payload in enumerate(payloads, 1):
+            result, conn = send(conn, payload, host=host, sync_key=sync_key, budget=budget, path=EDITION_SYNC_PATH)
+            if not result.get('success'):
+                print(f'❌ [{slug}/{code}] Lô {i}/{len(payloads)} thất bại: {result.get("error")}')
+                return False
+            written += len(payload['chapters'])
+            print(f'   ✅ Lô {i}/{len(payloads)} ({written}/{len(chapters)} chương)')
+        return True
+    finally:
+        if conn:
+            conn.close()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--slug')
@@ -1048,6 +1195,10 @@ def main():
                          '(chưa từng chạy với R2 thật) — xem docstring build_and_upload_bundles().')
     ap.add_argument('--bundle-size', type=int, default=50, dest='bundle_size',
                     help='Số chương gộp trong 1 bundle JSON khi bật --batch-upload (mặc định 50)')
+    ap.add_argument('--edition', metavar='CODE',
+                    help='Đẩy BẢN DỊCH PHỤ novels/<slug>/editions/<CODE>/ (edition.json + translated/*_VI.md) '
+                         'qua Worker POST /api/sync/edition (cần --slug, HACDAO_SYNC_KEY, '
+                         'HACDAO_ALLOW_CLOUD_WRITES=true, ngân sách HACDAO_*). Dùng kèm --dry-run để xem trước.')
     args = ap.parse_args()
 
     if args.novels_dir:
@@ -1056,6 +1207,27 @@ def main():
 
     if args.dry_run:
         print("🔍 DRY RUN\n")
+
+    # --edition: đường riêng qua Worker API, không dùng wrangler/D1 trực tiếp.
+    if args.edition:
+        if not args.slug:
+            ap.error('--edition cần --slug')
+        if args.dry_run:
+            ok = sync_edition(args.slug, args.edition, dry_run=True)
+        else:
+            try:
+                require_cloud_writes()
+            except RuntimeError as exc:
+                raise SystemExit(f'❌ {exc}')
+            sync_key = os.environ.get('HACDAO_SYNC_KEY', '')
+            if not sync_key:
+                raise SystemExit('❌ Thiếu HACDAO_SYNC_KEY')
+            from tools.sync_budget import budget_from_env
+            ok = sync_edition(args.slug, args.edition, host=os.getenv('HACDAO_SYNC_HOST', DEFAULT_SYNC_HOST),
+                              sync_key=sync_key, budget=budget_from_env())
+        if not ok:
+            raise SystemExit(1)
+        return
 
     # --synopsis: chỉ sync synopsis, không làm gì khác
     if getattr(args, 'synopsis', False):

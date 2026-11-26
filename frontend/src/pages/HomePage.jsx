@@ -5,6 +5,7 @@ import { cachedGet } from '../utils/apiCache'
 import LazyMount from '../components/LazyMount'
 import { prefersReducedMotion } from '../utils/motion'
 import { trackSearch } from '../utils/analytics'
+import { readSearchParam, urlWithSearchParam } from '../utils/engagement'
 import '../styles/home.css'
 
 // ── Truyentrung.com UI Components ──
@@ -16,6 +17,7 @@ import MonthlyPopularSection from './homepage/MonthlyPopularSection'
 import UpdatesSection from './homepage/UpdatesSection'
 import ExternalRankingsSection from './homepage/ExternalRankingsSection'
 import TruyenTrungRankings from './homepage/TruyenTrungRankings'
+import ViewRankingsSection from './homepage/ViewRankingsSection'
 import TruyenTrungChatboxWidget from './homepage/TruyenTrungChatboxWidget'
 import LatestChaptersWidget from './homepage/LatestChaptersWidget'
 import AllNovelsSection from './homepage/AllNovelsSection'
@@ -71,7 +73,11 @@ function getIsDesktop() {
  * trước thì hiện trước, không còn 1 màn hình loading chờ tất cả.
  */
 export default function HomePage() {
-  const [searchQuery, setSearchQuery] = useState('')
+  const location = useLocation()
+  const navigate = useNavigate()
+  // /?q=... (SearchAction JSON-LD, link chia sẻ) → điền sẵn ô tìm và chạy tìm
+  // ngay như khi người dùng gõ (effect tìm kiếm bên dưới tự lo).
+  const [searchQuery, setSearchQuery] = useState(() => readSearchParam(location.search))
   const [searchResults, setSearchResults] = useState(null)
   const [searchLoading, setSearchLoading] = useState(false)
   const [activeGenre, setActiveGenre] = useState('')
@@ -111,13 +117,44 @@ export default function HomePage() {
     return () => { clearTimeout(handle); controller.abort() }
   }, [searchQuery])
 
+  // Đồng bộ ô tìm → ?q= (replace, không đẩy lịch sử mỗi phím). Ghi thẳng bằng
+  // history.replaceState thay vì navigate(): đổi location của router sẽ làm
+  // AnalyticsTracker bắn page_view cho MỖI lần đổi từ khoá. Giữ nguyên
+  // history.state (router lưu key/idx trong đó) để Back/Forward vẫn đúng.
+  // Debounce như request tìm kiếm; xoá hẳn ô tìm thì bỏ ?q= ngay.
+  const lastUrlQ = useRef(readSearchParam(location.search))
+  useEffect(() => {
+    const q = searchQuery.trim()
+    const value = q.length >= SEARCH_MIN_CHARS ? q : ''
+    const write = () => {
+      if (typeof window === 'undefined') return
+      const next = urlWithSearchParam(window.location, value)
+      if (next === null) return
+      lastUrlQ.current = value
+      window.history.replaceState(window.history.state, '', next)
+    }
+    if (!value) { write(); return undefined }
+    const handle = setTimeout(write, SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(handle)
+  }, [searchQuery])
+
+  // Router điều hướng tới /?q=khác khi đang ở trang chủ (vd link nội bộ) →
+  // nạp từ khoá mới vào ô tìm. So với giá trị đã ghi gần nhất để không ghi đè
+  // chữ người dùng đang gõ. Nút Tìm kiếm ở header (state.focusSearch, URL '/')
+  // chỉ để focus ô tìm → không xoá từ khoá đang có.
+  const routerQ = readSearchParam(location.search)
+  const focusOnly = Boolean(location.state?.focusSearch)
+  useEffect(() => {
+    if (focusOnly || routerQ === lastUrlQ.current) return
+    lastUrlQ.current = routerQ
+    setSearchQuery(routerQ)
+  }, [routerQ, focusOnly])
+
   const isSearching = searchQuery.trim().length >= SEARCH_MIN_CHARS
 
   // Nút Tìm kiếm ở header mobile điều hướng về '/' kèm state.focusSearch →
   // focus + cuộn tới ô tìm kiếm, rồi xoá state (replace) để bấm Back quay lại
   // trang chủ không tự focus lần nữa.
-  const location = useLocation()
-  const navigate = useNavigate()
   const searchInputRef = useRef(null)
   useEffect(() => {
     if (!location.state?.focusSearch) return
@@ -128,7 +165,9 @@ export default function HomePage() {
       const target = input.closest('.hp-search-wrap') || input
       target.scrollIntoView({ block: 'start', behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
     }
-    navigate(`${location.pathname}${location.search}${location.hash}`, { replace: true, state: null })
+    // search lấy từ window.location: ?q= có thể đã được replaceState cập nhật
+    // (router không biết) — dùng location.search sẽ khôi phục từ khoá cũ.
+    navigate(`${location.pathname}${window.location.search}${location.hash}`, { replace: true, state: null })
   }, [location, navigate])
 
   const isDesktop = useSyncExternalStore(subscribeDesktop, getIsDesktop, () => true)
@@ -167,6 +206,8 @@ export default function HomePage() {
     480,
   ))
   const rankings = slot('rankings', <TruyenTrungRankings />)
+  // BXH lượt đọc thật theo Ngày/Tuần/Tháng — lazy: chỉ gọi API khi cuộn tới.
+  const views = slot('views', lazy(<ViewRankingsSection />, 360))
   const board = slot('board', <TruyenTrungChatboxWidget defaultOpen={isDesktop} />)
   const comments = slot('comments', lazy(<RecentCommentsSection />, 120))
   const stats = slot('stats', lazy(<StatsSection />, 76))
@@ -213,6 +254,8 @@ export default function HomePage() {
                   {recent}
                   {/* Multi-Ranking Widgets: 5 BXH */}
                   {rankings}
+                  {/* Đọc nhiều theo kỳ (lượt đọc thật) */}
+                  {views}
                   {/* Chương mới lên — dữ liệu sống từ /api/updates */}
                   {latest}
                   {/* Khung thông báo tĩnh (KHÔNG phải chat realtime) */}
@@ -235,6 +278,7 @@ export default function HomePage() {
               {notice}
               {updates}
               {rankings}
+              {views}
               {genresAndAll}
               {external}
               {comments}

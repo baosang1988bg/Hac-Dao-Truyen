@@ -6,6 +6,7 @@ import { fetchNovelsBySlugsBatch } from '../../utils/novelsApi'
 import NovelCover from '../../components/NovelCover'
 import SectionHeader from '../../components/ui/SectionHeader'
 import { getAllHistory, fmtChapterLabel } from '../../utils/readingHistory'
+import { continueReadingUrl } from '../../utils/chapters'
 import { fmtTimeAgo, novelDisplayTitle } from '../../utils/format'
 
 const MAX_ITEMS = 8
@@ -110,7 +111,7 @@ export default function RecentlyReadSection() {
           const isEpub = item.chapter === 'EPUB' || !item.chapter || item.chapter === 'null'
           const readUrl = isEpub
             ? `/novel/${item.slug}/epub-reader`
-            : `/novel/${item.slug}/read/${item.chapter}`
+            : continueReadingUrl(item.slug, item.chapter, item.ban) // giữ ?ban= của bản dịch đang đọc
 
           const formattedTitle = novelDisplayTitle({ ...item.novel, slug: item.novel.slug || item.slug })
 
