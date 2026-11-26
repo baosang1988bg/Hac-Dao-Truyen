@@ -60,3 +60,17 @@ Chưa kiểm chứng: chưa thử trên trình duyệt/điện thoại thật (�
 | **Tổng** | **8.0/10** | |
 
 Để đạt 10: chạy thử trên điện thoại thật; lấy HAR sangtacviet để REA phân tích cơ chế name thật; chuyển chống bơm lượt đọc sang Durable Object/Rate Limiting binding riêng; cân nhắc TTS server (edge-tts trên backend Python, cache R2) và mô hình "một truyện nhiều bản dịch" — hai bài học lớn còn lại từ truyentrung.
+
+## 6. Đợt 2 — hệ thống name kiểu sangtacviet (cùng ngày)
+
+Sau khi nghiên cứu lại sangtacviet qua Chrome (có VPN), cơ chế name đã được xác minh: server trả bản convert sẵn nhưng mỗi từ giữ chữ Hán (`<i t h v p>`), name cá nhân ở localStorage, name chung do người quản lý truyện đặt. Kế hoạch: `plans/KE_HOACH_NAME_KIEU_STV_2026-11-26.md`.
+
+Điểm mấu chốt: pipeline dịch vốn đã gộp tên mới (zh → vi) vào glossary R2 sau mỗi batch, nên **đảo ngược glossary là đủ** để Reader biết chữ Hán của tên — không phải đổi prompt AI hay định dạng chương.
+
+Đã làm: `GET /api/novels/:slug/names` (vi → zh, edge 1 giờ, tắt bằng `PUBLIC_NAMES=off`, purge khi sửa glossary/duyệt góp ý); hộp sửa name tự tra và tự điền chữ Hán khi góp ý (duyệt là ghi thẳng glossary), 5 kiểu viết hoa như STV, nút mở rộng cụm sang trái/phải; quy tắc thay thế có cờ `whole` khớp nguyên từ (regex Unicode đã escape, cache theo quy tắc, quy tắc cũ giữ khớp chuỗi con); xuất/nhập gói name theo truyện (JSON `hacdao-names` hoặc văn bản `A=B` kiểu STV, tối đa 400 quy tắc để không vượt giới hạn đồng bộ); công cụ `tools/name_consistency.py` so raw ↔ bản dịch theo glossary và gợi ý biến thể nghi ngờ (chế độ chỉ bản dịch khi máy không có raw).
+
+Review độc lập vòng 2: 6 phát hiện (không có mức Cao), đã sửa 5; mục còn lại (PUT qua lại một lượt giữa máy cũ/mới vì cờ `whole`) tự hết khi mọi máy cập nhật bundle. Lưu ý quan trọng từ review: `whole` không chặn được quy tắc một âm tiết đổi cả tên ghép ("Lâm" → "Lam" vẫn đổi "Lâm Phong") vì tiếng Việt tách âm tiết bằng dấu cách — đã ghi rõ trong code; admin nên tránh duyệt quy tắc một âm tiết.
+
+Kiểm chứng: Worker 115/115, frontend 120/120, pytest 487/487, eslint sạch, vite build OK. Chạy thật `name_consistency` (chế độ không raw) trên `som-dang-luc…` (573 thuật ngữ, 1.696 chương, ~19 giây). Chưa chạy chế độ có raw trên dữ liệu thật (raw chỉ có ở máy Windows/CI) và chưa thử giao diện trên trình duyệt thật.
+
+Chưa làm: gợi ý âm Hán Việt (máy Mac thiếu `tools/converter/data/chinese_phienam.txt`, cần chọn nguồn dữ liệu có giấy phép rõ).
