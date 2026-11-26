@@ -8,9 +8,12 @@ export default function ReplacementsManagerModal({
   replacements = [],
   onDelete,
 }) {
+  // ui/Modal không có prop isOpen (luôn hiển thị khi được render) → tự ẩn ở đây,
+  // nếu không Reader luôn bị phủ một lớp modal chặn mọi thao tác.
+  if (!isOpen) return null
+
   return (
     <Modal
-      isOpen={isOpen}
       onClose={onClose}
       ariaLabel="Quản lý từ đã sửa thủ công"
       title={`Từ đã sửa thủ công (${replacements.length})`}
