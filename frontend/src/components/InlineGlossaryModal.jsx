@@ -1,10 +1,12 @@
 import PropTypes from 'prop-types'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import Modal from './ui/Modal'
 import { isLoggedIn } from '../userApi'
-import { submitGlossarySuggestion } from '../engagementApi'
+import { submitGlossarySuggestion, fetchNovelNames } from '../engagementApi'
+import { NAME_CASING_STYLES, applyCasing, expandSelection } from '../utils/nameEditor'
 import {
+  lookupNameZh,
   validateSuggestion,
   SUGGESTION_TEXT_MAX as TEXT_MAX,
   SUGGESTION_ORIGINAL_MAX as ORIGINAL_MAX,
@@ -21,10 +23,21 @@ export default function InlineGlossaryModal({
   onApply,
   slug,
   chapter,
+  context = null,
 }) {
   const [fromText, setFromText] = useState(initialFrom)
   const [toText, setToText] = useState('')
   const [scope, setScope] = useState('all') // 'all' (toàn truyện) | 'chapter' (chỉ chương này)
+  // Khớp nguyên từ: quy tắc mới mặc định bật — không thay "An" dính liền trong "Anh".
+  // Không chặn được âm tiết nằm trong tên ghép ("Lâm" vẫn khớp trong "Lâm Phong")
+  // vì tiếng Việt tách âm tiết bằng dấu cách → nên chọn cả cụm tên khi sửa.
+  const [whole, setWhole] = useState(true)
+  // Vị trí cụm gốc trong đoạn văn (để mở rộng trái/phải); null = không có ngữ cảnh → ẩn nút.
+  const [range, setRange] = useState(null)
+  // Chỉ mục name vi → zh của truyện (tải lười khi mở modal lần đầu).
+  const [namesIndex, setNamesIndex] = useState({ slug: null, names: [] })
+  // Giá trị chữ Hán do MÌNH tự điền gần nhất — người dùng sửa tay thì không ghi đè nữa.
+  const autoOriginalRef = useRef('')
   // Góp ý name cho mọi người (học từ sangtacviet "name chung") — admin duyệt rồi mới áp công khai.
   const [suggest, setSuggest] = useState(false)
   const [original, setOriginal] = useState('')
@@ -52,13 +65,70 @@ export default function InlineGlossaryModal({
     closeTimerRef.current = null
     setFromText(initialFrom)
     setToText('')
+    setWhole(true)
+    setRange(context && typeof context.text === 'string' && Number.isInteger(context.start) && Number.isInteger(context.end)
+      ? { start: context.start, end: context.end }
+      : null)
+    autoOriginalRef.current = ''
     setOriginal('')
     setNote('')
     setNotice(null)
     setSending(false)
+    // context đổi cùng lúc với initialFrom (cùng 1 lần chọn) → không cần làm dependency riêng.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialFrom, isOpen])
 
   useEffect(() => () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current) }, [])
+
+  // Tải lười chỉ mục name (cache Promise theo slug trong engagementApi).
+  useEffect(() => {
+    if (!isOpen || !slug) return undefined
+    let alive = true
+    fetchNovelNames(slug).then(names => { if (alive) setNamesIndex({ slug, names }) })
+    return () => { alive = false }
+  }, [isOpen, slug])
+
+  const zhList = useMemo(
+    () => (namesIndex.slug === slug ? lookupNameZh(namesIndex.names, fromText) : []),
+    [namesIndex, slug, fromText],
+  )
+  const zhKey = zhList.join('|')
+
+  // Tự điền "Chữ Hán gốc" khi đang góp ý: chỉ khi ô trống hoặc vẫn là giá trị
+  // mình điền lần trước (người dùng đã sửa tay → giữ). Cụm mới không khớp → xoá
+  // giá trị tự điền cũ (đã sai cụm).
+  useEffect(() => {
+    if (!suggest) return
+    const next = zhKey ? zhKey.split('|')[0] : ''
+    setOriginal(prev => {
+      if (prev.trim() !== '' && prev !== autoOriginalRef.current) return prev
+      autoOriginalRef.current = next
+      return next
+    })
+  }, [suggest, zhKey])
+
+  // Mở rộng cụm: chỉ khi ô "Cụm gốc" còn khớp đúng đoạn đã chọn (sửa tay → ẩn nút).
+  const contextText = context && typeof context.text === 'string' ? context.text : ''
+  const rangeInSync = Boolean(range && contextText && contextText.slice(range.start, range.end).trim() === fromText.trim())
+  const expandLeft = useMemo(
+    () => (rangeInSync ? expandSelection(contextText, range.start, range.end, 'left', TEXT_MAX) : null),
+    [rangeInSync, contextText, range],
+  )
+  const expandRight = useMemo(
+    () => (rangeInSync ? expandSelection(contextText, range.start, range.end, 'right', TEXT_MAX) : null),
+    [rangeInSync, contextText, range],
+  )
+  const applyExpand = (next) => {
+    if (!next) return
+    setRange({ start: next.start, end: next.end })
+    setFromText(next.text.trim())
+  }
+
+  // Kiểu viết hoa áp lên ô "Thay bằng"; ô còn trống thì lấy cụm gốc làm đầu vào.
+  const applyCasingStyle = (style) => {
+    const base = toText.trim() ? toText : fromText
+    setToText(applyCasing(base, style))
+  }
 
   const sendSuggestion = async (cleanFrom, cleanTo) => {
     setSending(true)
@@ -103,7 +173,7 @@ export default function InlineGlossaryModal({
     }
 
     // Quy tắc cá nhân luôn lưu ngay để người đọc thấy kết quả tức thì.
-    onApply({ from: cleanFrom, to: cleanTo, scope })
+    onApply({ from: cleanFrom, to: cleanTo, scope, whole })
     if (willSuggest) {
       sendSuggestion(cleanFrom, cleanTo) // modal mở tới khi có kết quả
       return
@@ -119,26 +189,60 @@ export default function InlineGlossaryModal({
     >
       <form onSubmit={handleSubmit} className="inline-glossary-form">
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1 opacity-80">
-            Từ gốc trong truyện
+          <label htmlFor="ig-from" className="block text-sm font-medium mb-1 opacity-80">
+            Cụm gốc trong truyện
           </label>
-          <input
-            type="text"
-            className="w-full px-3 py-2 border rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-amber-500"
-            value={fromText}
-            onChange={(e) => setFromText(e.target.value)}
-            placeholder="Từ cần sửa..."
-            maxLength={TEXT_MAX}
-            required
-            autoFocus
-          />
+          <div className="flex items-stretch gap-1.5">
+            {range && (
+              <button
+                type="button"
+                onClick={() => applyExpand(expandLeft)}
+                disabled={!expandLeft}
+                title="Mở rộng cụm sang trái 1 từ"
+                aria-label="Mở rộng cụm sang trái 1 từ"
+                className="px-2 text-sm rounded-md border hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30"
+              >
+                ◀+
+              </button>
+            )}
+            <input
+              id="ig-from"
+              type="text"
+              className="flex-1 min-w-0 px-3 py-2 border rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-amber-500"
+              value={fromText}
+              onChange={(e) => setFromText(e.target.value)}
+              placeholder="Cụm cần sửa..."
+              maxLength={TEXT_MAX}
+              required
+              autoFocus
+            />
+            {range && (
+              <button
+                type="button"
+                onClick={() => applyExpand(expandRight)}
+                disabled={!expandRight}
+                title="Mở rộng cụm sang phải 1 từ"
+                aria-label="Mở rộng cụm sang phải 1 từ"
+                className="px-2 text-sm rounded-md border hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30"
+              >
+                +▶
+              </button>
+            )}
+          </div>
+          {zhList.length > 0 && (
+            <p className="mt-1 text-sm opacity-80" lang="zh">
+              <span lang="vi">Chữ Hán: </span>
+              <span className="font-medium">{zhList.join(' · ')}</span>
+            </p>
+          )}
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1 opacity-80">
-            Thay thế bằng
+          <label htmlFor="ig-to" className="block text-sm font-medium mb-1 opacity-80">
+            Thay bằng
           </label>
           <input
+            id="ig-to"
             type="text"
             className="w-full px-3 py-2 border rounded-md bg-transparent focus:outline-none focus:ring-2 focus:ring-amber-500"
             value={toText}
@@ -147,6 +251,30 @@ export default function InlineGlossaryModal({
             maxLength={TEXT_MAX}
             required
           />
+          {/* Chọn nhanh kiểu viết hoa (học từ STV) */}
+          <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Kiểu viết hoa">
+            {NAME_CASING_STYLES.map(st => (
+              <button
+                key={st.key}
+                type="button"
+                onClick={() => applyCasingStyle(st.key)}
+                disabled={!toText.trim() && !fromText.trim()}
+                title={`vd: ${st.hint}`}
+                className="px-2 py-0.5 text-xs rounded border hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-40"
+              >
+                {st.label}
+              </button>
+            ))}
+          </div>
+          <label className="mt-3 flex items-center gap-1.5 cursor-pointer text-sm">
+            <input
+              type="checkbox"
+              checked={whole}
+              onChange={(e) => setWhole(e.target.checked)}
+            />
+            <span>Chỉ khớp nguyên từ</span>
+            <span className="text-xs opacity-60">(không thay khi cụm nằm trong từ khác)</span>
+          </label>
         </div>
 
         <div className="mb-5">
@@ -200,6 +328,22 @@ export default function InlineGlossaryModal({
                     placeholder="vd: 洛羽"
                     maxLength={ORIGINAL_MAX}
                   />
+                  {zhList.length > 1 && (
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+                      <span className="opacity-70">Chọn:</span>
+                      {zhList.map(zh => (
+                        <button
+                          key={zh}
+                          type="button"
+                          lang="zh"
+                          onClick={() => { autoOriginalRef.current = zh; setOriginal(zh) }}
+                          className={`px-2 py-0.5 rounded border ${original === zh ? 'border-amber-500 text-amber-700 dark:text-amber-400' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                        >
+                          {zh}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm mb-1 opacity-80">Ghi chú (tuỳ chọn)</label>
@@ -265,4 +409,10 @@ InlineGlossaryModal.propTypes = {
   onApply: PropTypes.func.isRequired,
   slug: PropTypes.string,
   chapter: PropTypes.number,
+  // Đoạn văn chứa vùng chọn + offset (UTF-16) của vùng chọn trong đoạn — cho nút mở rộng cụm.
+  context: PropTypes.shape({
+    text: PropTypes.string.isRequired,
+    start: PropTypes.number.isRequired,
+    end: PropTypes.number.isRequired,
+  }),
 }

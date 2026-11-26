@@ -7,7 +7,7 @@
  *
  * Định dạng prefs (Worker chỉ nhận khoá v/reader/replacements, ≤ 48 KB):
  *   { v: 1, reader: <readerSettings đã sanitize, bỏ ttsVoice>,
- *     replacements: { [slug]: [{ from, to, updatedAt }] } }
+ *     replacements: { [slug]: [{ from, to, updatedAt, whole? }] } }
  *
  * Tín hiệu xoá: truyện ĐÃ TỪNG đồng bộ quy tắc mà nay local không còn quy tắc
  * nào vẫn được gửi `replacements[slug] = []` (danh sách slug đã đồng bộ lưu ở
@@ -53,12 +53,28 @@ export function applyRemoteReaderSettings(localSettings, remoteReader) {
   return merged
 }
 
-/** Danh sách quy tắc (dạng localStorage) → dạng gọn gửi server. */
+/**
+ * Danh sách quy tắc (dạng localStorage) → dạng gọn gửi server.
+ * Cờ `whole` (khớp nguyên từ) chỉ ghi khi true: vắng cờ = khớp chuỗi con như
+ * quy tắc cũ → JSON của người chưa dùng cờ không đổi (không đẩy thừa lên D1).
+ */
 export function compactRules(list) {
   if (!Array.isArray(list)) return []
   return list
     .filter(validRule)
-    .map(r => ({ from: r.from.trim().slice(0, RULE_TEXT_MAX), to: r.to.trim().slice(0, RULE_TEXT_MAX), updatedAt: ruleTime(r) }))
+    .map(r => {
+      const out = { from: r.from.trim().slice(0, RULE_TEXT_MAX), to: r.to.trim().slice(0, RULE_TEXT_MAX), updatedAt: ruleTime(r) }
+      if (r.whole === true) out.whole = true
+      return out
+    })
+}
+
+/** Chép cờ `whole` của quy tắc nguồn sang quy tắc đích (true → ghi, khác → xoá). */
+function withWhole(target, source) {
+  const out = { ...target }
+  if (source?.whole === true) out.whole = true
+  else delete out.whole
+  return out
 }
 
 /**
@@ -132,7 +148,7 @@ export function mergeReplacementLists(localList, remoteList, syncedAt = 0, now =
       continue
     }
     used.add(key)
-    if (ruleTime(r) > ruleTime(l)) out.push({ ...l, from: r.from, to: r.to, updatedAt: ruleTime(r) })
+    if (ruleTime(r) > ruleTime(l)) out.push(withWhole({ ...l, from: r.from, to: r.to, updatedAt: ruleTime(r) }, r))
     else out.push(l)
   }
   let i = 0
@@ -141,7 +157,7 @@ export function mergeReplacementLists(localList, remoteList, syncedAt = 0, now =
     if (used.has(key)) continue
     used.add(key)
     const t = ruleTime(r) || now
-    out.push({ id: `rep_${t}_sync${i++}`, from: r.from, to: r.to, createdAt: t, updatedAt: t })
+    out.push(withWhole({ id: `rep_${t}_sync${i++}`, from: r.from, to: r.to, createdAt: t, updatedAt: t }, r))
   }
   return out
 }

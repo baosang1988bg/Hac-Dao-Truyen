@@ -9,7 +9,7 @@ import Modal from '../components/ui/Modal'
 import ReaderSettingsPanel from '../components/ReaderSettingsPanel'
 import InlineGlossaryModal from '../components/InlineGlossaryModal'
 import ReplacementsManagerModal from '../components/ReplacementsManagerModal'
-import { getReplacements, saveReplacement, removeReplacement, applyReplacements, mergeReplacementRules } from '../utils/readerReplacements'
+import { getReplacements, saveReplacement, removeReplacement, applyReplacements, mergeReplacementRules, mergeImportedRules, writeReplacements } from '../utils/readerReplacements'
 import useReaderSettings, { THEMES } from '../hooks/useReaderSettings'
 import useRealReadTracking from '../hooks/useRealReadTracking'
 import { clearBootTheme } from '../utils/bootTheme'
@@ -83,6 +83,31 @@ const publicRulesCache = new Map()
 function loadPublicRules(slug) {
   if (!publicRulesCache.has(slug)) publicRulesCache.set(slug, fetchPublicReplacements(slug))
   return publicRulesCache.get(slug)
+}
+
+/**
+ * Ngữ cảnh của vùng chọn cho nút "mở rộng cụm" trong hộp sửa name: toàn văn
+ * đoạn `.reader-p` chứa vùng chọn + offset (UTF-16) của cụm ĐÃ TRIM trong đoạn.
+ * Vùng chọn trải qua nhiều đoạn / không nằm trong đoạn văn → null (modal ẩn nút).
+ */
+function selectionParagraphContext(range, trimmedText) {
+  try {
+    const elOf = (node) => (node && node.nodeType === 1 ? node : node?.parentElement)
+    const p = elOf(range.startContainer)?.closest?.('.reader-p')
+    if (!p || p !== elOf(range.endContainer)?.closest?.('.reader-p')) return null
+    const pre = document.createRange()
+    pre.selectNodeContents(p)
+    pre.setEnd(range.startContainer, range.startOffset)
+    const raw = range.toString()
+    const lead = raw.length - raw.trimStart().length
+    const start = pre.toString().length + lead
+    const end = start + trimmedText.length
+    const text = p.textContent || ''
+    // Range.toString và textContent đều nối text node theo thứ tự → phải khớp; lệch thì bỏ.
+    return text.slice(start, end) === trimmedText ? { text, start, end } : null
+  } catch {
+    return null
+  }
 }
 
 /** Các đoạn văn của chương theo thứ tự hiển thị (index = vị trí trong danh sách). */
@@ -373,6 +398,7 @@ export default function Reader() {
   const [replacements, setReplacements] = useState(() => getReplacements(slug))
   const [selectionCoords, setSelectionCoords] = useState(null)
   const [selectedText, setSelectedText] = useState('')
+  const [selectedContext, setSelectedContext] = useState(null) // { text, start, end } | null
   const [isInlineGlossaryOpen, setIsInlineGlossaryOpen] = useState(false)
   const [isReplacementsManagerOpen, setIsReplacementsManagerOpen] = useState(false)
   const [publicRules, setPublicRules] = useState({ slug: null, rules: [] })
@@ -968,6 +994,7 @@ export default function Reader() {
         const rect = range.getBoundingClientRect()
         if (rect && rect.width > 0 && rect.height > 0) {
           setSelectedText(t)
+          setSelectedContext(selectionParagraphContext(range, t))
           setSelectionCoords({
             x: Math.max(40, Math.min(window.innerWidth - 40, rect.left + rect.width / 2)),
             y: Math.max(60, rect.top - 12),
@@ -979,18 +1006,29 @@ export default function Reader() {
     setSelectionCoords(null)
   }, [])
 
-  const handleApplyReplacement = useCallback(({ from, to, scope }) => {
+  const handleApplyReplacement = useCallback(({ from, to, scope, whole }) => {
     if (scope === 'all') {
-      const updated = saveReplacement(slug, { from, to })
+      const updated = saveReplacement(slug, { from, to, whole })
       setReplacements(updated)
       schedulePrefsPush() // đồng bộ quy tắc lên tài khoản (đã đăng nhập)
     } else {
-      setDoc(prev => ({ ...prev, content: applyReplacements(prev.content || content, [{ from, to }]) }))
+      setDoc(prev => ({ ...prev, content: applyReplacements(prev.content || content, [{ from, to, whole: whole === true }]) }))
     }
     if (window.getSelection) {
       window.getSelection().removeAllRanges()
     }
   }, [slug, content])
+
+  // Nhập gói name: file mới thắng khi trùng `from` (xem mergeImportedRules).
+  const handleImportReplacements = useCallback((rules) => {
+    const res = mergeImportedRules(getReplacements(slug), rules)
+    if (res.added || res.updated) {
+      writeReplacements(slug, res.list)
+      setReplacements(res.list)
+      schedulePrefsPush()
+    }
+    return res
+  }, [slug])
 
   const handleDeleteReplacement = useCallback((id) => {
     const updated = removeReplacement(slug, id)
@@ -1204,6 +1242,7 @@ export default function Reader() {
         isOpen={isInlineGlossaryOpen}
         onClose={() => setIsInlineGlossaryOpen(false)}
         initialFrom={selectedText}
+        context={selectedContext}
         onApply={handleApplyReplacement}
         slug={slug}
         chapter={isNumberParam ? Number(chapter) : undefined}
@@ -1214,6 +1253,8 @@ export default function Reader() {
         onClose={() => setIsReplacementsManagerOpen(false)}
         replacements={replacements}
         onDelete={handleDeleteReplacement}
+        slug={slug}
+        onImport={handleImportReplacements}
       />
     </div>
   )

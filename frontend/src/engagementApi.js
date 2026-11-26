@@ -40,7 +40,7 @@ export async function fetchViewRankings(period = 'week', limit = 20) {
 }
 
 // ── Quy tắc sửa name công khai (đã duyệt) ────────────────────────────────────
-/** Trả mảng [{from,to}] — lỗi/404 → []. */
+/** Trả mảng [{from,to,whole}] — lỗi/404 → []. */
 export async function fetchPublicReplacements(slug) {
   try {
     const { data } = await publicApi.get(`/novels/${encodeURIComponent(slug)}/replacements`)
@@ -48,6 +48,27 @@ export async function fetchPublicReplacements(slug) {
   } catch {
     return []
   }
+}
+
+// ── Chỉ mục name vi → zh (glossary đảo ngược) ───────────────────────────────
+// Nhớ Promise theo slug trong bộ nhớ: mở hộp sửa name nhiều lần / đổi chương
+// không tải lại (Worker cũng cache edge 1 giờ). 404 (PUBLIC_NAMES=off, truyện ẩn)
+// → [] và nhớ luôn; lỗi khác (mạng, 429, 5xx) → [] nhưng bỏ cache để lần mở sau thử lại.
+const namesCache = new Map()
+
+/** Trả mảng [{ vi, zh: string[] }] — lỗi/404 → []. Không ném lỗi. */
+export function fetchNovelNames(slug) {
+  if (!slug) return Promise.resolve([])
+  if (!namesCache.has(slug)) {
+    const p = publicApi.get(`/novels/${encodeURIComponent(slug)}/names`)
+      .then(({ data }) => (Array.isArray(data?.names) ? data.names : []))
+      .catch((err) => {
+        if (err?.response?.status !== 404) namesCache.delete(slug) // chỉ nhớ 404; lỗi tạm → cho thử lại
+        return []
+      })
+    namesCache.set(slug, p)
+  }
+  return namesCache.get(slug)
 }
 
 // ── Góp ý name ───────────────────────────────────────────────────────────────

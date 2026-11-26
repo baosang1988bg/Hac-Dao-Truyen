@@ -273,3 +273,42 @@ export function suggestionPreview(from, to) {
   if (!f) return null
   return { before: `…${f}…`, after: `…${t}…` }
 }
+
+// ── Tra chữ Hán của name (chỉ mục vi → zh từ /api/novels/:slug/names) ────────
+/** Khoá so khớp: NFC, gộp khoảng trắng, chữ thường (locale vi). */
+export function normalizeNameKey(text) {
+  let s = String(text ?? '')
+  try { s = s.normalize('NFC') } catch { /* môi trường không có normalize */ }
+  s = s.replace(/\s+/g, ' ').trim()
+  try { return s.toLocaleLowerCase('vi') } catch { return s.toLowerCase() }
+}
+
+// Map dựng 1 lần cho mỗi mảng chỉ mục (WeakMap → tự giải phóng khi đổi truyện).
+const NAME_LOOKUP_CACHE = new WeakMap()
+
+/**
+ * Tra chữ Hán của cụm tiếng Việt trong chỉ mục names.
+ * @param {Array<{vi:string, zh:string[]}>|{names:Array}} namesIndex
+ * @param {string} text cụm đang chọn
+ * @returns {string[]} danh sách chữ Hán (bản sao, đã bỏ trùng) — không khớp → []
+ */
+export function lookupNameZh(namesIndex, text) {
+  const list = Array.isArray(namesIndex) ? namesIndex : (Array.isArray(namesIndex?.names) ? namesIndex.names : null)
+  const key = normalizeNameKey(text)
+  if (!list || !list.length || !key) return []
+  let map = NAME_LOOKUP_CACHE.get(list)
+  if (!map) {
+    map = new Map()
+    for (const item of list) {
+      if (!item || typeof item.vi !== 'string') continue
+      const zh = (Array.isArray(item.zh) ? item.zh : [item.zh]).filter(z => typeof z === 'string' && z.trim())
+      if (!zh.length) continue
+      const k = normalizeNameKey(item.vi)
+      if (!k) continue
+      // Hai mục khác hoa thường cùng khoá → gộp chữ Hán, giữ thứ tự xuất hiện.
+      map.set(k, [...new Set([...(map.get(k) || []), ...zh.map(z => z.trim())])])
+    }
+    NAME_LOOKUP_CACHE.set(list, map)
+  }
+  return [...(map.get(key) || [])]
+}

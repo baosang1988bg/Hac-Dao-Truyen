@@ -1829,9 +1829,10 @@ async function loadPublicReplacements(env, slug) {
 async function getPublicReplacements(env, slug) {
   if (!(await isPublishedNovel(env, slug))) return jsonResponse({ error: 'Novel not found' }, 404);
   const rules = await loadPublicReplacements(env, slug);
-  // whole: quy tắc công khai chỉ khớp NGUYÊN TỪ (không thay "Lâm" bên trong "Lâm Phong"
-  // khi quy tắc là "Lâm" → "Lam"). Quy tắc cũ đã lưu không có cờ vẫn trả whole: true
-  // vì mọi quy tắc công khai đều là name/cụm do admin duyệt.
+  // whole: quy tắc công khai chỉ khớp NGUYÊN TỪ — không thay "An" dính liền trong "Anh".
+  // LƯU Ý: tiếng Việt tách âm tiết bằng dấu cách nên quy tắc 1 âm tiết "Lâm" → "Lam"
+  // VẪN đổi "Lâm Phong" thành "Lam Phong" (trang admin cảnh báo cụm ngắn).
+  // Quy tắc cũ không có cờ vẫn trả whole: true (mọi quy tắc công khai là name do admin duyệt).
   return jsonResponse({ slug, rules: rules.map(r => ({ from: r.from, to: r.to, whole: r.whole !== false })) });
 }
 
