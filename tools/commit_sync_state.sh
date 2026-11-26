@@ -22,7 +22,7 @@ fi
 git commit -m "$message"
 # Nhánh có thể vừa nhận commit khác trong lúc job chạy (run 37905565041 bị
 # "rejected (fetch first)" → mất commit bản dịch) → rebase rồi push lại.
-branch=${GITHUB_REF_NAME:-main}
+branch=${GITHUB_REF_NAME:-prod}
 for attempt in 1 2 3; do
   if git push origin "HEAD:$branch"; then exit 0; fi
   git pull --rebase --autostash origin "$branch"

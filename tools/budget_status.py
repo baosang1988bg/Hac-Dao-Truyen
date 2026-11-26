@@ -52,8 +52,11 @@ def _line(label, used, limit, unit=""):
 
 def show_fuse():
     print("① Cầu chì của project (script sync tự dừng khi chạm):")
-    _run(["git", "fetch", "-q", "origin", "main"])
-    raw = _run(["git", "show", f"origin/main:{BUDGET_FILE}"]).stdout
+    prod_branch = os.getenv("HACDAO_PROD_BRANCH", "prod").strip() or "prod"
+    if _run(["git", "fetch", "-q", "origin", prod_branch]).returncode != 0 and prod_branch != "main":
+        prod_branch = "main"
+        _run(["git", "fetch", "-q", "origin", prod_branch])
+    raw = _run(["git", "show", f"origin/{prod_branch}:{BUDGET_FILE}"]).stdout
     state = json.loads(raw) if raw.strip() else {}
     vars_out = _run(["gh", "variable", "list", "--json", "name,value"])
     limits = {v["name"]: int(v["value"]) for v in json.loads(vars_out.stdout or "[]")

@@ -25,9 +25,10 @@ riêng; production (Worker, D1, R2) thì chỉ có MỘT. Quy tắc bắt buộc
    push ngay sau (kể cả `novels/<slug>/translated/` bằng `git add -f`).
 4. **Không deploy từ working tree dở dang.** Cập nhật chương là dữ liệu D1/R2,
    KHÔNG cần deploy. Chỉ deploy khi đổi code `src/`/`frontend/`/`wrangler.jsonc`,
-   từ bản `main` đã push và sạch: `npm run deploy` (build frontend + wrangler).
+   từ bản `prod` đã push và sạch: `npm run deploy` (build frontend + wrangler)
+   hoặc chạy workflow `deploy_prod.yml` trên nhánh `prod`.
    `tools/auto_check_novel.py` mặc định bỏ qua deploy; chỉ deploy khi
-   `HACDAO_AUTO_DEPLOY=1` và code sạch, trùng `origin/main`.
+   `HACDAO_AUTO_DEPLOY=1` và code sạch, trùng `origin/prod`.
 5. **Không đẩy catalog nguồn lên R2.** `novels/<slug>/catalog.json` (có `url`)
    là danh sách để crawl, không phải chỉ mục hiển thị; `migrate_to_cloudflare.py`
    đã tự bỏ qua. Không tự `wrangler r2 object put …/catalog.json`.
