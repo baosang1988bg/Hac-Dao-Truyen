@@ -12,6 +12,10 @@ export const DEFAULT_SETTINGS = {
   lineHeight: 1.7,
   ttsVoice: '',
   ttsRate: 1,
+  // TTS: hết chương tự sang chương kế đọc tiếp; tự cuộn theo đoạn đang đọc.
+  // Đồng bộ qua /api/user/prefs như các khoá khác (chỉ ttsVoice là theo thiết bị).
+  ttsAutoNext: true,
+  ttsAutoScroll: true,
 }
 
 // Font đọc web (Google Fonts, có dấu tiếng Việt) — [giá trị CSS, nhãn hiển thị].
@@ -56,5 +60,7 @@ export function sanitizeSettings(saved) {
   if (Number.isFinite(saved.ttsRate) && saved.ttsRate >= 0.5 && saved.ttsRate <= 3) {
     out.ttsRate = saved.ttsRate
   }
+  if (typeof saved.ttsAutoNext === 'boolean') out.ttsAutoNext = saved.ttsAutoNext
+  if (typeof saved.ttsAutoScroll === 'boolean') out.ttsAutoScroll = saved.ttsAutoScroll
   return out
 }

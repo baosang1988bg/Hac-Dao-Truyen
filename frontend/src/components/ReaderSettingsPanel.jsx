@@ -107,6 +107,22 @@ export default function ReaderSettingsPanel({ settings, onChange, ttsVoices, cus
               onChange={event => onChange('ttsRate', Number(event.target.value))}
             />
           </label>
+          <label className="reader-settings-check">
+            <input
+              type="checkbox"
+              checked={settings.ttsAutoNext !== false}
+              onChange={event => onChange('ttsAutoNext', event.target.checked)}
+            />
+            Hết chương tự đọc tiếp chương sau
+          </label>
+          <label className="reader-settings-check">
+            <input
+              type="checkbox"
+              checked={settings.ttsAutoScroll !== false}
+              onChange={event => onChange('ttsAutoScroll', event.target.checked)}
+            />
+            Tự cuộn theo đoạn đang đọc
+          </label>
         </fieldset>
       )}
       {typeof onOpenReplacementsManager === 'function' && (
@@ -141,6 +157,8 @@ ReaderSettingsPanel.propTypes = {
     lineHeight: PropTypes.number.isRequired,
     ttsVoice: PropTypes.string,
     ttsRate: PropTypes.number,
+    ttsAutoNext: PropTypes.bool,
+    ttsAutoScroll: PropTypes.bool,
   }).isRequired,
   onChange: PropTypes.func.isRequired,
   // Danh sách SpeechSynthesisVoice — chỉ truyền từ Reader.jsx (có TTS).
