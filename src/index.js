@@ -246,26 +246,91 @@ function displayNovelTitle(novel) {
 // request HTML tới /novel/:slug (KHÔNG áp dụng cho /read/, /epub-reader) để
 // crawler + link preview mạng xã hội thấy đúng tên truyện mà không cần chạy
 // JS. Mọi lỗi (D1, thiếu HTMLRewriter...) → trả index.html gốc nguyên vẹn.
+// JSON-LD nhúng trong <script>: escape "<" để chuỗi "</script>" trong tên/giới
+// thiệu truyện không thể đóng thẻ sớm (XSS qua dữ liệu D1).
+function jsonLdScript(data) {
+  const json = JSON.stringify(data).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+  return `<script type="application/ld+json">${json}</script>`;
+}
+
+// Nhãn chương từ tham số URL /read/:chapter — "12" → "Chương 12"; tên file
+// "0012_Chuong-12_VI" → giữ phần chữ, bỏ đuôi _VI/.md. Chỉ dùng cho <title>.
+function chapterLabelFromParam(raw) {
+  let value = raw;
+  try { value = decodeURIComponent(raw); } catch { /* giữ nguyên */ }
+  if (/^\d{1,7}$/.test(value)) return `Chương ${Number(value)}`;
+  const cleaned = value.replace(/_VI(?:\.md)?$/i, '').replace(/\.md$/i, '').replace(/^\d+_/, '').replace(/[-_]+/g, ' ').trim();
+  return cleaned.slice(0, 120) || 'Chương';
+}
+
 async function injectNovelSeo(indexRes, url, env) {
-  const m = url.pathname.match(/^\/novel\/([^/]+)\/?$/);
-  if (!m || !indexRes.ok || typeof HTMLRewriter === 'undefined' || !env.DB) return indexRes;
+  // Trang "/" do Static Assets phục vụ thẳng (không qua Worker) → JSON-LD
+  // WebSite + SearchAction nằm tĩnh trong frontend/index.html.
+  if (!indexRes.ok || typeof HTMLRewriter === 'undefined') return indexRes;
+  const m = url.pathname.match(/^\/novel\/([^/]+)(?:\/read\/([^/]+))?\/?$/);
+  if (!m || !env.DB) return indexRes;
   const slug = m[1];
+  const chapterParam = m[2] || null;
   if (!SLUG_RE.test(slug)) return indexRes;
+  // Chỉ URL chương dạng số mới có title/canonical riêng: tham số tự do (tên file,
+  // chuỗi rác) giữ index gốc để crawler không sinh vô hạn trang trùng canonical.
+  if (chapterParam !== null && !/^\d{1,7}$/.test(chapterParam)) return indexRes;
   try {
     const novel = await env.DB.prepare(
-      `SELECT slug, title, synopsis, cover_url, published FROM novels WHERE slug = ?`
+      `SELECT slug, title, original_title, author, genre, status, synopsis, cover_url, published,
+              rating_sum, rating_count, updated_at
+       FROM novels WHERE slug = ?`
     ).bind(slug).first();
     if (!novel || !novel.published) return indexRes;
     const origin = siteOrigin(url, env);
     const name = displayNovelTitle(novel);
-    const pageTitle = `${name} – Hắc Đạo Truyện`;
-    const description = synopsisShort(novel.synopsis) || `Đọc truyện ${name} bản dịch tiếng Việt trên Hắc Đạo Truyện.`;
-    const canonical = `${origin}/novel/${slug}`;
+    const novelUrl = `${origin}/novel/${slug}`;
+    const chapterLabel = chapterParam ? chapterLabelFromParam(chapterParam) : '';
+    const pageTitle = chapterParam ? `${chapterLabel} – ${name} – Hắc Đạo Truyện` : `${name} – Hắc Đạo Truyện`;
+    const description = chapterParam
+      ? `Đọc ${chapterLabel} truyện ${name} bản dịch tiếng Việt trên Hắc Đạo Truyện.`
+      : (synopsisShort(novel.synopsis) || `Đọc truyện ${name} bản dịch tiếng Việt trên Hắc Đạo Truyện.`);
+    const canonical = chapterParam ? `${novelUrl}/read/${Number(chapterParam)}` : novelUrl;
     const image = publicCoverUrl(novel.cover_url, origin);
+    const breadcrumb = {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Trang chủ', item: `${origin}/` },
+        { '@type': 'ListItem', position: 2, name, item: novelUrl },
+        ...(chapterParam ? [{ '@type': 'ListItem', position: 3, name: chapterLabel, item: canonical }] : []),
+      ],
+    };
+    const ldBlocks = [jsonLdScript(breadcrumb)];
+    if (!chapterParam) {
+      const book = {
+        '@context': 'https://schema.org',
+        '@type': 'Book',
+        name,
+        url: novelUrl,
+        inLanguage: 'vi',
+        description,
+        ...(novel.original_title ? { alternateName: String(novel.original_title).slice(0, 200) } : {}),
+        ...(novel.author ? { author: { '@type': 'Person', name: String(novel.author).slice(0, 120) } } : {}),
+        ...(novel.genre ? { genre: splitGenres(novel.genre).slice(0, 6) } : {}),
+        ...(image ? { image } : {}),
+        ...(toLastmod(novel.updated_at) ? { dateModified: toLastmod(novel.updated_at) } : {}),
+        ...(novel.rating_count > 0 ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: Math.round((novel.rating_sum / novel.rating_count) * 10) / 10,
+            ratingCount: novel.rating_count,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        } : {}),
+      };
+      ldBlocks.unshift(jsonLdScript(book));
+    }
     const metas = [
       `<meta name="description" content="${escapeHtmlAttr(description)}" />`,
       `<link rel="canonical" href="${escapeHtmlAttr(canonical)}" />`,
-      '<meta property="og:type" content="book" />',
+      `<meta property="og:type" content="${chapterParam ? 'article' : 'book'}" />`,
       '<meta property="og:site_name" content="Hắc Đạo Truyện" />',
       '<meta property="og:locale" content="vi_VN" />',
       `<meta property="og:title" content="${escapeHtmlAttr(pageTitle)}" />`,
@@ -273,6 +338,7 @@ async function injectNovelSeo(indexRes, url, env) {
       `<meta property="og:url" content="${escapeHtmlAttr(canonical)}" />`,
       image ? `<meta property="og:image" content="${escapeHtmlAttr(image)}" />` : '',
       `<meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}" />`,
+      ...ldBlocks,
     ].filter(Boolean).join('\n    ');
     const drop = { element(el) { el.remove(); } };
     return new HTMLRewriter()
@@ -419,11 +485,48 @@ async function handleApi(request, url, env, ctx) {
     return getEpub(env, epubMatch[1], ctx);
   }
 
-  // POST /api/novels/:slug/view — tăng lượt xem
+  // POST /api/novels/:slug/read-start — xin token lượt đọc (không ghi D1)
+  const readStartMatch = path.match(/^\/api\/novels\/([^/]+)\/read-start$/);
+  if (readStartMatch && method === 'POST') {
+    return readStart(env, readStartMatch[1], request);
+  }
+
+  // POST /api/novels/:slug/view — báo lượt đọc thật (token ≥ 30 giây)
   const viewMatch = path.match(/^\/api\/novels\/([^/]+)\/view$/);
   if (viewMatch && method === 'POST') {
     return trackView(env, viewMatch[1], request);
   }
+
+  // GET /api/rankings/views?period=day|week|month&limit= — BXH lượt đọc theo kỳ
+  if (path === '/api/rankings/views' && method === 'GET') {
+    return cachedJsonResponse(request, ctx, 300, () => getViewRankings(env, url), { sMaxAge: 900, cacheParams: ['period', 'limit'] });
+  }
+
+  // GET /api/novels/:slug/replacements — quy tắc sửa name công khai đã duyệt
+  const replacementsMatch = path.match(/^\/api\/novels\/([^/]+)\/replacements$/);
+  if (replacementsMatch && method === 'GET') {
+    return cachedJsonResponse(request, ctx, 300, () => getPublicReplacements(env, replacementsMatch[1]), { sMaxAge: 1800 });
+  }
+
+  // POST /api/novels/:slug/glossary-suggestions — người đọc góp ý name
+  const suggestMatch = path.match(/^\/api\/novels\/([^/]+)\/glossary-suggestions$/);
+  if (suggestMatch && method === 'POST') {
+    return glossarySuggestionCreate(request, env, suggestMatch[1]);
+  }
+  if (path === '/api/user/glossary-suggestions' && method === 'GET') {
+    return glossarySuggestionsMine(request, env);
+  }
+  if (path === '/api/admin/glossary-suggestions' && method === 'GET') {
+    return adminGlossarySuggestionsList(request, env, url);
+  }
+  const suggestReviewMatch = path.match(/^\/api\/admin\/glossary-suggestions\/(\d+)\/review$/);
+  if (suggestReviewMatch && method === 'POST') {
+    return adminGlossarySuggestionReview(request, env, parseInt(suggestReviewMatch[1], 10));
+  }
+
+  // GET/PUT /api/user/prefs — cài đặt Reader + quy tắc thay thế cá nhân
+  if (path === '/api/user/prefs' && method === 'GET') return userPrefsGet(request, env);
+  if (path === '/api/user/prefs' && method === 'PUT') return userPrefsPut(request, env);
 
   // POST /api/novels/:slug/rate — đánh giá truyện (1-5 sao)
   const rateMatch = path.match(/^\/api\/novels\/([^/]+)\/rate$/);
@@ -1498,16 +1601,449 @@ async function isPublishedNovel(env, slug) {
   return Boolean(row && row.published);
 }
 
+// ── Lượt đọc THẬT (học từ truyentrung.com) ────────────────────────────────────
+// Bản cũ cộng views mỗi lần mở Reader (chặn 10 giây/IP) → lướt mục lục, mở rồi
+// thoát ngay cũng tính. Bản mới: Reader xin token khi mở chương (KHÔNG ghi D1),
+// chỉ gửi lại sau ≥ 30 giây tab hiển thị + cuộn gần cuối. Token ký HMAC nên
+// client không tự đặt thời điểm bắt đầu được. Chưa đặt secret VIEW_TOKEN_SECRET
+// (≥ 16 ký tự, `wrangler secret put VIEW_TOKEN_SECRET`) → giữ hành vi cũ để không
+// mất số liệu. Cố ý KHÔNG dùng chung SYNC_KEY (lộ khoá này = ghi được D1 qua sync).
+const READ_TOKEN_MIN_MS = 25_000;            // client đợi 30 giây; nới 5 giây cho mạng chậm
+const READ_TOKEN_MAX_MS = 6 * 3600 * 1000;   // token cũ hơn 6 giờ bị bỏ
+const READ_DEDUPE_MS = 10 * 60 * 1000;       // 1 lượt / IP / chương / 10 phút (best-effort)
+const READ_NOVEL_DEDUPE_MS = 60 * 1000;      // + tối đa 1 lượt / IP / truyện / phút (chặn xin token hàng loạt chương)
+const READ_START_PER_MIN = 20;               // read-start / IP / phút
+const READ_IP_DAILY_CAP = 300;               // lượt được đếm / IP / ngày (mỗi isolate)
+
+// Nonce đã dùng: Map RIÊNG (không dùng _rateLimitMap — mục sống 6 giờ sẽ làm đầy
+// trần 5000 chung rồi chặn nhầm rate limit của route khác). Đầy thì bỏ mục cũ nhất.
+const _usedReadNonces = new Map(); // nonce -> expiresAt
+const USED_NONCES_MAX = 20000;
+function consumeReadNonce(nonce, now = Date.now()) {
+  const exp = _usedReadNonces.get(nonce);
+  if (exp && exp > now) return false;
+  _usedReadNonces.set(nonce, now + READ_TOKEN_MAX_MS);
+  if (_usedReadNonces.size > USED_NONCES_MAX) {
+    for (const [k, v] of _usedReadNonces) {
+      if (v <= now || _usedReadNonces.size > USED_NONCES_MAX) _usedReadNonces.delete(k);
+      if (_usedReadNonces.size <= USED_NONCES_MAX * 0.9) break;
+    }
+  }
+  return true;
+}
+const VN_OFFSET_MS = 7 * 3600 * 1000;
+
+function viewTokenSecret(env) {
+  const s = env.VIEW_TOKEN_SECRET;
+  return typeof s === 'string' && s.length >= 16 ? s : null;
+}
+
+// 'YYYY-MM-DD' theo giờ Việt Nam — BXH "hôm nay" đổi ngày lúc 0h VN, không phải 7h sáng.
+function vnDay(ms = Date.now()) {
+  return new Date(ms + VN_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+async function hmacSha256Hex(secret, message) {
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  return toHex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message)));
+}
+
+async function readOptionalJson(request, maxBytes) {
+  if (!request.body) return {};
+  const parsed = await readLimitedJson(request, maxBytes);
+  return parsed.ok && parsed.body && typeof parsed.body === 'object' ? parsed.body : {};
+}
+
+function safeChapterNumber(value) {
+  return Number.isInteger(value) && value >= 0 && value <= 1_000_000 ? value : 0;
+}
+
+async function readStart(env, slug, request) {
+  if (!(await isPublishedNovel(env, slug))) return jsonResponse({ error: 'Novel not found' }, 404);
+  if (!checkRateLimit(`readstart:${clientIp(request)}`, 60_000, READ_START_PER_MIN)) {
+    return jsonResponse({ error: 'Quá nhiều yêu cầu' }, 429, { 'Retry-After': '60' });
+  }
+  const body = await readOptionalJson(request, 1024);
+  const chapter = safeChapterNumber(body.chapter);
+  const secret = viewTokenSecret(env);
+  if (!secret) return jsonResponse({ token: null, min_seconds: 30 }, 200, { 'Cache-Control': 'no-store' });
+  const nonce = toHex(crypto.getRandomValues(new Uint8Array(8)));
+  const payload = `${slug}.${chapter}.${Date.now()}.${nonce}`;
+  const sig = (await hmacSha256Hex(secret, payload)).slice(0, 32);
+  return jsonResponse({ token: `${payload}.${sig}`, min_seconds: 30 }, 200, { 'Cache-Control': 'no-store' });
+}
+
+// Trả { chapter, nonce } nếu token hợp lệ cho slug, ngược lại { error }.
+async function verifyReadToken(secret, slug, token, now = Date.now()) {
+  if (typeof token !== 'string' || token.length > 200) return { error: 'bad_token' };
+  const parts = token.split('.');
+  if (parts.length !== 5) return { error: 'bad_token' };
+  const [tSlug, tChapter, tIssued, nonce, sig] = parts;
+  if (tSlug !== slug || !/^\d{1,7}$/.test(tChapter) || !/^\d{10,16}$/.test(tIssued) || !/^[0-9a-f]{16}$/.test(nonce)) {
+    return { error: 'bad_token' };
+  }
+  const expected = (await hmacSha256Hex(secret, parts.slice(0, 4).join('.'))).slice(0, 32);
+  if (!timingSafeEqualStr(sig, expected)) return { error: 'bad_token' };
+  const age = now - Number(tIssued);
+  if (age < READ_TOKEN_MIN_MS) return { error: 'too_early' };
+  if (age > READ_TOKEN_MAX_MS) return { error: 'expired' };
+  return { chapter: Number(tChapter), nonce };
+}
+
 async function trackView(env, slug, request) {
   if (!(await isPublishedNovel(env, slug))) return jsonResponse({ error: 'Novel not found' }, 404);
-  // 1 lượt xem / IP / truyện / 10 giây — chặn spam nhưng không cản người đọc thật
-  if (!checkRateLimit(`view:${clientIp(request)}:${slug}`, 10_000)) {
-    return jsonResponse({ ok: true, throttled: true });
+  const secret = viewTokenSecret(env);
+  let dedupeKey = `view:${clientIp(request)}:${slug}`;
+  let dedupeMs = 10_000;
+  if (secret) {
+    const body = await readOptionalJson(request, 1024);
+    if (!body.token) return jsonResponse({ ok: true, counted: false, reason: 'token_required' });
+    const verified = await verifyReadToken(secret, slug, body.token);
+    if (verified.error) return jsonResponse({ ok: false, counted: false, reason: verified.error }, 400);
+    // Mỗi token chỉ dùng 1 lần (trong isolate) + 1 lượt / IP / chương / 10 phút
+    // + 1 lượt / IP / truyện / phút + trần lượt / IP / ngày. Tất cả là best-effort
+    // theo isolate — mục tiêu là chặn bơm số rẻ tiền và giữ số dòng ghi D1 có trần.
+    if (!consumeReadNonce(verified.nonce)) {
+      return jsonResponse({ ok: true, counted: false, reason: 'duplicate' });
+    }
+    const ip = clientIp(request);
+    if (!checkRateLimit(`viewn:${ip}:${slug}`, READ_NOVEL_DEDUPE_MS)
+      || !checkRateLimit(`viewday:${ip}`, 86_400_000, READ_IP_DAILY_CAP)) {
+      return jsonResponse({ ok: true, counted: false, throttled: true });
+    }
+    dedupeKey = `view:${ip}:${slug}:${verified.chapter}`;
+    dedupeMs = READ_DEDUPE_MS;
   }
-  await env.DB.prepare(`
-    UPDATE novels SET views = views + 1 WHERE slug = ?
-  `).bind(slug).run();
-  return jsonResponse({ ok: true });
+  if (!checkRateLimit(dedupeKey, dedupeMs)) {
+    return jsonResponse({ ok: true, counted: false, throttled: true });
+  }
+  const bumpTotal = env.DB.prepare(`UPDATE novels SET views = views + 1 WHERE slug = ?`).bind(slug);
+  try {
+    await env.DB.batch([
+      bumpTotal,
+      env.DB.prepare(`
+        INSERT INTO novel_views_daily (slug, day, views) VALUES (?, ?, 1)
+        ON CONFLICT(slug, day) DO UPDATE SET views = views + 1
+      `).bind(slug, vnDay()),
+    ]);
+  } catch (err) {
+    // Migration 015 chưa chạy → batch (1 transaction) rollback cả hai; vẫn cộng tổng như cũ.
+    if (!/no such table/i.test(String(err && err.message))) throw err;
+    await env.DB.prepare(`UPDATE novels SET views = views + 1 WHERE slug = ?`).bind(slug).run();
+  }
+  return jsonResponse({ ok: true, counted: true });
+}
+
+const VIEW_PERIOD_DAYS = { day: 1, week: 7, month: 30 };
+
+async function getViewRankings(env, url) {
+  const period = url.searchParams.get('period') || 'week';
+  const days = VIEW_PERIOD_DAYS[period];
+  if (!days) return jsonResponse({ error: "period phải là 'day', 'week' hoặc 'month'" }, 400);
+  const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10) || 20));
+  const since = vnDay(Date.now() - (days - 1) * 86_400_000);
+  try {
+    const { results } = await env.DB.prepare(`
+      SELECT n.slug, n.title, n.original_title, n.author, n.genre, n.status, n.cover_url,
+             n.views, n.rating_sum, n.rating_count, n.updated_at, t.period_views
+      FROM (
+        SELECT slug, SUM(views) AS period_views FROM novel_views_daily
+        WHERE day >= ? GROUP BY slug
+      ) t JOIN novels n ON n.slug = t.slug
+      WHERE n.published = 1
+      ORDER BY t.period_views DESC, n.views DESC
+      LIMIT ?
+    `).bind(since, limit).all();
+    const items = (results || []).map(row => ({
+      ...row,
+      rating: row.rating_count > 0 ? Math.round((row.rating_sum / row.rating_count) * 10) / 10 : 0,
+      title_is_slug: !String(row.title || '').trim() || String(row.title).trim() === row.slug,
+    }));
+    return jsonResponse({ period, since, items });
+  } catch (err) {
+    if (!/no such table/i.test(String(err && err.message))) throw err;
+    return jsonResponse({ period, since, items: [], unavailable: true });
+  }
+}
+
+// ── Góp ý name/cụm từ (học từ sangtacviet "name chung") ──────────────────────
+// Người đọc bôi đen cụm sai trong Reader → gửi đề xuất. Admin duyệt → thêm vào
+// R2 <slug>/replacements.json (mọi người đọc áp ngay khi đọc, KHÔNG cần dịch
+// lại chương) và, nếu có chữ Hán gốc, ghi luôn glossary R2 cho các chương dịch sau.
+const SUGGESTION_TEXT_MAX = 100;
+const SUGGESTION_ORIGINAL_MAX = 50;
+const SUGGESTION_NOTE_MAX = 300;
+const MAX_PENDING_SUGGESTIONS = 20;
+const PUBLIC_REPLACEMENTS_MAX = 2000;
+const SUGGESTION_STATUSES = new Set(['pending', 'approved', 'rejected']);
+const SUGGESTION_UNSAFE_RE = /[[\]()!<>*_#`|~\\]/;
+
+function isMissingTableError(err) {
+  return /no such table/i.test(String(err && err.message));
+}
+
+function cleanShortText(value, max) {
+  // Gộp khoảng trắng, bỏ ký tự điều khiển — cụm name chỉ là 1 dòng ngắn.
+  const text = String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
+  return text.length > max ? null : text;
+}
+
+// Đọc-sửa-ghi 1 file JSON trên R2 có điều kiện etag: hai admin duyệt 2 góp ý
+// khác nhau của cùng truyện cùng lúc thì bên ghi sau đọc lại và thử lại, không
+// đè mất quy tắc của bên kia. File chưa tồn tại → ghi thẳng (khe hở rất nhỏ).
+async function updateR2Json(env, key, mutate, attempts = 4) {
+  for (let i = 0; i < attempts; i++) {
+    const obj = await env.CHAPTERS.get(key);
+    let data = null;
+    if (obj) { try { data = await obj.json(); } catch { data = null; } }
+    const next = mutate(data);
+    const body = JSON.stringify(next, null, 2);
+    const opts = { httpMetadata: { contentType: 'application/json; charset=utf-8' } };
+    if (obj && obj.etag) opts.onlyIf = { etagMatches: obj.etag };
+    const put = await env.CHAPTERS.put(key, body, opts);
+    if (put !== null) return next; // null = điều kiện etag không khớp → thử lại
+  }
+  throw new Error(`R2 conflict khi ghi ${key}`);
+}
+
+async function loadPublicReplacements(env, slug) {
+  try {
+    const obj = await env.CHAPTERS.get(`${slug}/replacements.json`);
+    if (!obj) return [];
+    const data = await obj.json();
+    const rules = Array.isArray(data) ? data : (Array.isArray(data?.rules) ? data.rules : []);
+    return rules.filter(r => r && typeof r.from === 'string' && typeof r.to === 'string' && r.from.trim());
+  } catch {
+    return [];
+  }
+}
+
+async function getPublicReplacements(env, slug) {
+  if (!(await isPublishedNovel(env, slug))) return jsonResponse({ error: 'Novel not found' }, 404);
+  const rules = await loadPublicReplacements(env, slug);
+  return jsonResponse({ slug, rules: rules.map(r => ({ from: r.from, to: r.to })) });
+}
+
+async function glossarySuggestionCreate(request, env, slug) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
+  if (!(await isPublishedNovel(env, slug))) return jsonResponse({ error: 'Novel not found' }, 404);
+  const parsed = await readLimitedJson(request, 4 * 1024);
+  if (!parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, parsed.status);
+  const body = parsed.body || {};
+  const fromText = cleanShortText(body.from, SUGGESTION_TEXT_MAX);
+  const toText = cleanShortText(body.to, SUGGESTION_TEXT_MAX);
+  const original = cleanShortText(body.original, SUGGESTION_ORIGINAL_MAX);
+  const note = cleanShortText(body.note, SUGGESTION_NOTE_MAX);
+  if (!fromText || !toText) {
+    return jsonResponse({ error: `Cụm gốc và cụm đề xuất phải từ 1 đến ${SUGGESTION_TEXT_MAX} ký tự` }, 400);
+  }
+  if (fromText === toText) return jsonResponse({ error: 'Cụm đề xuất phải khác cụm hiện tại' }, 400);
+  if ([...fromText].length < 2) return jsonResponse({ error: 'Cụm gốc phải có ít nhất 2 ký tự' }, 400);
+  // Quy tắc công khai được chèn vào markdown chương của MỌI người đọc → không cho
+  // ký tự markdown/HTML (chặn chèn ảnh theo dõi, link lạ, phá định dạng).
+  if (SUGGESTION_UNSAFE_RE.test(fromText) || SUGGESTION_UNSAFE_RE.test(toText)) {
+    return jsonResponse({ error: 'Không dùng các ký tự [ ] ( ) ! < > * _ # ` | ~ \\ trong góp ý' }, 400);
+  }
+  if (original === null) return jsonResponse({ error: `Chữ gốc tối đa ${SUGGESTION_ORIGINAL_MAX} ký tự` }, 400);
+  if (note === null) return jsonResponse({ error: `Ghi chú tối đa ${SUGGESTION_NOTE_MAX} ký tự` }, 400);
+  const chapter = Number.isInteger(body.chapter) && body.chapter >= 0 && body.chapter <= 1_000_000 ? body.chapter : null;
+  try {
+    // Kiểm tra hạn mức pending + ghi trong MỘT statement (giống novelRequestCreate).
+    const { meta } = await env.DB.prepare(`
+      INSERT INTO glossary_suggestions (slug, user_id, chapter, from_text, to_text, original, note)
+      SELECT ?, ?, ?, ?, ?, ?, ?
+      WHERE (SELECT COUNT(*) FROM glossary_suggestions WHERE user_id = ? AND status = 'pending') < ?
+    `).bind(slug, user.id, chapter, fromText, toText, original || null, note || null, user.id, MAX_PENDING_SUGGESTIONS).run();
+    if (!meta.changes) {
+      return jsonResponse({ error: `Bạn đang có ${MAX_PENDING_SUGGESTIONS} góp ý chờ duyệt, vui lòng đợi admin xử lý.` }, 429);
+    }
+    return jsonResponse({ id: meta.last_row_id }, 201);
+  } catch (err) {
+    if (isMissingTableError(err)) return jsonResponse({ error: 'Tính năng góp ý chưa sẵn sàng' }, 503);
+    throw err;
+  }
+}
+
+async function glossarySuggestionsMine(request, env) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  try {
+    const { results } = await env.DB.prepare(`
+      SELECT id, slug, chapter, from_text, to_text, original, note, status, admin_note, created_at, reviewed_at
+      FROM glossary_suggestions WHERE user_id = ? ORDER BY id DESC LIMIT 100
+    `).bind(user.id).all();
+    return jsonResponse(results || []);
+  } catch (err) {
+    if (isMissingTableError(err)) return jsonResponse([]);
+    throw err;
+  }
+}
+
+async function adminGlossarySuggestionsList(request, env, url) {
+  if (!(await isAdminRequest(request, env))) return jsonResponse({ error: 'Unauthorized' }, 403);
+  const status = url.searchParams.get('status');
+  const slug = url.searchParams.get('slug');
+  const where = [];
+  const binds = [];
+  if (status) {
+    if (!SUGGESTION_STATUSES.has(status)) return jsonResponse({ error: 'status không hợp lệ' }, 400);
+    where.push('s.status = ?'); binds.push(status);
+  }
+  if (slug) {
+    if (!SLUG_RE.test(slug)) return jsonResponse({ error: 'Slug không hợp lệ' }, 400);
+    where.push('s.slug = ?'); binds.push(slug);
+  }
+  try {
+    const { results } = await env.DB.prepare(`
+      SELECT s.id, s.slug, COALESCE(n.title, s.slug) AS novel_title, s.chapter, s.from_text, s.to_text,
+             s.original, s.note, s.status, s.admin_note, s.created_at, s.reviewed_at,
+             s.user_id, COALESCE(u.name, '') AS user_name, COALESCE(u.email, '') AS email
+      FROM glossary_suggestions s
+      LEFT JOIN users u ON u.id = s.user_id
+      LEFT JOIN novels n ON n.slug = s.slug
+      ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+      ORDER BY s.id DESC LIMIT 200
+    `).bind(...binds).all();
+    return jsonResponse(results || []);
+  } catch (err) {
+    if (isMissingTableError(err)) return jsonResponse([]);
+    throw err;
+  }
+}
+
+async function adminGlossarySuggestionReview(request, env, id) {
+  if (!(await isAdminRequest(request, env))) return jsonResponse({ error: 'Unauthorized' }, 403);
+  const parsed = await readLimitedJson(request, DEFAULT_JSON_MAX_BYTES);
+  if (!parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, parsed.status);
+  const body = parsed.body || {};
+  const status = String(body.status || '');
+  if (status !== 'approved' && status !== 'rejected') {
+    return jsonResponse({ error: "status chỉ nhận 'approved' hoặc 'rejected'" }, 400);
+  }
+  const adminNote = cleanShortText(body.admin_note, MAX_REQUEST_NOTE_LENGTH);
+  if (adminNote === null) return jsonResponse({ error: `Ghi chú admin tối đa ${MAX_REQUEST_NOTE_LENGTH} ký tự` }, 400);
+
+  let row;
+  try {
+    row = await env.DB.prepare(`SELECT * FROM glossary_suggestions WHERE id = ?`).bind(id).first();
+  } catch (err) {
+    if (isMissingTableError(err)) return jsonResponse({ error: 'Tính năng góp ý chưa sẵn sàng' }, 503);
+    throw err;
+  }
+  if (!row) return jsonResponse({ error: 'Không tìm thấy góp ý' }, 404);
+  if (row.status !== 'pending') return jsonResponse({ error: 'Góp ý này đã được xử lý trước đó' }, 409);
+
+  // Admin được sửa lại cụm đề xuất / chữ gốc trước khi duyệt.
+  const toText = body.to !== undefined ? cleanShortText(body.to, SUGGESTION_TEXT_MAX) : row.to_text;
+  const original = body.original !== undefined ? cleanShortText(body.original, SUGGESTION_ORIGINAL_MAX) : (row.original || '');
+  if (status === 'approved' && (!toText || original === null || SUGGESTION_UNSAFE_RE.test(toText))) {
+    return jsonResponse({ error: 'Cụm đề xuất/chữ gốc không hợp lệ' }, 400);
+  }
+  const applyGlossary = status === 'approved' && body.apply_glossary !== false && Boolean(original);
+
+  // Giữ chỗ trước (pending → status) để 2 admin duyệt cùng lúc không ghi R2 hai lần.
+  const { meta } = await env.DB.prepare(`
+    UPDATE glossary_suggestions SET status = ?, admin_note = ?, to_text = ?, original = ?, reviewed_at = datetime('now')
+    WHERE id = ? AND status = 'pending'
+  `).bind(status, adminNote || null, toText || row.to_text, original || null, id).run();
+  if (!meta.changes) return jsonResponse({ error: 'Góp ý này đã được xử lý trước đó' }, 409);
+
+  let glossaryCount = null;
+  if (status === 'approved') {
+    try {
+      // Glossary TRƯỚC, quy tắc công khai SAU: nếu bước sau lỗi thì góp ý quay về
+      // pending mà người đọc chưa thấy gì; duyệt lại ghi đè cùng giá trị (idempotent).
+      if (applyGlossary) {
+        const glossary = await updateR2Json(env, `${row.slug}/glossary.json`, data => {
+          const g = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+          g[original] = toText;
+          return g;
+        });
+        glossaryCount = Object.keys(glossary).length;
+        await env.DB.prepare(`UPDATE novels SET glossary_count = ? WHERE slug = ?`).bind(glossaryCount, row.slug).run();
+      }
+      await updateR2Json(env, `${row.slug}/replacements.json`, data => {
+        const rules = (Array.isArray(data?.rules) ? data.rules : Array.isArray(data) ? data : [])
+          .filter(r => r && typeof r.from === 'string' && typeof r.to === 'string');
+        const idx = rules.findIndex(r => r.from.toLowerCase() === row.from_text.toLowerCase());
+        const rule = { from: row.from_text, to: toText, suggestion_id: id, updated_at: new Date().toISOString() };
+        if (idx >= 0) rules[idx] = { ...rules[idx], ...rule };
+        else rules.push(rule);
+        return { rules: rules.slice(-PUBLIC_REPLACEMENTS_MAX) };
+      });
+    } catch (err) {
+      // R2 lỗi → trả góp ý về pending để admin duyệt lại, không "duyệt mà không áp".
+      await env.DB.prepare(`UPDATE glossary_suggestions SET status = 'pending', reviewed_at = NULL WHERE id = ?`).bind(id).run();
+      console.error('Apply glossary suggestion failed:', err && err.stack ? err.stack : err);
+      return jsonResponse({ error: 'Không ghi được R2, góp ý vẫn ở trạng thái chờ' }, 502);
+    }
+    const origin = new URL(request.url).origin;
+    await purgeEdgeCache([`${origin}/api/novels/${row.slug}/replacements`]);
+  }
+  await env.DB.prepare(`INSERT INTO admin_actions (action, slug, note) VALUES (?, ?, ?)`)
+    .bind(`glossary_suggestion_${status}`, row.slug, `#${id}: ${row.from_text} → ${toText || row.to_text}`.slice(0, 2000)).run();
+  return jsonResponse({ ok: true, status, applied_glossary: applyGlossary, glossary_count: glossaryCount });
+}
+
+// ── Cài đặt người dùng đồng bộ theo tài khoản (học từ truyentrung) ──────────
+const PREFS_MAX_BYTES = 48 * 1024;
+const PREFS_ALLOWED_KEYS = new Set(['v', 'reader', 'replacements']);
+
+async function userPrefsGet(request, env) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  try {
+    const row = await env.DB.prepare(`SELECT prefs, updated_at, client_updated_at FROM user_prefs WHERE user_id = ?`)
+      .bind(user.id).first();
+    if (!row) return jsonResponse({ prefs: null, updated_at: null, client_updated_at: null });
+    let prefs = null;
+    try { prefs = JSON.parse(row.prefs); } catch { prefs = null; }
+    return jsonResponse({ prefs, updated_at: row.updated_at, client_updated_at: row.client_updated_at });
+  } catch (err) {
+    if (isMissingTableError(err)) return jsonResponse({ prefs: null, updated_at: null, client_updated_at: null, unavailable: true });
+    throw err;
+  }
+}
+
+async function userPrefsPut(request, env) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  const parsed = await readLimitedJson(request, PREFS_MAX_BYTES);
+  if (!parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, parsed.status);
+  const prefs = parsed.body && parsed.body.prefs;
+  if (!prefs || typeof prefs !== 'object' || Array.isArray(prefs)) {
+    return jsonResponse({ error: 'prefs phải là object' }, 400);
+  }
+  for (const key of Object.keys(prefs)) {
+    if (!PREFS_ALLOWED_KEYS.has(key)) return jsonResponse({ error: `Khoá prefs không hỗ trợ: ${key.slice(0, 40)}` }, 400);
+  }
+  const serialized = JSON.stringify(prefs);
+  if (serialized.length > PREFS_MAX_BYTES - 1024) return jsonResponse({ error: 'prefs quá lớn' }, 413);
+  // Kẹp mốc client không vượt giờ server + 5 phút: một máy lệch đồng hồ không
+  // được khoá đồng bộ của mọi máy khác (409 mãi) bằng mốc ở tương lai.
+  const rawClientAt = Number.isSafeInteger(parsed.body.client_updated_at) ? parsed.body.client_updated_at : null;
+  const clientUpdatedAt = rawClientAt === null ? null : Math.min(rawClientAt, Date.now() + 5 * 60 * 1000);
+  try {
+    // Cùng cơ chế chống ghi đè bản mới bằng request cũ như reading_progress (C03).
+    const { meta } = await env.DB.prepare(`
+      INSERT INTO user_prefs (user_id, prefs, updated_at, client_updated_at)
+      VALUES (?, ?, datetime('now'), ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        prefs = excluded.prefs, updated_at = excluded.updated_at, client_updated_at = excluded.client_updated_at
+      WHERE excluded.client_updated_at IS NULL
+         OR user_prefs.client_updated_at IS NULL
+         OR excluded.client_updated_at >= user_prefs.client_updated_at
+    `).bind(user.id, serialized, clientUpdatedAt).run();
+    if (!meta.changes) return jsonResponse({ ok: false, error: 'Đã có cài đặt mới hơn trên server' }, 409);
+    return jsonResponse({ ok: true, client_updated_at: clientUpdatedAt });
+  } catch (err) {
+    if (isMissingTableError(err)) return jsonResponse({ error: 'Tính năng đồng bộ chưa sẵn sàng' }, 503);
+    throw err;
+  }
 }
 
 // F02: mỗi định danh (user đăng nhập hoặc guest_id do client tự sinh) chỉ có
@@ -1629,6 +2165,9 @@ async function getNovel(env, slug, request, ctx) {
       ? Math.floor(Date.parse(/Z$|[+-]\d{2}:\d{2}$/.test(novel.updated_at) ? novel.updated_at : novel.updated_at.replace(' ', 'T') + 'Z') / 1000)
       : null,
     glossary_count: novel.glossary_count || 0,
+    // Điểm thật từ novel_ratings (đã tổng hợp vào novels khi chấm) — NovelRating hiển thị.
+    rating: novel.rating_count > 0 ? Math.round((novel.rating_sum / novel.rating_count) * 10) / 10 : 0,
+    rating_count: novel.rating_count || 0,
   };
 
   if (!isAdmin) {
@@ -2751,7 +3290,11 @@ async function userProgressUpdate(request, env, slug) {
       return jsonResponse({ error: 'chapter phải là số nguyên' }, 400);
     }
     chapter = body.chapter;
-    position = String(body.chapter);
+    // Tiến độ tới từng đoạn văn (học từ truyentrung): "12#p34" = chương 12,
+    // đoạn thứ 34. Client cũ không gửi paragraph → giữ định dạng "12" như trước.
+    const paragraph = Number.isInteger(body.paragraph) && body.paragraph >= 0 && body.paragraph <= 100_000
+      ? body.paragraph : null;
+    position = paragraph === null ? String(body.chapter) : `${body.chapter}#p${paragraph}`;
   } else {
     if (!body || typeof body.position !== 'string' || !body.position || body.position.length > 2000) {
       return jsonResponse({ error: 'position phải là chuỗi CFI không rỗng và không quá 2000 ký tự' }, 400);

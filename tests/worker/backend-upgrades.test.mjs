@@ -360,7 +360,7 @@ test('robots.txt + sitemap.xml', async t => {
   assert.ok(xml.indexOf('/novel/tien-b') < xml.indexOf('/novel/tu-a'));
 });
 
-test('SEO /novel/:slug: chèn title/meta/og/canonical đã escape; /read/ và truyện ẩn giữ index gốc', async t => {
+test('SEO /novel/:slug: chèn title/meta/og/canonical đã escape; /read/<tên file> và truyện ẩn giữ index gốc', async t => {
   const { db, raw } = await setupMf(t);
   await db.prepare(`INSERT INTO novels (slug, title, synopsis, cover_url) VALUES (?, ?, ?, ?)`)
     .bind('xss', 'Tên "<script>alert(1)</script>"', 'Epub tạo bởi audiotruyenfull\nGiới thiệu & "trích dẫn" <b>', 'https://audiotruyenfull.org/c.jpg').run();
@@ -383,9 +383,13 @@ test('SEO /novel/:slug: chèn title/meta/og/canonical đã escape; /read/ và tr
   assert.doesNotMatch(html, /Mặc định site/);
   assert.match(html, /property="og:image" content="http:\/\/test\.invalid\/api\/proxy-cover\?url=https%3A%2F%2Faudiotruyenfull\.org%2Fc\.jpg"/);
 
+  // Trang chương dạng số giờ có title/canonical riêng (đợt 2026-11-26);
+  // tham số không phải số vẫn giữ index gốc.
   const reader = await (await raw('/novel/xss/read/1')).text();
-  assert.equal(reader, INDEX_HTML);
-  assert.match(reader, /<title>Hắc Đạo Truyện<\/title>/);
+  assert.match(reader, /<title>Chương 1 – Tên/);
+  assert.match(reader, /<link rel="canonical" href="http:\/\/test\.invalid\/novel\/xss\/read\/1" \/>/);
+  const readerFile = await (await raw('/novel/xss/read/0001_chuong-1_VI')).text();
+  assert.equal(readerFile, INDEX_HTML);
 
   const hidden = await (await raw('/novel/an')).text();
   assert.equal(hidden, INDEX_HTML);

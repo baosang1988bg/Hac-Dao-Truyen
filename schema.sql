@@ -180,3 +180,38 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_novel_ratings_user
   ON novel_ratings(slug, user_id) WHERE user_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_novel_ratings_guest
   ON novel_ratings(slug, guest_id) WHERE guest_id IS NOT NULL;
+
+-- HacDaoTruyen — Migration 015: lượt đọc theo ngày, góp ý name, cài đặt người dùng.
+CREATE TABLE IF NOT EXISTS novel_views_daily (
+  slug  TEXT NOT NULL,
+  day   TEXT NOT NULL,           -- 'YYYY-MM-DD' theo giờ Việt Nam (UTC+7)
+  views INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (slug, day)
+) WITHOUT ROWID;
+
+CREATE INDEX IF NOT EXISTS idx_novel_views_daily_day ON novel_views_daily(day, slug);
+
+CREATE TABLE IF NOT EXISTS glossary_suggestions (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug        TEXT NOT NULL,
+  user_id     INTEGER NOT NULL REFERENCES users(id),
+  chapter     INTEGER,
+  from_text   TEXT NOT NULL,      -- cụm đang hiển thị trong bản dịch (vd "Hạ Thìn")
+  to_text     TEXT NOT NULL,      -- cụm đề xuất (vd "Hạ Thần")
+  original    TEXT,               -- chữ Hán gốc nếu người đọc biết (khoá glossary)
+  note        TEXT,
+  status      TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  admin_note  TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  reviewed_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_glossary_suggestions_status ON glossary_suggestions(status, id DESC);
+CREATE INDEX IF NOT EXISTS idx_glossary_suggestions_user ON glossary_suggestions(user_id, status);
+
+CREATE TABLE IF NOT EXISTS user_prefs (
+  user_id           INTEGER PRIMARY KEY REFERENCES users(id),
+  prefs             TEXT NOT NULL DEFAULT '{}',
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  client_updated_at INTEGER
+);
