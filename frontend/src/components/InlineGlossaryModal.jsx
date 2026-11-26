@@ -181,13 +181,17 @@ export default function InlineGlossaryModal({
     onClose()
   }
 
+  // ui/Modal không có prop isOpen/title (luôn hiển thị khi được render) → tự ẩn ở đây,
+  // nếu không Reader luôn phủ một lớp modal chặn mọi thao tác (lỗi bắt được qua E2E).
+  if (!isOpen) return null
+
   return (
     <Modal
-      isOpen={isOpen}
       onClose={handleClose}
-      title="Sửa từ / Thêm vào Glossary"
+      ariaLabel="Sửa từ / Thêm vào Glossary"
     >
       <form onSubmit={handleSubmit} className="inline-glossary-form">
+        <h3 style={{ margin: '0 0 1rem', fontSize: '1.05rem', fontWeight: 700 }}>Sửa từ / Thêm vào Glossary</h3>
         <div className="mb-4">
           <label htmlFor="ig-from" className="block text-sm font-medium mb-1 opacity-80">
             Cụm gốc trong truyện

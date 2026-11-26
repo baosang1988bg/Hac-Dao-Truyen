@@ -65,13 +65,16 @@ export default function ReplacementsManagerModal({
     setNotice({ type: 'success', text: parts.join('; ') + '.' })
   }
 
+  // ui/Modal không có prop isOpen/title → tự ẩn khi đóng (xem InlineGlossaryModal).
+  if (!isOpen) return null
+
   return (
     <Modal
-      isOpen={isOpen}
       onClose={onClose}
-      title={`Từ đã sửa thủ công (${replacements.length})`}
+      ariaLabel={`Từ đã sửa thủ công (${replacements.length})`}
     >
       <div className="replacements-manager">
+        <h3 style={{ margin: '0 0 1rem', fontSize: '1.05rem', fontWeight: 700 }}>Từ đã sửa thủ công ({replacements.length})</h3>
         {replacements.length === 0 ? (
           <p className="text-sm opacity-60 text-center py-6">
             Chưa có từ nào được sửa thủ công cho truyện này. Bôi đen từ khi đọc để sửa nhanh!
