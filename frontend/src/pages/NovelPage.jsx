@@ -13,6 +13,7 @@ import { getLastReadForSlug, fmtChapterLabel, getReadChapters } from '../utils/r
 import { fmtTimeAgo, fmtNumber, fmtChapterDate, isRecentChapter, fmtNovelTitle, cleanAuthor } from '../utils/format'
 import { splitGenres } from '../utils/genreLabels'
 import SynopsisPanel from '../components/SynopsisPanel'
+import NovelRating from '../components/NovelRating'
 import { normalizeChapterCatalog, getChapNum, chapterUrl } from '../utils/chapters'
 import { useCachedGet } from '../utils/apiCache'
 import { runWhenIdle } from '../utils/idle'
@@ -167,6 +168,13 @@ function NovelPageContent({ slug }) {
             </div>
           )}
           {novel.notes && <CollapsibleNotes notes={novel.notes} />}
+          {/* Chấm sao — điểm TB chỉ hiện khi API trả số thật (chi tiết truyện
+              cho khách hiện chưa kèm rating → hiện sau khi chấm). */}
+          <NovelRating
+            slug={slug}
+            initialRating={typeof novel.rating === 'number' ? novel.rating : undefined}
+            initialCount={typeof novel.rating_count === 'number' ? novel.rating_count : undefined}
+          />
         </div>
       </div>
 

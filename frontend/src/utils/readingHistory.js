@@ -7,10 +7,12 @@
 //   last_read_chapter_<slug>       → chương đọc gần nhất của truyện đó
 //   last_read_time_<slug>          → mốc thời gian (ms) lần đọc gần nhất
 // (cả cookie lẫn localStorage, localStorage ưu tiên)
-//   reading_history_v2             → JSON [{slug, chapter, title, cover_url, timestamp}]
+//   reading_history_v2             → JSON [{slug, chapter, paragraph?, title, cover_url, timestamp}]
 //                                    (dedupe theo slug, tối đa HISTORY_LIMIT mục) — có
 //                                    tên + bìa để trang chủ hiển thị không cần gọi API.
 //                                    Dữ liệu cũ (chỉ có khóa per-slug) vẫn đọc được.
+//                                    paragraph (số nguyên ≥ 0, có thể thiếu ở dữ liệu cũ)
+//                                    = index đoạn văn đầu tiên đang hiển thị của `chapter`.
 
 const CHAPTER_PREFIX = 'last_read_chapter_'
 // Khóa cũ do Reader.jsx ghi từ trước — DÙNG LẠI, không tạo khóa mới trùng lặp:
@@ -27,14 +29,52 @@ export function mergeHistoryEntry(list, entry, limit = HISTORY_LIMIT) {
   const safe = Array.isArray(list) ? list.filter(e => e && typeof e.slug === 'string' && e.slug) : []
   if (!entry || !entry.slug) return safe.slice(0, limit)
   const prev = safe.find(e => e.slug === entry.slug)
+  const chapter = entry.chapter != null ? String(entry.chapter) : prev?.chapter ?? null
+  // paragraph chỉ có nghĩa với ĐÚNG chương đó: mục mới không kèm paragraph mà
+  // vẫn là chương cũ → giữ đoạn đã lưu; đổi chương → bỏ.
+  let paragraph = null
+  if (isValidParagraph(entry.paragraph)) paragraph = entry.paragraph
+  else if (prev && prev.chapter != null && String(prev.chapter) === chapter && isValidParagraph(prev.paragraph)) {
+    paragraph = prev.paragraph
+  }
   const merged = {
     slug: entry.slug,
-    chapter: entry.chapter != null ? String(entry.chapter) : prev?.chapter ?? null,
+    chapter,
     title: entry.title || prev?.title || null,
     cover_url: entry.cover_url || prev?.cover_url || null,
     timestamp: Number.isFinite(entry.timestamp) ? entry.timestamp : Date.now(),
   }
+  if (paragraph !== null) merged.paragraph = paragraph
   return [merged, ...safe.filter(e => e.slug !== entry.slug)].slice(0, limit)
+}
+
+function isValidParagraph(value) {
+  return Number.isInteger(value) && value >= 0 && value <= 100_000
+}
+
+/**
+ * Hàm thuần: ghi index đoạn văn cho mục lịch sử của slug — CHỈ khi mục đó đang
+ * ở đúng `chapter` (không tạo mục mới, không đè chương khác). Trả list mới, hoặc
+ * chính `list` nếu không có gì thay đổi.
+ */
+export function setHistoryParagraph(list, slug, chapter, paragraph) {
+  if (!Array.isArray(list) || !slug || !isValidParagraph(paragraph)) return list
+  const idx = list.findIndex(e => e && e.slug === slug)
+  if (idx === -1) return list
+  const cur = list[idx]
+  if (cur.chapter == null || String(cur.chapter) !== String(chapter)) return list
+  if (cur.paragraph === paragraph) return list
+  const next = [...list]
+  next[idx] = { ...cur, paragraph }
+  return next
+}
+
+/** Hàm thuần: đoạn văn đã lưu cho (slug, chapter) trong list, hoặc null. */
+export function findHistoryParagraph(list, slug, chapter) {
+  if (!Array.isArray(list) || !slug) return null
+  const e = list.find(x => x && x.slug === slug)
+  if (!e || e.chapter == null || String(e.chapter) !== String(chapter)) return null
+  return isValidParagraph(e.paragraph) ? e.paragraph : null
 }
 
 function readHistoryList() {
@@ -71,6 +111,24 @@ export function saveReadProgress(slug, chapId, meta = {}) {
   } catch { /* localStorage bị chặn/đầy — bỏ qua */ }
   // 4. Đánh dấu chương đã đọc (helper dùng chung với mục lục NovelPage)
   markChapterRead(slug, chapId)
+}
+
+/**
+ * Lưu đoạn văn đang đọc (Reader gọi khi người đọc cuộn, throttle ~1 giây).
+ * Chỉ cập nhật khi lịch sử của truyện đang trỏ đúng chương này.
+ */
+export function saveReadParagraph(slug, chapId, paragraph) {
+  if (!slug || chapId === null || chapId === undefined) return
+  try {
+    const list = readHistoryList()
+    const next = setHistoryParagraph(list, slug, chapId, paragraph)
+    if (next !== list) localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
+  } catch { /* localStorage bị chặn/đầy — bỏ qua */ }
+}
+
+/** Đoạn văn đã lưu khi đọc dở đúng chương này (số nguyên) hoặc null. */
+export function getReadParagraph(slug, chapId) {
+  return findHistoryParagraph(readHistoryList(), slug, chapId)
 }
 
 /**

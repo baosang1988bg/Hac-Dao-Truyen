@@ -1,12 +1,14 @@
 import PropTypes from 'prop-types'
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom'
-import { User, LogOut, BookOpen, Heart, HeartOff, Loader2 } from 'lucide-react'
+import { User, LogOut, BookOpen, Heart, HeartOff, Loader2, Languages, ArrowRight } from 'lucide-react'
 import userApi, {
   saveUserSession, clearUserSession, getUserInfo, isLoggedIn,
 } from '../userApi'
 import { fetchNovelsBySlugsBatch } from '../utils/novelsApi'
-import { novelDisplayTitle } from '../utils/format'
+import { novelDisplayTitle, fmtDate } from '../utils/format'
+import { fetchMyGlossarySuggestions } from '../engagementApi'
+import { suggestionStatusLabel, suggestionChapterHref, serverErrorMessage } from '../utils/engagement'
 import GoogleLoginButton from '../components/GoogleLoginButton'
 import { staggerIndex } from '../utils/motion'
 import { trackAuth, trackEvent } from '../utils/analytics'
@@ -297,6 +299,9 @@ function AccountDashboard({ user, onLogout }) {
           ))}
         </div>
       )}
+
+      {/* Góp ý name của tôi — tải lười khi mở */}
+      <MySuggestions />
     </div>
   )
 }
@@ -304,3 +309,90 @@ AccountDashboard.propTypes = {
   user: PropTypes.shape({id: PropTypes.number, name: PropTypes.string, email: PropTypes.string}),
   onLogout: PropTypes.func,
 };
+
+
+/* ── Góp ý name của tôi ───────────────────────────────────────────────────── */
+
+const SUGGESTION_STATUS_COLORS = { pending: '#fbbf24', approved: '#6ee7b7', rejected: '#fca5a5' }
+
+/**
+ * Danh sách góp ý name người dùng đã gửi (từ Reader) + kết quả duyệt.
+ * <details> đóng sẵn: CHỈ gọi GET /api/user/glossary-suggestions khi người
+ * dùng mở lần đầu → vào trang tài khoản không tốn thêm request.
+ */
+function MySuggestions() {
+  const [items, setItems] = useState(null) // null = chưa tải / đang tải
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const load = () => {
+    setLoading(true)
+    setError(null)
+    fetchMyGlossarySuggestions()
+      .then(setItems)
+      .catch(err => setError(serverErrorMessage(err, 'Không tải được danh sách góp ý.')))
+      .finally(() => setLoading(false))
+  }
+
+  const onToggle = (e) => {
+    if (e.currentTarget.open && items === null && !loading) load()
+  }
+
+  return (
+    <details className="glass-panel" onToggle={onToggle} style={{ marginTop: '1.5rem', padding: '0.9rem 1.1rem' }}>
+      <summary style={{ cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', minHeight: '32px' }}>
+        <Languages size={17} aria-hidden="true" /> Góp ý name của tôi
+        {items !== null && <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.85rem' }}>({items.length})</span>}
+      </summary>
+
+      <div style={{ marginTop: '0.75rem' }} aria-busy={loading}>
+        {loading && (
+          <div role="status" style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>Đang tải...</div>
+        )}
+        {error && (
+          <div role="alert" className="auth-error" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {error}
+            <button type="button" className="link-btn" onClick={load}>Thử lại</button>
+          </div>
+        )}
+        {!loading && !error && items !== null && items.length === 0 && (
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: 0 }}>
+            Bạn chưa gửi góp ý nào. Khi đọc truyện, bôi đen cụm dịch sai để đề xuất tên đúng.
+          </p>
+        )}
+        {!loading && items !== null && items.length > 0 && (
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+            {items.map(it => {
+              const chapterHref = suggestionChapterHref(it.slug, it.chapter)
+              return (
+                <li key={it.id} style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.55rem', fontSize: '0.88rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>{it.from_text}</span>
+                    <ArrowRight size={13} aria-hidden="true" style={{ color: 'var(--text-muted)' }} />
+                    <strong>{it.to_text}</strong>
+                    <span style={{
+                      fontSize: '0.72rem', fontWeight: 600, marginLeft: 'auto',
+                      color: SUGGESTION_STATUS_COLORS[it.status] || 'var(--text-muted)',
+                    }}>
+                      {suggestionStatusLabel(it.status)}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    <Link to={`/novel/${it.slug}`}>{it.slug}</Link>
+                    {chapterHref && <> · <Link to={chapterHref}>Chương {it.chapter}</Link></>}
+                    {' · '}{fmtDate(it.created_at)}
+                  </div>
+                  {it.admin_note && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Phản hồi admin: {it.admin_note}
+                    </div>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
+    </details>
+  )
+}

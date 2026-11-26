@@ -3,18 +3,24 @@ import { memo, useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Home, ChevronUp, Settings, Download, Volume2, Pause, Square, Loader2, Check, AlertTriangle, RefreshCw } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
-import api from '../api'
 import userApi, { isLoggedIn, getIdentityNamespace } from '../userApi'
 import ChapterComments from '../components/ChapterComments'
 import Modal from '../components/ui/Modal'
 import ReaderSettingsPanel from '../components/ReaderSettingsPanel'
 import InlineGlossaryModal from '../components/InlineGlossaryModal'
 import ReplacementsManagerModal from '../components/ReplacementsManagerModal'
-import { getReplacements, saveReplacement, removeReplacement, applyReplacements } from '../utils/readerReplacements'
+import { getReplacements, saveReplacement, removeReplacement, applyReplacements, mergeReplacementRules } from '../utils/readerReplacements'
 import useReaderSettings, { THEMES } from '../hooks/useReaderSettings'
+import useRealReadTracking from '../hooks/useRealReadTracking'
+import { clearBootTheme } from '../utils/bootTheme'
+import { contentScrollRatio } from '../utils/readTracking'
+import { fetchPublicReplacements } from '../engagementApi'
+import { schedulePrefsPush, subscribePrefsSync } from '../utils/prefsSyncClient'
 import useTextToSpeech from '../hooks/useTextToSpeech'
 import useDocumentTitle from '../hooks/useDocumentTitle'
-import { saveReadProgress, updateHistoryMeta, fmtChapterLabel } from '../utils/readingHistory'
+import {
+  saveReadProgress, updateHistoryMeta, fmtChapterLabel, saveReadParagraph, getReadParagraph,
+} from '../utils/readingHistory'
 import {
   normalizeChapterCatalog, getChapNum, chapterIdentifier, chapterUrl, findChapterIndex, chapterRequestId,
 } from '../utils/chapters'
@@ -31,8 +37,16 @@ const OFFLINE_BATCH_SIZE = 10
 const CHAPTER_TTL = 10 * 60_000
 // Vị trí cuộn: chỉ nhớ chương GẦN NHẤT của mỗi truyện (localStorage).
 const SCROLL_KEY_PREFIX = 'readerPos_'
-// Đánh dấu đã tính lượt xem trong phiên này (sessionStorage).
-const VIEW_KEY_PREFIX = 'viewed_'
+// Tiến độ tới từng đoạn văn: ghi local tối đa 1 lần/giây khi cuộn. Mỗi PUT
+// /user/progress = 1 lượt ghi D1 (gói Free 100k/ngày dùng chung) nên CHỈ gửi
+// server khi: tab bị ẩn / pagehide, rời truyện (unmount, đổi truyện), hoặc định
+// kỳ — cách lần gửi trước ≥ 60 giây VÀ lệch ≥ 10 đoạn. Bản mới nhất luôn nằm
+// trong hàng đợi offline nên không gửi kịp cũng không mất.
+const PARAGRAPH_LOCAL_THROTTLE_MS = 1000
+const PARAGRAPH_SERVER_MIN_INTERVAL_MS = 60_000
+const PARAGRAPH_SERVER_MIN_DELTA = 10
+// Khoảng chừa phía trên khi cuộn tới đoạn đã lưu (thanh điều hướng trên cùng).
+const PARAGRAPH_RESTORE_OFFSET_PX = 72
 // Vùng chạm lật chương (mobile cảm ứng): mép trái/phải, tối đa 12% bề rộng
 // nhưng không quá 56px để không lấn vào phần chữ trên máy màn rộng.
 const TAP_ZONE_MEDIA = '(hover: none) and (pointer: coarse) and (max-width: 768px)'
@@ -63,15 +77,31 @@ function writeSavedScroll(slug, chapter, pct) {
   } catch { /* storage đầy/bị chặn — bỏ qua */ }
 }
 
-/** Gọi POST /novels/:slug/view tối đa 1 lần mỗi phiên cho mỗi truyện (bỏ qua lỗi). */
-function trackViewOncePerSession(slug) {
-  if (!slug) return
-  try {
-    const key = `${VIEW_KEY_PREFIX}${slug}`
-    if (sessionStorage.getItem(key)) return
-    sessionStorage.setItem(key, '1')
-  } catch { /* sessionStorage bị chặn — vẫn gửi 1 lần cho lần mount này */ }
-  api.post(`/novels/${slug}/view`).catch(() => { /* fire-and-forget */ })
+// Quy tắc sửa name công khai (admin đã duyệt) — nhớ trong bộ nhớ theo slug,
+// đổi chương không tải lại. Lưu Promise để các lần mount trùng nhau dùng chung.
+const publicRulesCache = new Map()
+function loadPublicRules(slug) {
+  if (!publicRulesCache.has(slug)) publicRulesCache.set(slug, fetchPublicReplacements(slug))
+  return publicRulesCache.get(slug)
+}
+
+/** Các đoạn văn của chương theo thứ tự hiển thị (index = vị trí trong danh sách). */
+function chapterParagraphs(root) {
+  return root ? root.querySelectorAll('.reader-p') : []
+}
+
+/** Index đoạn văn ĐẦU TIÊN còn thấy trên màn hình (tìm nhị phân), -1 nếu chưa có. */
+function firstVisibleParagraph(root) {
+  const nodes = chapterParagraphs(root)
+  if (!nodes.length) return -1
+  let lo = 0
+  let hi = nodes.length - 1
+  let ans = nodes.length - 1
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1
+    if (nodes[mid].getBoundingClientRect().bottom > 8) { ans = mid; hi = mid - 1 } else lo = mid + 1
+  }
+  return ans
 }
 
 /** Phím tắt không được chiếm khi người dùng đang gõ / dùng tổ hợp phím. */
@@ -101,9 +131,12 @@ const PROGRESS_QUEUE_PREFIX = 'progressQueue_'
 function progressQueueKey(slug) { return `${PROGRESS_QUEUE_PREFIX}${getIdentityNamespace()}_${slug}` }
 
 // Hàng đợi offline chỉ giữ BẢN MỚI NHẤT (ghi đè, không append lịch sử cũ).
-function writeQueuedProgress(slug, chapterNum) {
+// paragraph (tuỳ chọn): index đoạn văn đang đọc → server lưu position "12#p34".
+function writeQueuedProgress(slug, chapterNum, paragraph) {
   try {
-    localStorage.setItem(progressQueueKey(slug), JSON.stringify({ chapter: chapterNum, ts: Date.now() }))
+    const entry = { chapter: chapterNum, ts: Date.now() }
+    if (Number.isInteger(paragraph) && paragraph >= 0) entry.paragraph = paragraph
+    localStorage.setItem(progressQueueKey(slug), JSON.stringify(entry))
   } catch { /* storage đầy/bị chặn — best effort, không crash */ }
 }
 function readQueuedProgress(slug) {
@@ -117,6 +150,13 @@ function readQueuedProgress(slug) {
 }
 function clearQueuedProgress(slug) {
   try { localStorage.removeItem(progressQueueKey(slug)) } catch { /* ignore */ }
+}
+
+/** Body PUT /user/progress — chỉ thêm `paragraph` khi là số nguyên hợp lệ. */
+function progressBody(chapterNum, paragraph) {
+  const body = { type: 'chapter', chapter: chapterNum }
+  if (Number.isInteger(paragraph) && paragraph >= 0) body.paragraph = paragraph
+  return body
 }
 
 // Gửi lại TOÀN BỘ hàng đợi offline CỦA DANH TÍNH HIỆN TẠI (mỗi slug tối đa 1
@@ -137,7 +177,7 @@ async function flushAllQueuedProgress() {
     const queued = readQueuedProgress(slugFromKey)
     if (!queued) continue
     try {
-      await userApi.put(`/user/progress/${slugFromKey}`, { type: 'chapter', chapter: queued.chapter })
+      await userApi.put(`/user/progress/${slugFromKey}`, progressBody(queued.chapter, queued.paragraph))
       clearQueuedProgress(slugFromKey)
     } catch (err) {
       const status = err.response?.status
@@ -335,10 +375,30 @@ export default function Reader() {
   const [selectedText, setSelectedText] = useState('')
   const [isInlineGlossaryOpen, setIsInlineGlossaryOpen] = useState(false)
   const [isReplacementsManagerOpen, setIsReplacementsManagerOpen] = useState(false)
+  const [publicRules, setPublicRules] = useState({ slug: null, rules: [] })
 
   useEffect(() => {
     setReplacements(getReplacements(slug))
   }, [slug])
+
+  // Nền tạm theo theme đọc do index.html đặt (chống nháy) — Reader đã tự tô nền.
+  useEffect(() => { clearBootTheme() }, [])
+
+  // Quy tắc sửa name công khai: tải nền 1 lần / truyện (cache trong bộ nhớ).
+  useEffect(() => {
+    let alive = true
+    loadPublicRules(slug).then(rules => {
+      if (alive) setPublicRules({ slug, rules: Array.isArray(rules) ? rules : [] })
+    })
+    return () => { alive = false }
+  }, [slug])
+
+  // Đồng bộ cài đặt: server có quy tắc mới hơn cho truyện này → nạp lại.
+  useEffect(() => subscribePrefsSync((evt) => {
+    if (evt?.type === 'replacements' && Array.isArray(evt.slugs) && evt.slugs.includes(slug)) {
+      setReplacements(getReplacements(slug))
+    }
+  }), [slug])
   const [reloadNonce, setReloadNonce] = useState(0)
   const docMatches = doc.url === contentUrl
   const peeked = docMatches ? undefined : peekCache(contentUrl)
@@ -362,6 +422,12 @@ export default function Reader() {
   const [syncStatus, setSyncStatus] = useState(null) // null | 'saving' | 'saved' | 'error'
 
   const progressBarRef = useRef(null)
+  const contentRef = useRef(null) // khối .reader-content (đo đoạn văn + tỉ lệ đã đọc)
+  const lastParagraphRef = useRef(-1) // đoạn văn đã ghi gần nhất của chương hiện tại
+  const paragraphTimerRef = useRef(null) // throttle ghi local
+  // Gửi server đoạn văn: pending = bản chưa gửi; lastSentAt/lastSentParagraph =
+  // mốc lần gửi gần nhất của chương hiện tại (để giãn nhịp gửi định kỳ).
+  const paragraphSyncRef = useRef({ pending: null, lastSentAt: 0, lastSentParagraph: 0 })
   const lastScrollRef = useRef(0)
   const saveScrollTimerRef = useRef(null)
   const touchRef = useRef(null)
@@ -406,23 +472,28 @@ export default function Reader() {
   // theo scroll), retry hữu hạn CHỈ cho lỗi mạng/5xx, KHÔNG retry 401/400 (lỗi
   // vĩnh viễn cần user can thiệp), và CHỈ coi là "đã lưu" sau response 200 thật
   // (không đánh dấu synced lạc quan trước khi có xác nhận).
-  const syncProgress = useCallback((novelSlug, chapterNum) => {
-    writeQueuedProgress(novelSlug, chapterNum) // giữ bản mới nhất trong hàng đợi ngay từ đầu
+  // quiet = cập nhật đoạn văn khi đang đọc: không bật dòng "Đang lưu tiến
+  // trình..." mỗi lần gửi định kỳ; chỉ chốt trạng thái nếu dòng đó đang hiện dở.
+  const syncProgress = useCallback((novelSlug, chapterNum, paragraph, { quiet = false } = {}) => {
+    writeQueuedProgress(novelSlug, chapterNum, paragraph) // giữ bản mới nhất trong hàng đợi ngay từ đầu
     const myEpoch = ++progressEpochRef.current
-    setSyncStatus('saving')
+    if (!quiet) setSyncStatus('saving')
 
     const attempt = async (retriesLeft) => {
       if (progressEpochRef.current !== myEpoch) return // đã chuyển chương khác — bỏ, request mới lo việc này
       try {
-        await userApi.put(`/user/progress/${novelSlug}`, { type: 'chapter', chapter: chapterNum })
+        await userApi.put(`/user/progress/${novelSlug}`, progressBody(chapterNum, paragraph))
         if (progressEpochRef.current !== myEpoch) return
         clearQueuedProgress(novelSlug)
-        setSyncStatus('saved')
+        if (quiet) setSyncStatus(s => (s === 'saving' || s === 'error' ? 'saved' : s))
+        else setSyncStatus('saved')
       } catch (err) {
         if (progressEpochRef.current !== myEpoch) return
         const status = err.response?.status
         if (status === 401 || status === 400 || retriesLeft <= 0) {
-          setSyncStatus('error') // lỗi vĩnh viễn hoặc hết lượt retry — giữ trong hàng đợi để thử lại lần sau
+          // lỗi vĩnh viễn hoặc hết lượt retry — giữ trong hàng đợi để thử lại lần sau
+          if (quiet) setSyncStatus(s => (s === 'saving' ? 'error' : s))
+          else setSyncStatus('error')
           return
         }
         const delay = PROGRESS_RETRY_BASE_DELAY_MS * (PROGRESS_RETRY_LIMIT - retriesLeft + 1)
@@ -441,8 +512,49 @@ export default function Reader() {
     return () => window.removeEventListener('online', flushAllQueuedProgress)
   }, [])
 
-  // Lượt xem: 1 lần / phiên / truyện.
-  useEffect(() => { trackViewOncePerSession(slug) }, [slug])
+  // Gửi server phần đoạn văn đang chờ (nếu có) — dùng khi tab bị ẩn/pagehide,
+  // rời truyện, hoặc đến nhịp gửi định kỳ. Không có gì chờ → không gửi (0 lượt ghi).
+  const flushParagraphSync = useCallback(() => {
+    const st = paragraphSyncRef.current
+    const p = st.pending
+    st.pending = null
+    if (!p || !isLoggedIn()) return
+    st.lastSentAt = Date.now()
+    st.lastSentParagraph = p.paragraph
+    syncProgress(p.slug, p.chapter, p.paragraph, { quiet: true })
+  }, [syncProgress])
+
+  useEffect(() => {
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flushParagraphSync() }
+    // pagehide: đóng tab/điều hướng ra ngoài (iOS Safari đôi khi không bắn
+    // visibilitychange). Đã gửi ở visibilitychange thì pending rỗng → no-op.
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', flushParagraphSync)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', flushParagraphSync)
+    }
+  }, [flushParagraphSync])
+
+  // Rời truyện (unmount Reader / đổi sang truyện khác): gửi nốt đoạn văn đang
+  // chờ. Effect này PHẢI khai báo trước effect reset theo [slug, chapter] bên
+  // dưới — React chạy cleanup theo thứ tự khai báo, nên gửi xong mới bị xoá.
+  useEffect(() => () => flushParagraphSync(), [slug, flushParagraphSync])
+
+  // Đổi chương trong cùng truyện: bỏ bản đoạn văn đang chờ của chương cũ — chương
+  // mới luôn tự đồng bộ khi mở (syncProgress không quiet) và ghi đè tiến độ, nên
+  // gửi thêm bản cũ chỉ tốn 1 lượt ghi D1 và có thể đến server SAU bản mới
+  // (lùi tiến độ). Bản mới nhất vẫn nằm trong hàng đợi offline nếu chưa gửi.
+  useEffect(() => {
+    lastParagraphRef.current = -1
+    const st = paragraphSyncRef.current
+    // Lần mở chương đã gửi server (kèm đoạn đã lưu nếu có) → tính nhịp từ đây.
+    st.lastSentAt = Date.now()
+    st.lastSentParagraph = getReadParagraph(slug, chapter) ?? 0
+    return () => {
+      st.pending = null
+    }
+  }, [slug, chapter])
 
   // ── Tải nội dung chương (qua apiCache: chương đã prefetch → tức thì) ──────
   useEffect(() => {
@@ -469,7 +581,9 @@ export default function Reader() {
         if (isLoggedIn() && lastAttemptedSyncKeyRef.current !== syncKey) {
           lastAttemptedSyncKeyRef.current = syncKey
           if (/^\d+$/.test(chapter)) {
-            syncProgress(slug, Number(chapter))
+            // Mở lại chương đang đọc dở → gửi kèm đoạn văn đã lưu (nếu có).
+            const savedParagraph = getReadParagraph(slug, chapter)
+            syncProgress(slug, Number(chapter), savedParagraph ?? undefined)
           } else {
             // Chương không có số thứ tự hợp lệ (vd author note) — contract
             // 'chapter' yêu cầu integer, không có cách biểu diễn hợp lệ nên
@@ -523,11 +637,21 @@ export default function Reader() {
   }, [slug])
 
   // ── Khôi phục vị trí cuộn (localStorage theo slug, chỉ chương gần nhất) ───
+  // Ưu tiên đoạn văn đã lưu (lịch sử đọc); không có → vị trí cuộn % như cũ.
   useEffect(() => {
     if (!ready) return
+    const savedParagraph = getReadParagraph(slug, chapter)
     const savedPct = readSavedScroll(slug, chapter)
     const raf = requestAnimationFrame(() => {
-      if (!isNaN(savedPct) && savedPct > 0.005) {
+      const target = savedParagraph !== null && savedParagraph > 0
+        ? chapterParagraphs(contentRef.current)[savedParagraph]
+        : null
+      if (target) {
+        const top = Math.max(0, target.getBoundingClientRect().top + readScroll().top - PARAGRAPH_RESTORE_OFFSET_PX)
+        scrollAllTo(top)
+        lastScrollRef.current = top
+        lastParagraphRef.current = savedParagraph
+      } else if (!isNaN(savedPct) && savedPct > 0.005) {
         const { max } = readScroll()
         scrollAllTo(savedPct * max)
         lastScrollRef.current = savedPct * max
@@ -573,6 +697,28 @@ export default function Reader() {
           writeSavedScroll(slug, chapter, s.top / s.max)
         }, 500)
       }
+
+      // Lưu đoạn văn đang đọc: local throttle ~1 giây; server chỉ gửi định kỳ
+      // (≥ 60 giây VÀ lệch ≥ 10 đoạn) — còn lại để visibilitychange/pagehide/unmount gửi.
+      if (byUser && readyRef.current && !paragraphTimerRef.current) {
+        paragraphTimerRef.current = setTimeout(() => {
+          paragraphTimerRef.current = null
+          if (!readyRef.current) return
+          const idx = firstVisibleParagraph(contentRef.current)
+          if (idx < 0 || idx === lastParagraphRef.current) return
+          lastParagraphRef.current = idx
+          saveReadParagraph(slug, chapter, idx)
+          if (isLoggedIn() && /^\d+$/.test(chapter)) {
+            const st = paragraphSyncRef.current
+            st.pending = { slug, chapter: Number(chapter), paragraph: idx }
+            writeQueuedProgress(slug, Number(chapter), idx) // offline/đóng tab vẫn còn bản mới nhất
+            if (Date.now() - st.lastSentAt >= PARAGRAPH_SERVER_MIN_INTERVAL_MS &&
+                Math.abs(idx - st.lastSentParagraph) >= PARAGRAPH_SERVER_MIN_DELTA) {
+              flushParagraphSync()
+            }
+          }
+        }, PARAGRAPH_LOCAL_THROTTLE_MS)
+      }
     }
 
     const handleScroll = () => {
@@ -593,8 +739,12 @@ export default function Reader() {
         clearTimeout(saveScrollTimerRef.current)
         saveScrollTimerRef.current = null
       }
+      if (paragraphTimerRef.current) {
+        clearTimeout(paragraphTimerRef.current)
+        paragraphTimerRef.current = null
+      }
     }
-  }, [slug, chapter])
+  }, [slug, chapter, flushParagraphSync])
 
   const currentChapterIndex = useMemo(() => findChapterIndex(chapters, chapter), [chapters, chapter])
   const currentChapterObj = currentChapterIndex >= 0 ? chapters[currentChapterIndex] : null
@@ -604,6 +754,21 @@ export default function Reader() {
   const isAuthorNote = !isNumberParam && chapters.some(c => c.filename === chapter && !getChapNum(c.title))
   const prevChapter = currentChapterIndex > 0 ? chapters[currentChapterIndex - 1] : null
   const nextChapter = currentChapterIndex !== -1 && currentChapterIndex < chapters.length - 1 ? chapters[currentChapterIndex + 1] : null
+
+  // ── Lượt đọc thật: ≥ min_seconds tab hiển thị + cuộn ≥ 80% nội dung chương ──
+  const getContentRatio = useCallback(() => {
+    const el = contentRef.current
+    if (!el) return 0
+    const r = el.getBoundingClientRect()
+    return contentScrollRatio(r.top, r.height, window.innerHeight)
+  }, [])
+  useRealReadTracking({
+    slug,
+    chapterKey: chapter,
+    chapterNumber: isNumberParam ? Number(chapter) : 0,
+    enabled: ready && content.trim().length > 0,
+    getScrollRatio: getContentRatio,
+  })
 
   // Tiêu đề tab: "<tên chương> – <tên truyện> – Hắc Đạo Truyện"
   const chapterLabel = currentChapterObj?.title || (isNumberParam ? `Chương ${chapter}` : fmtChapterLabel(chapter))
@@ -818,6 +983,7 @@ export default function Reader() {
     if (scope === 'all') {
       const updated = saveReplacement(slug, { from, to })
       setReplacements(updated)
+      schedulePrefsPush() // đồng bộ quy tắc lên tài khoản (đã đăng nhập)
     } else {
       setDoc(prev => ({ ...prev, content: applyReplacements(prev.content || content, [{ from, to }]) }))
     }
@@ -829,11 +995,17 @@ export default function Reader() {
   const handleDeleteReplacement = useCallback((id) => {
     const updated = removeReplacement(slug, id)
     setReplacements(updated)
+    schedulePrefsPush()
   }, [slug])
 
+  // Quy tắc công khai áp TRƯỚC, quy tắc cá nhân SAU (trùng `from` → cá nhân thắng).
+  const effectiveRules = useMemo(
+    () => mergeReplacementRules(publicRules.slug === slug ? publicRules.rules : [], replacements),
+    [publicRules, slug, replacements],
+  )
   const displayContent = useMemo(
-    () => applyReplacements(content, replacements),
-    [content, replacements],
+    () => applyReplacements(content, effectiveRules),
+    [content, effectiveRules],
   )
 
   const renderedContent = useMemo(
@@ -875,6 +1047,7 @@ export default function Reader() {
         </div>
 
         <div
+          ref={contentRef}
           className="reader-content"
           onMouseUp={handleSelection}
           onTouchEnd={handleSelection}
@@ -1032,6 +1205,8 @@ export default function Reader() {
         onClose={() => setIsInlineGlossaryOpen(false)}
         initialFrom={selectedText}
         onApply={handleApplyReplacement}
+        slug={slug}
+        chapter={isNumberParam ? Number(chapter) : undefined}
       />
 
       <ReplacementsManagerModal
