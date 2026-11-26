@@ -321,11 +321,15 @@ def _deploy_blocker() -> str | None:
                             cwd=BASE_DIR, capture_output=True, text=True)
     if status.stdout.strip():
         return "code có thay đổi chưa commit:\n" + status.stdout.rstrip()
-    subprocess.run(["git", "fetch", "-q", "origin", "main"], cwd=BASE_DIR, capture_output=True, text=True)
+    prod_branch = os.getenv("HACDAO_PROD_BRANCH", "prod").strip() or "prod"
+    fetch_res = subprocess.run(["git", "fetch", "-q", "origin", prod_branch], cwd=BASE_DIR, capture_output=True, text=True)
+    if fetch_res.returncode != 0 and prod_branch != "main":
+        prod_branch = "main"
+        subprocess.run(["git", "fetch", "-q", "origin", prod_branch], cwd=BASE_DIR, capture_output=True, text=True)
     head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=BASE_DIR, capture_output=True, text=True).stdout.strip()
-    origin = subprocess.run(["git", "rev-parse", "origin/main"], cwd=BASE_DIR, capture_output=True, text=True).stdout.strip()
+    origin = subprocess.run(["git", "rev-parse", f"origin/{prod_branch}"], cwd=BASE_DIR, capture_output=True, text=True).stdout.strip()
     if not head or head != origin:
-        return f"HEAD ({head[:7]}) khác origin/main ({origin[:7]}) — pull/push trước khi deploy"
+        return f"HEAD ({head[:7]}) khác origin/{prod_branch} ({origin[:7]}) — pull/push trước khi deploy"
     return None
 
 
