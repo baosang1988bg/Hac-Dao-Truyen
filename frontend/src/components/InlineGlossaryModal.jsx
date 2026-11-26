@@ -31,6 +31,7 @@ export default function InlineGlossaryModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      ariaLabel="Sửa từ hoặc thêm vào Glossary"
       title="Sửa từ / Thêm vào Glossary"
     >
       <form onSubmit={handleSubmit} className="inline-glossary-form">

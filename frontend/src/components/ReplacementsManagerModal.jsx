@@ -12,6 +12,7 @@ export default function ReplacementsManagerModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      ariaLabel="Quản lý từ đã sửa thủ công"
       title={`Từ đã sửa thủ công (${replacements.length})`}
     >
       <div className="replacements-manager">
