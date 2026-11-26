@@ -8,7 +8,9 @@ Sử dụng cấu trúc dữ liệu Trie với thuật toán Maximum Forward Mat
 Thứ tự ưu tiên dịch:
   1. Glossary riêng của từng truyện (novel.json) — Ưu tiên cao nhất
   2. Từ điển cụm từ Vietphrase (phrases_dict.json)
-  3. Từ điển âm Hán Việt đơn âm (chinese_phienam.txt - 17.000+ chữ Hán)
+  3. Từ điển âm Hán Việt đơn âm (chinese_phienam.txt — ~5.400 chữ Hán, sinh bởi
+     tools/build_hanviet.py từ Unihan kVietnamese 18.0.0 + glossary + bảng sửa tay
+     tools/converter/hanviet_overrides.json; xem THIRD_PARTY_LICENSES.md)
   4. Ký tự giữ nguyên (chữ cái Latin, số, dấu câu)
 
 Hỗ trợ chuẩn hóa dấu câu và viết hoa đầu câu tự động.

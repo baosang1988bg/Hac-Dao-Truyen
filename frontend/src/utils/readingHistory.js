@@ -7,10 +7,18 @@
 //   last_read_chapter_<slug>       → chương đọc gần nhất của truyện đó
 //   last_read_time_<slug>          → mốc thời gian (ms) lần đọc gần nhất
 // (cả cookie lẫn localStorage, localStorage ưu tiên)
-//   reading_history_v2             → JSON [{slug, chapter, title, cover_url, timestamp}]
+//   reading_history_v2             → JSON [{slug, chapter, paragraph?, title, cover_url, timestamp}]
 //                                    (dedupe theo slug, tối đa HISTORY_LIMIT mục) — có
 //                                    tên + bìa để trang chủ hiển thị không cần gọi API.
 //                                    Dữ liệu cũ (chỉ có khóa per-slug) vẫn đọc được.
+//                                    paragraph (số nguyên ≥ 0, có thể thiếu ở dữ liệu cũ)
+//                                    = index đoạn văn đầu tiên đang hiển thị của `chapter`.
+//                                    ban (mã bản dịch phụ, thiếu/null = bản mặc định — dữ
+//                                    liệu cũ không có field này) → link "Đọc tiếp" mang ?ban=.
+//   hd:ban:<slug>                  → bản dịch đang chọn của truyện (NovelPage đọc/ghi,
+//                                    Reader ghi khi mở link có ?ban=).
+
+import { normalizeEditionCode } from './chapters.js'
 
 const CHAPTER_PREFIX = 'last_read_chapter_'
 // Khóa cũ do Reader.jsx ghi từ trước — DÙNG LẠI, không tạo khóa mới trùng lặp:
@@ -27,14 +35,66 @@ export function mergeHistoryEntry(list, entry, limit = HISTORY_LIMIT) {
   const safe = Array.isArray(list) ? list.filter(e => e && typeof e.slug === 'string' && e.slug) : []
   if (!entry || !entry.slug) return safe.slice(0, limit)
   const prev = safe.find(e => e.slug === entry.slug)
+  const chapter = entry.chapter != null ? String(entry.chapter) : prev?.chapter ?? null
+  // paragraph chỉ có nghĩa với ĐÚNG chương đó: mục mới không kèm paragraph mà
+  // vẫn là chương cũ → giữ đoạn đã lưu; đổi chương → bỏ.
+  let paragraph = null
+  if (isValidParagraph(entry.paragraph)) paragraph = entry.paragraph
+  else if (prev && prev.chapter != null && String(prev.chapter) === chapter && isValidParagraph(prev.paragraph)) {
+    paragraph = prev.paragraph
+  }
   const merged = {
     slug: entry.slug,
-    chapter: entry.chapter != null ? String(entry.chapter) : prev?.chapter ?? null,
+    chapter,
     title: entry.title || prev?.title || null,
     cover_url: entry.cover_url || prev?.cover_url || null,
     timestamp: Number.isFinite(entry.timestamp) ? entry.timestamp : Date.now(),
   }
+  if (paragraph !== null) merged.paragraph = paragraph
+  // ban: mục mới có khoá `ban` (Reader luôn gửi, null = mặc định) → dùng nó;
+  // không có khoá (caller cũ) → giữ bản dịch đã lưu. Mặc định thì KHÔNG ghi
+  // field (giữ đúng dạng dữ liệu cũ).
+  const ban = Object.prototype.hasOwnProperty.call(entry, 'ban')
+    ? normalizeEditionCode(entry.ban)
+    : normalizeEditionCode(prev?.ban)
+  if (ban) merged.ban = ban
   return [merged, ...safe.filter(e => e.slug !== entry.slug)].slice(0, limit)
+}
+
+function isValidParagraph(value) {
+  return Number.isInteger(value) && value >= 0 && value <= 100_000
+}
+
+/**
+ * Hàm thuần: ghi index đoạn văn cho mục lịch sử của slug — CHỈ khi mục đó đang
+ * ở đúng `chapter` (không tạo mục mới, không đè chương khác). Trả list mới, hoặc
+ * chính `list` nếu không có gì thay đổi.
+ */
+export function setHistoryParagraph(list, slug, chapter, paragraph) {
+  if (!Array.isArray(list) || !slug || !isValidParagraph(paragraph)) return list
+  const idx = list.findIndex(e => e && e.slug === slug)
+  if (idx === -1) return list
+  const cur = list[idx]
+  if (cur.chapter == null || String(cur.chapter) !== String(chapter)) return list
+  if (cur.paragraph === paragraph) return list
+  const next = [...list]
+  next[idx] = { ...cur, paragraph }
+  return next
+}
+
+/** Hàm thuần: mã bản dịch phụ đã lưu của slug trong list (null = bản mặc định / dữ liệu cũ). */
+export function findHistoryEdition(list, slug) {
+  if (!Array.isArray(list) || !slug) return null
+  const e = list.find(x => x && x.slug === slug)
+  return e ? normalizeEditionCode(e.ban) : null
+}
+
+/** Hàm thuần: đoạn văn đã lưu cho (slug, chapter) trong list, hoặc null. */
+export function findHistoryParagraph(list, slug, chapter) {
+  if (!Array.isArray(list) || !slug) return null
+  const e = list.find(x => x && x.slug === slug)
+  if (!e || e.chapter == null || String(e.chapter) !== String(chapter)) return null
+  return isValidParagraph(e.paragraph) ? e.paragraph : null
 }
 
 function readHistoryList() {
@@ -48,7 +108,8 @@ function readHistoryList() {
 
 /**
  * Ghi tiến trình đọc (Reader gọi mỗi khi mở chương thành công).
- * meta: { title, cover_url } — tuỳ chọn, để trang chủ hiện ngay tên + bìa.
+ * meta: { title, cover_url, ban } — tuỳ chọn: tên + bìa để trang chủ hiện ngay;
+ * ban = mã bản dịch đang đọc (null = mặc định). Không truyền ban → giữ bản cũ.
  */
 export function saveReadProgress(slug, chapId, meta = {}) {
   if (!slug || chapId === null || chapId === undefined) return
@@ -64,13 +125,31 @@ export function saveReadProgress(slug, chapId, meta = {}) {
     localStorage.setItem(`${CHAPTER_PREFIX}${slug}`, String(chapId))
     localStorage.setItem(`last_read_time_${slug}`, String(now))
     // 3. Danh sách có meta (tên + bìa)
-    const next = mergeHistoryEntry(readHistoryList(), {
-      slug, chapter: chapId, title: meta?.title, cover_url: meta?.cover_url, timestamp: now,
-    })
+    const entry = { slug, chapter: chapId, title: meta?.title, cover_url: meta?.cover_url, timestamp: now }
+    if (meta && Object.prototype.hasOwnProperty.call(meta, 'ban')) entry.ban = meta.ban
+    const next = mergeHistoryEntry(readHistoryList(), entry)
     localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
   } catch { /* localStorage bị chặn/đầy — bỏ qua */ }
   // 4. Đánh dấu chương đã đọc (helper dùng chung với mục lục NovelPage)
   markChapterRead(slug, chapId)
+}
+
+/**
+ * Lưu đoạn văn đang đọc (Reader gọi khi người đọc cuộn, throttle ~1 giây).
+ * Chỉ cập nhật khi lịch sử của truyện đang trỏ đúng chương này.
+ */
+export function saveReadParagraph(slug, chapId, paragraph) {
+  if (!slug || chapId === null || chapId === undefined) return
+  try {
+    const list = readHistoryList()
+    const next = setHistoryParagraph(list, slug, chapId, paragraph)
+    if (next !== list) localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
+  } catch { /* localStorage bị chặn/đầy — bỏ qua */ }
+}
+
+/** Đoạn văn đã lưu khi đọc dở đúng chương này (số nguyên) hoặc null. */
+export function getReadParagraph(slug, chapId) {
+  return findHistoryParagraph(readHistoryList(), slug, chapId)
 }
 
 /**
@@ -88,6 +167,30 @@ export function updateHistoryMeta(slug, meta = {}) {
     list[idx] = { ...cur, title: meta.title || cur.title || null, cover_url: meta.cover_url || cur.cover_url || null }
     localStorage.setItem(HISTORY_KEY, JSON.stringify(list))
   } catch { /* bỏ qua */ }
+}
+
+/** Bản dịch phụ đang đọc của truyện theo lịch sử (null = mặc định). */
+export function getHistoryEdition(slug) {
+  return findHistoryEdition(readHistoryList(), slug)
+}
+
+// ── Bản dịch đang chọn theo truyện (localStorage 'hd:ban:<slug>') ────────────
+const EDITION_KEY_PREFIX = 'hd:ban:'
+
+/** Bản dịch phụ đã chọn cho truyện (null = mặc định / không đọc được storage). */
+export function getStoredEdition(slug) {
+  if (!slug) return null
+  try { return normalizeEditionCode(localStorage.getItem(EDITION_KEY_PREFIX + slug)) } catch { return null }
+}
+
+/** Ghi bản dịch đã chọn; code rỗng/mặc định → xoá khoá. */
+export function setStoredEdition(slug, code) {
+  if (!slug) return
+  try {
+    const norm = normalizeEditionCode(code)
+    if (norm) localStorage.setItem(EDITION_KEY_PREFIX + slug, norm)
+    else localStorage.removeItem(EDITION_KEY_PREFIX + slug)
+  } catch { /* chế độ riêng tư / chặn storage — chỉ không nhớ được lựa chọn */ }
 }
 
 function getCookie(name) {
@@ -176,6 +279,9 @@ export function getAllHistory() {
       isCurrent: slug === current,
       ...(meta?.title ? { title: meta.title } : {}),
       ...(meta?.cover_url ? { cover_url: meta.cover_url } : {}),
+      // Bản dịch chỉ đúng khi mục v2 cùng chương với khoá per-slug (khoá per-slug
+      // có thể mới hơn nếu một bản cũ của site ghi mà không cập nhật v2).
+      ban: meta && String(meta.chapter) === String(data.chapter) ? normalizeEditionCode(meta.ban) : null,
     }
   })
   list.sort((a, b) => b.timestamp - a.timestamp)

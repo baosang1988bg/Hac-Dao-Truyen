@@ -7,6 +7,8 @@ import userApi, { isLoggedIn } from '../userApi'
 import ReaderSettingsPanel from '../components/ReaderSettingsPanel'
 import { trackEvent } from '../utils/analytics'
 import useReaderSettings, { THEMES } from '../hooks/useReaderSettings'
+import useRealReadTracking from '../hooks/useRealReadTracking'
+import { clearBootTheme } from '../utils/bootTheme'
 import '../styles/library-epub.css'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
@@ -71,12 +73,23 @@ export default function EpubReader() {
   const applyThemeRef = useRef(applyTheme)
   useEffect(() => { applyThemeRef.current = applyTheme }, [applyTheme])
 
-  // Load novel info + track view
+  // Nền tạm theo theme đọc do index.html đặt (chống nháy) — Reader đã tự tô nền.
+  useEffect(() => { clearBootTheme() }, [])
+
+  // Load novel info
   useEffect(() => {
     api.get(`/novels/${slug}`).then(r => setNovel(r.data)).catch(() => {})
-    // Track view (fire and forget)
-    api.post(`/novels/${slug}/view`).catch(() => {})
   }, [slug])
+
+  // Lượt đọc thật: xin token khi EPUB mở xong, đủ 30 giây tab hiển thị mới báo
+  // (chapter = 0, không xét cuộn — EPUB lật trang trong iframe).
+  useRealReadTracking({
+    slug,
+    chapterKey: 'epub',
+    chapterNumber: 0,
+    enabled: !loading && !error,
+    requireScroll: false,
+  })
 
   // Init epub.js
   useEffect(() => {

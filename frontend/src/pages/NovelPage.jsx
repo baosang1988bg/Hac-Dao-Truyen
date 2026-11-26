@@ -9,11 +9,18 @@ import {
 } from 'lucide-react'
 import userApi, { isLoggedIn } from '../userApi'
 import NovelCover from '../components/NovelCover'
-import { getLastReadForSlug, fmtChapterLabel, getReadChapters } from '../utils/readingHistory'
+import {
+  getLastReadForSlug, fmtChapterLabel, getReadChapters, getStoredEdition, setStoredEdition,
+} from '../utils/readingHistory'
 import { fmtTimeAgo, fmtNumber, fmtChapterDate, isRecentChapter, fmtNovelTitle, cleanAuthor } from '../utils/format'
 import { splitGenres } from '../utils/genreLabels'
 import SynopsisPanel from '../components/SynopsisPanel'
-import { normalizeChapterCatalog, getChapNum, chapterUrl } from '../utils/chapters'
+import NovelRating from '../components/NovelRating'
+import {
+  normalizeChapterCatalog, getChapNum, chapterUrl,
+  normalizeEditionCode, chapterListPath, withEditionQuery, DEFAULT_EDITION_CODE,
+} from '../utils/chapters'
+import { fetchEditions } from '../engagementApi'
 import { useCachedGet } from '../utils/apiCache'
 import { runWhenIdle } from '../utils/idle'
 import useDocumentTitle from '../hooks/useDocumentTitle'
@@ -48,6 +55,9 @@ function chapterCountLabel(novel) {
   return `${fmtNumber(novel.chapter_count || 0)} chương đã dịch`
 }
 
+// ── Bản dịch đã chọn (nhớ theo truyện, khoá 'hd:ban:<slug>' ở utils/readingHistory) ──
+const EDITION_KIND_LABELS = { ai: 'Dịch AI', human: 'Dịch giả', convert: 'Convert' }
+
 /**
  * Trang chi tiết truyện dành cho GUEST (public).
  * Hero + thanh hành động + danh sách chương (tìm kiếm, đảo chiều, tải thêm 100).
@@ -65,7 +75,26 @@ export default function NovelPage() {
  */
 function NovelPageContent({ slug }) {
   const novelReq = useCachedGet(`/novels/${slug}`)
-  const chaptersReq = useCachedGet(`/novels/${slug}/chapters`)
+  // Nhiều bản dịch: chỉ tải /editions khi Worker báo có bản phụ (edition_count > 0)
+  // → truyện thường không tốn thêm request. Lựa chọn chỉ có hiệu lực khi mã đã
+  // lưu nằm trong danh sách bản published; còn lại dùng bản mặc định.
+  const editionCount = Number(novelReq.data?.edition_count) || 0
+  const [editions, setEditions] = useState(null)
+  const [storedBan, setStoredBan] = useState(() => getStoredEdition(slug))
+  useEffect(() => {
+    if (editionCount <= 0) return undefined
+    let alive = true
+    fetchEditions(slug).then(list => { if (alive) setEditions(list) })
+    return () => { alive = false }
+  }, [slug, editionCount])
+  const ban = editionCount > 0 && storedBan && editions?.some(e => e.code === storedBan) ? storedBan : null
+  const chooseEdition = (code) => {
+    const next = normalizeEditionCode(code)
+    setStoredBan(next)
+    setStoredEdition(slug, next)
+    trackEvent('select_content', { content_type: 'edition', item_id: next || DEFAULT_EDITION_CODE, novel_slug: slug })
+  }
+  const chaptersReq = useCachedGet(chapterListPath(slug, ban))
   const novel = novelReq.data
   const chapters = useMemo(() => normalizeChapterCatalog(chaptersReq.data), [chaptersReq.data])
   const title = displayNovelTitle(novel, slug)
@@ -125,9 +154,9 @@ function NovelPageContent({ slug }) {
   const epubOnly = isEpubOnly(novel)
   // Nút chính: có lịch sử → "Đọc tiếp", chưa có → "Đọc từ đầu".
   const mainCta = lastRead
-    ? { to: `/novel/${slug}/read/${lastRead}`, label: `Đọc tiếp Ch. ${fmtChapterLabel(lastRead)}`, icon: BookOpen }
+    ? { to: withEditionQuery(`/novel/${slug}/read/${lastRead}`, ban), label: `Đọc tiếp Ch. ${fmtChapterLabel(lastRead)}`, icon: BookOpen }
     : firstChapter
-      ? { to: chapterUrl(slug, firstChapter), label: 'Đọc từ đầu', icon: Play }
+      ? { to: chapterUrl(slug, firstChapter, ban), label: 'Đọc từ đầu', icon: Play }
       : null
   const showStickyCta = Boolean(mainCta) && actionBarPassed
   const MainIcon = mainCta?.icon
@@ -167,6 +196,13 @@ function NovelPageContent({ slug }) {
             </div>
           )}
           {novel.notes && <CollapsibleNotes notes={novel.notes} />}
+          {/* Chấm sao — điểm TB chỉ hiện khi API trả số thật (chi tiết truyện
+              cho khách hiện chưa kèm rating → hiện sau khi chấm). */}
+          <NovelRating
+            slug={slug}
+            initialRating={typeof novel.rating === 'number' ? novel.rating : undefined}
+            initialCount={typeof novel.rating_count === 'number' ? novel.rating_count : undefined}
+          />
         </div>
       </div>
 
@@ -194,7 +230,7 @@ function NovelPageContent({ slug }) {
         )}
         <div className="novel-action-bar__secondary">
           {lastRead && firstChapter && (
-            <Link to={chapterUrl(slug, firstChapter)} className="btn btn-secondary hd-press">
+            <Link to={chapterUrl(slug, firstChapter, ban)} className="btn btn-secondary hd-press">
               <Play size={16} aria-hidden="true" /> <span>Đọc từ đầu</span>
             </Link>
           )}
@@ -209,6 +245,11 @@ function NovelPageContent({ slug }) {
         </div>
       </div>
 
+      {/* ── Bộ chọn bản dịch: chỉ khi truyện có bản dịch phụ đang published ── */}
+      {editionCount > 0 && Array.isArray(editions) && editions.length > 1 && (
+        <EditionPicker editions={editions} value={ban || DEFAULT_EDITION_CODE} onChange={chooseEdition} />
+      )}
+
       {/* ── Danh sách chương (skeleton/lỗi riêng, không chặn hero) ── */}
       {chaptersReq.data === undefined ? (
         chaptersReq.error ? (
@@ -222,7 +263,7 @@ function NovelPageContent({ slug }) {
           <ChapterListSkeleton />
         )
       ) : (
-        <ChapterList slug={slug} chapters={chapters} epubOnly={epubOnly} />
+        <ChapterList slug={slug} chapters={chapters} epubOnly={epubOnly && !ban} ban={ban} />
       )}
 
       {/* Thanh "Đọc tiếp" dính đáy — chỉ hiện trên mobile (CSS) khi thanh hành
@@ -379,13 +420,13 @@ CollapsibleNotes.propTypes = {
  * Danh sách chương guest: tìm kiếm + đảo chiều mới/cũ + phân trang "Tải thêm 100".
  * Không bao giờ render toàn bộ (xich-tam có 1835 chương).
  */
-function ChapterList({ slug, chapters, epubOnly }) {
+function ChapterList({ slug, chapters, epubOnly, ban = null }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortDesc, setSortDesc] = useState(false) // mặc định cũ → mới (đọc từ đầu)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
-  // Đổi bộ lọc → reset phân trang
-  useEffect(() => { setVisibleCount(PAGE_SIZE) }, [searchTerm, sortDesc, slug])
+  // Đổi bộ lọc / đổi bản dịch → reset phân trang
+  useEffect(() => { setVisibleCount(PAGE_SIZE) }, [searchTerm, sortDesc, slug, ban])
 
   // Set các chương đã đọc (helper dùng chung với Reader — key read_chapters_<slug>)
   const readChapters = useMemo(() => getReadChapters(slug), [slug])
@@ -477,7 +518,7 @@ function ChapterList({ slug, chapters, epubOnly }) {
               <Link
                 key={chap.filename}
                 className={`chapter-list-row${isRead ? ' is-read' : ''}${isCurrent ? ' is-current' : ''}`}
-                to={chapterUrl(slug, chap)}
+                to={chapterUrl(slug, chap, ban)}
                 aria-current={isCurrent ? 'page' : undefined}
               >
                 <span className={`chapter-list-row__num${num ? '' : ' is-special'}`}>
@@ -522,4 +563,50 @@ ChapterList.propTypes = {
   slug: PropTypes.string,
   chapters: PropTypes.arrayOf(chapterType),
   epubOnly: PropTypes.bool,
+  ban: PropTypes.string,
+};
+
+/** Bộ chọn "Bản dịch" (truyentrung: một truyện nhiều bản dịch) + thông tin bản đang chọn. */
+function EditionPicker({ editions, value, onChange }) {
+  const current = editions.find(e => e.code === value) || editions[0]
+  const meta = [
+    EDITION_KIND_LABELS[current?.kind] || '',
+    current?.translator ? `Người dịch: ${current.translator}` : '',
+    Number(current?.chapter_count) > 0 ? `${fmtNumber(current.chapter_count)} chương` : '',
+  ].filter(Boolean).join(' • ')
+  return (
+    <div className="glass-panel novel-edition-picker" data-track-section="novel_edition_picker"
+      style={{ padding: '0.75rem 1rem', marginBottom: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+        <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Bản dịch</span>
+        <select
+          className="input-field"
+          value={current?.code || DEFAULT_EDITION_CODE}
+          onChange={e => onChange(e.target.value)}
+          style={{ flex: '1 1 14rem', minHeight: '44px', fontSize: '1rem' }}
+        >
+          {editions.map(e => (
+            <option key={e.code} value={e.code}>{e.name}{e.default ? ' (mặc định)' : ''}</option>
+          ))}
+        </select>
+      </label>
+      {meta && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{meta}</div>}
+      {current?.license_note && !current.default && (
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Nguồn/giấy phép: {current.license_note}</div>
+      )}
+    </div>
+  )
+}
+EditionPicker.propTypes = {
+  editions: PropTypes.arrayOf(PropTypes.shape({
+    code: PropTypes.string.isRequired,
+    name: PropTypes.string,
+    kind: PropTypes.string,
+    translator: PropTypes.string,
+    license_note: PropTypes.string,
+    chapter_count: PropTypes.number,
+    default: PropTypes.bool,
+  })).isRequired,
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
 };

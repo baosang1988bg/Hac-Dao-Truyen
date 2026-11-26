@@ -44,6 +44,9 @@ export default function GuestLayout() {
       <footer className="app-footer">
         <div className="app-footer__text">
           Hắc Đạo Truyện &copy; 2026 • Dịch truyện bằng AI
+          {/* File tĩnh (frontend/public) — thẻ <a> thường, không qua router SPA.
+              Bắt buộc theo Unicode License v3 vì site nhúng dữ liệu Unihan. */}
+          {' • '}<a href="/THIRD_PARTY_LICENSES.txt" className="app-footer__link">Giấy phép bên thứ ba</a>
         </div>
       </footer>
       <BottomTabBar />

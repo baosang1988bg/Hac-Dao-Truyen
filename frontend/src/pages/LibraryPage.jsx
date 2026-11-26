@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { BookOpen, BookHeart, BookMarked, Home, LibraryBig } from 'lucide-react'
 import NovelCover from '../components/NovelCover'
 import { getAllHistory, fmtChapterLabel } from '../utils/readingHistory'
+import { continueReadingUrl } from '../utils/chapters'
 import api from '../api'
 import { fetchNovelsBySlugsBatch } from '../utils/novelsApi'
 import { fmtNovelTitle } from '../utils/format'
@@ -97,7 +98,7 @@ export default function LibraryPage() {
         </div>
       ) : (
         <div className="library-list">
-          {items.map(({ slug, chapter, novel, isCurrent, displayTitle, percent }, i) => (
+          {items.map(({ slug, chapter, ban, novel, isCurrent, displayTitle, percent }, i) => (
             // .hd-reveal ở lớp bọc để hover/nhấn của thẻ không bị trễ theo delay so le.
             <div key={slug} className="hd-reveal" style={{ '--i': staggerIndex(i) }}>
               <div className={`glass-panel library-card${isCurrent ? ' is-current' : ''}`}>
@@ -133,7 +134,7 @@ export default function LibraryPage() {
                   )}
                 </div>
                 <Link
-                  to={`/novel/${slug}/read/${chapter}`}
+                  to={continueReadingUrl(slug, chapter, ban)}
                   className="btn btn-primary library-card__action"
                   aria-label={`Đọc tiếp ${displayTitle}`}
                 >

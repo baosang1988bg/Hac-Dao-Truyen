@@ -1,22 +1,32 @@
 import PropTypes from 'prop-types'
 import { memo, useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Home, ChevronUp, Settings, Download, Volume2, Pause, Square, Loader2, Check, AlertTriangle, RefreshCw } from 'lucide-react'
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { ArrowLeft, ArrowRight, Home, ChevronUp, Settings, Download, Volume2, Pause, Play, Square, SkipBack, SkipForward, Loader2, Check, AlertTriangle, RefreshCw } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
-import api from '../api'
 import userApi, { isLoggedIn, getIdentityNamespace } from '../userApi'
 import ChapterComments from '../components/ChapterComments'
 import Modal from '../components/ui/Modal'
 import ReaderSettingsPanel from '../components/ReaderSettingsPanel'
 import InlineGlossaryModal from '../components/InlineGlossaryModal'
 import ReplacementsManagerModal from '../components/ReplacementsManagerModal'
-import { getReplacements, saveReplacement, removeReplacement, applyReplacements } from '../utils/readerReplacements'
+import { getReplacements, saveReplacement, removeReplacement, applyReplacements, mergeReplacementRules, mergeImportedRules, writeReplacements } from '../utils/readerReplacements'
 import useReaderSettings, { THEMES } from '../hooks/useReaderSettings'
+import useRealReadTracking from '../hooks/useRealReadTracking'
+import { clearBootTheme } from '../utils/bootTheme'
+import { contentScrollRatio } from '../utils/readTracking'
+import { fetchPublicReplacements } from '../engagementApi'
+import { schedulePrefsPush, subscribePrefsSync } from '../utils/prefsSyncClient'
 import useTextToSpeech from '../hooks/useTextToSpeech'
+import {
+  TTS_CONTINUE_KEY, makeTtsContinue, isTtsContinueValid, readTtsContinueChain, ttsAutoNextDecision,
+} from '../utils/ttsQueue'
 import useDocumentTitle from '../hooks/useDocumentTitle'
-import { saveReadProgress, updateHistoryMeta, fmtChapterLabel } from '../utils/readingHistory'
+import {
+  saveReadProgress, updateHistoryMeta, fmtChapterLabel, saveReadParagraph, getReadParagraph, setStoredEdition,
+} from '../utils/readingHistory'
 import {
   normalizeChapterCatalog, getChapNum, chapterIdentifier, chapterUrl, findChapterIndex, chapterRequestId,
+  normalizeEditionCode, chapterListPath, chapterContentPath,
 } from '../utils/chapters'
 import { fmtChapterDate, fmtNovelTitle } from '../utils/format'
 import { cachedGet, peekCache } from '../utils/apiCache'
@@ -31,8 +41,16 @@ const OFFLINE_BATCH_SIZE = 10
 const CHAPTER_TTL = 10 * 60_000
 // Vị trí cuộn: chỉ nhớ chương GẦN NHẤT của mỗi truyện (localStorage).
 const SCROLL_KEY_PREFIX = 'readerPos_'
-// Đánh dấu đã tính lượt xem trong phiên này (sessionStorage).
-const VIEW_KEY_PREFIX = 'viewed_'
+// Tiến độ tới từng đoạn văn: ghi local tối đa 1 lần/giây khi cuộn. Mỗi PUT
+// /user/progress = 1 lượt ghi D1 (gói Free 100k/ngày dùng chung) nên CHỈ gửi
+// server khi: tab bị ẩn / pagehide, rời truyện (unmount, đổi truyện), hoặc định
+// kỳ — cách lần gửi trước ≥ 60 giây VÀ lệch ≥ 10 đoạn. Bản mới nhất luôn nằm
+// trong hàng đợi offline nên không gửi kịp cũng không mất.
+const PARAGRAPH_LOCAL_THROTTLE_MS = 1000
+const PARAGRAPH_SERVER_MIN_INTERVAL_MS = 60_000
+const PARAGRAPH_SERVER_MIN_DELTA = 10
+// Khoảng chừa phía trên khi cuộn tới đoạn đã lưu (thanh điều hướng trên cùng).
+const PARAGRAPH_RESTORE_OFFSET_PX = 72
 // Vùng chạm lật chương (mobile cảm ứng): mép trái/phải, tối đa 12% bề rộng
 // nhưng không quá 56px để không lấn vào phần chữ trên máy màn rộng.
 const TAP_ZONE_MEDIA = '(hover: none) and (pointer: coarse) and (max-width: 768px)'
@@ -63,15 +81,56 @@ function writeSavedScroll(slug, chapter, pct) {
   } catch { /* storage đầy/bị chặn — bỏ qua */ }
 }
 
-/** Gọi POST /novels/:slug/view tối đa 1 lần mỗi phiên cho mỗi truyện (bỏ qua lỗi). */
-function trackViewOncePerSession(slug) {
-  if (!slug) return
+// Quy tắc sửa name công khai (admin đã duyệt) — nhớ trong bộ nhớ theo slug,
+// đổi chương không tải lại. Lưu Promise để các lần mount trùng nhau dùng chung.
+const publicRulesCache = new Map()
+function loadPublicRules(slug) {
+  if (!publicRulesCache.has(slug)) publicRulesCache.set(slug, fetchPublicReplacements(slug))
+  return publicRulesCache.get(slug)
+}
+
+/**
+ * Ngữ cảnh của vùng chọn cho nút "mở rộng cụm" trong hộp sửa name: toàn văn
+ * đoạn `.reader-p` chứa vùng chọn + offset (UTF-16) của cụm ĐÃ TRIM trong đoạn.
+ * Vùng chọn trải qua nhiều đoạn / không nằm trong đoạn văn → null (modal ẩn nút).
+ */
+function selectionParagraphContext(range, trimmedText) {
   try {
-    const key = `${VIEW_KEY_PREFIX}${slug}`
-    if (sessionStorage.getItem(key)) return
-    sessionStorage.setItem(key, '1')
-  } catch { /* sessionStorage bị chặn — vẫn gửi 1 lần cho lần mount này */ }
-  api.post(`/novels/${slug}/view`).catch(() => { /* fire-and-forget */ })
+    const elOf = (node) => (node && node.nodeType === 1 ? node : node?.parentElement)
+    const p = elOf(range.startContainer)?.closest?.('.reader-p')
+    if (!p || p !== elOf(range.endContainer)?.closest?.('.reader-p')) return null
+    const pre = document.createRange()
+    pre.selectNodeContents(p)
+    pre.setEnd(range.startContainer, range.startOffset)
+    const raw = range.toString()
+    const lead = raw.length - raw.trimStart().length
+    const start = pre.toString().length + lead
+    const end = start + trimmedText.length
+    const text = p.textContent || ''
+    // Range.toString và textContent đều nối text node theo thứ tự → phải khớp; lệch thì bỏ.
+    return text.slice(start, end) === trimmedText ? { text, start, end } : null
+  } catch {
+    return null
+  }
+}
+
+/** Các đoạn văn của chương theo thứ tự hiển thị (index = vị trí trong danh sách). */
+function chapterParagraphs(root) {
+  return root ? root.querySelectorAll('.reader-p') : []
+}
+
+/** Index đoạn văn ĐẦU TIÊN còn thấy trên màn hình (tìm nhị phân), -1 nếu chưa có. */
+function firstVisibleParagraph(root) {
+  const nodes = chapterParagraphs(root)
+  if (!nodes.length) return -1
+  let lo = 0
+  let hi = nodes.length - 1
+  let ans = nodes.length - 1
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1
+    if (nodes[mid].getBoundingClientRect().bottom > 8) { ans = mid; hi = mid - 1 } else lo = mid + 1
+  }
+  return ans
 }
 
 /** Phím tắt không được chiếm khi người dùng đang gõ / dùng tổ hợp phím. */
@@ -101,9 +160,14 @@ const PROGRESS_QUEUE_PREFIX = 'progressQueue_'
 function progressQueueKey(slug) { return `${PROGRESS_QUEUE_PREFIX}${getIdentityNamespace()}_${slug}` }
 
 // Hàng đợi offline chỉ giữ BẢN MỚI NHẤT (ghi đè, không append lịch sử cũ).
-function writeQueuedProgress(slug, chapterNum) {
+// paragraph (tuỳ chọn): index đoạn văn đang đọc → server lưu position "12#p34".
+// keepParagraph: đang đọc bản dịch phụ → nhờ server giữ đoạn của bản mặc định.
+function writeQueuedProgress(slug, chapterNum, paragraph, keepParagraph = false) {
   try {
-    localStorage.setItem(progressQueueKey(slug), JSON.stringify({ chapter: chapterNum, ts: Date.now() }))
+    const entry = { chapter: chapterNum, ts: Date.now() }
+    if (Number.isInteger(paragraph) && paragraph >= 0) entry.paragraph = paragraph
+    if (keepParagraph) entry.keep_paragraph = true
+    localStorage.setItem(progressQueueKey(slug), JSON.stringify(entry))
   } catch { /* storage đầy/bị chặn — best effort, không crash */ }
 }
 function readQueuedProgress(slug) {
@@ -117,6 +181,19 @@ function readQueuedProgress(slug) {
 }
 function clearQueuedProgress(slug) {
   try { localStorage.removeItem(progressQueueKey(slug)) } catch { /* ignore */ }
+}
+
+/**
+ * Body PUT /user/progress — chỉ thêm `paragraph` khi là số nguyên hợp lệ.
+ * keepParagraph (đọc bản dịch phụ ?ban=): gửi `keep_paragraph: true` để server
+ * giữ nguyên vị trí đoạn "N#pM" của bản mặc định khi vẫn cùng chương N (thay
+ * vì ghi đè thành "N"). Không bao giờ gửi kèm paragraph trong trường hợp này.
+ */
+function progressBody(chapterNum, paragraph, keepParagraph = false) {
+  const body = { type: 'chapter', chapter: chapterNum }
+  if (keepParagraph) body.keep_paragraph = true
+  else if (Number.isInteger(paragraph) && paragraph >= 0) body.paragraph = paragraph
+  return body
 }
 
 // Gửi lại TOÀN BỘ hàng đợi offline CỦA DANH TÍNH HIỆN TẠI (mỗi slug tối đa 1
@@ -137,7 +214,7 @@ async function flushAllQueuedProgress() {
     const queued = readQueuedProgress(slugFromKey)
     if (!queued) continue
     try {
-      await userApi.put(`/user/progress/${slugFromKey}`, { type: 'chapter', chapter: queued.chapter })
+      await userApi.put(`/user/progress/${slugFromKey}`, progressBody(queued.chapter, queued.paragraph, queued.keep_paragraph === true))
       clearQueuedProgress(slugFromKey)
     } catch (err) {
       const status = err.response?.status
@@ -323,22 +400,49 @@ function ChapterSkeleton() {
 export default function Reader() {
   const { slug, chapter } = useParams()
   const navigate = useNavigate()
+  // Nhiều bản dịch: ?ban=<code> (khác 'he-thong') → đọc bản dịch phụ qua route
+  // /editions/:code/...; null = bản AI mặc định, URL/route cũ giữ nguyên.
+  const [searchParams] = useSearchParams()
+  const ban = normalizeEditionCode(searchParams.get('ban'))
+  const banRef = useRef(ban)
+  banRef.current = ban
 
   // ── Nội dung chương ───────────────────────────────────────────────────────
   // doc giữ kết quả của URL đã tải xong. Nếu URL hiện tại chưa có trong doc
   // nhưng đã nằm trong apiCache (vd đã prefetch) → render NGAY từ cache trong
   // cùng lượt render, không nháy skeleton.
-  const contentUrl = `/novels/${slug}/chapters/${chapterRequestId(chapter)}`
+  const contentUrl = chapterContentPath(slug, chapterRequestId(chapter), ban)
   const [doc, setDoc] = useState({ url: null, content: '', error: null })
   const [replacements, setReplacements] = useState(() => getReplacements(slug))
   const [selectionCoords, setSelectionCoords] = useState(null)
   const [selectedText, setSelectedText] = useState('')
+  const [selectedContext, setSelectedContext] = useState(null) // { text, start, end } | null
   const [isInlineGlossaryOpen, setIsInlineGlossaryOpen] = useState(false)
   const [isReplacementsManagerOpen, setIsReplacementsManagerOpen] = useState(false)
+  const [publicRules, setPublicRules] = useState({ slug: null, rules: [] })
 
   useEffect(() => {
     setReplacements(getReplacements(slug))
   }, [slug])
+
+  // Nền tạm theo theme đọc do index.html đặt (chống nháy) — Reader đã tự tô nền.
+  useEffect(() => { clearBootTheme() }, [])
+
+  // Quy tắc sửa name công khai: tải nền 1 lần / truyện (cache trong bộ nhớ).
+  useEffect(() => {
+    let alive = true
+    loadPublicRules(slug).then(rules => {
+      if (alive) setPublicRules({ slug, rules: Array.isArray(rules) ? rules : [] })
+    })
+    return () => { alive = false }
+  }, [slug])
+
+  // Đồng bộ cài đặt: server có quy tắc mới hơn cho truyện này → nạp lại.
+  useEffect(() => subscribePrefsSync((evt) => {
+    if (evt?.type === 'replacements' && Array.isArray(evt.slugs) && evt.slugs.includes(slug)) {
+      setReplacements(getReplacements(slug))
+    }
+  }), [slug])
   const [reloadNonce, setReloadNonce] = useState(0)
   const docMatches = doc.url === contentUrl
   const peeked = docMatches ? undefined : peekCache(contentUrl)
@@ -348,13 +452,15 @@ export default function Reader() {
   const loading = !ready && !loadError
 
   // ── Mục lục + chi tiết truyện (apiCache dùng chung với NovelPage) ─────────
-  const chaptersUrl = `/novels/${slug}/chapters`
-  const [catalog, setCatalog] = useState(() => ({ slug, raw: peekCache(chaptersUrl) }))
+  const chaptersUrl = chapterListPath(slug, ban)
+  // Mục lục gắn với URL (không chỉ slug): đổi bản dịch cùng truyện không được
+  // dùng nhầm mục lục của bản trước.
+  const [catalog, setCatalog] = useState(() => ({ slug, url: chaptersUrl, raw: peekCache(chaptersUrl) }))
   const [chaptersLoadError, setChaptersLoadError] = useState(false)
   const [novel, setNovel] = useState(() => peekCache(`/novels/${slug}`) || null)
   const chapters = useMemo(
-    () => (catalog.slug === slug ? normalizeChapterCatalog(catalog.raw) : []),
-    [catalog, slug],
+    () => (catalog.slug === slug && catalog.url === chaptersUrl ? normalizeChapterCatalog(catalog.raw) : []),
+    [catalog, slug, chaptersUrl],
   )
 
   const [showScrollTop, setShowScrollTop] = useState(false)
@@ -362,6 +468,12 @@ export default function Reader() {
   const [syncStatus, setSyncStatus] = useState(null) // null | 'saving' | 'saved' | 'error'
 
   const progressBarRef = useRef(null)
+  const contentRef = useRef(null) // khối .reader-content (đo đoạn văn + tỉ lệ đã đọc)
+  const lastParagraphRef = useRef(-1) // đoạn văn đã ghi gần nhất của chương hiện tại
+  const paragraphTimerRef = useRef(null) // throttle ghi local
+  // Gửi server đoạn văn: pending = bản chưa gửi; lastSentAt/lastSentParagraph =
+  // mốc lần gửi gần nhất của chương hiện tại (để giãn nhịp gửi định kỳ).
+  const paragraphSyncRef = useRef({ pending: null, lastSentAt: 0, lastSentParagraph: 0 })
   const lastScrollRef = useRef(0)
   const saveScrollTimerRef = useRef(null)
   const touchRef = useRef(null)
@@ -395,8 +507,31 @@ export default function Reader() {
   const [showSettings, setShowSettings] = useState(false)
 
   // ── Text-to-Speech ─────────────────────────────────────────────────────────
-  const tts = useTextToSpeech()
+  // Callback cho hook đọc qua ref (gán ở khối "TTS: tô sáng/tự cuộn/tự sang
+  // chương" phía dưới — cần nextChapter/goNext khai báo sau).
+  const ttsHandlersRef = useRef({})
+  // `.reader-p` đang tô sáng (null = không nghe). Khi đang nghe, tiến độ đoạn đi
+  // theo giọng đọc → bộ lưu-theo-cuộn bên dưới bỏ qua (tự cuộn của TTS đặt đoạn
+  // ở 25% màn hình, "đoạn đầu tiên thấy" sẽ lệch lùi 1–2 đoạn).
+  const ttsActiveNodeRef = useRef(null)
+  const tts = useTextToSpeech({
+    onParagraph: (p) => ttsHandlersRef.current.onParagraph?.(p),
+    onEnd: () => ttsHandlersRef.current.onEnd?.(),
+    onStateChange: (status) => ttsHandlersRef.current.onStateChange?.(status),
+    media: {
+      onNextTrack: () => ttsHandlersRef.current.onChapter?.(1),
+      onPrevTrack: () => ttsHandlersRef.current.onChapter?.(-1),
+    },
+  })
   const { stop: ttsStop, play: ttsPlay, pause: ttsPause, resume: ttsResume } = tts
+  // Chống tự lật chương liên tục: lúc bắt đầu đọc chương hiện tại + số chương
+  // đã TỰ sang liên tiếp không có thao tác người dùng (xem ttsAutoNextDecision).
+  const ttsChapterStartRef = useRef(0)
+  const ttsAutoChainRef = useRef(0)
+  // true khi chính TTS điều hướng sang chương (tự sang/nút media) → lần dừng
+  // do đổi chương giữ audio im lặng (pause, không giải phóng).
+  const ttsNavigatingRef = useRef(false)
+  const [ttsNotice, setTtsNotice] = useState('')
 
   // ───────────────────────────────────────────────────────────────────────────
 
@@ -406,23 +541,28 @@ export default function Reader() {
   // theo scroll), retry hữu hạn CHỈ cho lỗi mạng/5xx, KHÔNG retry 401/400 (lỗi
   // vĩnh viễn cần user can thiệp), và CHỈ coi là "đã lưu" sau response 200 thật
   // (không đánh dấu synced lạc quan trước khi có xác nhận).
-  const syncProgress = useCallback((novelSlug, chapterNum) => {
-    writeQueuedProgress(novelSlug, chapterNum) // giữ bản mới nhất trong hàng đợi ngay từ đầu
+  // quiet = cập nhật đoạn văn khi đang đọc: không bật dòng "Đang lưu tiến
+  // trình..." mỗi lần gửi định kỳ; chỉ chốt trạng thái nếu dòng đó đang hiện dở.
+  const syncProgress = useCallback((novelSlug, chapterNum, paragraph, { quiet = false, keepParagraph = false } = {}) => {
+    writeQueuedProgress(novelSlug, chapterNum, paragraph, keepParagraph) // giữ bản mới nhất trong hàng đợi ngay từ đầu
     const myEpoch = ++progressEpochRef.current
-    setSyncStatus('saving')
+    if (!quiet) setSyncStatus('saving')
 
     const attempt = async (retriesLeft) => {
       if (progressEpochRef.current !== myEpoch) return // đã chuyển chương khác — bỏ, request mới lo việc này
       try {
-        await userApi.put(`/user/progress/${novelSlug}`, { type: 'chapter', chapter: chapterNum })
+        await userApi.put(`/user/progress/${novelSlug}`, progressBody(chapterNum, paragraph, keepParagraph))
         if (progressEpochRef.current !== myEpoch) return
         clearQueuedProgress(novelSlug)
-        setSyncStatus('saved')
+        if (quiet) setSyncStatus(s => (s === 'saving' || s === 'error' ? 'saved' : s))
+        else setSyncStatus('saved')
       } catch (err) {
         if (progressEpochRef.current !== myEpoch) return
         const status = err.response?.status
         if (status === 401 || status === 400 || retriesLeft <= 0) {
-          setSyncStatus('error') // lỗi vĩnh viễn hoặc hết lượt retry — giữ trong hàng đợi để thử lại lần sau
+          // lỗi vĩnh viễn hoặc hết lượt retry — giữ trong hàng đợi để thử lại lần sau
+          if (quiet) setSyncStatus(s => (s === 'saving' ? 'error' : s))
+          else setSyncStatus('error')
           return
         }
         const delay = PROGRESS_RETRY_BASE_DELAY_MS * (PROGRESS_RETRY_LIMIT - retriesLeft + 1)
@@ -441,15 +581,61 @@ export default function Reader() {
     return () => window.removeEventListener('online', flushAllQueuedProgress)
   }, [])
 
-  // Lượt xem: 1 lần / phiên / truyện.
-  useEffect(() => { trackViewOncePerSession(slug) }, [slug])
+  // Gửi server phần đoạn văn đang chờ (nếu có) — dùng khi tab bị ẩn/pagehide,
+  // rời truyện, hoặc đến nhịp gửi định kỳ. Không có gì chờ → không gửi (0 lượt ghi).
+  const flushParagraphSync = useCallback(() => {
+    const st = paragraphSyncRef.current
+    const p = st.pending
+    st.pending = null
+    // Bản dịch phụ: chỉ đồng bộ SỐ CHƯƠNG (chung mọi bản), không gửi đoạn văn —
+    // chỉ số đoạn của bản này không khớp với bản mặc định.
+    if (!p || !isLoggedIn() || banRef.current) return
+    st.lastSentAt = Date.now()
+    st.lastSentParagraph = p.paragraph
+    syncProgress(p.slug, p.chapter, p.paragraph, { quiet: true })
+  }, [syncProgress])
+
+  useEffect(() => {
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flushParagraphSync() }
+    // pagehide: đóng tab/điều hướng ra ngoài (iOS Safari đôi khi không bắn
+    // visibilitychange). Đã gửi ở visibilitychange thì pending rỗng → no-op.
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', flushParagraphSync)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', flushParagraphSync)
+    }
+  }, [flushParagraphSync])
+
+  // Rời truyện (unmount Reader / đổi sang truyện khác): gửi nốt đoạn văn đang
+  // chờ. Effect này PHẢI khai báo trước effect reset theo [slug, chapter] bên
+  // dưới — React chạy cleanup theo thứ tự khai báo, nên gửi xong mới bị xoá.
+  useEffect(() => () => flushParagraphSync(), [slug, flushParagraphSync])
+
+  // Đổi chương trong cùng truyện: bỏ bản đoạn văn đang chờ của chương cũ — chương
+  // mới luôn tự đồng bộ khi mở (syncProgress không quiet) và ghi đè tiến độ, nên
+  // gửi thêm bản cũ chỉ tốn 1 lượt ghi D1 và có thể đến server SAU bản mới
+  // (lùi tiến độ). Bản mới nhất vẫn nằm trong hàng đợi offline nếu chưa gửi.
+  useEffect(() => {
+    lastParagraphRef.current = -1
+    const st = paragraphSyncRef.current
+    // Lần mở chương đã gửi server (kèm đoạn đã lưu nếu có) → tính nhịp từ đây.
+    st.lastSentAt = Date.now()
+    st.lastSentParagraph = getReadParagraph(slug, chapter) ?? 0
+    return () => {
+      st.pending = null
+    }
+  }, [slug, chapter])
 
   // ── Tải nội dung chương (qua apiCache: chương đã prefetch → tức thì) ──────
   useEffect(() => {
     const myEpoch = ++contentEpochRef.current
     const controller = new AbortController()
     setDlProgress(null) // đổi chương → reset trạng thái tải offline
-    ttsStop() // đổi chương khi đang đọc → dừng để không chồng giọng
+    // Đổi chương khi đang đọc → dừng để không chồng giọng. Nếu do TTS tự sang
+    // chương thì giữ audio im lặng cho Media Session Android liền mạch.
+    ttsStop({ keepAudio: ttsNavigatingRef.current })
+    ttsNavigatingRef.current = false
     cachedGet(contentUrl, { ttl: CHAPTER_TTL, signal: controller.signal, force: reloadNonce > 0 })
       .then(data => {
         // C01: chuyển chương nhanh có thể khiến response chương CŨ về SAU
@@ -457,19 +643,31 @@ export default function Reader() {
         if (contentEpochRef.current !== myEpoch) return
         if (typeof data?.content !== 'string') throw new Error('Chương không có nội dung')
         setDoc({ url: contentUrl, content: data.content, error: null })
-        // Lưu tiến trình đọc (local) — kèm tên + bìa để trang chủ hiện ngay.
+        // Lưu tiến trình đọc (local) — kèm tên + bìa để trang chủ hiện ngay, và
+        // bản dịch đang đọc (null = mặc định) để link "Đọc tiếp" mang đúng ?ban=.
         const n = novelRef.current
-        saveReadProgress(slug, chapter, n ? {
-          title: fmtNovelTitle(n.title_is_slug ? '' : n.title, n.slug || slug),
-          cover_url: n.cover_url,
-        } : undefined)
+        const curBan = banRef.current
+        saveReadProgress(slug, chapter, {
+          ...(n ? {
+            title: fmtNovelTitle(n.title_is_slug ? '' : n.title, n.slug || slug),
+            cover_url: n.cover_url,
+          } : {}),
+          ban: curBan,
+        })
+        // Mở thẳng link có ?ban (từ "Đọc tiếp", chia sẻ...) → nhớ bản dịch cho
+        // NovelPage. Chỉ ghi khi tải được chương (bản dịch không tồn tại/đã ẩn
+        // → 404 → không ghi). Không có ?ban thì không xoá lựa chọn đã lưu.
+        if (curBan) setStoredEdition(slug, curBan)
         // Đồng bộ tiến trình lên server nếu đã đăng nhập — chỉ THỬ 1 lần cho
         // mỗi (slug, chapter) mới, không phụ thuộc sự kiện cuộn.
         const syncKey = `${slug}/${chapter}`
         if (isLoggedIn() && lastAttemptedSyncKeyRef.current !== syncKey) {
           lastAttemptedSyncKeyRef.current = syncKey
           if (/^\d+$/.test(chapter)) {
-            syncProgress(slug, Number(chapter))
+            // Mở lại chương đang đọc dở → gửi kèm đoạn văn đã lưu (nếu có);
+            // bản dịch phụ chỉ gửi số chương.
+            const savedParagraph = curBan ? null : getReadParagraph(slug, chapter)
+            syncProgress(slug, Number(chapter), savedParagraph ?? undefined, { keepParagraph: Boolean(curBan) })
           } else {
             // Chương không có số thứ tự hợp lệ (vd author note) — contract
             // 'chapter' yêu cầu integer, không có cách biểu diễn hợp lệ nên
@@ -497,9 +695,11 @@ export default function Reader() {
     let alive = true
     setChaptersLoadError(false)
     const cached = peekCache(chaptersUrl)
-    if (cached !== undefined) setCatalog(c => (c.slug === slug && c.raw === cached ? c : { slug, raw: cached }))
+    if (cached !== undefined) {
+      setCatalog(c => (c.slug === slug && c.url === chaptersUrl && c.raw === cached ? c : { slug, url: chaptersUrl, raw: cached }))
+    }
     cachedGet(chaptersUrl)
-      .then(raw => { if (alive) setCatalog({ slug, raw }) })
+      .then(raw => { if (alive) setCatalog({ slug, url: chaptersUrl, raw }) })
       .catch(() => { if (alive) setChaptersLoadError(true) })
     return () => { alive = false }
   }, [slug, chaptersUrl])
@@ -523,11 +723,22 @@ export default function Reader() {
   }, [slug])
 
   // ── Khôi phục vị trí cuộn (localStorage theo slug, chỉ chương gần nhất) ───
+  // Ưu tiên đoạn văn đã lưu (lịch sử đọc); không có → vị trí cuộn % như cũ.
   useEffect(() => {
     if (!ready) return
-    const savedPct = readSavedScroll(slug, chapter)
+    // Bản dịch phụ: chỉ số đoạn đã lưu thuộc bản mặc định → không dùng, về đầu chương.
+    const savedParagraph = banRef.current ? null : getReadParagraph(slug, chapter)
+    const savedPct = banRef.current ? NaN : readSavedScroll(slug, chapter)
     const raf = requestAnimationFrame(() => {
-      if (!isNaN(savedPct) && savedPct > 0.005) {
+      const target = savedParagraph !== null && savedParagraph > 0
+        ? chapterParagraphs(contentRef.current)[savedParagraph]
+        : null
+      if (target) {
+        const top = Math.max(0, target.getBoundingClientRect().top + readScroll().top - PARAGRAPH_RESTORE_OFFSET_PX)
+        scrollAllTo(top)
+        lastScrollRef.current = top
+        lastParagraphRef.current = savedParagraph
+      } else if (!isNaN(savedPct) && savedPct > 0.005) {
         const { max } = readScroll()
         scrollAllTo(savedPct * max)
         lastScrollRef.current = savedPct * max
@@ -564,14 +775,37 @@ export default function Reader() {
       else if (top < last - 8 || top <= 120) setHideTopNav(false)
       lastScrollRef.current = top
 
-      // Lưu vị trí đọc (throttle ~500ms) — chỉ khi do người dùng cuộn
-      if (byUser && readyRef.current && !saveScrollTimerRef.current) {
+      // Lưu vị trí đọc (throttle ~500ms) — chỉ khi do người dùng cuộn; bản dịch
+      // phụ không lưu vị trí/đoạn (tiến độ chỉ giữ số chương chung).
+      if (byUser && readyRef.current && !banRef.current && !saveScrollTimerRef.current) {
         saveScrollTimerRef.current = setTimeout(() => {
           saveScrollTimerRef.current = null
           if (!readyRef.current) return
           const s = readScroll()
           writeSavedScroll(slug, chapter, s.top / s.max)
         }, 500)
+      }
+
+      // Lưu đoạn văn đang đọc: local throttle ~1 giây; server chỉ gửi định kỳ
+      // (≥ 60 giây VÀ lệch ≥ 10 đoạn) — còn lại để visibilitychange/pagehide/unmount gửi.
+      if (byUser && readyRef.current && !banRef.current && !paragraphTimerRef.current) {
+        paragraphTimerRef.current = setTimeout(() => {
+          paragraphTimerRef.current = null
+          if (!readyRef.current || ttsActiveNodeRef.current) return // đang nghe: tiến độ theo giọng đọc
+          const idx = firstVisibleParagraph(contentRef.current)
+          if (idx < 0 || idx === lastParagraphRef.current) return
+          lastParagraphRef.current = idx
+          saveReadParagraph(slug, chapter, idx)
+          if (isLoggedIn() && /^\d+$/.test(chapter)) {
+            const st = paragraphSyncRef.current
+            st.pending = { slug, chapter: Number(chapter), paragraph: idx }
+            writeQueuedProgress(slug, Number(chapter), idx) // offline/đóng tab vẫn còn bản mới nhất
+            if (Date.now() - st.lastSentAt >= PARAGRAPH_SERVER_MIN_INTERVAL_MS &&
+                Math.abs(idx - st.lastSentParagraph) >= PARAGRAPH_SERVER_MIN_DELTA) {
+              flushParagraphSync()
+            }
+          }
+        }, PARAGRAPH_LOCAL_THROTTLE_MS)
       }
     }
 
@@ -593,8 +827,12 @@ export default function Reader() {
         clearTimeout(saveScrollTimerRef.current)
         saveScrollTimerRef.current = null
       }
+      if (paragraphTimerRef.current) {
+        clearTimeout(paragraphTimerRef.current)
+        paragraphTimerRef.current = null
+      }
     }
-  }, [slug, chapter])
+  }, [slug, chapter, flushParagraphSync])
 
   const currentChapterIndex = useMemo(() => findChapterIndex(chapters, chapter), [chapters, chapter])
   const currentChapterObj = currentChapterIndex >= 0 ? chapters[currentChapterIndex] : null
@@ -605,6 +843,21 @@ export default function Reader() {
   const prevChapter = currentChapterIndex > 0 ? chapters[currentChapterIndex - 1] : null
   const nextChapter = currentChapterIndex !== -1 && currentChapterIndex < chapters.length - 1 ? chapters[currentChapterIndex + 1] : null
 
+  // ── Lượt đọc thật: ≥ min_seconds tab hiển thị + cuộn ≥ 80% nội dung chương ──
+  const getContentRatio = useCallback(() => {
+    const el = contentRef.current
+    if (!el) return 0
+    const r = el.getBoundingClientRect()
+    return contentScrollRatio(r.top, r.height, window.innerHeight)
+  }, [])
+  useRealReadTracking({
+    slug,
+    chapterKey: chapter,
+    chapterNumber: isNumberParam ? Number(chapter) : 0,
+    enabled: ready && content.trim().length > 0,
+    getScrollRatio: getContentRatio,
+  })
+
   // Tiêu đề tab: "<tên chương> – <tên truyện> – Hắc Đạo Truyện"
   const chapterLabel = currentChapterObj?.title || (isNumberParam ? `Chương ${chapter}` : fmtChapterLabel(chapter))
   useDocumentTitle([chapterLabel, novelTitle].filter(Boolean).join(' – '))
@@ -614,14 +867,14 @@ export default function Reader() {
   const goNext = useCallback((method) => {
     if (!nextChapter) return
     trackEvent('chapter_navigate', { novel_slug: slug, direction: 'next', method: typeof method === 'string' ? method : 'button' })
-    navigate(chapterUrl(slug, nextChapter))
-  }, [nextChapter, slug, navigate])
+    navigate(chapterUrl(slug, nextChapter, ban)) // giữ ?ban khi chuyển chương
+  }, [nextChapter, slug, ban, navigate])
 
   const goPrev = useCallback((method) => {
     if (!prevChapter) return
     trackEvent('chapter_navigate', { novel_slug: slug, direction: 'prev', method: typeof method === 'string' ? method : 'button' })
-    navigate(chapterUrl(slug, prevChapter))
-  }, [prevChapter, slug, navigate])
+    navigate(chapterUrl(slug, prevChapter, ban))
+  }, [prevChapter, slug, ban, navigate])
 
   // ── GA4: vòng đời 1 lượt đọc chương ───────────────────────────────────────
   // chapter_start khi nội dung hiển thị; chapter_progress 25/50/75; chapter_complete
@@ -680,21 +933,184 @@ export default function Reader() {
     const id = chapterIdentifier(nextChapter)
     if (!id) return undefined
     return runWhenIdle(() => {
-      cachedGet(`/novels/${slug}/chapters/${id}`, { ttl: CHAPTER_TTL }).catch(() => { /* bỏ qua */ })
+      cachedGet(chapterContentPath(slug, id, ban), { ttl: CHAPTER_TTL }).catch(() => { /* bỏ qua */ })
     }, { timeout: 3000, fallbackDelay: 1200 })
-  }, [ready, nextChapter, slug])
+  }, [ready, nextChapter, slug, ban])
 
   const scrollToTop = () => scrollAllTo(0, true)
   const openSettings = useCallback(() => setShowSettings(true), [])
 
+  // ── TTS: tô sáng/tự cuộn/tiến độ theo đoạn + tự sang chương ───────────────
+  const { playParagraphs: ttsPlayParagraphs, setVoiceOptions: ttsSetVoiceOptions } = tts
+
+  // Đổi giọng/tốc độ khi đang nghe → áp từ khúc kế tiếp (không phải bấm lại).
+  useEffect(() => {
+    ttsSetVoiceOptions({ voiceName: settings.ttsVoice, rate: settings.ttsRate })
+  }, [ttsSetVoiceOptions, settings.ttsVoice, settings.ttsRate])
+
+  const clearTtsHighlight = useCallback(() => {
+    ttsActiveNodeRef.current?.classList.remove('reader-tts-active')
+    ttsActiveNodeRef.current = null
+  }, [])
+
+  // Lưu tiến độ đoạn theo giọng đọc — cùng quy tắc với lưu khi cuộn: local
+  // ngay, server chỉ khi ≥ 60 giây VÀ lệch ≥ 10 đoạn (còn lại để pagehide/unmount gửi).
+  const recordTtsParagraph = useCallback((idx) => {
+    // Bản dịch phụ (?ban=) không lưu tiến độ đoạn (chỉ số đoạn khác bản mặc định).
+    if (!readyRef.current || banRef.current || idx < 0 || idx === lastParagraphRef.current) return
+    lastParagraphRef.current = idx
+    saveReadParagraph(slug, chapter, idx)
+    if (isLoggedIn() && /^\d+$/.test(chapter)) {
+      const st = paragraphSyncRef.current
+      st.pending = { slug, chapter: Number(chapter), paragraph: idx }
+      writeQueuedProgress(slug, Number(chapter), idx)
+      if (Date.now() - st.lastSentAt >= PARAGRAPH_SERVER_MIN_INTERVAL_MS &&
+          Math.abs(idx - st.lastSentParagraph) >= PARAGRAPH_SERVER_MIN_DELTA) {
+        flushParagraphSync()
+      }
+    }
+  }, [slug, chapter, flushParagraphSync])
+
+  const onTtsParagraph = useCallback((idx) => {
+    clearTtsHighlight()
+    const node = chapterParagraphs(contentRef.current)[idx]
+    if (!node) return
+    node.classList.add('reader-tts-active')
+    ttsActiveNodeRef.current = node
+    if (settings.ttsAutoScroll !== false) {
+      // Chỉ cuộn khi đoạn ra ngoài vùng dễ nhìn (chừa thanh trên + thanh TTS dưới).
+      const r = node.getBoundingClientRect()
+      const vh = window.innerHeight || 0
+      if (r.top < PARAGRAPH_RESTORE_OFFSET_PX || r.bottom > vh - 140) {
+        scrollAllTo(Math.max(0, r.top + readScroll().top - vh * 0.25), true)
+      }
+    }
+    recordTtsParagraph(idx)
+  }, [clearTtsHighlight, recordTtsParagraph, settings.ttsAutoScroll])
+
+  /** Bắt đầu nghe từ đoạn startParagraph (mặc định: đoạn đang thấy trên màn hình). */
+  const startTts = useCallback((startParagraph) => {
+    trackEvent('tts_start', { novel_slug: slug, tts_rate: settings.ttsRate, has_custom_voice: Boolean(settings.ttsVoice) })
+    const opts = { voiceName: settings.ttsVoice, rate: settings.ttsRate }
+    const texts = Array.from(chapterParagraphs(contentRef.current), n => n.textContent || '')
+    if (!texts.length) {
+      ttsChapterStartRef.current = Date.now()
+      ttsPlay(stripMarkdown(content), opts) // không có `.reader-p` (định dạng lạ) → đọc thô như trước
+      return
+    }
+    const start = Number.isInteger(startParagraph) ? startParagraph : Math.max(0, firstVisibleParagraph(contentRef.current))
+    ttsChapterStartRef.current = Date.now()
+    ttsPlayParagraphs(texts, { ...opts, startParagraph: start })
+  }, [slug, settings.ttsVoice, settings.ttsRate, ttsPlay, ttsPlayParagraphs, content])
+  const startTtsRef = useRef(startTts)
+  startTtsRef.current = startTts
+
+  /** Chuyển chương mà vẫn nghe tiếp: ghi cờ sessionStorage (TTL 30 giây) rồi điều hướng. */
+  const ttsGoChapter = useCallback((dir, { auto = false } = {}) => {
+    const target = dir > 0 ? nextChapter : prevChapter
+    const id = chapterIdentifier(target)
+    if (!id) return false
+    // Tự sang (hết chương) → chain + 1; nút media (người dùng bấm) → về 0.
+    const chain = auto ? ttsAutoChainRef.current + 1 : 0
+    ttsAutoChainRef.current = chain
+    try { sessionStorage.setItem(TTS_CONTINUE_KEY, makeTtsContinue(slug, id, Date.now(), chain)) } catch { /* storage bị chặn */ }
+    ttsNavigatingRef.current = true
+    if (dir > 0) goNext('tts')
+    else goPrev('tts')
+    return true
+  }, [nextChapter, prevChapter, slug, goNext, goPrev])
+
+  ttsHandlersRef.current = {
+    onParagraph: onTtsParagraph,
+    onStateChange: (status) => { if (status === 'idle') clearTtsHighlight() },
+    onEnd: () => {
+      if (settings.ttsAutoNext === false) return
+      const d = ttsAutoNextDecision({ startedAt: ttsChapterStartRef.current, chain: ttsAutoChainRef.current })
+      if (d.ok) { ttsGoChapter(1, { auto: true }); return }
+      // Chương "xong" < 3 giây (engine hỏng) hoặc đã tự lật 50 chương liền mà
+      // không ai chạm → KHÔNG sang chương (tránh ghi đè tiến độ tới hết truyện).
+      ttsStop()
+      setTtsNotice(d.reason === 'too-fast'
+        ? 'Giọng đọc dừng bất thường nên không tự sang chương. Hãy kiểm tra giọng đọc trong Cài đặt.'
+        : 'Đã tự nghe nhiều chương liên tiếp — tạm dừng. Bấm nghe để tiếp tục.')
+    },
+    onChapter: ttsGoChapter,
+  }
+
+  // Chương mới tải xong + có cờ "đọc tiếp" hợp lệ cho đúng chương này → tự đọc
+  // từ đầu. Trình duyệt có thể chặn speak() không do thao tác người dùng → hook
+  // báo `blocked`, thanh TTS hiện nút "Tiếp tục nghe".
+  useEffect(() => {
+    if (!ready || !tts.supported) return undefined
+    let raw = null
+    try { raw = sessionStorage.getItem(TTS_CONTINUE_KEY) } catch { return undefined }
+    if (!raw) return undefined
+    // Đợi khôi phục vị trí cuộn + DOM đoạn văn xong. Xoá cờ TRONG timer để
+    // StrictMode (chạy effect 2 lần) không làm mất cờ.
+    const id = setTimeout(() => {
+      try { sessionStorage.removeItem(TTS_CONTINUE_KEY) } catch { /* bỏ qua */ }
+      if (isTtsContinueValid(raw, slug, chapter)) {
+        ttsAutoChainRef.current = readTtsContinueChain(raw)
+        startTtsRef.current(0)
+      }
+    }, 350)
+    return () => clearTimeout(id)
+  }, [ready, contentUrl, slug, chapter, tts.supported])
+
+  // Media Session: tên chương + tên truyện trên màn hình khoá / thông báo media
+  // (nút điều khiển do hook gắn: play/pause/stop, next/prev = chuyển chương,
+  // seek = chuyển đoạn).
+  const ttsCover = novel?.cover_url || ''
+  useEffect(() => {
+    if (!tts.isPlaying || typeof navigator === 'undefined' || !('mediaSession' in navigator)) return
+    if (typeof window.MediaMetadata !== 'function') return
+    try {
+      navigator.mediaSession.metadata = new window.MediaMetadata({
+        title: chapterLabel,
+        artist: novelTitle,
+        album: 'Hắc Đạo Truyện',
+        artwork: ttsCover ? [{ src: ttsCover }] : [],
+      })
+    } catch { /* bỏ qua */ }
+  }, [tts.isPlaying, chapterLabel, novelTitle, ttsCover])
+
+  // Người dùng chạm/gõ phím trong Reader = có tương tác → reset đếm tự lật.
+  useEffect(() => {
+    const reset = () => { ttsAutoChainRef.current = 0 }
+    document.addEventListener('pointerdown', reset, { passive: true })
+    document.addEventListener('keydown', reset)
+    return () => {
+      document.removeEventListener('pointerdown', reset)
+      document.removeEventListener('keydown', reset)
+    }
+  }, [])
+
+  // Thông báo "không tự sang chương" tự ẩn sau 8 giây.
+  useEffect(() => {
+    if (!ttsNotice) return undefined
+    const id = setTimeout(() => setTtsNotice(''), 8000)
+    return () => clearTimeout(id)
+  }, [ttsNotice])
+
+  // Rời Reader: xoá metadata + action handler Media Session (không để thông
+  // báo media "ma" trỏ về chương đã đóng).
+  useEffect(() => () => {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return
+    const ms = navigator.mediaSession
+    try { ms.metadata = null } catch { /* bỏ qua */ }
+    try { ms.playbackState = 'none' } catch { /* bỏ qua */ }
+    for (const action of ['play', 'pause', 'stop', 'nexttrack', 'previoustrack', 'seekforward', 'seekbackward']) {
+      try { ms.setActionHandler(action, null) } catch { /* action không hỗ trợ */ }
+    }
+  }, [])
+
   const toggleTts = useCallback(() => {
+    ttsAutoChainRef.current = 0
+    setTtsNotice('')
     if (tts.isPlaying && !tts.isPaused) ttsPause()
     else if (tts.isPaused) ttsResume()
-    else {
-      trackEvent('tts_start', { novel_slug: slug, tts_rate: settings.ttsRate, has_custom_voice: Boolean(settings.ttsVoice) })
-      ttsPlay(stripMarkdown(content), { voiceName: settings.ttsVoice, rate: settings.ttsRate })
-    }
-  }, [slug, tts.isPlaying, tts.isPaused, ttsPause, ttsResume, ttsPlay, content, settings.ttsVoice, settings.ttsRate])
+    else startTts()
+  }, [tts.isPlaying, tts.isPaused, ttsPause, ttsResume, startTts])
 
   // ── Tap zones (mobile): chạm mép trái/phải để chuyển chương ────────────────
   // Trước đây là 2 div position:fixed (12% bề rộng, z-index 30) phủ LÊN nội
@@ -773,7 +1189,7 @@ export default function Reader() {
       const id = chapterIdentifier(c)
       if (id) {
         try {
-          await cachedGet(`/novels/${slug}/chapters/${id}`, { ttl: CHAPTER_TTL })
+          await cachedGet(chapterContentPath(slug, id, ban), { ttl: CHAPTER_TTL })
         } catch { /* chương lỗi — bỏ qua, tải tiếp chương sau */ }
       }
       done += 1
@@ -803,6 +1219,7 @@ export default function Reader() {
         const rect = range.getBoundingClientRect()
         if (rect && rect.width > 0 && rect.height > 0) {
           setSelectedText(t)
+          setSelectedContext(selectionParagraphContext(range, t))
           setSelectionCoords({
             x: Math.max(40, Math.min(window.innerWidth - 40, rect.left + rect.width / 2)),
             y: Math.max(60, rect.top - 12),
@@ -814,26 +1231,45 @@ export default function Reader() {
     setSelectionCoords(null)
   }, [])
 
-  const handleApplyReplacement = useCallback(({ from, to, scope }) => {
+  const handleApplyReplacement = useCallback(({ from, to, scope, whole }) => {
     if (scope === 'all') {
-      const updated = saveReplacement(slug, { from, to })
+      const updated = saveReplacement(slug, { from, to, whole })
       setReplacements(updated)
+      schedulePrefsPush() // đồng bộ quy tắc lên tài khoản (đã đăng nhập)
     } else {
-      setDoc(prev => ({ ...prev, content: applyReplacements(prev.content || content, [{ from, to }]) }))
+      setDoc(prev => ({ ...prev, content: applyReplacements(prev.content || content, [{ from, to, whole: whole === true }]) }))
     }
     if (window.getSelection) {
       window.getSelection().removeAllRanges()
     }
   }, [slug, content])
 
+  // Nhập gói name: file mới thắng khi trùng `from` (xem mergeImportedRules).
+  const handleImportReplacements = useCallback((rules) => {
+    const res = mergeImportedRules(getReplacements(slug), rules)
+    if (res.added || res.updated) {
+      writeReplacements(slug, res.list)
+      setReplacements(res.list)
+      schedulePrefsPush()
+    }
+    return res
+  }, [slug])
+
   const handleDeleteReplacement = useCallback((id) => {
     const updated = removeReplacement(slug, id)
     setReplacements(updated)
+    schedulePrefsPush()
   }, [slug])
 
+  // Quy tắc công khai áp TRƯỚC, quy tắc cá nhân SAU (trùng `from` → cá nhân thắng).
+  // Quy tắc công khai được duyệt cho bản AI mặc định → không áp lên bản dịch phụ.
+  const effectiveRules = useMemo(
+    () => mergeReplacementRules(publicRules.slug === slug && !ban ? publicRules.rules : [], replacements),
+    [publicRules, slug, ban, replacements],
+  )
   const displayContent = useMemo(
-    () => applyReplacements(content, replacements),
-    [content, replacements],
+    () => applyReplacements(content, effectiveRules),
+    [content, effectiveRules],
   )
 
   const renderedContent = useMemo(
@@ -875,6 +1311,7 @@ export default function Reader() {
         </div>
 
         <div
+          ref={contentRef}
           className="reader-content"
           onMouseUp={handleSelection}
           onTouchEnd={handleSelection}
@@ -901,6 +1338,14 @@ export default function Reader() {
                 </button>
                 <Link to={`/novel/${slug}`} className="btn btn-secondary">Về mục lục</Link>
               </div>
+              {/* ?ban trỏ tới bản dịch không tồn tại/đã ẩn (404) → mời đọc bản mặc định. */}
+              {ban && loadError?.response?.status === 404 && (
+                <div className="hd-error-block__actions">
+                  <Link to={`/novel/${slug}/read/${encodeURIComponent(chapter)}`} className="btn btn-secondary">
+                    Đọc bản dịch mặc định
+                  </Link>
+                </div>
+              )}
             </div>
           ) : loading ? (
             <div key={`skel:${contentUrl}`} className="reader-fade">
@@ -994,6 +1439,49 @@ export default function Reader() {
         </button>
       )}
 
+      {/* Thanh nghe truyện (chỉ khi có phiên TTS): đoạn trước / phát-tạm dừng /
+          đoạn sau / dừng. Trình duyệt chặn tự phát (sau khi tự sang chương) →
+          nút "Tiếp tục nghe" (một lần chạm của người dùng là phát được). */}
+      {tts.isPlaying && (
+        <div className="reader-tts-bar" role="group" aria-label="Điều khiển nghe truyện">
+          <button type="button" className="reader-tts-bar__btn" onClick={tts.prevParagraph}
+            title="Đoạn trước" aria-label="Đọc đoạn trước">
+            <SkipBack size={20} aria-hidden="true" />
+          </button>
+          {tts.error && (
+            <span className="reader-tts-bar__msg" role="alert">
+              {tts.error === 'language-unavailable' || tts.error === 'voice-unavailable'
+                ? 'Máy chưa có giọng đọc phù hợp.'
+                : 'Không phát được giọng đọc.'}
+            </span>
+          )}
+          {tts.blocked ? (
+            <button type="button" className="reader-tts-bar__btn reader-tts-bar__btn--resume" onClick={toggleTts}>
+              <Play size={18} aria-hidden="true" /> {tts.error ? 'Thử lại' : 'Tiếp tục nghe'}
+            </button>
+          ) : (
+            <button type="button" className="reader-tts-bar__btn" onClick={toggleTts}
+              title={tts.isPaused ? 'Tiếp tục đọc' : 'Tạm dừng đọc'} aria-label={tts.isPaused ? 'Tiếp tục đọc' : 'Tạm dừng đọc'}>
+              {tts.isPaused ? <Play size={20} aria-hidden="true" /> : <Pause size={20} aria-hidden="true" />}
+            </button>
+          )}
+          <button type="button" className="reader-tts-bar__btn" onClick={tts.nextParagraph}
+            title="Đoạn sau" aria-label="Đọc đoạn sau">
+            <SkipForward size={20} aria-hidden="true" />
+          </button>
+          <button type="button" className="reader-tts-bar__btn" onClick={ttsStop}
+            title="Dừng đọc" aria-label="Dừng nghe">
+            <Square size={18} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
+      {ttsNotice && !tts.isPlaying && (
+        <div role="status" aria-live="polite" className="reader-sync-status">
+          <AlertTriangle size={12} color="#fbbf24" /> {ttsNotice}
+        </div>
+      )}
+
       {/* C02: trạng thái đồng bộ tiến trình đọc — chỉ hiện khi có gì để báo,
           không hiện liên tục gây rối mắt (ẩn ở trạng thái 'saved' sau vài giây).
           pointer-events: none → không chặn chạm vào nội dung bên dưới. */}
@@ -1005,7 +1493,9 @@ export default function Reader() {
         </div>
       )}
 
-      {selectionCoords && (
+      {/* Bản dịch phụ (?ban): ẩn nút "Sửa từ" (góp ý name + tra /names dựa trên
+          glossary của bản AI mặc định, không khớp bản dịch khác). */}
+      {selectionCoords && !ban && (
         <div
           className="reader-selection-popover"
           style={{
@@ -1031,7 +1521,10 @@ export default function Reader() {
         isOpen={isInlineGlossaryOpen}
         onClose={() => setIsInlineGlossaryOpen(false)}
         initialFrom={selectedText}
+        context={selectedContext}
         onApply={handleApplyReplacement}
+        slug={slug}
+        chapter={isNumberParam ? Number(chapter) : undefined}
       />
 
       <ReplacementsManagerModal
@@ -1039,6 +1532,8 @@ export default function Reader() {
         onClose={() => setIsReplacementsManagerOpen(false)}
         replacements={replacements}
         onDelete={handleDeleteReplacement}
+        slug={slug}
+        onImport={handleImportReplacements}
       />
     </div>
   )

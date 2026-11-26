@@ -527,3 +527,86 @@
   transform: scale(0.96);
   filter: brightness(0.95);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TTS (nghe truyện) — tô sáng đoạn đang đọc + thanh điều khiển nổi.
+   Màu tính từ biến --reader-* nên tự khớp mọi theme đọc (sáng/giấy/tối...).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.reader-p.reader-tts-active {
+  background: color-mix(in srgb, var(--accent, #d97706) 14%, transparent);
+  box-shadow: -0.5em 0 0 color-mix(in srgb, var(--accent, #d97706) 14%, transparent),
+    0.5em 0 0 color-mix(in srgb, var(--accent, #d97706) 14%, transparent);
+  border-radius: 6px;
+  transition: background-color 0.25s ease;
+}
+.reader--dark .reader-p.reader-tts-active {
+  background: color-mix(in srgb, var(--accent, #d97706) 22%, transparent);
+}
+
+.reader-tts-bar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 91;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--reader-panel) 88%, transparent);
+  color: var(--reader-text);
+  border: 1px solid var(--reader-border);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  max-width: calc(100vw - 9rem);
+}
+.reader-tts-bar__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  gap: 6px;
+}
+.reader-tts-bar__btn:focus-visible { outline: 2px solid var(--accent, #d97706); outline-offset: 1px; }
+@media (hover: hover) {
+  .reader-tts-bar__btn:hover { background: color-mix(in srgb, var(--reader-text) 10%, transparent); }
+}
+/* Nút "Tiếp tục nghe" khi trình duyệt chặn tự phát (sau khi tự sang chương). */
+.reader-tts-bar__btn--resume {
+  background: var(--accent, #d97706);
+  color: #fff;
+  padding: 0 14px;
+  white-space: nowrap;
+}
+/* Thông báo lỗi engine/giọng đọc (kèm nút "Thử lại"). */
+.reader-tts-bar__msg {
+  font-size: 0.75rem;
+  line-height: 1.2;
+  padding: 0 6px;
+  max-width: 11rem;
+  opacity: 0.85;
+}
+
+.reader-settings-panel .reader-settings-check {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+.reader-settings-panel .reader-settings-check input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  margin: 0;
+}
