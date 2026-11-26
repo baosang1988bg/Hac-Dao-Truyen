@@ -27,9 +27,12 @@ export default function InlineGlossaryModal({
     onClose()
   }
 
+  // ui/Modal không có prop isOpen (luôn hiển thị khi được render) → tự ẩn ở đây,
+  // nếu không Reader luôn bị phủ một lớp modal chặn mọi thao tác.
+  if (!isOpen) return null
+
   return (
     <Modal
-      isOpen={isOpen}
       onClose={onClose}
       ariaLabel="Sửa từ hoặc thêm vào Glossary"
       title="Sửa từ / Thêm vào Glossary"
