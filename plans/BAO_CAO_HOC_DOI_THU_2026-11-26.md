@@ -74,3 +74,21 @@ Review độc lập vòng 2: 6 phát hiện (không có mức Cao), đã sửa 5
 Kiểm chứng: Worker 115/115, frontend 120/120, pytest 487/487, eslint sạch, vite build OK. Chạy thật `name_consistency` (chế độ không raw) trên `som-dang-luc…` (573 thuật ngữ, 1.696 chương, ~19 giây). Chưa chạy chế độ có raw trên dữ liệu thật (raw chỉ có ở máy Windows/CI) và chưa thử giao diện trên trình duyệt thật.
 
 Chưa làm: gợi ý âm Hán Việt (máy Mac thiếu `tools/converter/data/chinese_phienam.txt`, cần chọn nguồn dữ liệu có giấy phép rõ).
+
+## 7. Đợt 3 — E2E trình duyệt, Hán Việt, TTS client, nhiều bản dịch (cùng ngày)
+
+Kế hoạch: `plans/KE_HOACH_TTS_BANDICH_HANVIET_2026-11-26.md`.
+
+**E2E thật trên trình duyệt.** Dựng `wrangler dev --local` (D1/R2 local, backend admin giả) + Chromium headless của Playwright trong sandbox (cần stub `libXdamage`). Script `tests/browser/e2e_engagement.py` kiểm 12 mục (trang chủ + `?q=`, JSON-LD + chấm sao, lượt đọc thật chờ 31 giây thật, tiến độ theo đoạn khách/đăng nhập, hộp sửa name, góp ý → admin duyệt → khách mới thấy quy tắc, đồng bộ prefs giữa hai trình duyệt, nền theo theme, xuất/nhập gói name): **12/12 PASS**, chạy lại sau khi tích hợp đợt 3 vẫn 12/12. E2E phát hiện **lỗi có sẵn trên `origin/dev` và `origin/prod`** (commit `3b8156d`): hai modal sửa từ luôn phủ Reader vì `ui/Modal` không có prop `isOpen`. Đã vá trên nhánh này và trên nhánh riêng `hotfix/reader-modal-overlay` (từ `origin/dev`) để đẩy độc lập.
+
+**Gợi ý âm Hán Việt.** Dữ liệu Unihan 18.0.0 `kVietnamese` (Unicode License v3, lấy qua gói npm `@mandel59/mojidata@1.9.3` vì sandbox không tải được unicode.org; checksum ghim về Unihan.zip) + âm suy từ glossary 5 truyện (≥ 2 lần mới được ưu tiên) + `hanviet_overrides.json` (~440 chữ sửa tay, nên có người rành Hán Việt rà lại). 5.446 chữ, `hanviet.json` ~30 KB gzip, tải lười chỉ khi hộp sửa name có chữ Hán. Sinh luôn `tools/converter/data/chinese_phienam.txt` để `vietphrase.py` chạy được trên Mac. Hộp sửa name hiện "Hán Việt: …", chữ nhiều âm chọn được, nút "Dùng" theo kiểu viết hoa. Hai modal được style lại (trước dùng class Tailwind không được build). Thông báo giấy phép ở `THIRD_PARTY_LICENSES.md` và `/THIRD_PARTY_LICENSES.txt` (link ở footer).
+
+**TTS client.** Đọc theo đoạn/khúc ≤ 220 ký tự từ đoạn đang thấy, tô sáng + tự cuộn, tiến độ đoạn đi theo giọng đọc, thanh điều khiển nổi, Media Session (màn hình khoá; audio im lặng cho Android), tự sang chương có chặn vòng lặp (lỗi engine dừng ngay, chương "xong" < 3 giây không tự sang, tối đa 50 chương liền không tương tác), cài đặt `ttsAutoNext`/`ttsAutoScroll`. Khung `tools/tts_pregen.py` (provider edge/azure là stub, `HACDAO_TTS_ENABLED` tắt) — chưa sinh audio, chưa thêm bước CI. iOS: phát nền/màn hình khoá rất hạn chế.
+
+**Một truyện nhiều bản dịch (MVP).** Migration `016_editions.sql` (bảng `editions`, `edition_chapters`, cột `novels.edition_count`); bản AI hiện tại là bản mặc định ngầm định `he-thong`, route cũ giữ nguyên. API: `GET /api/novels/:slug/editions`, `…/editions/:code/chapters[/:id]`, `POST /api/sync/edition` (SYNC_KEY, ≤ 2 MB/25 chương, bắt buộc `license_note`). Lượt xem chương bản phụ chỉ tốn 1 dòng D1 ngoài cache (kiểm edition nằm trong loader + memo 60 giây). `migrate_to_cloudflare.py --slug <s> --edition <code> [--dry-run]`. Frontend: `?ban=<code>` trong Reader, bộ chọn bản dịch ở trang truyện (chỉ khi có bản phụ), service worker cache route mới, trang bản phụ `noindex`.
+
+Review độc lập vòng 3: 1 Cao (TTS tự lật chương liên tục khi engine lỗi) + 4 Trung bình + nhiều Thấp — đã sửa hết trừ: lưu tiến độ khi đọc bản phụ vẫn ghi `position` = số chương (không giữ đoạn của bản mặc định); "Đọc tiếp" ở trang chủ luôn mở bản mặc định.
+
+Kiểm chứng cuối: Worker 128/128, frontend 152/152, pytest 542/542, eslint sạch, vite build OK, E2E 12/12.
+
+Việc người dùng cần làm thêm cho đợt 3: chạy `migrations/016_editions.sql --remote` (sau 013→015) trước deploy — workflow kiểm schema drift sẽ báo đỏ tới khi chạy; muốn có bản dịch phụ thì chuẩn bị `novels/<slug>/editions/<code>/edition.json` (có `license_note` hợp lệ) + `translated/*_VI.md` rồi chạy `migrate_to_cloudflare.py --edition`. Thử TTS trên điện thoại thật (Android + iOS).
