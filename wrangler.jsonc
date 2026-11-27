@@ -36,7 +36,7 @@
 		// APIs & Services > Credentials. KHÔNG phải secret (cùng giá trị này
 		// cũng lộ ra ở frontend qua VITE_GOOGLE_CLIENT_ID) — dùng để verify
 		// "aud" của id_token, xem userGoogleLogin() trong src/index.js.
-		"GOOGLE_CLIENT_ID": ""
+		"GOOGLE_CLIENT_ID": "889163934380-a5o8hv37cjhb916lu7ntg5qelm958bgm.apps.googleusercontent.com"
 	},
 	"d1_databases": [
 		{
