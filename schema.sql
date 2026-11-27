@@ -83,7 +83,11 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,               -- format: pbkdf2$100000$<salt_hex>$<hash_hex>, hoặc '' nếu chỉ đăng nhập Google
   google_id     TEXT,                        -- "sub" trong id_token Google — định danh bất biến, NULL nếu chưa liên kết
   avatar_url    TEXT,
-  created_at    TEXT DEFAULT (datetime('now'))
+  created_at    TEXT DEFAULT (datetime('now')),
+  -- Migration 017
+  email_verified_at TEXT,
+  last_login_at     TEXT,
+  deleted_at        TEXT
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;
 
@@ -92,8 +96,11 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   token      TEXT PRIMARY KEY,
   user_id    INTEGER NOT NULL,
   expires_at TEXT NOT NULL,                  -- UTC "YYYY-MM-DD HH:MM:SS", so sánh với datetime('now')
+  created_at TEXT,                           -- Migration 017
+  user_agent TEXT,                           -- Migration 017 (rút gọn 200 ký tự, không lưu IP)
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id);
 
 -- Truyện đã đánh dấu (bookmark) của từng user
 CREATE TABLE IF NOT EXISTS bookmarks (

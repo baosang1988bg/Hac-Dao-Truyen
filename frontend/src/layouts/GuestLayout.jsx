@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import SiteHeader from '../components/SiteHeader'
 import BottomTabBar from '../components/BottomTabBar'
 
@@ -47,6 +47,7 @@ export default function GuestLayout() {
           {/* File tĩnh (frontend/public) — thẻ <a> thường, không qua router SPA.
               Bắt buộc theo Unicode License v3 vì site nhúng dữ liệu Unihan. */}
           {' • '}<a href="/THIRD_PARTY_LICENSES.txt" className="app-footer__link">Giấy phép bên thứ ba</a>
+          {' • '}<Link to="/chinh-sach-bao-mat" className="app-footer__link">Chính sách bảo mật</Link>
         </div>
       </footer>
       <BottomTabBar />

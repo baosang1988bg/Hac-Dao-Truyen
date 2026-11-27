@@ -1,8 +1,7 @@
 import PropTypes from 'prop-types'
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { Link } from 'react-router-dom'
 import Modal from './ui/Modal'
-import { isLoggedIn } from '../userApi'
+import { useAuth } from '../context/useAuth'
 import { submitGlossarySuggestion, fetchNovelNames } from '../engagementApi'
 import { NAME_CASING_STYLES, applyCasing, expandSelection } from '../utils/nameEditor'
 import {
@@ -49,7 +48,8 @@ export default function InlineGlossaryModal({
   const [sending, setSending] = useState(false)
   const [notice, setNotice] = useState(null) // { type: 'success'|'error', text }
   const closeTimerRef = useRef(null)
-  const loggedIn = isOpen ? isLoggedIn() : false
+  const { user, requireLogin } = useAuth()
+  const loggedIn = isOpen ? Boolean(user) : false
 
   const clearCloseTimer = () => {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
@@ -474,7 +474,19 @@ export default function InlineGlossaryModal({
           </div>
         ) : (
           <p className="ne-login">
-            <Link to="/account" onClick={handleClose}>Đăng nhập</Link> để gửi góp ý sửa name cho mọi người.
+            {/* Hộp đăng nhập mở CHỒNG lên hộp này → tên đang sửa không mất; đăng
+                nhập xong bật luôn "Gửi góp ý cho mọi người". */}
+            <button
+              type="button"
+              className="ne-link-btn"
+              onClick={() => {
+                requireLogin('Đăng nhập để góp ý name', { feature: 'glossary_suggest' })
+                  .then(() => { setSuggest(true); setNotice(null) })
+                  .catch(() => { /* đóng hộp đăng nhập — giữ nguyên hộp sửa name */ })
+              }}
+            >
+              Đăng nhập
+            </button>{' '}để gửi góp ý sửa name cho mọi người.
           </p>
         ))}
 

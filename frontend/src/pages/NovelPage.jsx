@@ -2,12 +2,12 @@ import PropTypes from 'prop-types'
 import { chapterType } from '../utils/propTypes'
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import {
   ArrowLeft, Play, BookOpen, Search, ArrowUpDown,
   ChevronDown, ChevronUp, Shield, Heart, BookMarked, RefreshCw,
 } from 'lucide-react'
-import userApi, { isLoggedIn } from '../userApi'
+import userApi from '../userApi'
 import NovelCover from '../components/NovelCover'
 import {
   getLastReadForSlug, fmtChapterLabel, getReadChapters, getStoredEdition, setStoredEdition,
@@ -27,6 +27,7 @@ import useDocumentTitle from '../hooks/useDocumentTitle'
 import ScrollToTopButton from '../components/ui/ScrollToTopButton'
 import { withViewTransition } from '../utils/motion'
 import { trackEvent } from '../utils/analytics'
+import { useAuth } from '../context/useAuth'
 import '../styles/reading.css'
 import '../styles/novel-reader.css'
 
@@ -330,44 +331,63 @@ function ChapterListSkeleton() {
 
 /**
  * Nút Theo dõi / Đang theo dõi (bookmark của user).
- * Chưa đăng nhập → điều hướng /account để đăng nhập/đăng ký.
+ * Chưa đăng nhập → mở hộp đăng nhập dùng chung (requireLogin); đăng nhập xong
+ * theo dõi luôn truyện này (PUT idempotent), không phải rời trang.
  */
 function FollowButton({ slug }) {
-  const navigate = useNavigate()
+  const { user, requireLogin } = useAuth()
   const [following, setFollowing] = useState(false)
   const [busy, setBusy] = useState(false)
+  // Đang ghi / vừa ghi bookmark → bỏ qua kết quả GET /user/bookmarks gửi đi
+  // TRƯỚC khi ghi xong (vừa đăng nhập: GET chạy song song với PUT, có thể chưa
+  // thấy truyện vừa theo dõi).
+  const writingRef = useRef(false)
+  const lastWriteAtRef = useRef(0)
+  const userId = user?.id ?? null
 
   useEffect(() => {
     let alive = true
     setFollowing(false)
-    if (!isLoggedIn()) return undefined
+    if (userId == null) return undefined
+    const startedAt = Date.now()
     userApi.get('/user/bookmarks')
       .then(res => {
-        if (alive) setFollowing((res.data || []).some(b => b.slug === slug))
+        if (!alive || writingRef.current || startedAt < lastWriteAtRef.current) return
+        setFollowing((res.data || []).some(b => b.slug === slug))
       })
       .catch(() => { /* phiên hết hạn / lỗi mạng — coi như chưa theo dõi */ })
     return () => { alive = false }
-  }, [slug])
+  }, [slug, userId])
 
   const toggle = async () => {
-    if (!isLoggedIn()) {
+    if (busy) return
+    const wasLoggedIn = Boolean(user)
+    if (!wasLoggedIn) {
       // Phễu "muốn theo dõi nhưng chưa có tài khoản" → đo tỉ lệ chuyển sang đăng ký.
       trackEvent('login_prompt', { feature: 'follow', novel_slug: slug })
-      navigate('/account')
-      return
     }
-    if (busy) return
+    try {
+      await requireLogin('Đăng nhập để theo dõi truyện')
+    } catch {
+      return // đóng hộp đăng nhập
+    }
     setBusy(true)
-    const next = !following
+    writingRef.current = true
+    // Vừa đăng nhập: chưa biết trạng thái trên server → luôn "theo dõi".
+    const next = wasLoggedIn ? !following : true
+    const prev = following
     setFollowing(next) // optimistic
     try {
       if (next) await userApi.put(`/user/bookmarks/${slug}`)
       else await userApi.delete(`/user/bookmarks/${slug}`)
       trackEvent(next ? 'novel_follow' : 'novel_unfollow', { novel_slug: slug, source: 'novel_page' })
     } catch (err) {
-      setFollowing(!next) // hoàn tác
-      if (err.response?.status === 401) navigate('/account')
+      setFollowing(prev) // hoàn tác
+      // Phiên hết hạn (interceptor đã xoá) → mời đăng nhập lại ngay tại chỗ.
+      if (err.response?.status === 401) requireLogin('Phiên đã hết hạn — đăng nhập lại để theo dõi').catch(() => {})
     } finally {
+      writingRef.current = false
+      lastWriteAtRef.current = Date.now()
       setBusy(false)
     }
   }

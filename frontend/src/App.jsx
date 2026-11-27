@@ -5,6 +5,7 @@ import AdminLayout from './layouts/AdminLayout'
 import RequireAdmin from './components/admin/RequireAdmin'
 import { SpinnerIcon } from './components/shared/ui'
 import AppErrorBoundary from './components/AppErrorBoundary'
+import AuthProvider from './context/AuthContext'
 import { lazyWithReload } from './utils/lazyWithReload'
 import { initAnalytics, trackPageView, installClickTracking, syncAnalyticsUser } from './utils/analytics'
 import { getUserInfo } from './userApi'
@@ -29,6 +30,7 @@ const LoginPage = lazyWithReload(() => import('./pages/LoginPage'))
 const Logs = lazyWithReload(() => import('./pages/Logs'))
 const EpubReader = lazyWithReload(() => import('./pages/EpubReader'))
 const EpubCatalogPage = lazyWithReload(() => import('./pages/EpubCatalogPage'))
+const PrivacyPage = lazyWithReload(() => import('./pages/PrivacyPage'))
 const AdminDashboard = lazyWithReload(() => import('./pages/admin/AdminDashboard'))
 const AdminNovels = lazyWithReload(() => import('./pages/admin/AdminNovels'))
 const AdminNovelDetail = lazyWithReload(() => import('./pages/admin/AdminNovelDetail'))
@@ -93,7 +95,8 @@ function lazyPage(element) {
  *     /                        → HomePage
  *     /cap-nhat                → UpdatesPage (nhật ký chương mới, GET /api/updates)
  *     /library                 → LibraryPage
- *     /account                 → AccountPage (đăng nhập/đăng ký USER + theo dõi)
+ *     /account                 → AccountPage (đăng nhập/đăng ký USER + theo dõi + quản lý tài khoản)
+ *     /chinh-sach-bao-mat      → PrivacyPage (chính sách bảo mật, link ở footer + hộp đăng nhập)
  *     /novel/:slug             → NovelPage
  *     /novel/:slug/read/:chapter → Reader
  */
@@ -132,7 +135,10 @@ function App() {
     }
   }, [])
 
+  // AuthProvider: trạng thái đăng nhập người dùng + hộp đăng nhập dùng chung
+  // (requireLogin) — nằm trong BrowserRouter (main.jsx) để LoginDialog dùng Link.
   return (
+    <AuthProvider>
     <Suspense fallback={<PageLoading />}>
     <AnalyticsTracker />
     <AppErrorBoundary resetKey={pathname}>
@@ -168,12 +174,14 @@ function App() {
         <Route path="/novel/:slug/read/:chapter" element={lazyPage(<Reader />)} />
         <Route path="/novel/:slug/epub-reader" element={<EpubReader />} />
         <Route path="/epub" element={<EpubCatalogPage />} />
+        <Route path="/chinh-sach-bao-mat" element={lazyPage(<PrivacyPage />)} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </AppErrorBoundary>
     </Suspense>
+    </AuthProvider>
   )
 }
 
