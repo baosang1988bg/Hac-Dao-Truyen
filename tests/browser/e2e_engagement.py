@@ -220,9 +220,31 @@ class PageWatch:
         return [a for a in self.api[since:] if a[0] == method and needle in a[1]]
 
 
-def new_context(browser, base, storage=None, init_scripts=()):
-    ctx = browser.new_context(base_url=base, service_workers='block', viewport={'width': 1280, 'height': 800},
+# Mọi request /api/* của test đi từ CÙNG một IP (127.0.0.1) → chung hạn mức
+# 'public' 120 request/phút/IP của Worker (PUBLIC_RATE_LIMITER). Người dùng thật
+# không gom 10 phiên trình duyệt vào 1 phút như test → đếm và chờ khi gần chạm.
+API_TIMES = []
+
+
+def api_in_last_minute():
+    now = time.time()
+    return sum(1 for t in API_TIMES if now - t < 60)
+
+
+def pace(budget=70, label=''):
+    """Chờ (tối đa ~65s) tới khi số request /api trong 60s gần nhất < budget."""
+    waited = 0.0
+    while api_in_last_minute() >= budget and waited < 65:
+        time.sleep(1)
+        waited += 1
+    if waited:
+        print(f'  (pace{(" " + label) if label else ""}: chờ {waited:.0f}s cho hạn mức 120 req/phút/IP)', flush=True)
+
+
+def new_context(browser, base, storage=None, init_scripts=(), viewport=None):
+    ctx = browser.new_context(base_url=base, service_workers='block', viewport=viewport or {'width': 1280, 'height': 800},
                               accept_downloads=True, locale='vi-VN')
+    ctx.on('request', lambda r: API_TIMES.append(time.time()) if '/api/' in r.url and r.url.startswith(base) else None)
 
     def block_external(route):
         if route.request.url.startswith(base):
@@ -315,6 +337,8 @@ def set_range(page, label, value):
 
 
 def check(item, fn, page=None):
+    print(f'  [{item[:40]}] /api trong 60s trước đó: {api_in_last_minute()}', flush=True)
+    pace(label=item[:20])
     try:
         fn()
     except Exception as e:

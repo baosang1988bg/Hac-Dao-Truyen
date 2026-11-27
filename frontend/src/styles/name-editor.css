@@ -281,6 +281,20 @@ textarea.ne-input { resize: vertical; min-height: 4rem; }
   color: var(--ne-muted);
 }
 .ne-login a { color: var(--ne-text); text-decoration: underline; }
+/* Nút "Đăng nhập" trông như link, mở hộp đăng nhập chồng lên (vùng chạm ≥ 44px). */
+.ne-link-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.15rem;
+  border: none;
+  background: none;
+  color: var(--ne-text);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
 
 /* ── Chân hộp thoại ──────────────────────────────────────────────────────── */
 .ne-actions {

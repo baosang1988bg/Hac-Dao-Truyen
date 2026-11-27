@@ -1402,6 +1402,198 @@ html.hd-header-hidden { --hd-header-h: 0px; }
   .bookmark-row__action { flex: 1; justify-content: center; }
 }
 
+/* ── Đăng nhập Google + quản lý tài khoản (AuthPanel, LoginDialog, UserMenu,
+      AccountPage, PrivacyPage) ─────────────────────────────────────────── */
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  color: white;
+  font-weight: 800;
+  line-height: 1;
+  user-select: none;
+}
+.user-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.account-profile__avatar.user-avatar { border-radius: 16px; }
+.tab-item__avatar { box-shadow: 0 0 0 2px transparent; }
+.tab-item.active .tab-item__avatar { box-shadow: 0 0 0 2px var(--accent); }
+
+.user-menu { position: relative; }
+.user-menu__login { border: none; background: transparent; cursor: pointer; font: inherit; font-size: 0.9rem; }
+.user-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.user-menu__trigger[aria-expanded="true"] .user-avatar,
+.user-menu__trigger:focus-visible .user-avatar { box-shadow: 0 0 0 2px var(--accent); }
+.user-menu__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 220px;
+  max-width: 300px;
+  padding: 6px;
+  z-index: 120;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-panel);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  animation: hd-fade-up var(--dur-2, 180ms) var(--ease-out, ease);
+}
+.user-menu__who { padding: 8px 10px 10px; border-bottom: 1px solid var(--border-panel); margin-bottom: 4px; }
+.user-menu__name { font-weight: 700; font-size: 0.92rem; }
+.user-menu__email { font-size: 0.78rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+.user-menu__item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+@media (hover: hover) {
+  .user-menu__item:hover { background: rgba(255, 255, 255, 0.06); color: var(--text-main); }
+}
+
+.auth-box { display: flex; flex-direction: column; gap: 0.9rem; text-align: center; }
+.auth-box .auth-tabs { margin-bottom: 0.25rem; }
+.auth-box .auth-panel__hint { margin-top: 0; }
+.auth-box .auth-divider { margin-top: 0; }
+.auth-privacy { margin: 0; font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+.auth-privacy a { color: var(--accent); }
+.google-login__status { font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; }
+.google-login__error { width: 100%; text-align: left; }
+
+.login-dialog { max-height: min(92vh, 720px); overflow-y: auto; }
+.login-dialog .auth-privacy { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+.account-badges { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 6px 0 0; padding: 0; }
+.account-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.account-badge { white-space: nowrap; }
+@media (max-width: 600px) {
+  /* Hồ sơ hẹp: nút Đăng xuất xuống dòng riêng để nhãn phương thức không bị bóp. */
+  .account-profile__info { flex-basis: calc(100% - 70px); }
+  .account-profile .account-logout { width: 100%; justify-content: center; }
+}
+.account-badge.is-muted { color: var(--text-muted); background: rgba(255, 255, 255, 0.04); border-color: var(--border-panel); }
+.account-section-title--spaced { margin-top: 2rem; }
+
+.account-details { margin-top: 0.9rem; padding: 0.9rem 1.1rem; }
+.account-details__summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.account-details__count { font-weight: 400; color: var(--text-muted); font-size: 0.85rem; }
+.account-details__body { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.9rem; }
+.account-details__note { margin: 0; font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+.account-details--danger { border-color: rgba(239, 68, 68, 0.3); }
+.account-details--danger .account-details__summary { color: #fca5a5; }
+.account-label { display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted); }
+.account-label strong { color: var(--text-main); word-break: break-all; }
+.account-success {
+  font-size: 0.83rem;
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.account-inline-error { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.account-danger-note {
+  font-size: 0.85rem;
+  line-height: 1.55;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+.account-danger-note ul { margin: 6px 0 0; padding-left: 1.1rem; }
+.account-wide-btn { width: 100%; min-height: 48px; }
+/* Liên kết Google (trong thẻ thông tin) + khối xác nhận lại bằng Google */
+.account-link-google {
+  flex-basis: 100%;
+  display: flex; flex-direction: column; gap: 8px;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.account-link-google__title { font-weight: 700; font-size: 0.92rem; }
+.account-reauth {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  background: rgba(251, 191, 36, 0.06);
+}
+.account-reauth__title { font-weight: 700; font-size: 0.88rem; }
+.account-privacy-link { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 1.25rem; font-size: 0.82rem; color: var(--text-muted); }
+
+.session-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.session-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-panel);
+}
+.session-row:first-child { border-top: none; }
+.session-row__body { flex: 1; min-width: 0; }
+.session-row__device { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 600; font-size: 0.92rem; }
+.session-row__meta { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+.session-row__btn { min-height: 44px; padding: 8px 14px; font-size: 0.85rem; gap: 6px; flex-shrink: 0; }
+
+.chapter-comments__guest-note { font-size: 0.8rem; opacity: 0.75; }
+
+.privacy-page { padding-top: 1.5rem; padding-bottom: 3rem; }
+.privacy-page__body { max-width: 760px; margin: 0 auto; padding: 1.75rem 1.5rem; line-height: 1.7; }
+.privacy-page__head { text-align: center; margin-bottom: 1.25rem; }
+.privacy-page__head h1 { font-size: 1.5rem; margin: 0 0 0.25rem; }
+.privacy-page__meta { margin: 0; font-size: 0.82rem; color: var(--text-muted); }
+.privacy-page__body h2 { font-size: 1.08rem; margin: 1.6rem 0 0.5rem; }
+.privacy-page__body ul { padding-left: 1.2rem; margin: 0.4rem 0; }
+.privacy-page__body li { margin-bottom: 0.4rem; }
+.privacy-page__body code { font-size: 0.88em; padding: 1px 5px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); }
+@media (max-width: 600px) {
+  .privacy-page__body { padding: 1.25rem 1rem; }
+  .session-row { flex-wrap: wrap; }
+  .session-row__btn { flex: 1; }
+}
+
 /* Nút Theo dõi trong NovelPage */
 .btn-follow {
   background: rgba(255, 255, 255, 0.05);

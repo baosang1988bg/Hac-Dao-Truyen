@@ -201,6 +201,7 @@ async function sitemapXml(url, env) {
     { loc: `${origin}/cap-nhat`, changefreq: 'daily' },
     { loc: `${origin}/epub`, changefreq: 'weekly' },
     { loc: `${origin}/library`, changefreq: 'weekly' },
+    { loc: `${origin}/chinh-sach-bao-mat`, changefreq: 'yearly' },
   ];
   for (const row of results || []) {
     if (!row.slug || !SLUG_RE.test(row.slug)) continue;
@@ -379,7 +380,8 @@ async function handleApi(request, url, env, ctx) {
   const isSync = ['/api/admin/sync-novel', '/api/admin/sync-rankings', '/api/sync/edition'].includes(path) && method === 'POST';
   // Chỉ phân loại sync sau khi xác minh key; header giả không được bypass.
   const verifiedSync = isSync && env.SYNC_KEY && timingSafeEqualStr(request.headers.get('x-sync-key') || '', env.SYNC_KEY);
-  const isLogin = ['/api/auth/login','/api/user/login','/api/user/register','/api/user/google-login'].includes(path);
+  const isLogin = ['/api/auth/login','/api/user/login','/api/user/register','/api/user/google-login',
+    '/api/user/password','/api/user/account','/api/user/link-google'].includes(path);
   const category = verifiedSync ? 'sync' : isLogin ? 'auth' : 'public';
   const binding = env[category === 'sync' ? 'SYNC_RATE_LIMITER' : category === 'auth' ? 'AUTH_RATE_LIMITER' : 'PUBLIC_RATE_LIMITER'];
   const key = category === 'sync' ? 'sync:authorized' : `${category}:${clientIp(request)}`;
@@ -665,12 +667,18 @@ async function handleApi(request, url, env, ctx) {
     return userLogout(request, env);
   }
 
-  // GET /api/user/me
-  if (path === '/api/user/me' && method === 'GET') {
-    const user = await getUserFromRequest(request, env);
-    if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
-    return jsonResponse({ id: user.id, email: user.email, name: user.name });
-  }
+  // GET /api/user/me — thông tin tài khoản (kèm phương thức đăng nhập đã liên kết)
+  if (path === '/api/user/me' && method === 'GET') return userMe(request, env);
+
+  // Đăng nhập Google an toàn + quản lý tài khoản (plans/KE_HOACH_TRIEN_KHAI_DANG_NHAP_2026-11-27.md)
+  if (path === '/api/user/google-nonce' && method === 'GET') return userGoogleNonce(env);
+  if (path === '/api/user/sessions' && method === 'GET') return userSessionsList(request, env);
+  const sessionDelMatch = path.match(/^\/api\/user\/sessions\/([0-9a-f]{12})$/);
+  if (sessionDelMatch && method === 'DELETE') return userSessionRevoke(request, env, sessionDelMatch[1]);
+  if (path === '/api/user/logout-all' && method === 'POST') return userLogoutAll(request, env);
+  if (path === '/api/user/password' && method === 'POST') return userSetPassword(request, env);
+  if (path === '/api/user/link-google' && method === 'POST') return userLinkGoogle(request, env);
+  if (path === '/api/user/account' && method === 'DELETE') return userDeleteAccount(request, env);
 
   // GET /api/user/bookmarks
   if (path === '/api/user/bookmarks' && method === 'GET') {
@@ -3616,13 +3624,51 @@ function sqliteDatetime(date) {
   return date.toISOString().slice(0, 19).replace('T', ' ');
 }
 
-async function createUserSession(env, userId) {
+async function createUserSession(env, userId, request = null) {
   const token = 'u_' + toHex(crypto.getRandomValues(new Uint8Array(32)));
   const expiresAt = sqliteDatetime(new Date(Date.now() + SESSION_TTL_MS));
-  await env.DB.prepare(
-    `INSERT INTO user_sessions (token, user_id, expires_at) VALUES (?, ?, ?)`
-  ).bind(token, userId, expiresAt).run();
+  const cols = await authColumns(env);
+  if (cols.sessionMeta) {
+    // Migration 017: lưu thời điểm tạo + trình duyệt (rút gọn) để trang Tài khoản
+    // liệt kê "thiết bị đang đăng nhập". KHÔNG lưu IP.
+    const ua = String(request?.headers?.get('User-Agent') || '').slice(0, 200);
+    await env.DB.prepare(
+      `INSERT INTO user_sessions (token, user_id, expires_at, created_at, user_agent) VALUES (?, ?, ?, datetime('now'), ?)`
+    ).bind(token, userId, expiresAt, ua).run();
+  } else {
+    await env.DB.prepare(
+      `INSERT INTO user_sessions (token, user_id, expires_at) VALUES (?, ?, ?)`
+    ).bind(token, userId, expiresAt).run();
+  }
+  if (cols.userMeta) {
+    await env.DB.prepare(`UPDATE users SET last_login_at = datetime('now') WHERE id = ?`).bind(userId).run();
+  }
   return token;
+}
+
+// ── Dò cột migration 017 (chạy được cả trước lẫn sau migration) ───────────────
+const AUTH_COLS_RECHECK_MS = 10 * 60 * 1000;
+let _authCols = null; // { userMeta, sessionMeta, checkedAt }
+async function authColumns(env) {
+  const now = Date.now();
+  if (_authCols && now - _authCols.checkedAt < AUTH_COLS_RECHECK_MS) return _authCols;
+  let userMeta = false, sessionMeta = false;
+  try {
+    const u = await env.DB.prepare(`PRAGMA table_info(users)`).all();
+    const uc = new Set((u.results || []).map(r => r.name));
+    userMeta = uc.has('email_verified_at') && uc.has('last_login_at') && uc.has('deleted_at');
+    const se = await env.DB.prepare(`PRAGMA table_info(user_sessions)`).all();
+    const sc = new Set((se.results || []).map(r => r.name));
+    sessionMeta = sc.has('created_at') && sc.has('user_agent');
+  } catch { /* PRAGMA lỗi → coi như chưa migration */ }
+  _authCols = { userMeta, sessionMeta, checkedAt: now };
+  return _authCols;
+}
+
+// id công khai của 1 session: 12 ký tự đầu SHA-256(token) — liệt kê/thu hồi
+// thiết bị mà không bao giờ trả token thật về client.
+async function sessionPublicId(token) {
+  return toHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))).slice(0, 12);
 }
 
 function extractUserToken(request) {
@@ -3684,7 +3730,7 @@ async function userRegister(request, env) {
     throw err;
   }
 
-  const token = await createUserSession(env, userId);
+  const token = await createUserSession(env, userId, request);
   return jsonResponse({ token, user: { id: userId, email, name } }, 201);
 }
 
@@ -3708,27 +3754,146 @@ async function userLogin(request, env) {
     return jsonResponse({ error: 'Email hoặc mật khẩu không đúng' }, 401);
   }
 
-  const token = await createUserSession(env, user.id);
+  const token = await createUserSession(env, user.id, request);
   return jsonResponse({ token, user: { id: user.id, email: user.email, name: user.name } });
 }
 
-// Xác minh id_token Google bằng endpoint tokeninfo chính thức của Google thay
-// vì tự implement verify JWKS/RS256 — Worker không có thư viện JWT sẵn, và
-// việc tự verify chữ ký sai sẽ là lỗ hổng bảo mật nghiêm trọng (giả mạo được
-// đăng nhập của bất kỳ ai). Đổi lại là 1 request mạng phụ thuộc Google mỗi
-// lần đăng nhập — chấp nhận được vì đây vốn đã là hành động không thường
-// xuyên (đăng nhập), không phải đường nóng (hot path).
-// https://developers.google.com/identity/sign-in/web/backend-auth
-async function verifyGoogleIdToken(idToken, expectedAudience) {
-  const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
-  if (!res.ok) return null;
-  const payload = await res.json();
-  if (payload.aud !== expectedAudience) return null;
-  if (payload.iss !== 'https://accounts.google.com' && payload.iss !== 'accounts.google.com') return null;
-  if (payload.email_verified !== 'true' && payload.email_verified !== true) return null;
-  if (!payload.email || !payload.sub) return null;
-  return payload;
+// ── Đăng nhập Google: tự xác minh id_token (JWT RS256) bằng khoá công khai JWKS ─
+// Bản cũ gọi oauth2.googleapis.com/tokeninfo — Google xếp endpoint đó vào loại
+// dùng để debug. Ở đây verify theo đúng hướng dẫn backend-auth của Google:
+// chữ ký RS256 với khoá trong JWKS (WebCrypto chuẩn, không tự viết thuật toán
+// mật mã), iss ∈ {accounts.google.com, https://accounts.google.com}, aud =
+// GOOGLE_CLIENT_ID, exp/iat/nbf còn hiệu lực, email_verified, và nonce chống
+// phát lại khi có AUTH_SECRET. Test đầy đủ ở tests/worker/auth-google.test.mjs.
+// https://developers.google.com/identity/gsi/web/guides/verify-google-id-token
+const GOOGLE_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
+const GOOGLE_ISSUERS = new Set(['accounts.google.com', 'https://accounts.google.com']);
+const JWT_CLOCK_SKEW_S = 120;
+const GOOGLE_NONCE_TTL_MS = 10 * 60 * 1000;
+let _googleJwks = null; // { keys: Map(kid -> CryptoKey), expiresAt }
+let _googleJwksForcedAt = 0; // kid lạ chỉ được ép tải lại JWKS tối đa 1 lần / 60 giây (chống DoS nhẹ)
+
+function b64urlToBytes(str) {
+  const b64 = String(str).replace(/-/g, '+').replace(/_/g, '/');
+  const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : '';
+  const bin = atob(b64 + pad);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
 }
+
+function b64urlToJson(str) {
+  return JSON.parse(new TextDecoder().decode(b64urlToBytes(str)));
+}
+
+async function loadGoogleJwks(force = false) {
+  const now = Date.now();
+  if (!force && _googleJwks && _googleJwks.expiresAt > now) return _googleJwks.keys;
+  const res = await fetch(GOOGLE_JWKS_URL, { signal: AbortSignal.timeout(5000) });
+  if (!res.ok) throw new Error(`JWKS HTTP ${res.status}`);
+  const data = await res.json();
+  const keys = new Map();
+  for (const jwk of Array.isArray(data?.keys) ? data.keys : []) {
+    if (!jwk || jwk.kty !== 'RSA' || !jwk.kid || (jwk.alg && jwk.alg !== 'RS256')) continue;
+    try {
+      const key = await crypto.subtle.importKey(
+        'jwk', { kty: 'RSA', n: jwk.n, e: jwk.e, alg: 'RS256', ext: true },
+        { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify'],
+      );
+      keys.set(jwk.kid, key);
+    } catch { /* khoá hỏng → bỏ qua */ }
+  }
+  const maxAge = Number((res.headers.get('Cache-Control') || '').match(/max-age=(\d+)/)?.[1] || 3600);
+  _googleJwks = { keys, expiresAt: now + Math.min(Math.max(maxAge, 60), 24 * 3600) * 1000 };
+  return keys;
+}
+
+// Trả { payload } nếu hợp lệ, ngược lại { error, status }.
+async function verifyGoogleJwt(idToken, expectedAudience, now = Date.now()) {
+  const parts = String(idToken).split('.');
+  if (parts.length !== 3) return { error: 'malformed', status: 401 };
+  let header, payload;
+  try { header = b64urlToJson(parts[0]); payload = b64urlToJson(parts[1]); }
+  catch { return { error: 'malformed', status: 401 }; }
+  if (!header || header.alg !== 'RS256' || typeof header.kid !== 'string') return { error: 'bad_alg', status: 401 };
+
+  let keys;
+  try {
+    keys = await loadGoogleJwks();
+    if (!keys.has(header.kid) && now - _googleJwksForcedAt > 60_000) {
+      _googleJwksForcedAt = now;
+      keys = await loadGoogleJwks(true); // Google vừa xoay khoá
+    }
+  } catch (err) {
+    console.error('Google JWKS fetch failed:', err && err.message ? err.message : err);
+    return { error: 'jwks_unavailable', status: 503 };
+  }
+  const key = keys.get(header.kid);
+  if (!key) return { error: 'unknown_kid', status: 401 };
+  let valid = false;
+  try {
+    valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64urlToBytes(parts[2]),
+      new TextEncoder().encode(`${parts[0]}.${parts[1]}`));
+  } catch { valid = false; }
+  if (!valid) return { error: 'bad_signature', status: 401 };
+
+  const nowS = Math.floor(now / 1000);
+  // Google luôn phát aud là chuỗi; nếu là mảng thì bắt buộc azp = client của mình.
+  const audOk = typeof payload.aud === 'string'
+    ? payload.aud === expectedAudience
+    : Array.isArray(payload.aud) && payload.aud.includes(expectedAudience) && payload.azp === expectedAudience;
+  if (!audOk) return { error: 'bad_aud', status: 401 };
+  if (!GOOGLE_ISSUERS.has(payload.iss)) return { error: 'bad_iss', status: 401 };
+  if (!Number.isFinite(payload.exp) || payload.exp + JWT_CLOCK_SKEW_S < nowS) return { error: 'expired', status: 401 };
+  if (Number.isFinite(payload.iat) && payload.iat - JWT_CLOCK_SKEW_S > nowS) return { error: 'iat_future', status: 401 };
+  if (Number.isFinite(payload.nbf) && payload.nbf - JWT_CLOCK_SKEW_S > nowS) return { error: 'not_yet_valid', status: 401 };
+  if (!payload.sub || !payload.email) return { error: 'missing_claims', status: 401 };
+  if (payload.email_verified !== true && payload.email_verified !== 'true') return { error: 'email_unverified', status: 403 };
+  return { payload };
+}
+
+function authSecret(env) {
+  const s = env.AUTH_SECRET;
+  return typeof s === 'string' && s.length >= 16 ? s : null;
+}
+
+// Nonce dạng "<ts>.<rand>.<hmac>" — stateless, client truyền vào GIS initialize;
+// id_token mang lại đúng nonce. Dùng một lần (memo trong isolate, best-effort).
+const _usedGoogleNonces = new Map(); // nonce -> expiresAt
+async function userGoogleNonce(env) {
+  const secret = authSecret(env);
+  if (!secret) return jsonResponse({ nonce: null }, 200, { 'Cache-Control': 'no-store' });
+  const payload = `${Date.now()}.${toHex(crypto.getRandomValues(new Uint8Array(12)))}`;
+  const sig = (await hmacSha256Hex(secret, `gn.${payload}`)).slice(0, 32);
+  return jsonResponse({ nonce: `${payload}.${sig}` }, 200, { 'Cache-Control': 'no-store' });
+}
+
+async function checkGoogleNonce(secret, nonce, now = Date.now()) {
+  if (typeof nonce !== 'string' || nonce.length > 120) return false;
+  const parts = nonce.split('.');
+  if (parts.length !== 3 || !/^\d{10,16}$/.test(parts[0]) || !/^[0-9a-f]{24}$/.test(parts[1])) return false;
+  const expected = (await hmacSha256Hex(secret, `gn.${parts[0]}.${parts[1]}`)).slice(0, 32);
+  if (!timingSafeEqualStr(parts[2], expected)) return false;
+  const age = now - Number(parts[0]);
+  if (age < -60_000 || age > GOOGLE_NONCE_TTL_MS) return false;
+  const used = _usedGoogleNonces.get(nonce);
+  if (used && used > now) return false;
+  _usedGoogleNonces.set(nonce, now + GOOGLE_NONCE_TTL_MS);
+  if (_usedGoogleNonces.size > 5000) {
+    for (const [k, v] of _usedGoogleNonces) if (v <= now) _usedGoogleNonces.delete(k);
+  }
+  return true;
+}
+
+// Google chỉ bảo đảm người dùng HIỆN sở hữu email khi đó là @gmail.com hoặc tài
+// khoản Workspace (có claim hd). Email khác: email_verified chỉ phản ánh lúc tạo
+// tài khoản Google → KHÔNG đủ để tự liên kết/chiếm tài khoản có sẵn theo email.
+function googleOwnsEmail(payload) {
+  const email = String(payload.email || '').toLowerCase();
+  return email.endsWith('@gmail.com') || (typeof payload.hd === 'string' && payload.hd.length > 0);
+}
+
+let _warnedNoAuthSecret = false;
 
 async function userGoogleLogin(request, env) {
   if (!env.GOOGLE_CLIENT_ID) {
@@ -3741,37 +3906,83 @@ async function userGoogleLogin(request, env) {
     return jsonResponse({ error: 'Thiếu hoặc sai định dạng credential' }, 400);
   }
 
-  const payload = await verifyGoogleIdToken(credential, env.GOOGLE_CLIENT_ID);
-  if (!payload) return jsonResponse({ error: 'Xác thực Google thất bại' }, 401);
+  const verified = await verifyGoogleJwt(credential, env.GOOGLE_CLIENT_ID);
+  if (verified.error) {
+    const msg = verified.status === 403 ? 'Email Google chưa được xác minh'
+      : verified.status === 503 ? 'Tạm thời không xác minh được với Google, thử lại sau' : 'Xác thực Google thất bại';
+    return jsonResponse({ error: msg, reason: verified.error }, verified.status);
+  }
+  const payload = verified.payload;
+  const secret = authSecret(env);
+  if (secret && !(await checkGoogleNonce(secret, payload.nonce))) {
+    return jsonResponse({ error: 'Phiên đăng nhập Google đã hết hạn, vui lòng thử lại', reason: 'bad_nonce' }, 401);
+  }
+  if (!secret && !_warnedNoAuthSecret) {
+    _warnedNoAuthSecret = true;
+    console.warn('AUTH_SECRET chưa đặt — đăng nhập Google chạy KHÔNG có nonce chống phát lại. Chạy: wrangler secret put AUTH_SECRET');
+  }
 
   const email = String(payload.email).trim().toLowerCase();
   const googleId = String(payload.sub);
   const name = String(payload.name || '').trim().slice(0, 100);
-  const avatarUrl = String(payload.picture || '').slice(0, 512);
+  const avatarUrl = /^https:\/\//.test(String(payload.picture || '')) ? String(payload.picture).slice(0, 512) : '';
+  const cols = await authColumns(env);
 
-  // Tìm theo google_id trước (định danh bất biến), rồi mới tới email (liên
-  // kết tài khoản email/password đã đăng ký từ trước với cùng địa chỉ email).
-  let user = await env.DB.prepare(
-    `SELECT id, email, name FROM users WHERE google_id = ?`
-  ).bind(googleId).first();
+  // 1) Đã liên kết theo google_id (định danh bất biến) → đăng nhập.
+  let user = await env.DB.prepare(`SELECT id, email, name FROM users WHERE google_id = ?`).bind(googleId).first();
 
   if (!user) {
     const byEmail = await env.DB.prepare(
-      `SELECT id, email, name FROM users WHERE email = ?`
+      `SELECT * FROM users WHERE email = ?`
     ).bind(email).first();
+    if (byEmail && byEmail.google_id && byEmail.google_id !== googleId) {
+      // Email này đã gắn với một tài khoản Google KHÁC (vd email Workspace cấp lại
+      // cho người khác) → không ghi đè liên kết cũ.
+      return jsonResponse({ error: 'Email này đã liên kết với một tài khoản Google khác', reason: 'google_conflict' }, 409);
+    }
+    if (byEmail && !googleOwnsEmail(payload)) {
+      return jsonResponse({
+        error: 'Email này đã có tài khoản. Hãy đăng nhập bằng mật khẩu rồi liên kết Google trong trang Tài khoản.',
+        reason: 'link_required',
+      }, 409);
+    }
     if (byEmail) {
-      // Tài khoản đã tồn tại (đăng ký bằng email/password trước đó) → liên
-      // kết thêm google_id, KHÔNG đổi password_hash/name đã có.
-      await env.DB.prepare(
+      // 2) Cùng email với tài khoản email/mật khẩu có sẵn. Đăng ký email KHÔNG
+      // xác minh hộp thư → kẻ xấu có thể đăng ký trước bằng email của nạn nhân
+      // (pre-account hijacking). Google đã xác minh email này thuộc người đang
+      // đăng nhập → nếu tài khoản có mật khẩu mà email chưa từng được xác minh
+      // thì XOÁ mật khẩu + MỌI session cũ trước khi liên kết. Chủ thật đặt lại
+      // mật khẩu trong trang Tài khoản nếu muốn.
+      const hadUnverifiedPassword = Boolean(byEmail.password_hash) && !byEmail.email_verified_at;
+      const stmts = [];
+      if (hadUnverifiedPassword) {
+        // Dọn dấu vết người đăng ký trước: mật khẩu, mọi phiên, tên hiển thị.
+        stmts.push(env.DB.prepare(`DELETE FROM user_sessions WHERE user_id = ?`).bind(byEmail.id));
+        stmts.push(env.DB.prepare(`UPDATE users SET password_hash = '', name = ? WHERE id = ?`).bind(name, byEmail.id));
+      }
+      stmts.push(env.DB.prepare(
         `UPDATE users SET google_id = ?, avatar_url = COALESCE(NULLIF(avatar_url, ''), ?) WHERE id = ?`
-      ).bind(googleId, avatarUrl, byEmail.id).run();
-      user = byEmail;
+      ).bind(googleId, avatarUrl, byEmail.id));
+      if (cols.userMeta) {
+        stmts.push(env.DB.prepare(`UPDATE users SET email_verified_at = COALESCE(email_verified_at, datetime('now')) WHERE id = ?`).bind(byEmail.id));
+      }
+      await env.DB.batch(stmts);
+      if (hadUnverifiedPassword) {
+        // Cài đặt/quy tắc do người đăng ký trước để lại không được "đi theo" chủ thật.
+        try { await env.DB.prepare(`DELETE FROM user_prefs WHERE user_id = ?`).bind(byEmail.id).run(); }
+        catch (err) { if (!isMissingTableError(err)) throw err; }
+      }
+      user = { id: byEmail.id, email: byEmail.email, name: hadUnverifiedPassword ? name : byEmail.name };
     } else {
+      // 3) Tài khoản mới — email đã được Google xác minh.
       try {
         const { meta } = await env.DB.prepare(
           `INSERT INTO users (email, name, password_hash, google_id, avatar_url) VALUES (?, ?, '', ?, ?)`
         ).bind(email, name, googleId, avatarUrl).run();
         user = { id: meta.last_row_id, email, name };
+        if (cols.userMeta) {
+          await env.DB.prepare(`UPDATE users SET email_verified_at = datetime('now') WHERE id = ?`).bind(user.id).run();
+        }
       } catch (err) {
         if (String(err.message || '').includes('UNIQUE')) {
           return jsonResponse({ error: 'Email đã được đăng ký' }, 409);
@@ -3781,8 +3992,227 @@ async function userGoogleLogin(request, env) {
     }
   }
 
-  const token = await createUserSession(env, user.id);
+  const token = await createUserSession(env, user.id, request);
   return jsonResponse({ token, user: { id: user.id, email: user.email, name: user.name } });
+}
+
+// ── Tài khoản: thông tin, thiết bị, mật khẩu, xoá ────────────────────────────
+async function userMe(request, env) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  const row = await env.DB.prepare(`SELECT * FROM users WHERE id = ?`).bind(user.id).first();
+  return jsonResponse({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    avatar_url: row?.avatar_url || null,
+    has_password: Boolean(row?.password_hash),
+    has_google: Boolean(row?.google_id),
+    email_verified: Boolean(row?.email_verified_at),
+    created_at: row?.created_at || null,
+    last_login_at: row?.last_login_at || null,
+  }, 200, { 'Cache-Control': 'no-store' });
+}
+
+async function userSessionsList(request, env) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  const current = extractUserToken(request);
+  const cols = await authColumns(env);
+  const { results } = await env.DB.prepare(`
+    SELECT token, expires_at${cols.sessionMeta ? ', created_at, user_agent' : ''}
+    FROM user_sessions WHERE user_id = ? AND expires_at > ? ORDER BY expires_at DESC LIMIT 50
+  `).bind(user.id, sqliteDatetime(new Date())).all();
+  const out = [];
+  for (const r of results || []) {
+    out.push({
+      id: await sessionPublicId(r.token),
+      created_at: r.created_at || null,
+      expires_at: r.expires_at,
+      user_agent: r.user_agent || '',
+      current: r.token === current,
+    });
+  }
+  return jsonResponse(out, 200, { 'Cache-Control': 'no-store' });
+}
+
+async function userSessionRevoke(request, env, publicId) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  const { results } = await env.DB.prepare(`SELECT token FROM user_sessions WHERE user_id = ?`).bind(user.id).all();
+  for (const r of results || []) {
+    if (await sessionPublicId(r.token) === publicId) {
+      await env.DB.prepare(`DELETE FROM user_sessions WHERE token = ? AND user_id = ?`).bind(r.token, user.id).run();
+      return jsonResponse({ ok: true });
+    }
+  }
+  return jsonResponse({ error: 'Không tìm thấy phiên đăng nhập' }, 404);
+}
+
+async function userLogoutAll(request, env) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  const { meta } = await env.DB.prepare(`DELETE FROM user_sessions WHERE user_id = ?`).bind(user.id).run();
+  return jsonResponse({ ok: true, revoked: meta.changes || 0 });
+}
+
+// Xác thực lại cho thao tác nhạy cảm (đặt mật khẩu lần đầu, xoá tài khoản):
+// chấp nhận MỘT trong: mật khẩu hiện tại đúng; id_token Google mới (cùng sub với
+// tài khoản); hoặc phiên vừa đăng nhập ≤ 10 phút (cần cột created_at — migration 017).
+// Chặn kẻ cầm token bị lộ (localStorage) tự đặt mật khẩu riêng để bám tài khoản.
+const REAUTH_WINDOW_MS = 10 * 60 * 1000;
+async function verifyReauth(request, env, user, body, row) {
+  const pw = typeof body?.current_password === 'string' ? body.current_password : '';
+  if (pw) return Boolean(row?.password_hash) && pw.length <= 256 && verifyPassword(pw, row.password_hash);
+  const credential = typeof body?.credential === 'string' ? body.credential : '';
+  if (credential && env.GOOGLE_CLIENT_ID && row?.google_id && credential.length <= 4096) {
+    const v = await verifyGoogleJwt(credential, env.GOOGLE_CLIENT_ID);
+    if (v.error || String(v.payload.sub) !== row.google_id) return false;
+    const secret = authSecret(env);
+    return !secret || checkGoogleNonce(secret, v.payload.nonce);
+  }
+  const cols = await authColumns(env);
+  if (!cols.sessionMeta) return false;
+  const sess = await env.DB.prepare(`SELECT created_at FROM user_sessions WHERE token = ?`)
+    .bind(extractUserToken(request)).first();
+  if (!sess?.created_at) return false;
+  const created = Date.parse(String(sess.created_at).replace(' ', 'T') + 'Z');
+  return Number.isFinite(created) && Date.now() - created <= REAUTH_WINDOW_MS;
+}
+
+// POST /api/user/link-google — người đã đăng nhập (vd bằng mật khẩu) liên kết
+// thêm tài khoản Google. Không tự đổi email tài khoản.
+async function userLinkGoogle(request, env) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  if (!env.GOOGLE_CLIENT_ID) return jsonResponse({ error: 'Đăng nhập Google chưa được cấu hình trên server' }, 503);
+  const parsed = await readLimitedJson(request, DEFAULT_JSON_MAX_BYTES);
+  if (!parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, parsed.status);
+  const credential = String(parsed.body?.credential || '');
+  if (!credential || credential.length > 4096) return jsonResponse({ error: 'Thiếu credential' }, 400);
+  const v = await verifyGoogleJwt(credential, env.GOOGLE_CLIENT_ID);
+  if (v.error) return jsonResponse({ error: 'Xác thực Google thất bại', reason: v.error }, v.status);
+  const secret = authSecret(env);
+  if (secret && !(await checkGoogleNonce(secret, v.payload.nonce))) {
+    return jsonResponse({ error: 'Phiên Google đã hết hạn, vui lòng thử lại', reason: 'bad_nonce' }, 401);
+  }
+  const sub = String(v.payload.sub);
+  const row = await env.DB.prepare(`SELECT * FROM users WHERE id = ?`).bind(user.id).first();
+  if (row.google_id && row.google_id !== sub) {
+    return jsonResponse({ error: 'Tài khoản đã liên kết với một tài khoản Google khác', reason: 'google_conflict' }, 409);
+  }
+  const owner = await env.DB.prepare(`SELECT id FROM users WHERE google_id = ?`).bind(sub).first();
+  if (owner && owner.id !== user.id) {
+    return jsonResponse({ error: 'Tài khoản Google này đã dùng cho một tài khoản khác', reason: 'google_taken' }, 409);
+  }
+  const picture = /^https:\/\//.test(String(v.payload.picture || '')) ? String(v.payload.picture).slice(0, 512) : '';
+  await env.DB.prepare(
+    `UPDATE users SET google_id = ?, avatar_url = COALESCE(NULLIF(avatar_url, ''), ?) WHERE id = ?`
+  ).bind(sub, picture, user.id).run();
+  const cols = await authColumns(env);
+  if (cols.userMeta && String(v.payload.email || '').toLowerCase() === String(user.email).toLowerCase() && googleOwnsEmail(v.payload)) {
+    await env.DB.prepare(`UPDATE users SET email_verified_at = COALESCE(email_verified_at, datetime('now')) WHERE id = ?`).bind(user.id).run();
+  }
+  return jsonResponse({ ok: true, has_google: true });
+}
+
+async function userSetPassword(request, env) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  const parsed = await readLimitedJson(request, DEFAULT_JSON_MAX_BYTES);
+  if (!parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, parsed.status);
+  const newPassword = String(parsed.body?.new_password || '');
+  if (newPassword.length < 8 || newPassword.length > 256) {
+    return jsonResponse({ error: 'Mật khẩu mới phải từ 8 đến 256 ký tự' }, 400);
+  }
+  // Chống dò mật khẩu hiện tại theo TÀI KHOẢN (rate limit nhóm auth chỉ theo IP).
+  if (!checkRateLimit(`pw:${user.id}`, 15 * 60 * 1000, 10)) {
+    return jsonResponse({ error: 'Thử quá nhiều lần, vui lòng đợi 15 phút' }, 429, { 'Retry-After': '900' });
+  }
+  const row = await env.DB.prepare(`SELECT password_hash, google_id FROM users WHERE id = ?`).bind(user.id).first();
+  if (!row?.password_hash && !(await verifyReauth(request, env, user, parsed.body, row))) {
+    // Đặt mật khẩu LẦN ĐẦU (tài khoản chỉ có Google) cần xác thực lại.
+    return jsonResponse({ error: 'Vui lòng xác nhận lại bằng Google trước khi đặt mật khẩu', reason: 'reauth_required' }, 403);
+  }
+  if (row?.password_hash) {
+    // Đổi mật khẩu: bắt buộc mật khẩu hiện tại. Sai → 403 (KHÔNG 401 — client
+    // hiểu 401 là phiên hết hạn và sẽ xoá phiên).
+    const current = String(parsed.body?.current_password || '');
+    if (!current || current.length > 256 || !(await verifyPassword(current, row.password_hash))) {
+      return jsonResponse({ error: 'Mật khẩu hiện tại không đúng' }, 403);
+    }
+  }
+  const hash = await hashPassword(newPassword);
+  const token = extractUserToken(request);
+  await env.DB.batch([
+    env.DB.prepare(`UPDATE users SET password_hash = ? WHERE id = ?`).bind(hash, user.id),
+    // Đặt/đổi mật khẩu → đăng xuất mọi thiết bị KHÁC (giữ phiên đang thao tác).
+    env.DB.prepare(`DELETE FROM user_sessions WHERE user_id = ? AND token != ?`).bind(user.id, token),
+  ]);
+  return jsonResponse({ ok: true, has_password: true });
+}
+
+async function userDeleteAccount(request, env) {
+  const user = await getUserFromRequest(request, env);
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  const parsed = await readLimitedJson(request, DEFAULT_JSON_MAX_BYTES);
+  if (!parsed.ok) return jsonResponse({ error: 'Invalid JSON body or payload too large' }, parsed.status);
+  const confirm = String(parsed.body?.confirm || '').trim().toLowerCase();
+  if (!confirm || confirm !== String(user.email).toLowerCase()) {
+    return jsonResponse({ error: 'Email xác nhận không khớp' }, 400);
+  }
+  if (!checkRateLimit(`pw:${user.id}`, 15 * 60 * 1000, 10)) {
+    return jsonResponse({ error: 'Thử quá nhiều lần, vui lòng đợi 15 phút' }, 429, { 'Retry-After': '900' });
+  }
+  const accountRow = await env.DB.prepare(`SELECT password_hash, google_id FROM users WHERE id = ?`).bind(user.id).first();
+  if (!(await verifyReauth(request, env, user, parsed.body, accountRow))) {
+    return jsonResponse({
+      error: accountRow?.password_hash ? 'Mật khẩu không đúng' : 'Vui lòng xác nhận lại bằng Google trước khi xoá tài khoản',
+      reason: 'reauth_required',
+    }, 403);
+  }
+  const cols = await authColumns(env);
+  const { results: rated } = await env.DB.prepare(
+    `SELECT DISTINCT slug FROM novel_ratings WHERE user_id = ?`
+  ).bind(user.id).all();
+  const stmts = [
+    env.DB.prepare(`DELETE FROM novel_ratings WHERE user_id = ?`).bind(user.id),
+    env.DB.prepare(`DELETE FROM bookmarks WHERE user_id = ?`).bind(user.id),
+    env.DB.prepare(`DELETE FROM reading_progress WHERE user_id = ?`).bind(user.id),
+    env.DB.prepare(`DELETE FROM user_sessions WHERE user_id = ?`).bind(user.id),
+    // Giữ dòng users (bình luận/góp ý cũ tham chiếu khoá ngoại) nhưng xoá mọi
+    // thông tin định danh: email thay bằng địa chỉ không tồn tại, bỏ mật khẩu,
+    // google_id, ảnh — không đăng nhập lại được bằng bất kỳ cách nào.
+    env.DB.prepare(`
+      UPDATE users SET email = ?, name = 'Người dùng đã xoá', password_hash = '', google_id = NULL, avatar_url = NULL
+      WHERE id = ?
+    `).bind(`deleted-${user.id}@invalid`, user.id),
+  ];
+  if (cols.userMeta) {
+    stmts.push(env.DB.prepare(`UPDATE users SET deleted_at = datetime('now'), email_verified_at = NULL WHERE id = ?`).bind(user.id));
+  }
+  for (const r of rated || []) {
+    stmts.push(env.DB.prepare(`
+      UPDATE novels SET
+        rating_sum = (SELECT COALESCE(SUM(stars), 0) FROM novel_ratings WHERE slug = ?),
+        rating_count = (SELECT COUNT(*) FROM novel_ratings WHERE slug = ?)
+      WHERE slug = ?
+    `).bind(r.slug, r.slug, r.slug));
+  }
+  // Yêu cầu truyện: xoá cái đang chờ, xoá trắng ghi chú cái đã xử lý (giữ URL cho lịch sử admin).
+  stmts.push(env.DB.prepare(`DELETE FROM novel_requests WHERE user_id = ? AND status = 'pending'`).bind(user.id));
+  stmts.push(env.DB.prepare(`UPDATE novel_requests SET note = '' WHERE user_id = ?`).bind(user.id));
+  await env.DB.batch(stmts);
+  // Bảng của migration 015 có thể chưa tồn tại → xoá riêng, bỏ qua lỗi "no such table".
+  for (const sql of [
+    `DELETE FROM user_prefs WHERE user_id = ?`,
+    `DELETE FROM glossary_suggestions WHERE user_id = ? AND status = 'pending'`,
+    `UPDATE glossary_suggestions SET note = NULL WHERE user_id = ?`,
+  ]) {
+    try { await env.DB.prepare(sql).bind(user.id).run(); }
+    catch (err) { if (!isMissingTableError(err)) throw err; }
+  }
+  return jsonResponse({ ok: true });
 }
 
 async function userLogout(request, env) {

@@ -3,3 +3,12 @@ BACKEND_URL=http://127.0.0.1:4444
 SYNC_KEY=
 ALLOW_SYNC_WRITES=false
 ENABLE_DRIVE_CACHE_WRITES=false
+# ── Đăng nhập (plans/KE_HOACH_TRIEN_KHAI_DANG_NHAP_2026-11-27.md) ──
+# Chép file này thành .dev.vars (đã gitignore) để chạy `wrangler dev` local.
+# AUTH_SECRET: chuỗi ngẫu nhiên ≥ 32 ký tự (openssl rand -hex 32), KHÁC bản production.
+AUTH_SECRET=
+# VIEW_TOKEN_SECRET: ký token lượt đọc thật (openssl rand -hex 24).
+VIEW_TOKEN_SECRET=
+# GOOGLE_CLIENT_SECRET: hiện code KHÔNG dùng (nút Google dạng popup chỉ cần Client ID).
+# Chỉ để giữ chỗ nếu sau này cần luồng server-side (authorization code).
+GOOGLE_CLIENT_SECRET=

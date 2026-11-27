@@ -1,12 +1,14 @@
 import { useEffect } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, Home, Library, Shield, LogIn, User, BookMarked, Search, Sparkles } from 'lucide-react'
+import { BookOpen, Home, Library, Shield, LogIn, BookMarked, Search, Sparkles } from 'lucide-react'
 import useHideOnScroll from '../hooks/useHideOnScroll'
+import UserMenu from './UserMenu'
 
 /**
  * Header trang guest.
  * - Desktop: logo + nav (Trang chủ / Mới cập nhật / Tủ truyện / Kho EPUB) + góc phải
- *   Tài khoản + Quản trị (admin) hoặc Đăng nhập.
+ *   UserMenu (avatar + menu Tài khoản/Đăng xuất, hoặc nút "Đăng nhập" mở hộp
+ *   đăng nhập dùng chung) + Quản trị (admin) hoặc icon đăng nhập quản trị.
  * - Mobile (<769px): thanh mỏng dính đỉnh (sticky), tự ẩn khi cuộn xuống và
  *   hiện lại khi cuộn lên; có nút Tìm kiếm (+ Quản trị nếu là admin). Điều hướng
  *   chính nằm ở BottomTabBar.
@@ -79,9 +81,7 @@ export default function SiteHeader() {
         </div>
 
         <div className="site-header__right">
-          <NavLink to="/account" className={navCls} title="Tài khoản">
-            <User size={16} /> Tài khoản
-          </NavLink>
+          <UserMenu />
           {isAdmin ? (
             <Link to="/admin" className="site-header__navlink" style={{ color: 'var(--accent)' }}>
               <Shield size={15} /> Quản trị

@@ -28,18 +28,50 @@ userApi.interceptors.response.use(
     const url = err.config?.url || '';
     // 401 của chính login/register = sai thông tin đăng nhập → để form tự xử lý,
     // không được xóa phiên đang có.
-    if (status === 401 && !url.includes('/user/login') && !url.includes('/user/register')) {
+    // Tương tự: 401 của đổi mật khẩu (sai mật khẩu hiện tại) / google-login
+    // (credential bị Google từ chối) KHÔNG có nghĩa phiên đang có đã hết hạn.
+    // link-google: 401 KÈM reason (bad_nonce, chữ ký JWT…) là lỗi credential
+    // Google, không phải phiên hết hạn; 401 không reason mới là mất phiên.
+    const keepSession = ['/user/login', '/user/register', '/user/password', '/user/google-login']
+      .some(p => url.includes(p))
+      || (url.includes('/user/link-google') && Boolean(err.response?.data?.reason));
+    if (status === 401 && !keepSession && localStorage.getItem('userToken')) {
       localStorage.removeItem('userToken');
       localStorage.removeItem('userInfo');
+      notifyAuthChange();
     }
     return Promise.reject(err);
   }
 );
 
+/**
+ * Sự kiện nội bộ báo phiên user vừa đổi TRONG CÙNG TAB (sự kiện `storage` của
+ * trình duyệt chỉ bắn sang các tab khác) — AuthContext nghe để cập nhật header,
+ * bình luận... ngay khi đăng nhập/đăng xuất/phiên hết hạn.
+ */
+export const AUTH_CHANGE_EVENT = 'hd:auth-change';
+
+function notifyAuthChange() {
+  try {
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+  } catch { /* môi trường không có Event (node test) — bỏ qua */ }
+}
+
 /** Lưu phiên user sau khi login/register thành công. */
 export function saveUserSession(token, user) {
   localStorage.setItem('userToken', token);
   localStorage.setItem('userInfo', JSON.stringify(user || null));
+  notifyAuthChange();
+}
+
+/**
+ * Cập nhật thông tin user (vd sau GET /user/me có thêm avatar_url, has_password…)
+ * mà KHÔNG đổi token. Không có phiên → bỏ qua (tránh "hồi sinh" phiên đã xoá).
+ */
+export function updateUserInfo(user) {
+  if (!localStorage.getItem('userToken') || !user) return;
+  localStorage.setItem('userInfo', JSON.stringify(user));
+  notifyAuthChange();
 }
 
 /** Xóa phiên user tại chỗ (logout phía client). */
@@ -48,9 +80,13 @@ export function clearUserSession() {
   localStorage.removeItem('userInfo');
   // GA4: bỏ user_id để các event sau đăng xuất không gắn vào tài khoản cũ.
   syncAnalyticsUser(null);
+  notifyAuthChange();
 }
 
-/** Thông tin user đã đăng nhập ({id,email,name}) hoặc null. */
+/**
+ * Thông tin user đã đăng nhập hoặc null: {id,email,name} + (sau GET /user/me)
+ * avatar_url, has_password, has_google, email_verified, created_at, last_login_at.
+ */
 export function getUserInfo() {
   try {
     return JSON.parse(localStorage.getItem('userInfo') || 'null');
