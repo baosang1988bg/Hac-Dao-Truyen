@@ -1,5 +1,5 @@
 {
-  "revision": 487,
+  "revision": 519,
   "conflicts": [
     {
       "term": "坤鼎",
@@ -35,6 +35,13 @@
       "suggested_value": "Thiên Phong đạo nhân",
       "revision_seen": 473,
       "ts": "2026-11-25T01:27:49"
+    },
+    {
+      "term": "天狼星域",
+      "current_value": "Thiên Lang Tinh Vực",
+      "suggested_value": "Tinh vực Thiên Lang",
+      "revision_seen": 513,
+      "ts": "2026-11-27T14:34:06"
     }
   ]
 }
