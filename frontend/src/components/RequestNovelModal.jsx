@@ -1,8 +1,8 @@
 import PropTypes from 'prop-types'
 import { useState } from 'react';
-import { Link } from 'react-router-dom'
 import { X, Send, Loader2, CheckCircle2, LogIn } from 'lucide-react'
-import userApi, { isLoggedIn } from '../userApi'
+import userApi from '../userApi'
+import { useAuth } from '../context/useAuth'
 import Modal from './ui/Modal'
 import { trackEvent } from '../utils/analytics'
 import '../styles/library-epub.css'
@@ -13,11 +13,13 @@ import '../styles/library-epub.css'
  * components/ui/Modal.jsx cho phần overlay/Escape/focus trap, chỉ tự style
  * nội dung theo màu sắc --glass-bg/--border/--accent-gradient.
  *
- * Chưa đăng nhập: hiện lời mời đăng nhập, trỏ tới /account (KHÔNG phải /login
- * — đó là trang đăng nhập ADMIN, xem AccountPage.jsx).
+ * Chưa đăng nhập: nút "Đăng nhập / Đăng ký" mở hộp đăng nhập dùng chung
+ * (requireLogin) CHỒNG lên modal này — đăng nhập xong form hiện ngay tại chỗ,
+ * không phải rời trang (KHÔNG dùng /login — đó là trang đăng nhập ADMIN).
  */
 export default function RequestNovelModal({ onClose }) {
-  const loggedIn = isLoggedIn()
+  const { user, requireLogin } = useAuth()
+  const loggedIn = Boolean(user)
   const [url, setUrl] = useState('')
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
@@ -84,13 +86,16 @@ export default function RequestNovelModal({ onClose }) {
               <p className="request-novel-modal__text">
                 Vui lòng đăng nhập để gửi yêu cầu truyện muốn dịch.
               </p>
-              <Link
-                to="/account"
-                onClick={onClose}
+              <button
+                type="button"
+                onClick={() => {
+                  requireLogin('Đăng nhập để yêu cầu truyện', { feature: 'novel_request' })
+                    .catch(() => { /* đóng hộp đăng nhập — ở lại modal này */ })
+                }}
                 className="btn btn-primary request-novel-modal__btn"
               >
-                <LogIn size={16} /> Đăng nhập / Đăng ký
-              </Link>
+                <LogIn size={16} aria-hidden="true" /> Đăng nhập / Đăng ký
+              </button>
             </div>
           )}
 

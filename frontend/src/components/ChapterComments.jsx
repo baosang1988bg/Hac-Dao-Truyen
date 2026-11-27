@@ -1,9 +1,10 @@
 import PropTypes from 'prop-types'
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom'
 import { MessageSquare, Send, Loader2, Trash2 } from 'lucide-react'
 import api from '../api'
-import userApi, { isLoggedIn, getUserInfo } from '../userApi'
+import userApi from '../userApi'
+import { useAuth } from '../context/useAuth'
+import { isLoginCancelled } from '../utils/loginGate'
 import { fmtTimeAgo } from '../utils/format'
 import { trackEvent } from '../utils/analytics'
 
@@ -11,6 +12,8 @@ import { trackEvent } from '../utils/analytics'
  * Bình luận cuối trang đọc (theo chương).
  * - GET  /api/novels/{slug}/comments?chapter=N (public)
  * - POST /api/novels/{slug}/comments (Bearer user) — 429 khi spam < 20s.
+ * - Khách vẫn gõ được: bấm Gửi → hộp đăng nhập (requireLogin), đăng nhập xong
+ *   tự gửi tiếp đúng nội dung đã gõ (không mất chữ).
  * Dùng biến --reader-* (panel/text/border) nên tự khớp theme của Reader.
  */
 
@@ -27,8 +30,8 @@ export default function ChapterComments({ slug, chapter }) {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState(null)
   const [deleteError, setDeleteError] = useState(null)
-  const loggedIn = isLoggedIn()
-  const user = getUserInfo()
+  const { user, requireLogin } = useAuth()
+  const loggedIn = Boolean(user)
   const isAdmin = localStorage.getItem('userRole') === 'admin'
   const [deletingId, setDeletingId] = useState(null)
 
@@ -47,8 +50,16 @@ export default function ChapterComments({ slug, chapter }) {
     e.preventDefault()
     const content = text.trim()
     if (!content || sending) return
-    setSending(true)
     setError(null)
+    try {
+      // Chưa đăng nhập → mở hộp đăng nhập; text vẫn nằm trong state nên đăng
+      // nhập xong gửi tiếp luôn. Đóng hộp → giữ nguyên nội dung, không báo lỗi.
+      await requireLogin('Đăng nhập để bình luận', { feature: 'comment' })
+    } catch (err) {
+      if (!isLoginCancelled(err)) setError('Không mở được hộp đăng nhập. Vui lòng thử lại.')
+      return
+    }
+    setSending(true)
     try {
       const num = /^\d+$/.test(String(chapter)) ? Number(chapter) : chapter
       await userApi.post(`/novels/${slug}/comments`, { chapter: num, content })
@@ -61,7 +72,7 @@ export default function ChapterComments({ slug, chapter }) {
     } catch (err) {
       const status = err.response?.status
       if (status === 429) setError('Bạn bình luận quá nhanh, chờ 20 giây rồi gửi lại nhé.')
-      else if (status === 401) setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')
+      else if (status === 401) setError('Phiên đăng nhập đã hết hạn. Bấm Gửi để đăng nhập lại — nội dung vẫn được giữ.')
       else if (status === 400) setError('Nội dung bình luận không hợp lệ.')
       else setError('Gửi bình luận thất bại. Vui lòng thử lại.')
     } finally {
@@ -100,33 +111,32 @@ export default function ChapterComments({ slug, chapter }) {
         <span>Bình luận{comments && comments.length > 0 ? ` (${comments.length})` : ''}</span>
       </div>
 
-      {/* Form / lời mời đăng nhập */}
-      {loggedIn ? (
-        <form className="chapter-comments__form" onSubmit={handleSubmit}>
-          <textarea
-            className="chapter-comments__input"
-            aria-label="Nội dung bình luận"
-            placeholder={`Cảm nghĩ của ${user?.name || 'bạn'} về chương này...`}
-            value={text}
-            onChange={e => setText(e.target.value)}
-            rows={3}
-            maxLength={2000}
-          />
-          {error && <div className="chapter-comments__error" role="alert">{error}</div>}
-          <button
-            type="submit"
-            className="btn btn-primary chapter-comments__send"
-            disabled={sending || !text.trim()}
-          >
-            {sending ? <Loader2 size={15} className="spin" /> : <Send size={15} />}
-            {sending ? 'Đang gửi...' : 'Gửi bình luận'}
-          </button>
-        </form>
-      ) : (
-        <div className="chapter-comments__login-hint">
-          <Link to="/account">Đăng nhập</Link> để bình luận về chương này.
-        </div>
-      )}
+      {/* Form — khách cũng gõ được, bấm Gửi mới cần đăng nhập */}
+      <form className="chapter-comments__form" onSubmit={handleSubmit}>
+        <textarea
+          className="chapter-comments__input"
+          aria-label="Nội dung bình luận"
+          placeholder={loggedIn ? `Cảm nghĩ của ${user?.name || 'bạn'} về chương này...` : 'Cảm nghĩ của bạn về chương này...'}
+          value={text}
+          onChange={e => setText(e.target.value)}
+          rows={3}
+          maxLength={2000}
+        />
+        {error && <div className="chapter-comments__error" role="alert">{error}</div>}
+        {!loggedIn && (
+          <div className="chapter-comments__guest-note">
+            Cần đăng nhập để gửi — nội dung bạn gõ sẽ được giữ lại.
+          </div>
+        )}
+        <button
+          type="submit"
+          className="btn btn-primary chapter-comments__send"
+          disabled={sending || !text.trim()}
+        >
+          {sending ? <Loader2 size={15} className="spin" /> : <Send size={15} />}
+          {sending ? 'Đang gửi...' : (loggedIn ? 'Gửi bình luận' : 'Đăng nhập & gửi')}
+        </button>
+      </form>
 
       {/* Danh sách */}
       {deleteError && <div className="chapter-comments__error" role="alert">{deleteError}</div>}

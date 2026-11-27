@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { extractNovels } from '../utils/novelsApi'
 import { cachedGet } from '../utils/apiCache'
 import LazyMount from '../components/LazyMount'
+import HomeOneTap from '../components/HomeOneTap'
 import { prefersReducedMotion } from '../utils/motion'
 import { trackSearch } from '../utils/analytics'
 import { readSearchParam, urlWithSearchParam } from '../utils/engagement'
@@ -214,6 +215,8 @@ export default function HomePage() {
 
   return (
     <div className="container animate-fade-in hp-home" style={{ paddingTop: '1rem' }}>
+      {/* Google One Tap — chỉ khi chưa đăng nhập + đã đọc ≥ 2 chương (xem HomeOneTap) */}
+      <HomeOneTap />
       {/* 🔍 Search Bar – luôn hiển thị ở trên cùng */}
       <SearchSection
         searchQuery={searchQuery}
