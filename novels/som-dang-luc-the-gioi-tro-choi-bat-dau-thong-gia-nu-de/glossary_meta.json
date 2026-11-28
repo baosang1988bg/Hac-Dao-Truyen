@@ -1,5 +1,5 @@
 {
-  "revision": 519,
+  "revision": 534,
   "conflicts": [
     {
       "term": "坤鼎",
@@ -42,6 +42,13 @@
       "suggested_value": "Tinh vực Thiên Lang",
       "revision_seen": 513,
       "ts": "2026-11-27T14:34:06"
+    },
+    {
+      "term": "霸皇錘",
+      "current_value": "Bá Hoàng Chuy",
+      "suggested_value": "Bá Hoàng Chùy",
+      "revision_seen": 531,
+      "ts": "2026-11-28T13:48:26"
     }
   ]
 }
